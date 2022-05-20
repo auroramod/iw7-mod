@@ -49,6 +49,8 @@ namespace game
 	const char* SV_Cmd_Argv(int index);
 
 	bool VirtualLobby_Loaded();
+
+	bool Sys_IsDatabaseReady2();
 }
 
 uintptr_t operator"" _b(const uintptr_t ptr);

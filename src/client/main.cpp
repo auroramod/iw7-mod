@@ -3,6 +3,7 @@
 #include "loader/component_loader.hpp"
 #include "game/game.hpp"
 
+#include <utils/hook.hpp>
 #include <utils/string.hpp>
 #include <utils/flags.hpp>
 #include <utils/io.hpp>
@@ -64,6 +65,7 @@ FARPROC load_binary(uint64_t* base_address)
 void remove_crash_file()
 {
 	utils::io::remove_file("__iw7-mod");
+	utils::io::remove_file("__iw7_ship");
 }
 
 void enable_dpi_awareness()
@@ -152,6 +154,12 @@ int main()
 				throw std::runtime_error("Unable to load binary into memory");
 			}
 
+			if (base_address != 0x140000000)
+			{
+				throw std::runtime_error(utils::string::va(
+					"Base address was (%p) and not (%p)\nThis should not be possible!",
+					base_address, 0x140000000));
+			}
 			game::base_address = base_address;
 
 			if (!component_loader::post_load()) return 0;

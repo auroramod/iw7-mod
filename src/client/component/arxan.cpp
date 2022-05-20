@@ -1,6 +1,6 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
-//#include "scheduler.hpp"
+#include "scheduler.hpp"
 #include "game/game.hpp"
 
 #include <utils/hook.hpp>
@@ -147,7 +147,7 @@ namespace arxan
 		void post_load() override
 		{
 			hide_being_debugged();
-			//scheduler::loop(hide_being_debugged, scheduler::pipeline::async);
+			scheduler::loop(hide_being_debugged, scheduler::pipeline::async);
 
 			const utils::nt::library ntdll("ntdll.dll");
 			nt_close_hook.create(ntdll.get_proc<void*>("NtClose"), nt_close_stub);

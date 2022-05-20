@@ -583,7 +583,7 @@ namespace demonware
 
 		void post_unpack() override
 		{
-			/*utils::hook::jump(0x1285040_b, bd_logger_stub, true);
+			utils::hook::jump(0x1285040_b, bd_logger_stub, true);
 
 			utils::hook::set<uint8_t>(0xB5BB96F_b, 0x0);  // CURLOPT_SSL_VERIFYPEER
 			utils::hook::set<uint8_t>(0xB7C6CB1_b, 0xAF); // CURLOPT_SSL_VERIFYHOST
@@ -628,7 +628,7 @@ namespace demonware
 			// auth
 			const char* auth = "http://%s:%d/auth/";
 			std::memset(reinterpret_cast<void*>(0x15E3600_b), 0, strlen(auth) + 1);
-			std::memcpy(reinterpret_cast<void*>(0x15E3600_b), auth, strlen(auth));*/
+			std::memcpy(reinterpret_cast<void*>(0x15E3600_b), auth, strlen(auth));
 
 			// utils::hook::set<uint8_t>(0x19F8C0_b, 0xC3); // SV_SendMatchData, not sure
 			//utils::hook::nop(0x19BB67_b, 5); // LiveStorage_SendMatchDataComplete
@@ -663,4 +663,4 @@ namespace demonware
 	};
 }
 
-REGISTER_COMPONENT(demonware::component)
+//REGISTER_COMPONENT(demonware::component)

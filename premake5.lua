@@ -308,12 +308,7 @@ targetname "iw7-mod"
 pchheader "std_include.hpp"
 pchsource "src/client/std_include.cpp"
 
-if _OPTIONS["no-inject-host-as-lib"] then
-	linkoptions {"/IGNORE:4254", "/DYNAMICBASE:NO", "/SAFESEH:NO", "/LARGEADDRESSAWARE", "/LAST:.main", "/PDBCompress"}
-else
-	defines {"INJECT_HOST_AS_LIB"}
-	linkoptions {"/IGNORE:4254", "/SAFESEH:NO", "/LARGEADDRESSAWARE", "/PDBCompress"}
-end
+linkoptions {"/IGNORE:4254", "/DYNAMICBASE:NO", "/SAFESEH:NO", "/LARGEADDRESSAWARE", "/LAST:.main", "/PDBCompress"}
 
 files {"./src/client/**.rc", "./src/client/**.hpp", "./src/client/**.cpp", "./src/client/resources/**.*"}
 

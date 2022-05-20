@@ -5,11 +5,24 @@
 
 #include "game.hpp"
 #include "dvars.hpp"
-#include <component/console.hpp>
 #include <utils/hook.hpp>
 
 namespace dvars
 {
+	game::dvar_t* con_inputBoxColor = nullptr;
+	game::dvar_t* con_inputHintBoxColor = nullptr;
+	game::dvar_t* con_outputBarColor = nullptr;
+	game::dvar_t* con_outputSliderColor = nullptr;
+	game::dvar_t* con_outputWindowColor = nullptr;
+	game::dvar_t* con_inputDvarMatchColor = nullptr;
+	game::dvar_t* con_inputDvarValueColor = nullptr;
+	game::dvar_t* con_inputDvarInactiveValueColor = nullptr;
+	game::dvar_t* con_inputCmdMatchColor = nullptr;
+	game::dvar_t* g_playerEjection = nullptr;
+	game::dvar_t* g_playerCollision = nullptr;
+	game::dvar_t* player_sustainAmmo = nullptr;
+	game::dvar_t* g_enableElevators = nullptr;
+
 	std::string dvar_get_vector_domain(const int components, const game::dvar_limits& domain)
 	{
 		if (domain.vector.min == -FLT_MAX)
@@ -118,4 +131,39 @@ namespace dvars
 		}
 	}
 
+	std::unordered_map<const game::dvar_t*, std::string> dvar_names;
+
+	std::string dvar_get_name(const game::dvar_t* dvar)
+	{
+		auto offset = dvar_names.find(dvar);
+		if (offset != dvar_names.end())
+		{
+			return offset->second;
+		}
+
+		return "name not found";
+	}
+
+	void dvar_set_name(const game::dvar_t* dvar, const std::string& name)
+	{
+		dvar_names[dvar] = name;
+	}
+
+	std::unordered_map<const game::dvar_t*, std::string> dvar_descriptions;
+
+	std::string dvar_get_description(const game::dvar_t* dvar)
+	{
+		auto offset = dvar_descriptions.find(dvar);
+		if (offset != dvar_descriptions.end())
+		{
+			return offset->second;
+		}
+
+		return "";
+	}
+
+	void dvar_set_description(const game::dvar_t* dvar, const std::string& description)
+	{
+		dvar_descriptions[dvar] = description;
+	}
 }

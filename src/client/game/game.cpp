@@ -15,27 +15,32 @@ namespace game
 
 	int Cmd_Argc()
 	{
-		return 0; //return cmd_args->argc[cmd_args->nesting];
+		return cmd_args->argc[cmd_args->nesting];
 	}
 
 	const char* Cmd_Argv(const int index)
 	{
-		return 0; //return cmd_args->argv[cmd_args->nesting][index];
+		return cmd_args->argv[cmd_args->nesting][index];
 	}
 
 	int SV_Cmd_Argc()
 	{
-		return 0; //return sv_cmd_args->argc[sv_cmd_args->nesting];
+		return sv_cmd_args->argc[sv_cmd_args->nesting];
 	}
 
 	const char* SV_Cmd_Argv(const int index)
 	{
-		return 0; //return sv_cmd_args->argv[sv_cmd_args->nesting][index];
+		return sv_cmd_args->argv[sv_cmd_args->nesting][index];
 	}
 
 	bool VirtualLobby_Loaded()
 	{
 		return 0; //return *mp::virtualLobby_loaded == 1;
+	}
+
+	bool Sys_IsDatabaseReady2()
+	{
+		return game::databaseCompletedEvent2;
 	}
 
 	namespace environment
