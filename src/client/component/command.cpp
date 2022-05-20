@@ -240,12 +240,6 @@ namespace command
 		game::Cmd_AddCommandInternal(name, callback, utils::memory::get_allocator()->allocate<game::cmd_function_s>());
 	}
 
-	void add_test(const char* name, void (*callback)())
-	{
-		static game::cmd_function_s cmd_test;
-		return game::Cmd_AddCommandInternal(name, callback, &cmd_test);
-	}
-
 	void add(const char* name, const std::function<void(const params&)>& callback)
 	{
 		const auto command = utils::string::to_lower(name);
