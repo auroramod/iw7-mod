@@ -18,10 +18,6 @@ namespace dvars
 	game::dvar_t* con_inputDvarValueColor = nullptr;
 	game::dvar_t* con_inputDvarInactiveValueColor = nullptr;
 	game::dvar_t* con_inputCmdMatchColor = nullptr;
-	game::dvar_t* g_playerEjection = nullptr;
-	game::dvar_t* g_playerCollision = nullptr;
-	game::dvar_t* player_sustainAmmo = nullptr;
-	game::dvar_t* g_enableElevators = nullptr;
 
 	std::string dvar_get_vector_domain(const int components, const game::dvar_limits& domain)
 	{
@@ -141,7 +137,7 @@ namespace dvars
 			return offset->second;
 		}
 
-		return "name not found";
+		return "";
 	}
 
 	void dvar_set_name(const game::dvar_t* dvar, const std::string& name)

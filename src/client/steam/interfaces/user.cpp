@@ -132,7 +132,7 @@ namespace steam
 	{
 		const auto id = this->GetSteamID();
 
-		auth_ticket = "S1";
+		auth_ticket = "IW7";
 		auth_ticket.resize(32);
 		auth_ticket.append(static_cast<char*>(pUserData), 24); // key
 		auth_ticket.append(reinterpret_cast<const char*>(&id.bits), sizeof(id.bits)); // user id
