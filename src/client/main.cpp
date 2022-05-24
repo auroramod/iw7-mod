@@ -62,7 +62,6 @@ FARPROC load_binary(uint64_t* base_address)
 
 void remove_crash_file()
 {
-	utils::io::remove_file("__iw7-mod");
 	utils::io::remove_file("__iw7_ship");
 }
 
@@ -104,16 +103,6 @@ void limit_parallel_dll_loading()
 	RegCloseKey(key);
 }
 
-// solution for other processes that may launch the mod
-void apply_proper_directory()
-{
-	char module_path[MAX_PATH];
-	GetModuleFileNameA(nullptr, module_path, MAX_PATH);
-	PathRemoveFileSpecA(module_path);
-	SetCurrentDirectoryA(module_path);
-	SetDllDirectoryA(module_path);
-}
-
 int main()
 {
 	ShowWindow(GetConsoleWindow(), SW_HIDE);
@@ -140,9 +129,6 @@ int main()
 
 		try
 		{
-			//apply_proper_directory();
-			//remove_crash_file();
-
 			if (!component_loader::post_start()) return 0;
 
 			uint64_t base_address{};
