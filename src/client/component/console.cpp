@@ -119,9 +119,9 @@ namespace console
 			if (console::is_enabled() && s_wcd.hwndBuffer)
 			{
 				// if the message is REALLY long, use just the last portion of it
-				if (strlen(pMsg) > sizeof(s_wcd.cleanBuffer) - 1) 
+				if (strlen(pMsg) > ((sizeof(s_wcd.cleanBuffer) / 2) - 1)) 
 				{
-					msg = pMsg + strlen(pMsg) - sizeof(s_wcd.cleanBuffer) + 1;
+					msg = pMsg + strlen(pMsg) - ((sizeof(s_wcd.cleanBuffer) / 2) + 1);
 				}
 				else 
 				{
