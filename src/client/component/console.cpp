@@ -108,7 +108,7 @@ namespace console
 			}
 		}
 
-		void __fastcall Conbuf_AppendText(const char* pMsg)
+		void Conbuf_AppendText(const char* pMsg)
 		{
 			char* b = s_wcd.cleanBuffer;
 			const char* msg;
@@ -378,11 +378,11 @@ namespace console
 		{
 			if (native::is_enabled())
 			{
-				printf("%s\n", message.data());
+				printf(message.data());
 			}
 			else
 			{
-				sys::Sys_Print(utils::string::va("%s\n", message.data()));
+				sys::Sys_Print(message.data());
 			}
 		}
 		
@@ -528,11 +528,11 @@ namespace console
 				{
 					if (PeekMessageA(&msg, nullptr, NULL, NULL, PM_REMOVE))
 					{
-						//if (msg.message == WM_QUIT)
-						//{
-						//	game::Cbuf_AddText(0, "quit");
-						//	break;
-						//}
+						if (msg.message == WM_QUIT)
+						{
+							game::Cbuf_AddText(0, "quit");
+							break;
+						}
 
 						TranslateMessage(&msg);
 						DispatchMessage(&msg);

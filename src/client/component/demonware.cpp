@@ -440,20 +440,13 @@ namespace demonware
 		void bd_logger_stub(int type, const char* const /*channelName*/, const char* /*fileLoc*/, const char* const /*file*/,
 			const char* const function, const unsigned int /*line*/, const char* const msg, ...)
 		{
-			//static auto* enabled =
-			//	game::Dvar_RegisterBool("bd_logger", false, game::DVAR_FLAG_SAVED, "Log bd info to the console.");
-			//if (!enabled->current.enabled)
-			//{
-			//	return;
-			//}
-
 			char buffer[2048];
 
 			va_list ap;
 			va_start(ap, msg);
 
 			vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, msg, ap);
-			console::print(type, "%s: %s", function, buffer);
+			console::print(type, "%s: %s\n", function, buffer);
 
 			va_end(ap);
 		}
@@ -583,7 +576,9 @@ namespace demonware
 
 		void post_unpack() override
 		{
+#ifdef DEBUG
 			utils::hook::jump(0x1285040_b, bd_logger_stub, true);
+#endif
 
 			utils::hook::set<uint8_t>(0xB5BB96F_b, 0x0);  // CURLOPT_SSL_VERIFYPEER
 			utils::hook::set<uint8_t>(0xB7C6CB1_b, 0xAF); // CURLOPT_SSL_VERIFYHOST
