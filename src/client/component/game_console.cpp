@@ -73,18 +73,18 @@ namespace game_console
 		void print_internal(const std::string& data)
 		{
 			con.output.access([&](output_queue& output)
+			{
+				if (con.visible_line_count > 0
+					&& con.display_line_offset == (output.size() - con.visible_line_count))
 				{
-					if (con.visible_line_count > 0
-						&& con.display_line_offset == (output.size() - con.visible_line_count))
-					{
-						con.display_line_offset++;
-					}
-					output.push_back(data);
-					if (output.size() > 512)
-					{
-						output.pop_front();
-					}
-				});
+					con.display_line_offset++;
+				}
+				output.push_back(data);
+				if (output.size() > 512)
+				{
+					output.pop_front();
+				}
+			});
 		}
 
 		void toggle_console()
@@ -391,21 +391,21 @@ namespace game_console
 		void draw_output_window()
 		{
 			con.output.access([](output_queue& output)
-				{
-					draw_box(con.screen_min[0], con.screen_min[1] + 32.0f, con.screen_max[0] - con.screen_min[0],
-						(con.screen_max[1] - con.screen_min[1]) - 32.0f, dvars::con_outputWindowColor->current.vector);
+			{
+				draw_box(con.screen_min[0], con.screen_min[1] + 32.0f, con.screen_max[0] - con.screen_min[0],
+					(con.screen_max[1] - con.screen_min[1]) - 32.0f, dvars::con_outputWindowColor->current.vector);
 
-					const auto x = con.screen_min[0] + 6.0f;
-					const auto y = (con.screen_min[1] + 32.0f) + 6.0f;
-					const auto width = (con.screen_max[0] - con.screen_min[0]) - 12.0f;
-					const auto height = ((con.screen_max[1] - con.screen_min[1]) - 32.0f) - 12.0f;
+				const auto x = con.screen_min[0] + 6.0f;
+				const auto y = (con.screen_min[1] + 32.0f) + 6.0f;
+				const auto width = (con.screen_max[0] - con.screen_min[0]) - 12.0f;
+				const auto height = ((con.screen_max[1] - con.screen_min[1]) - 32.0f) - 12.0f;
 
-					game::R_AddCmdDrawText("H1-Mod 1.15", 0x7FFFFFFF, console_font, x,
-						((height - 16.0f) + y) + console_font->pixelHeight, 1.0f, 1.0f, 0.0f, color_title, 0);
+				game::R_AddCmdDrawText("IW7-Mod ", 0x7FFFFFFF, console_font, x,
+					((height - 16.0f) + y) + console_font->pixelHeight, 1.0f, 1.0f, 0.0f, color_title, 0);
 
-					draw_output_scrollbar(x, y, width, height, output);
-					draw_output_text(x, y, output);
-				});
+				draw_output_scrollbar(x, y, width, height, output);
+				draw_output_text(x, y, output);
+			});
 		}
 
 		void draw_console()
