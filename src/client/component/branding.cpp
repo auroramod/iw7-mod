@@ -11,7 +11,9 @@
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
 
-// fonts/default.otf, fonts/defaultBold.otf, fonts/fira_mono_regular.ttf, fonts/fira_mono_bold.ttf
+// Fonts are used in game:
+// fonts/blender_pro_bold.ttf, fonts/blender_pro_book.ttf, fonts/blender_pro_heavy.ttf, fonts/blender_pro_medium.ttf
+// fonts/changelingneo-regular.ttf, fonts/dev.ttf, fonts/fira_mono_bold.ttf, fonts/fira_mono_regular.ttf, fonts/iw6_digital.ttf
 
 namespace branding
 {
@@ -36,7 +38,7 @@ namespace branding
 			localized_strings::override("LUA_MENU_MULTIPLAYER_CAPS", "IW7-MOD: MULTIPLAYER");
 			localized_strings::override("LUA_MENU_ALIENS_CAPS", "IW7-MOD: ZOMBIES");
 
-			//dvars::override::set_string("version", utils::string::va("H1-Mod %s", VERSION));
+			//dvars::override::set_string("version", utils::string::va("IW7-Mod %s", VERSION));
 
 			//ui_get_formatted_build_number_hook.create(0x1DF300_b, ui_get_formatted_build_number_stub); can't find
 
