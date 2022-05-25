@@ -30,7 +30,7 @@ namespace branding
 			localized_strings::override("LUA_MENU_MULTIPLAYER_CAPS", "IW7-MOD: MULTIPLAYER");
 			localized_strings::override("LUA_MENU_ALIENS_CAPS", "IW7-MOD: ZOMBIES");
 
-			branding = game::Dvar_RegisterBool("branding", true, game::DvarFlags::DVAR_FLAG_SAVED, "Show branding in the top right corner");
+			branding = game::Dvar_RegisterBool("branding", true, game::DvarFlags::DVAR_FLAG_SAVED, "Show branding in the top left corner");
 
 			scheduler::loop([]()
 			{
