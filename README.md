@@ -1,10 +1,10 @@
-# <p align="center">IW7-Mod</p>
+# IW7-Mod
 
 <p align="center">
-  <img src="assets/github/banner.png?raw=true" width="900" />
+  <img src="assets/github/banner.png?raw=true" />
 </p>
 
-<h3><p align="center">Nothing has been worked yet<br><br>Feel free to make a PR</p></h3>
+<br>
 
 ## Compile from source
 
