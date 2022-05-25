@@ -7,22 +7,26 @@ namespace utils::hook
 {
 	namespace
 	{
-		[[maybe_unused]] class _
+		void* initialize_min_hook()
 		{
-		public:
-			_()
+			static class min_hook_init
 			{
-				if (MH_Initialize() != MH_OK)
+			public:
+				min_hook_init()
 				{
-					throw std::runtime_error("Failed to initialize MinHook");
+					if (MH_Initialize() != MH_OK)
+					{
+						throw std::runtime_error("Failed to initialize MinHook");
+					}
 				}
-			}
 
-			~_()
-			{
-				MH_Uninitialize();
-			}
-		} __;
+				~min_hook_init()
+				{
+					MH_Uninitialize();
+				}
+			} min_hook_init;
+			return &min_hook_init;
+		}
 	}
 
 	void assembler::pushad64()
@@ -95,11 +99,18 @@ namespace utils::hook
 		return Assembler::jmp(size_t(target));
 	}
 
-	detour::detour(const size_t place, void* target) : detour(reinterpret_cast<void*>(place), target)
+	detour::detour()
+	{
+		(void)initialize_min_hook();
+	}
+
+	detour::detour(const size_t place, void* target)
+		: detour(reinterpret_cast<void*>(place), target)
 	{
 	}
 
 	detour::detour(void* place, void* target)
+		: detour()
 	{
 		this->create(place, target);
 	}
@@ -109,13 +120,19 @@ namespace utils::hook
 		this->clear();
 	}
 
-	void detour::enable() const
+	void detour::enable()
 	{
 		MH_EnableHook(this->place_);
+
+		if (!this->moved_data_.empty())
+		{
+			this->move();
+		}
 	}
 
-	void detour::disable() const
+	void detour::disable()
 	{
+		this->un_move();
 		MH_DisableHook(this->place_);
 	}
 
@@ -141,16 +158,31 @@ namespace utils::hook
 	{
 		if (this->place_)
 		{
+			this->un_move();
 			MH_RemoveHook(this->place_);
 		}
 
 		this->place_ = nullptr;
 		this->original_ = nullptr;
+		this->moved_data_ = {};
+	}
+
+	void detour::move()
+	{
+		this->moved_data_ = move_hook(this->place_);
 	}
 
 	void* detour::get_original() const
 	{
 		return this->original_;
+	}
+
+	void detour::un_move()
+	{
+		if (!this->moved_data_.empty())
+		{
+			copy(this->place_, this->moved_data_.data(), this->moved_data_.size());
+		}
 	}
 
 	bool iat(const nt::library& library, const std::string& target_library, const std::string& process, void* stub)
@@ -230,10 +262,14 @@ namespace utils::hook
 		return call(pointer, reinterpret_cast<void*>(data));
 	}
 
-	void jump(void* pointer, void* data, const bool use_far)
+	void jump(void* pointer, void* data, const bool use_far, const bool use_safe)
 	{
 		static const unsigned char jump_data[] = {
 			0x48, 0xb8, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0xff, 0xe0
+		};
+
+		static const unsigned char jump_data_safe[] = {
+			0xFF, 0x25, 0x00, 0x00, 0x00, 0x00
 		};
 
 		if (!use_far && is_relatively_far(pointer, data))
@@ -245,8 +281,16 @@ namespace utils::hook
 
 		if (use_far)
 		{
-			copy(patch_pointer, jump_data, sizeof(jump_data));
-			copy(patch_pointer + 2, &data, sizeof(data));
+			if (use_safe)
+			{
+				copy(patch_pointer, jump_data_safe, sizeof(jump_data_safe));
+				copy(patch_pointer + sizeof(jump_data_safe), &data, sizeof(data));
+			}
+			else
+			{
+				copy(patch_pointer, jump_data, sizeof(jump_data));
+				copy(patch_pointer + 2, &data, sizeof(data));
+			}
 		}
 		else
 		{
@@ -255,14 +299,14 @@ namespace utils::hook
 		}
 	}
 
-	void jump(const size_t pointer, void* data, const bool use_far)
+	void jump(const size_t pointer, void* data, const bool use_far, const bool use_safe)
 	{
-		return jump(reinterpret_cast<void*>(pointer), data, use_far);
+		return jump(reinterpret_cast<void*>(pointer), data, use_far, use_safe);
 	}
 
-	void jump(const size_t pointer, const size_t data, const bool use_far)
+	void jump(const size_t pointer, const size_t data, const bool use_far, const bool use_safe)
 	{
-		return jump(pointer, reinterpret_cast<void*>(data), use_far);
+		return jump(pointer, reinterpret_cast<void*>(data), use_far, use_safe);
 	}
 
 	void* assemble(const std::function<void(assembler&)>& asm_function)
@@ -295,6 +339,41 @@ namespace utils::hook
 	void inject(const size_t pointer, const void* data)
 	{
 		return inject(reinterpret_cast<void*>(pointer), data);
+	}
+
+	std::vector<uint8_t> move_hook(void* pointer)
+	{
+		std::vector<uint8_t> original_data{};
+
+		auto* data_ptr = static_cast<uint8_t*>(pointer);
+		if (data_ptr[0] == 0xE9)
+		{
+			original_data.resize(6);
+			memmove(original_data.data(), pointer, original_data.size());
+
+			auto* target = follow_branch(data_ptr);
+			nop(data_ptr, 1);
+			jump(data_ptr + 1, target);
+		}
+		else if (data_ptr[0] == 0xFF && data_ptr[1] == 0x25)
+		{
+			original_data.resize(15);
+			memmove(original_data.data(), pointer, original_data.size());
+
+			copy(data_ptr + 1, data_ptr, 14);
+			nop(data_ptr, 1);
+		}
+		else
+		{
+			throw std::runtime_error("No branch instruction found");
+		}
+
+		return original_data;
+	}
+
+	std::vector<uint8_t> move_hook(const size_t pointer)
+	{
+		return move_hook(reinterpret_cast<void*>(pointer));
 	}
 
 	void* follow_branch(void* address)

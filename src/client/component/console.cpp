@@ -35,7 +35,7 @@ namespace console
 		DWORD WINAPI console(LPVOID)
 		{
 			ShowWindow(GetConsoleWindow(), SW_SHOW);
-			SetConsoleTitle("IW7-Mod");
+			SetConsoleTitleA("IW7-Mod Console");
 
 			std::string cmd;
 			exit = false;
@@ -414,6 +414,14 @@ namespace console
 
 			//setvbuf(stdout, nullptr, _IONBF, 0);
 			//setvbuf(stderr, nullptr, _IONBF, 0);
+		}
+
+		~component() override
+		{
+			if (!console::is_enabled() || native::is_enabled()) return;
+
+			if (sys::icon) DestroyIcon(sys::icon);
+			if (sys::logo) DeleteObject(sys::logo);
 		}
 
 		void post_start() override

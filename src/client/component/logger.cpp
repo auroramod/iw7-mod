@@ -11,25 +11,16 @@ namespace logger
 {
 	namespace
 	{
-		void nullsub_6_stub(const char* msg, ...)
+		void sys_print_stub(const char* msg)
 		{
-			char buffer[2048];
-
-			{
-				va_list ap;
-				va_start(ap, msg);
-
-				vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, msg, ap);
-
-				va_end(ap);
-
-				console::info("%s", buffer);
-			}
+			console::info(msg);
 		}
 
-		void nullsub_6()
+		void sys_print_stubs()
 		{
-			utils::hook::call(0xC6E57A_b, nullsub_6_stub);
+			utils::hook::call(0xC6E57A_b, sys_print_stub); // SV_SpawnServer: completed\n
+			utils::hook::call(0xC13641_b, sys_print_stub); // SV_CmdsSP_MapRestart: completed\n
+			utils::hook::jump(0x519772_b, sys_print_stub); // OnlineAutoTest:: Map load success. Server is listen.\n
 		}
 
 		void R_WarnOncePerFrame_print_stub(char* buffer, size_t buffer_length, char* msg, va_list va)
@@ -44,14 +35,14 @@ namespace logger
 	public:
 		void post_unpack() override
 		{
-			//nullsub_6();
+			sys_print_stubs();
 
 			if (!game::environment::is_dedi())
 			{
-				//utils::hook::call(0xE4B121_b, R_WarnOncePerFrame_print_stub);
+				utils::hook::call(0xE4B121_b, R_WarnOncePerFrame_print_stub);
 			}
 		}
 	};
 }
 
-REGISTER_COMPONENT(logger::component)
+//REGISTER_COMPONENT(logger::component)

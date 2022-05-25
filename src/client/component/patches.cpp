@@ -3,9 +3,6 @@
 
 #include "game/game.hpp"
 
-//#include "dvars.hpp"
-#include "console.hpp"
-
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
 

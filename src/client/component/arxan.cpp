@@ -12,6 +12,10 @@ namespace arxan
 		utils::hook::detour nt_close_hook;
 		utils::hook::detour nt_query_information_process_hook;
 
+#define ProcessDebugPort 7
+#define ProcessDebugObjectHandle 30 // WinXP source says 31?
+#define ProcessDebugFlags 31 // WinXP source says 32?
+
 		NTSTATUS WINAPI nt_query_information_process_stub(const HANDLE handle, const PROCESSINFOCLASS info_class,
 			const PVOID info,
 			const ULONG info_length, const PULONG ret_length)
@@ -31,24 +35,23 @@ namespace arxan
 						GetWindowThreadProcessId(shell_window, &explorer_pid);
 					}
 
+					// InheritedFromUniqueProcessId
 					static_cast<PPROCESS_BASIC_INFORMATION>(info)->Reserved3 = PVOID(DWORD64(explorer_pid));
 				}
-				else if (info_class == 30) // ProcessDebugObjectHandle
+				else if (info_class == ProcessDebugObjectHandle)
 				{
 					*static_cast<HANDLE*>(info) = nullptr;
 
 					return 0xC0000353;
 				}
-				else if (info_class == 7) // ProcessDebugPort
+				else if (info_class == ProcessDebugPort)
 				{
 					*static_cast<HANDLE*>(info) = nullptr;
 				}
-				else if (info_class == 31)
+				else if (info_class == ProcessDebugFlags)
 				{
 					*static_cast<ULONG*>(info) = 1;
 				}
-
-				//https://docs.microsoft.com/en-us/windows/win32/api/winternl/nf-winternl-ntqueryinformationprocess
 			}
 
 			return status;
@@ -73,6 +76,11 @@ namespace arxan
 				return EXCEPTION_CONTINUE_EXECUTION;
 			}
 
+			if (info->ExceptionRecord->ExceptionCode == STATUS_ACCESS_VIOLATION)
+			{
+				//MessageBoxA(0, 0, "AV", 0);
+			}
+
 			return EXCEPTION_CONTINUE_SEARCH;
 		}
 
@@ -82,86 +90,31 @@ namespace arxan
 			peb->BeingDebugged = false;
 			*reinterpret_cast<PDWORD>(LPSTR(peb) + 0xBC) &= ~0x70;
 		}
-
-		void remove_hardware_breakpoints()
-		{
-			CONTEXT context;
-			ZeroMemory(&context, sizeof(context));
-			context.ContextFlags = CONTEXT_DEBUG_REGISTERS;
-
-			auto* const thread = GetCurrentThread();
-			GetThreadContext(thread, &context);
-
-			context.Dr0 = 0;
-			context.Dr1 = 0;
-			context.Dr2 = 0;
-			context.Dr3 = 0;
-			context.Dr6 = 0;
-			context.Dr7 = 0;
-
-			SetThreadContext(thread, &context);
-		}
-
-		BOOL WINAPI set_thread_context_stub(const HANDLE thread, CONTEXT* context)
-		{
-			return SetThreadContext(thread, context);
-		}
-
-		utils::hook::detour doexit_hook;
-		void doexit_stub()
-		{
-			MessageBoxA(0, "doexit", "", 0);
-			return doexit_hook.invoke<void>();
-		}
-
-		utils::hook::detour integrity_check1_hook;
-		__int64 integrity_check1_stub_hook(__int64 a1, __int64 a2, __int64 a3, __int64 a4, __int64 a5)
-		{
-			__int64 result;
-			doexit_hook.disable();
-			integrity_check1_hook.disable();
-
-			printf("[ arxan ]: integrity check 1 bypassing...\n");
-			result = integrity_check1_hook.invoke<__int64>(a1, a2, a3, a4, a5);
-			printf("[ arxan ]: integrity check 1 passed!\n");
-
-			doexit_hook.enable();
-			integrity_check1_hook.enable();
-			return result;
-		}
 	}
 
 	class component final : public component_interface
 	{
 	public:
-		void* load_import(const std::string& library, const std::string& function) override
-		{
-			if (function == "SetThreadContext")
-			{
-				//return set_thread_context_stub;
-			}
-
-			return nullptr;
-		}
-
 		void post_load() override
 		{
 			hide_being_debugged();
 			scheduler::loop(hide_being_debugged, scheduler::pipeline::async);
 
 			const utils::nt::library ntdll("ntdll.dll");
+
 			nt_close_hook.create(ntdll.get_proc<void*>("NtClose"), nt_close_stub);
-			nt_query_information_process_hook.create(ntdll.get_proc<void*>("NtQueryInformationProcess"),
-				nt_query_information_process_stub);
-			// https://www.geoffchappell.com/studies/windows/win32/ntdll/api/index.htm
+			
+			const auto nt_query_information_process = ntdll.get_proc<void*>("NtQueryInformationProcess");
+			nt_query_information_process_hook.create(nt_query_information_process,
+			                                         nt_query_information_process_stub);
+			nt_query_information_process_hook.move();
+
 			AddVectoredExceptionHandler(1, exception_filter);
 		}
 
 		void post_unpack() override
 		{
-			doexit_hook.create(0x12D7348_b, doexit_stub);
-
-			integrity_check1_hook.create(0xC6D8B0_b, integrity_check1_stub_hook); // SV_SpawnServer
+			
 		}
 	};
 }
