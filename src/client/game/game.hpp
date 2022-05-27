@@ -50,7 +50,9 @@ namespace game
 
 	bool VirtualLobby_Loaded();
 
-	bool Sys_IsDatabaseReady2();
+	extern const char* g_assetNames[ASSET_TYPE_COUNT];
+	const char* DB_GetXAssetName(const XAsset* asset);
+	void DB_EnumXAssets(const std::int32_t type, const std::function<void(XAssetHeader)>& callback);
 }
 
 uintptr_t operator"" _b(const uintptr_t ptr);

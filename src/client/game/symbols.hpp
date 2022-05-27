@@ -18,6 +18,10 @@ namespace game
 	WEAK symbol<void(const char* text_in)> Cmd_TokenizeString{ 0xB7D850 };
 	WEAK symbol<void()> Cmd_EndTokenizeString{ 0xB7CC90 };
 
+	WEAK symbol<const char* (XAssetType type, XAssetHeader header)> DB_GetXAssetHeaderName{ 0x9E5BA0 };
+	WEAK symbol<bool(std::int32_t, void(__cdecl*)(XAssetHeader, void*), const void*)> DB_EnumXAssets_FastFile{ 0xA76CE0 };
+	WEAK symbol<bool(XAssetType type, const char* name)> DB_IsXAssetDefault{ 0xA780D0 };
+
 	WEAK symbol<dvar_t* (const char* name, bool value,
 		unsigned int flags, const char* description)> Dvar_RegisterBool{ 0xCEB380 };
 	WEAK symbol<dvar_t* (const char* name, int value, int min, int max,
@@ -67,8 +71,6 @@ namespace game
 	/***************************************************************
 	 * Variables
 	 **************************************************************/
-
-	WEAK symbol<bool> databaseCompletedEvent2{ 0x5685979 };
 
 	WEAK symbol<CmdArgs> sv_cmd_args{ 0x5D65C20 };
 	WEAK symbol<CmdArgs> cmd_args{ 0x5D65B70 };

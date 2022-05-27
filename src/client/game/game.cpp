@@ -38,9 +38,102 @@ namespace game
 		return 0; //return *mp::virtualLobby_loaded == 1;
 	}
 
-	bool Sys_IsDatabaseReady2()
+	const char* g_assetNames[ASSET_TYPE_COUNT] =
 	{
-		return game::databaseCompletedEvent2;
+		"physicslibrary",
+		"physicssfxeventasset",
+		"physicsvfxeventasset",
+		"physicsasset",
+		"physicsfxpipeline",
+		"physicsfxshape",
+		"xanim",
+		"xmodelsurfs",
+		"xmodel",
+		"mayhem", // not confirmed
+		"material",
+		"computeshader",
+		"vertexshader",
+		"hullshader",
+		"domainshader",
+		"pixelshader",
+		"vertexdecl",
+		"techset",
+		"image",
+		"soundglobals",
+		"soundbank",
+		"soundbankpatch",
+		"col_map",
+		"com_map",
+		"glass_map",
+		"aipaths",
+		"navmesh",
+		"map_ents",
+		"fx_map",
+		"gfx_map",
+		"gfx_map_trzone",
+		"iesprofile",
+		"lightdef",
+		"ui_map",
+		"animclass",
+		"playeranim",
+		"gesture",
+		"localize",
+		"attachment",
+		"weapon",
+		"vfx",
+		"impactfx", // not confirmed
+		"surfacefx", // not confirmed
+		"aitype", // not confirmed
+		"mptype", // not confirmed
+		"character", // not confirmed
+		"xmodelalias", // not confirmed
+		"ASSET_TYPE_UNKNOWN", // not confirmed
+		"rawfile",
+		"scriptfile",
+		"stringtable",
+		"leaderboarddef",
+		"virtualleaderboarddef",
+		"structureddatadef",
+		"ddl",
+		"tracer",
+		"vehicle",
+		"addon_map_ents",
+		"netconststrings",
+		"luafile",
+		"scriptable",
+		"equipsndtable",
+		"vectorfield",
+		"particlesimanimation",
+		"streaminginfo",
+		"laser",
+		"ttf",
+		"suit",
+		"suitanimpackage",
+		"spaceshiptarget",
+		"rumble",
+		"rumblegraph",
+		"animpkg",
+		"sfxpkg",
+		"vfxpkg",
+		"behaviortree",
+		"animarchetype",
+		"proceduralbones",
+		"reticle",
+		"gfxlightmap",
+	};
+
+	const char* DB_GetXAssetName(const XAsset* asset)
+	{
+		return DB_GetXAssetHeaderName(asset->type, asset->header);
+	}
+
+	void DB_EnumXAssets(const std::int32_t type, const std::function<void(XAssetHeader)>& callback)
+	{
+		DB_EnumXAssets_FastFile(type, static_cast<void(*)(XAssetHeader, void*)>([](XAssetHeader header, void* data)
+		{
+			const auto& cb = *static_cast<const std::function<void(XAssetHeader)>*>(data);
+			cb(header);
+		}), &callback);
 	}
 
 	namespace environment

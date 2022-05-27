@@ -158,7 +158,7 @@ namespace scheduler
 		schedule([=]()
 		{
 			const auto dw_init = game::Live_SyncOnlineDataFlags(0) == 0;
-			if (dw_init && game::Sys_IsDatabaseReady2())
+			if (dw_init)
 			{
 				once(callback, type, delay);
 				return cond_end;
