@@ -62,7 +62,7 @@ namespace fastfiles
 			auto result = db_find_xasset_header_hook.invoke<game::XAssetHeader>(type, name, allow_create_default);
 			if (!result.data)
 			{
-				console::error("Error: Could not find %s \"%s\"", 
+				console::error("Error: Could not find %s \"%s\"\n", 
 					game::g_assetNames[static_cast<unsigned int>(type)], 
 					name);
 			}
@@ -82,7 +82,7 @@ namespace fastfiles
 			db_load_x_zone_hook.create(0x3BA920_b, db_load_x_zone_stub);
 #endif
 
-			db_find_xasset_header_hook.create(0xA76E00_b, db_find_xasset_header_stub);
+			db_find_xasset_header_hook.create(game::DB_FindXAssetHeader, db_find_xasset_header_stub);
 
 			command::add("listassetpool", [](const command::params& params)
 			{
