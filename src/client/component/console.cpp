@@ -103,6 +103,14 @@ namespace console
 			case WM_CLOSE:
 				DestroyWindow(hWnd);
 				return 0;
+			case WM_CTLCOLORSTATIC:
+				SetBkColor((HDC)wParam, RGB(49, 49, 49));
+				SetTextColor((HDC)wParam, RGB(232, 230, 227));
+				return (INT_PTR)CreateSolidBrush(RGB(49, 49, 49));
+			case WM_CTLCOLOREDIT:
+				SetBkColor((HDC)wParam, RGB(49, 49, 49));
+				SetTextColor((HDC)wParam, RGB(232, 230, 227));
+				return (INT_PTR)CreateSolidBrush(RGB(49, 49, 49));
 			default:
 				return DefWindowProcA(hWnd, uMsg, wParam, lParam);
 			}
@@ -249,7 +257,7 @@ namespace console
 			WndClass.lpfnWndProc = ConWndProc;
 			WndClass.hInstance = hInstance;
 			WndClass.hIcon = icon;
-			WndClass.hbrBackground = (HBRUSH)(COLOR_WINDOW);
+			WndClass.hbrBackground = CreateSolidBrush(RGB(49, 49, 49));
 			WndClass.hCursor = LoadCursorA(0, (LPCSTR)0x7F00);
 			WndClass.lpszMenuName = NULL;
 			WndClass.lpszClassName = ClassName;
@@ -258,7 +266,7 @@ namespace console
 				Rect.top = 0;
 				Rect.left = 0;
 				Rect.right = 620;
-				Rect.bottom = 450;
+				Rect.bottom = 430;
 				AdjustWindowRect(&Rect, 0x80CA0000, 0);
 				auto v4 = GetDesktopWindow();
 				auto v5 = GetDC(v4);
