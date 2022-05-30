@@ -55,7 +55,7 @@ namespace console
 
 	namespace sys
 	{
-#define COMMAND_HISTORY 64
+//#define COMMAND_HISTORY 64
 
 		struct WinConData
 		{
@@ -67,9 +67,9 @@ namespace console
 			//char errorString[512];
 			char consoleText[512];
 			//char returnedText[512];
-			char consoleHistory[COMMAND_HISTORY][512];
-			int consoleHistoryPos;
-			int consoleHistoryCount;
+			//char consoleHistory[COMMAND_HISTORY][512];
+			//int consoleHistoryPos;
+			//int consoleHistoryCount;
 			int windowWidth;
 			int windowHeight;
 			WNDPROC	SysInputLineWndProc;
@@ -276,7 +276,7 @@ namespace console
 				ReleaseDC(v8, v5);
 				s_wcd.windowHeight = Rect.bottom - Rect.top + 1;
 				s_wcd.windowWidth = Rect.right - Rect.left + 1;
-				s_wcd.consoleHistoryPos = 0;
+				//s_wcd.consoleHistoryPos = 0;
 				auto v9 = CreateWindowExA(
 					0,
 					ClassName,
