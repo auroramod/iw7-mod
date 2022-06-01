@@ -293,13 +293,13 @@ namespace game_console
 
 				if (dvar)
 				{
-					const auto offset = (con.screen_max[0] - con.globals.x) / 4.f;
+					const auto offset_value = floor((con.screen_max[0] - con.globals.x) / 4.f);
 
 					draw_hint_text(0, game::Dvar_ValueToString(dvar, dvar->current),
-						dvars::con_inputDvarValueColor->current.vector, offset);
+						dvars::con_inputDvarValueColor->current.vector, offset_value);
 					draw_hint_text(1, "  default", dvars::con_inputDvarInactiveValueColor->current.vector);
 					draw_hint_text(1, game::Dvar_ValueToString(dvar, dvar->reset),
-						dvars::con_inputDvarInactiveValueColor->current.vector, offset);
+						dvars::con_inputDvarInactiveValueColor->current.vector, offset_value);
 					draw_hint_text(2, dvars::dvar_get_description(dvar).data(),
 						color_white, 0);
 
@@ -320,7 +320,8 @@ namespace game_console
 			{
 				draw_hint_box(static_cast<int>(matches.size()), dvars::con_inputHintBoxColor->current.vector);
 
-				const auto offset = (con.screen_max[0] - con.globals.x) / 4.f;
+				const auto offset_value = floor((con.screen_max[0] - con.globals.x) / 4.f);
+				const auto offset_description = floor((con.screen_max[0] - con.globals.x) / 2.5f);
 
 				for (size_t i = 0; i < matches.size(); i++)
 				{
@@ -334,10 +335,10 @@ namespace game_console
 					if (dvar)
 					{
 						draw_hint_text(static_cast<int>(i), game::Dvar_ValueToString(dvar, dvar->current),
-							dvars::con_inputDvarValueColor->current.vector, offset);
+							dvars::con_inputDvarValueColor->current.vector, offset_value);
 
 						draw_hint_text(static_cast<int>(i), dvars::dvar_get_description(dvar).data(),
-							dvars::con_inputDvarValueColor->current.vector, offset * 1.5f);
+							dvars::con_inputDvarValueColor->current.vector, offset_description);
 					}
 				}
 
