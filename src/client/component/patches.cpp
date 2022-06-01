@@ -10,7 +10,7 @@ namespace patches
 {
 	namespace
 	{
-		
+
 	}
 
 	class component final : public component_interface
@@ -18,7 +18,7 @@ namespace patches
 	public:
 		void post_unpack() override
 		{
-			
+
 		}
 	};
 }

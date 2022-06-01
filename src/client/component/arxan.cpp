@@ -1,7 +1,9 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
-#include "scheduler.hpp"
+
 #include "game/game.hpp"
+
+#include "scheduler.hpp"
 
 #include <utils/hook.hpp>
 
@@ -103,10 +105,10 @@ namespace arxan
 			const utils::nt::library ntdll("ntdll.dll");
 
 			nt_close_hook.create(ntdll.get_proc<void*>("NtClose"), nt_close_stub);
-			
+
 			const auto nt_query_information_process = ntdll.get_proc<void*>("NtQueryInformationProcess");
 			nt_query_information_process_hook.create(nt_query_information_process,
-			                                         nt_query_information_process_stub);
+				nt_query_information_process_stub);
 			nt_query_information_process_hook.move();
 
 			AddVectoredExceptionHandler(1, exception_filter);
@@ -114,7 +116,7 @@ namespace arxan
 
 		void post_unpack() override
 		{
-			
+
 		}
 	};
 }

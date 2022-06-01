@@ -1,14 +1,15 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
 #include "steam_proxy.hpp"
+
+#include "game/game.hpp"
+
 #include "scheduler.hpp"
 
 #include <utils/nt.hpp>
 #include <utils/flags.hpp>
 #include <utils/string.hpp>
 #include <utils/binary_resource.hpp>
-
-#include "game/game.hpp"
 
 #include "steam/interface.hpp"
 #include "steam/steam.hpp"
@@ -132,7 +133,7 @@ namespace steam_proxy
 
 			this->client_utils_.invoke<void>("SetAppIDForCurrentPipe", app_id, false);
 
-			char our_directory[MAX_PATH] = {0};
+			char our_directory[MAX_PATH] = { 0 };
 			GetCurrentDirectoryA(sizeof(our_directory), our_directory);
 
 			const auto path = runner_file.get_extracted_file();
@@ -152,29 +153,29 @@ namespace steam_proxy
 		void clean_up_on_error()
 		{
 			scheduler::schedule([this]()
+			{
+				if (this->steam_client_module_
+					&& this->steam_pipe_
+					&& this->global_user_
+					&& this->steam_client_module_.invoke<bool>("Steam_BConnected", this->global_user_,
+						this->steam_pipe_)
+					&& this->steam_client_module_.invoke<bool>("Steam_BLoggedOn", this->global_user_, this->steam_pipe_)
+					)
 				{
-					if (this->steam_client_module_
-						&& this->steam_pipe_
-						&& this->global_user_
-						&& this->steam_client_module_.invoke<bool>("Steam_BConnected", this->global_user_,
-							this->steam_pipe_)
-						&& this->steam_client_module_.invoke<bool>("Steam_BLoggedOn", this->global_user_, this->steam_pipe_)
-						)
-					{
-						return scheduler::cond_continue;
-					}
+					return scheduler::cond_continue;
+				}
 
-					this->client_engine_ = nullptr;
-					this->client_user_ = nullptr;
-					this->client_utils_ = nullptr;
+				this->client_engine_ = nullptr;
+				this->client_user_ = nullptr;
+				this->client_utils_ = nullptr;
 
-					this->steam_pipe_ = nullptr;
-					this->global_user_ = nullptr;
+				this->steam_pipe_ = nullptr;
+				this->global_user_ = nullptr;
 
-					this->steam_client_module_ = utils::nt::library{nullptr};
+				this->steam_client_module_ = utils::nt::library{ nullptr };
 
-					return scheduler::cond_end;
-				});
+				return scheduler::cond_end;
+			});
 		}
 	};
 

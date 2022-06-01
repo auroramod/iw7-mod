@@ -533,9 +533,9 @@ namespace game_console
 				con.line_count = 0;
 				con.display_line_offset = 0;
 				con.output.access([](output_queue& output)
-					{
-						output.clear();
-					});
+				{
+					output.clear();
+				});
 				history_index = -1;
 				history.clear();
 
@@ -662,23 +662,23 @@ namespace game_console
 				if (key == game::keyNum_t::K_MWHEELUP || key == game::keyNum_t::K_PGUP)
 				{
 					con.output.access([](output_queue& output)
+					{
+						if (output.size() > con.visible_line_count && con.display_line_offset > 0)
 						{
-							if (output.size() > con.visible_line_count && con.display_line_offset > 0)
-							{
-								con.display_line_offset--;
-							}
-						});
+							con.display_line_offset--;
+						}
+					});
 				}
 				else if (key == game::keyNum_t::K_MWHEELDOWN || key == game::keyNum_t::K_PGDN)
 				{
 					con.output.access([](output_queue& output)
+					{
+						if (output.size() > con.visible_line_count
+							&& con.display_line_offset < (output.size() - con.visible_line_count))
 						{
-							if (output.size() > con.visible_line_count
-								&& con.display_line_offset < (output.size() - con.visible_line_count))
-							{
-								con.display_line_offset++;
-							}
-						});
+							con.display_line_offset++;
+						}
+					});
 				}
 
 				if (key == game::keyNum_t::K_ENTER)
@@ -749,9 +749,9 @@ namespace game_console
 				con.line_count = 0;
 				con.display_line_offset = 0;
 				con.output.access([](output_queue& output)
-					{
-						output.clear();
-					});
+				{
+					output.clear();
+				});
 				history_index = -1;
 				history.clear();
 			});

@@ -1,14 +1,13 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
-
 #include "command.hpp"
-#include "console.hpp"
-#include "game_console.hpp"
-//#include "fastfiles.hpp"
-#include "scheduler.hpp"
 
 #include "game/game.hpp"
 #include "game/dvars.hpp"
+
+#include "console.hpp"
+#include "game_console.hpp"
+#include "scheduler.hpp"
 
 #include <utils/hook.hpp>
 #include <utils/string.hpp>

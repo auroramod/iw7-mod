@@ -16,6 +16,20 @@ namespace logger
 			console::info(msg);
 		}
 
+		void print(const char* msg, ...)
+		{
+			char buffer[2048]{ 0 };
+
+			va_list ap;
+			va_start(ap, msg);
+
+			vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, msg, ap);
+
+			va_end(ap);
+
+			console::info(buffer);
+		}
+
 		void sys_print_stubs()
 		{
 			utils::hook::call(0xC6E57A_b, sys_print_stub); // SV_SpawnServer: completed\n
@@ -24,7 +38,7 @@ namespace logger
 			utils::hook::call(0xB712BA_b, sys_print_stub); // G_SaveError
 		}
 
-		void R_WarnOncePerFrame_print_stub(char* buffer, size_t buffer_length, char* msg, va_list va)
+		void r_warn_once_per_frame_print_stub(char* buffer, size_t buffer_length, char* msg, va_list va)
 		{
 			vsnprintf(buffer, buffer_length, msg, va);
 			console::warn(buffer);
@@ -38,9 +52,12 @@ namespace logger
 		{
 			sys_print_stubs();
 
+			// com_printf
+			utils::hook::jump(0x343080_b, print);
+
 			if (!game::environment::is_dedi())
 			{
-				utils::hook::call(0xE4B121_b, R_WarnOncePerFrame_print_stub);
+				utils::hook::call(0xE4B121_b, r_warn_once_per_frame_print_stub);
 			}
 		}
 	};

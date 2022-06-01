@@ -1,18 +1,15 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
-
 #include "auth.hpp"
-//#include "command.hpp"
-//#include "network.hpp"
+
+#include "game/game.hpp"
+#include "steam/steam.hpp"
 
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
 #include <utils/smbios.hpp>
 #include <utils/info_string.hpp>
 #include <utils/cryptography.hpp>
-
-#include "game/game.hpp"
-#include "steam/steam.hpp"
 
 namespace auth
 {
@@ -37,7 +34,7 @@ namespace auth
 				return {};
 			}
 
-			return std::string{info.szHwProfileGuid, sizeof(info.szHwProfileGuid)};
+			return std::string{ info.szHwProfileGuid, sizeof(info.szHwProfileGuid) };
 		}
 
 		std::string get_protected_data()
@@ -53,7 +50,7 @@ namespace auth
 			}
 
 			const auto size = std::min(data_out.cbData, 52ul);
-			std::string result{reinterpret_cast<char*>(data_out.pbData), size};
+			std::string result{ reinterpret_cast<char*>(data_out.pbData), size };
 			LocalFree(data_out.pbData);
 
 			return result;
@@ -98,7 +95,7 @@ namespace auth
 	public:
 		void post_unpack() override
 		{
-			
+
 		}
 	};
 }

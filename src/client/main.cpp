@@ -51,12 +51,12 @@ FARPROC load_binary(uint64_t* base_address)
 			"Failed to read game binary (%s)!\nPlease copy the iw7-mod.exe into your Call of Duty: Infinite Warfare installation folder and run it from there.",
 			binary.data()));
 	}
- 
+
 #ifdef INJECT_HOST_AS_LIB
 	return loader.load_library(binary, base_address);
 #else
 	*base_address = 0x140000000;
-	return loader.load(self, data); // this gives memory errors
+	return loader.load(self, data); // not working
 #endif
 }
 
@@ -67,10 +67,10 @@ void remove_crash_file()
 
 void enable_dpi_awareness()
 {
-	const utils::nt::library user32{"user32.dll"};
+	const utils::nt::library user32{ "user32.dll" };
 	const auto set_dpi = user32
-		                     ? user32.get_proc<BOOL(WINAPI*)(DPI_AWARENESS_CONTEXT)>("SetProcessDpiAwarenessContext")
-		                     : nullptr;
+		? user32.get_proc<BOOL(WINAPI*)(DPI_AWARENESS_CONTEXT)>("SetProcessDpiAwarenessContext")
+		: nullptr;
 	if (set_dpi)
 	{
 		set_dpi(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);

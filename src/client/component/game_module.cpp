@@ -91,7 +91,7 @@ namespace game_module
 
 	utils::nt::library get_game_module()
 	{
-		static utils::nt::library game{HMODULE(game::base_address)};
+		static utils::nt::library game{ HMODULE(game::base_address) };
 		return game;
 	}
 

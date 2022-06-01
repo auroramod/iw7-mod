@@ -19,14 +19,16 @@ namespace console
 {
 	bool is_enabled()
 	{
-		return game::environment::is_dedi() || !utils::flags::has_flag("noconsole");
+		static const auto noconsole = utils::flags::has_flag("noconsole");
+		return game::environment::is_dedi() || !noconsole;
 	}
 
 	namespace native
 	{
 		bool is_enabled()
 		{
-			return utils::flags::has_flag("nativeconsole");
+			static const auto nativeconsole = utils::flags::has_flag("nativeconsole");
+			return nativeconsole;
 		}
 
 		static bool ingame = false;
@@ -55,7 +57,7 @@ namespace console
 
 	namespace sys
 	{
-//#define COMMAND_HISTORY 64
+		//#define COMMAND_HISTORY 64
 
 		struct WinConData
 		{
@@ -127,32 +129,32 @@ namespace console
 			if (console::is_enabled() && s_wcd.hwndBuffer)
 			{
 				// if the message is REALLY long, use just the last portion of it
-				if (strlen(pMsg) > ((sizeof(s_wcd.cleanBuffer) / 2) - 1)) 
+				if (strlen(pMsg) > ((sizeof(s_wcd.cleanBuffer) / 2) - 1))
 				{
 					msg = pMsg + strlen(pMsg) - ((sizeof(s_wcd.cleanBuffer) / 2) + 1);
 				}
-				else 
+				else
 				{
 					msg = pMsg;
 				}
 
 				// copy into an intermediate buffer
-				while (msg[i] && ((b - s_wcd.cleanBuffer) < sizeof(s_wcd.cleanBuffer) - 1)) 
+				while (msg[i] && ((b - s_wcd.cleanBuffer) < sizeof(s_wcd.cleanBuffer) - 1))
 				{
-					if (msg[i] == '\n' && msg[i + 1] == '\r') 
+					if (msg[i] == '\n' && msg[i + 1] == '\r')
 					{
 						b[0] = '\r';
 						b[1] = '\n';
 						b += 2;
 						i++;
 					}
-					else if (msg[i] == '\r') 
+					else if (msg[i] == '\r')
 					{
 						b[0] = '\r';
 						b[1] = '\n';
 						b += 2;
 					}
-					else if (msg[i] == '\n') 
+					else if (msg[i] == '\n')
 					{
 						b[0] = '\r';
 						b[1] = '\n';
@@ -162,7 +164,7 @@ namespace console
 					//{
 					//	i++;
 					//}
-					else 
+					else
 					{
 						*b = msg[i];
 						b++;
@@ -174,7 +176,7 @@ namespace console
 				bufLen = static_cast<unsigned int>(b - s_wcd.cleanBuffer);
 				s_totalChars += bufLen;
 
-				if (s_totalChars  <= 0x8000)
+				if (s_totalChars <= 0x8000)
 				{
 					SendMessageA(s_wcd.hwndBuffer, EM_SETSEL, 0xFFFF, 0xFFFF);
 				}
@@ -393,7 +395,7 @@ namespace console
 				sys::Sys_Print(message.data());
 			}
 		}
-		
+
 		game_console::print(type, message);
 	}
 

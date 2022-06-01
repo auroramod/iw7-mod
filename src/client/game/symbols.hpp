@@ -31,7 +31,7 @@ namespace game
 		float max, unsigned int flags, const char* description)> Dvar_RegisterFloat{ 0xCEB890 };
 	WEAK symbol<dvar_t* (const char* name, const char* value,
 		unsigned int flags, const char* description)> Dvar_RegisterString{ 0xCEBD50 };
-	WEAK symbol<dvar_t* (const char* name, float x, float y, 
+	WEAK symbol<dvar_t* (const char* name, float x, float y,
 		float min, float max, unsigned int flags, const char* description)> Dvar_RegisterVec2{ 0xCEBF50 };
 	WEAK symbol<dvar_t* (const char* name, float x, float y, float z,
 		float min, float max, unsigned int flags, const char* description)> Dvar_RegisterVec3{ 0xCEBFE0 };
