@@ -31,8 +31,8 @@ namespace console
 			return nativeconsole;
 		}
 
-		static bool ingame = false;
-		static bool exit = false;
+		static volatile bool ingame = false;
+		static volatile bool exit = false;
 
 		DWORD WINAPI console(LPVOID)
 		{
@@ -203,7 +203,7 @@ namespace console
 				}
 				break;
 			case WM_CHAR:
-				auto key = wparam;
+				const auto key = wparam;
 
 				// enter the line
 				if (key == VK_RETURN)
@@ -211,7 +211,7 @@ namespace console
 					memset(dest, 0, sizeof(dest));
 					memset(s_wcd.consoleText, 0, sizeof(s_wcd.consoleText));
 
-					auto length = GetWindowTextA(s_wcd.hwndInputLine, s_wcd.consoleText, sizeof(s_wcd.consoleText));
+					const auto length = GetWindowTextA(s_wcd.hwndInputLine, s_wcd.consoleText, sizeof(s_wcd.consoleText));
 					if (length)
 					{
 						sprintf_s(dest, sizeof(s_wcd.consoleText), "]%s\n", s_wcd.consoleText);
