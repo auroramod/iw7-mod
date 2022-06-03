@@ -55,9 +55,14 @@ namespace console
 		}
 	}
 
-	namespace sys
+	namespace syscon
 	{
-		//#define COMMAND_HISTORY 64
+#define CONSOLE_BK_COLOR RGB(50, 50, 50)
+#define CONSOLE_TEXT_COLOR RGB(232, 230, 227)
+
+		// todo:
+		// - history
+		// - resize
 
 		struct WinConData
 		{
@@ -66,128 +71,113 @@ namespace console
 			HWND codLogo;
 			HFONT hfBufferFont;
 			HWND hwndInputLine;
-			//char errorString[512];
 			char consoleText[512];
-			//char returnedText[512];
-			//char consoleHistory[COMMAND_HISTORY][512];
-			//int consoleHistoryPos;
-			//int consoleHistoryCount;
 			int windowWidth;
 			int windowHeight;
 			WNDPROC	SysInputLineWndProc;
 			char cleanBuffer[65536];
-			//char buffer[32768];
-			//unsigned int bufferLen;
 			_RTL_CRITICAL_SECTION critSect;
-			//bool disabled;
 		} s_wcd;
 
 		HICON icon;
 		HANDLE logo;
 
-		const char* ClassName = "IW7-Mod WinConsole";
-		const char* WindowName = "IW7-Mod Console";
-
-		LRESULT ConWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+		LRESULT ConWndProc(const HWND hwnd, const UINT umsg, const WPARAM wparam, const LPARAM lparam)
 		{
-			switch (uMsg)
+			switch (umsg)
 			{
-			case WM_DESTROY:
-				PostQuitMessage(0);
-				return 0;
-			case WM_SIZE:
-				// todo: window size?
-				return DefWindowProcA(hWnd, uMsg, wParam, lParam);
 			case WM_ACTIVATE:
-				if (LOWORD(wParam) != WA_INACTIVE)
+				if (LOWORD(wparam) != WA_INACTIVE)
+				{
 					SetFocus(s_wcd.hwndInputLine);
-				return DefWindowProcA(hWnd, uMsg, wParam, lParam);
+				}
+				break;
 			case WM_CLOSE:
-				DestroyWindow(hWnd);
+				game::Cbuf_AddText(0, "quit\n");
 				return 0;
 			case WM_CTLCOLORSTATIC:
-				SetBkColor((HDC)wParam, RGB(50, 50, 50));
-				SetTextColor((HDC)wParam, RGB(232, 230, 227));
-				return (INT_PTR)CreateSolidBrush(RGB(50, 50, 50));
+				SetBkColor(reinterpret_cast<HDC>(wparam), CONSOLE_BK_COLOR);
+				SetTextColor(reinterpret_cast<HDC>(wparam), CONSOLE_TEXT_COLOR);
+				return reinterpret_cast<INT_PTR>(CreateSolidBrush(CONSOLE_BK_COLOR));
 			case WM_CTLCOLOREDIT:
-				SetBkColor((HDC)wParam, RGB(50, 50, 50));
-				SetTextColor((HDC)wParam, RGB(232, 230, 227));
-				return (INT_PTR)CreateSolidBrush(RGB(50, 50, 50));
-			default:
-				return DefWindowProcA(hWnd, uMsg, wParam, lParam);
+				SetBkColor(reinterpret_cast<HDC>(wparam), CONSOLE_BK_COLOR);
+				SetTextColor(reinterpret_cast<HDC>(wparam), CONSOLE_TEXT_COLOR);
+				return reinterpret_cast<INT_PTR>(CreateSolidBrush(CONSOLE_BK_COLOR));
 			}
+
+			return DefWindowProcA(hwnd, umsg, wparam, lparam);
 		}
 
-		void Conbuf_AppendText(const char* pMsg)
+		unsigned int Conbuf_CleanText(const char* source, char* target, size_t size)
 		{
-			char* b = s_wcd.cleanBuffer;
-			const char* msg;
-			unsigned int bufLen;
+			char* b = target;
 			int i = 0;
-			static unsigned int s_totalChars;
-
-			if (console::is_enabled() && s_wcd.hwndBuffer)
+			while (source && source[i] && (reinterpret_cast<size_t>(b) - reinterpret_cast<size_t>(target)) < (size - 1))
 			{
-				// if the message is REALLY long, use just the last portion of it
-				if (strlen(pMsg) > ((sizeof(s_wcd.cleanBuffer) / 2) - 1))
+				if (source[i] == '\n' && source[i + 1] == '\r')
 				{
-					msg = pMsg + strlen(pMsg) - ((sizeof(s_wcd.cleanBuffer) / 2) + 1);
+					b[0] = '\r';
+					b[1] = '\n';
+					b += 2;
+					i++;
+				}
+				else if (source[i] == '\r' || source[i] == '\n')
+				{
+					b[0] = '\r';
+					b[1] = '\n';
+					b += 2;
+				}
+				else if (source[0] == '^' && source[1] && source[1] != '^' && source[1] >= 48 && source[1] <= 64) // Q_IsColorString
+				{
+					i++;
 				}
 				else
 				{
-					msg = pMsg;
+					*b = source[i];
+					b++;
+				}
+				i++;
+			}
+
+			*b = '\0';
+			return static_cast<unsigned int>(b - target);
+		}
+
+		void Conbuf_AppendText(const char* pmsg)
+		{
+			const char* msg;
+			unsigned int buf_len;
+			static unsigned int s_total_chars = 0;
+
+			if (s_wcd.hwndBuffer)
+			{
+				// if the message is REALLY long, use just the last portion of it
+				if (strlen(pmsg) > ((sizeof(s_wcd.cleanBuffer) / 2) - 1))
+				{
+					msg = pmsg + strlen(pmsg) - ((sizeof(s_wcd.cleanBuffer) / 2) + 1);
+				}
+				else
+				{
+					msg = pmsg;
 				}
 
 				// copy into an intermediate buffer
-				while (msg[i] && ((b - s_wcd.cleanBuffer) < sizeof(s_wcd.cleanBuffer) - 1))
-				{
-					if (msg[i] == '\n' && msg[i + 1] == '\r')
-					{
-						b[0] = '\r';
-						b[1] = '\n';
-						b += 2;
-						i++;
-					}
-					else if (msg[i] == '\r')
-					{
-						b[0] = '\r';
-						b[1] = '\n';
-						b += 2;
-					}
-					else if (msg[i] == '\n')
-					{
-						b[0] = '\r';
-						b[1] = '\n';
-						b += 2;
-					}
-					// else if (idStr::IsColor(&msg[i])) 
-					//{
-					//	i++;
-					//}
-					else
-					{
-						*b = msg[i];
-						b++;
-					}
-					i++;
-				}
+				buf_len = Conbuf_CleanText(msg, s_wcd.cleanBuffer, sizeof(s_wcd.cleanBuffer));
 
-				*b = '\0';
-				bufLen = static_cast<unsigned int>(b - s_wcd.cleanBuffer);
-				s_totalChars += bufLen;
+				s_total_chars += buf_len;
 
-				if (s_totalChars <= 0x8000)
+				if (s_total_chars <= 0x8000)
 				{
 					SendMessageA(s_wcd.hwndBuffer, EM_SETSEL, 0xFFFF, 0xFFFF);
 				}
 				else
 				{
 					SendMessageA(s_wcd.hwndBuffer, EM_SETSEL, 0, -1);
-					s_totalChars = bufLen;
+					s_total_chars = buf_len;
 				}
 				SendMessageA(s_wcd.hwndBuffer, EM_LINESCROLL, 0, 0xFFFF);
 				SendMessageA(s_wcd.hwndBuffer, EM_SCROLLCARET, 0, 0);
-				SendMessageA(s_wcd.hwndBuffer, EM_REPLACESEL, 0, (LPARAM)s_wcd.cleanBuffer);
+				SendMessageA(s_wcd.hwndBuffer, EM_REPLACESEL, 0, reinterpret_cast<LPARAM>(s_wcd.cleanBuffer));
 			}
 		}
 
@@ -199,24 +189,21 @@ namespace console
 			}
 		}
 
-		LRESULT InputLineWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+		LRESULT InputLineWndProc(const HWND hwnd, const UINT umsg, const WPARAM wparam, const LPARAM lparam)
 		{
 			char dest[sizeof(s_wcd.consoleText) + 8];
 
-			switch (uMsg)
+			switch (umsg)
 			{
 			case WM_KILLFOCUS:
-				if ((HWND)wParam != s_wcd.hWnd)
+				if (reinterpret_cast<HWND>(wparam) == s_wcd.hWnd)
 				{
-					return CallWindowProcA(s_wcd.SysInputLineWndProc, hWnd, uMsg, wParam, lParam);
+					SetFocus(hwnd);
+					return 0;
 				}
-				SetFocus(hWnd);
-				return 0;
-			case WM_KEYDOWN:
-				// todo: add history
 				break;
 			case WM_CHAR:
-				auto key = wParam;
+				auto key = wparam;
 
 				// enter the line
 				if (key == VK_RETURN)
@@ -232,8 +219,6 @@ namespace console
 
 						Sys_Print(dest);
 						game::Cbuf_AddText(0, s_wcd.consoleText);
-
-						// todo: add history
 					}
 
 					return 0;
@@ -241,133 +226,183 @@ namespace console
 				break;
 			}
 
-			return CallWindowProcA(s_wcd.SysInputLineWndProc, hWnd, uMsg, wParam, lParam);
+			return CallWindowProcA(s_wcd.SysInputLineWndProc, hwnd, umsg, wparam, lparam);
 		}
 
-		void Sys_CreateConsole(HINSTANCE hInstance)
+		void Sys_CreateConsole(const HINSTANCE hinstance)
 		{
-			tagRECT Rect;
-			WNDCLASSA WndClass;
+			RECT rect;
+			WNDCLASSA wndclass;
+			HDC hdc;
+			int nheight;
+			int swidth, sheight;
+			DWORD DEDSTYLE = WS_POPUPWINDOW | WS_CAPTION | WS_MINIMIZEBOX;
 
-			memset(&Rect, 0, sizeof(Rect));
-			memset(&WndClass, 0, sizeof(WndClass));
+			const char* class_name = "IW7-Mod WinConsole";
+			const char* window_name = "IW7-Mod Console";
+
+			memset(&rect, 0, sizeof(rect));
+			memset(&wndclass, 0, sizeof(rect));
+			memset(&hdc, 0, sizeof(hdc));
 
 			memset(&s_wcd, 0, sizeof(s_wcd));
 
-			WndClass.style = 0;
-			WndClass.cbClsExtra = 0;
-			WndClass.lpfnWndProc = ConWndProc;
-			WndClass.hInstance = hInstance;
-			WndClass.hIcon = icon;
-			WndClass.hbrBackground = CreateSolidBrush(RGB(50, 50, 50));
-			WndClass.hCursor = LoadCursorA(0, (LPCSTR)0x7F00);
-			WndClass.lpszMenuName = NULL;
-			WndClass.lpszClassName = ClassName;
-			if (RegisterClassA(&WndClass))
+			wndclass.style = 0;
+			wndclass.cbClsExtra = 0;
+			wndclass.cbWndExtra = 0;
+			wndclass.lpfnWndProc = ConWndProc;
+			wndclass.hInstance = hinstance;
+			wndclass.hIcon = icon;
+			wndclass.hbrBackground = CreateSolidBrush(CONSOLE_BK_COLOR);
+			wndclass.hCursor = LoadCursorA(0, IDC_ARROW);
+			wndclass.lpszMenuName = nullptr;
+			wndclass.lpszClassName = class_name;
+
+			if (!RegisterClassA(&wndclass))
 			{
-				Rect.top = 0;
-				Rect.left = 0;
-				Rect.right = 620;
-				Rect.bottom = 430;
-				AdjustWindowRect(&Rect, 0x80CA0000, 0);
-				auto v4 = GetDesktopWindow();
-				auto v5 = GetDC(v4);
-				auto v6 = GetDeviceCaps(v5, 8);
-				auto v7 = GetDeviceCaps(v5, 10);
-				auto v8 = GetDesktopWindow();
-				ReleaseDC(v8, v5);
-				s_wcd.windowHeight = Rect.bottom - Rect.top + 1;
-				s_wcd.windowWidth = Rect.right - Rect.left + 1;
-				//s_wcd.consoleHistoryPos = 0;
-				auto v9 = CreateWindowExA(
-					0,
-					ClassName,
-					WindowName,
-					0x80CA0000,
-					(v6 - 600) / 2,
-					(v7 - 450) / 2,
-					Rect.right - Rect.left + 1,
-					Rect.bottom - Rect.top + 1,
-					0,
-					0,
-					hInstance,
-					0);
-				s_wcd.hWnd = v9;
-				if (v9)
-				{
-					auto v10 = GetDC(v9);
-					auto v11 = GetDeviceCaps(v10, 90);
-					auto v12 = MulDiv(8, v11, 72);
-					s_wcd.hfBufferFont = CreateFontA(-v12, 0, 0, 0, 300, 0, 0, 0, 1u, 0, 0, 0, 0x31u, "Courier New");
-					ReleaseDC(s_wcd.hWnd, v10);
-					auto v13 = logo;
-					if (v13)
-					{
-						s_wcd.codLogo = CreateWindowExA(
-							0,
-							"Static",
-							0,
-							0x5000000Eu,
-							5,
-							5,
-							0,
-							0,
-							s_wcd.hWnd,
-							(HMENU)1,
-							hInstance,
-							0);
-						SendMessageA(s_wcd.codLogo, 0x172u, 0, (LPARAM)v13);
-					}
-					s_wcd.hwndInputLine = CreateWindowExA(
-						0,
-						"edit",
-						0,
-						0x50800080u,
-						6,
-						400,
-						608,
-						20,
-						s_wcd.hWnd,
-						(HMENU)0x65,
-						hInstance,
-						0);
-					s_wcd.hwndBuffer = CreateWindowExA(
-						0,
-						"edit",
-						0,
-						0x50A00844u,
-						6,
-						70,
-						606,
-						324,
-						s_wcd.hWnd,
-						(HMENU)0x64,
-						hInstance,
-						0);
-					SendMessageA(s_wcd.hwndBuffer, 0x30u, (WPARAM)s_wcd.hfBufferFont, 0);
-					SendMessageA(s_wcd.hwndBuffer, 0xC5u, 0x8000u, 0);
-					s_wcd.SysInputLineWndProc = (WNDPROC)SetWindowLongPtrA(s_wcd.hwndInputLine, -4, (LONG_PTR)InputLineWndProc);
-					SendMessageA(s_wcd.hwndInputLine, 0x30u, (WPARAM)s_wcd.hfBufferFont, 0);
-					SetFocus(s_wcd.hwndInputLine);
-					//s_wcd.buffer[0] = 0;
-					//s_wcd.cleanBuffer[0] = 0;
-					SetWindowTextA(s_wcd.hwndBuffer, s_wcd.cleanBuffer);
-					//s_wcd.bufferLen = 0;
-					InitializeCriticalSection(&s_wcd.critSect);
-				}
+				return;
 			}
+
+			rect.top = 0;
+			rect.left = 0;
+			rect.right = 620;
+			rect.bottom = 430;
+			AdjustWindowRect(&rect, DEDSTYLE, 0);
+
+			hdc = GetDC(GetDesktopWindow());
+			swidth = GetDeviceCaps(hdc, HORZRES);
+			sheight = GetDeviceCaps(hdc, VERTRES);
+			ReleaseDC(GetDesktopWindow(), hdc);
+
+			s_wcd.windowHeight = rect.bottom - rect.top + 1;
+			s_wcd.windowWidth = rect.right - rect.left + 1;
+
+			// create main window
+			s_wcd.hWnd = CreateWindowExA(
+				0,
+				class_name,
+				window_name,
+				DEDSTYLE,
+				(swidth - 600) / 2,
+				(sheight - 450) / 2,
+				rect.right - rect.left + 1,
+				rect.bottom - rect.top + 1,
+				0,
+				0,
+				hinstance,
+				nullptr);
+
+			if (!s_wcd.hWnd)
+			{
+				return;
+			}
+
+			// create fonts
+			hdc = GetDC(s_wcd.hWnd);
+			nheight = -MulDiv(8, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+			s_wcd.hfBufferFont = CreateFontA(
+				nheight,
+				0,
+				0,
+				0,
+				FW_LIGHT,
+				0,
+				0,
+				0,
+				DEFAULT_CHARSET,
+				OUT_DEFAULT_PRECIS,
+				CLIP_DEFAULT_PRECIS,
+				DEFAULT_QUALITY,
+				FF_MODERN | FIXED_PITCH,
+				"Courier New");
+			ReleaseDC(s_wcd.hWnd, hdc);
+
+			// create logo
+			if (logo)
+			{
+				s_wcd.codLogo = CreateWindowExA(
+					0,
+					"Static",
+					0,
+					WS_CHILDWINDOW | WS_VISIBLE | 0xE,
+					5,
+					5,
+					0,
+					0,
+					s_wcd.hWnd,
+					reinterpret_cast<HMENU>(1),
+					hinstance,
+					nullptr);
+				SendMessageA(s_wcd.codLogo, 0x172u, 0, reinterpret_cast<LPARAM>(logo));
+			}
+
+			// create the input line
+			s_wcd.hwndInputLine = CreateWindowExA(
+				0,
+				"edit",
+				0,
+				WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL,
+				6,
+				400,
+				608,
+				20,
+				s_wcd.hWnd,
+				reinterpret_cast<HMENU>(0x65),
+				hinstance,
+				0);
+
+			// create the scrollbuffer
+			s_wcd.hwndBuffer = CreateWindowExA(
+				0,
+				"edit",
+				0,
+				WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_BORDER | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,
+				6,
+				70,
+				608,
+				324,
+				s_wcd.hWnd,
+				reinterpret_cast<HMENU>(0x64),
+				hinstance,
+				0);
+
+			SendMessageA(s_wcd.hwndBuffer, WM_SETFONT, reinterpret_cast<WPARAM>(s_wcd.hfBufferFont), 0);
+			SendMessageA(s_wcd.hwndBuffer, 0xC5u, 0x8000u, 0);
+			s_wcd.SysInputLineWndProc = reinterpret_cast<WNDPROC>(SetWindowLongPtrA(s_wcd.hwndInputLine, -4,
+				reinterpret_cast<LONG_PTR>(InputLineWndProc)));
+			SendMessageA(s_wcd.hwndInputLine, WM_SETFONT, reinterpret_cast<WPARAM>(s_wcd.hfBufferFont), 0);
+			SetFocus(s_wcd.hwndInputLine);
+			SetWindowTextA(s_wcd.hwndBuffer, s_wcd.cleanBuffer);
+			InitializeCriticalSection(&s_wcd.critSect);
 		}
 
 		void Sys_ShowConsole()
 		{
+			if (!console::is_enabled())
+			{
+				return;
+			}
+
 			if (!s_wcd.hWnd)
 			{
-				Sys_CreateConsole(GetModuleHandleA((LPCSTR)s_wcd.hWnd));
+				Sys_CreateConsole(GetModuleHandleA(reinterpret_cast<LPCSTR>(s_wcd.hWnd)));
 			}
 			if (s_wcd.hWnd)
 			{
 				ShowWindow(s_wcd.hWnd, TRUE);
 				SendMessageA(s_wcd.hwndBuffer, EM_LINESCROLL, 0, 0xFFFF);
+			}
+		}
+
+		void Sys_DestroyConsole()
+		{
+			if (s_wcd.hWnd)
+			{
+				ShowWindow(s_wcd.hWnd, SW_HIDE);
+				CloseWindow(s_wcd.hWnd);
+				DestroyWindow(s_wcd.hWnd);
+				s_wcd.hWnd = nullptr;
+				DeleteCriticalSection(&s_wcd.critSect);
 			}
 		}
 	}
@@ -392,7 +427,7 @@ namespace console
 			}
 			else
 			{
-				sys::Sys_Print(message.data());
+				syscon::Sys_Print(message.data());
 			}
 		}
 
@@ -416,7 +451,9 @@ namespace console
 		{
 			if (!console::is_enabled() || native::is_enabled()) return;
 
-			//hide_console();
+			const utils::nt::library self;
+			syscon::icon = LoadIconA(self.get_handle(), MAKEINTRESOURCEA(ID_ICON));
+			syscon::logo = LoadImageA(self.get_handle(), MAKEINTRESOURCEA(IMAGE_LOGO), 0, 0, 0, LR_COPYFROMRESOURCE);
 
 			(void)_pipe(this->handles_, 1024, _O_TEXT);
 			(void)_dup2(this->handles_[1], 1);
@@ -426,12 +463,12 @@ namespace console
 			//setvbuf(stderr, nullptr, _IONBF, 0);
 		}
 
-		~component() override
+		~component()
 		{
 			if (!console::is_enabled() || native::is_enabled()) return;
 
-			if (sys::icon) DestroyIcon(sys::icon);
-			if (sys::logo) DeleteObject(sys::logo);
+			if (syscon::icon) DestroyIcon(syscon::icon);
+			if (syscon::logo) DeleteObject(syscon::logo);
 		}
 
 		void post_start() override
@@ -440,16 +477,13 @@ namespace console
 			{
 				if (native::is_enabled())
 				{
-					CreateThread(0, 0, native::console, 0, 0, 0);
+					const auto handle = CreateThread(0, 0, native::console, 0, 0, 0);
+					utils::thread::set_name(handle, "Console");
 				}
 				else
 				{
-					const utils::nt::library self;
-					sys::icon = LoadIconA(self.get_handle(), MAKEINTRESOURCEA(ID_ICON));
-					sys::logo = LoadImageA(self.get_handle(), MAKEINTRESOURCEA(IMAGE_LOGO), 0, 0, 0, LR_COPYFROMRESOURCE);
-
 					this->terminate_runner_ = false;
-					this->console_runner_ = utils::thread::create_named_thread("Console IO", [this]
+					this->console_runner_ = utils::thread::create_named_thread("Console IO", [this]()
 					{
 						this->runner();
 					});
@@ -483,28 +517,7 @@ namespace console
 				}
 				else
 				{
-					this->terminate_runner_ = true;
-
-					printf("\r\n");
-					_flushall();
-
-					if (this->console_runner_.joinable())
-					{
-						this->console_runner_.join();
-					}
-
-					if (this->console_thread_.joinable())
-					{
-						this->console_thread_.join();
-					}
-
-					_close(this->handles_[0]);
-					_close(this->handles_[1]);
-
-					messages.access([&](message_queue& msgs)
-					{
-						msgs = {};
-					});
+					this->destroy();
 				}
 			}
 		}
@@ -526,12 +539,12 @@ namespace console
 		{
 			this->console_thread_ = utils::thread::create_named_thread("Console", [this]()
 			{
-				sys::Sys_ShowConsole();
+				syscon::Sys_ShowConsole();
 
 				if (!game::environment::is_dedi())
 				{
 					// Hide that shit
-					ShowWindow(console::get_window(), SW_MINIMIZE);
+					ShowWindow(syscon::s_wcd.hWnd, SW_MINIMIZE);
 				}
 
 				{
@@ -546,12 +559,6 @@ namespace console
 				{
 					if (PeekMessageA(&msg, nullptr, NULL, NULL, PM_REMOVE))
 					{
-						if (msg.message == WM_QUIT)
-						{
-							game::Cbuf_AddText(0, "quit");
-							break;
-						}
-
 						TranslateMessage(&msg);
 						DispatchMessage(&msg);
 					}
@@ -561,6 +568,34 @@ namespace console
 						std::this_thread::sleep_for(1ms);
 					}
 				}
+			});
+		}
+
+		void destroy()
+		{
+			syscon::Sys_DestroyConsole();
+
+			this->terminate_runner_ = true;
+
+			printf("\r\n");
+			_flushall();
+
+			if (this->console_runner_.joinable())
+			{
+				this->console_runner_.join();
+			}
+
+			if (this->console_thread_.joinable())
+			{
+				this->console_thread_.join();
+			}
+
+			_close(this->handles_[0]);
+			_close(this->handles_[1]);
+
+			messages.access([&](message_queue& msgs)
+			{
+				msgs = {};
 			});
 		}
 
@@ -593,7 +628,7 @@ namespace console
 		static void log_message(const std::string& message)
 		{
 			OutputDebugStringA(message.data());
-			sys::Conbuf_AppendText(message.data());
+			syscon::Conbuf_AppendText(message.data());
 		}
 
 		void runner()
@@ -617,25 +652,19 @@ namespace console
 		}
 	};
 
-	HWND get_window()
-	{
-		return sys::s_wcd.hWnd;
-	}
-
 	void set_title(std::string title)
 	{
-		SetWindowTextA(get_window(), title.data());
-	}
-
-	void set_size(const int width, const int height)
-	{
-		RECT rect;
-		GetWindowRect(get_window(), &rect);
-
-		SetWindowPos(get_window(), nullptr, rect.left, rect.top, width, height, 0);
-
-		auto* const logo_window = sys::s_wcd.codLogo;
-		SetWindowPos(logo_window, nullptr, 5, 5, width - 25, 60, 0);
+		if (console::is_enabled())
+		{
+			if (native::is_enabled())
+			{
+				SetConsoleTitleA(title.data());
+			}
+			else if (syscon::s_wcd.hWnd)
+			{
+				SetWindowTextA(syscon::s_wcd.hWnd, title.data());
+			}
+		}
 	}
 }
 

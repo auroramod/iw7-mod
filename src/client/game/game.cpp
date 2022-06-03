@@ -140,7 +140,8 @@ namespace game
 	{
 		bool is_dedi()
 		{
-			return utils::flags::has_flag("dedicated");
+			static const auto dedicated = utils::flags::has_flag("dedicated");
+			return dedicated;
 		}
 	}
 }
