@@ -5,10 +5,8 @@
 #include "game/game.hpp"
 
 #include <utils/flags.hpp>
-#include <utils/nt.hpp>
 #include <utils/concurrency.hpp>
 #include <utils/thread.hpp>
-#include <utils/string.hpp>
 
 namespace
 {
@@ -115,7 +113,7 @@ namespace console
 				}
 				break;
 			case WM_CLOSE:
-				game::Cbuf_AddText(0, "quit\n");
+				game::Cbuf_AddCall(0, game::Com_Quit_f);
 				DestroyWindow(hwnd);
 				return 0;
 			case WM_CTLCOLOREDIT:
