@@ -10,6 +10,28 @@
 #include <utils/thread.hpp>
 #include <utils/string.hpp>
 
+namespace
+{
+	bool is_dark_mode_windows()
+	{
+		HKEY reg_key;
+		if (RegOpenKeyExA(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", 0, KEY_QUERY_VALUE,
+			&reg_key) ==
+			ERROR_SUCCESS)
+		{
+			DWORD light_theme_value = 0x1;
+			DWORD length = sizeof(light_theme_value);
+			RegQueryValueExA(reg_key, "AppsUseLightTheme", nullptr, nullptr, reinterpret_cast<LPBYTE>(&light_theme_value), &length);
+			RegCloseKey(reg_key);
+			return light_theme_value == 0x0;
+		}
+
+		return false;
+	}
+
+	static bool darkmode = is_dark_mode_windows();
+}
+
 namespace game_console
 {
 	void print(int type, const std::string& data);
@@ -57,8 +79,8 @@ namespace console
 
 	namespace syscon
 	{
-#define CONSOLE_BK_COLOR RGB(50, 50, 50)
-#define CONSOLE_TEXT_COLOR RGB(232, 230, 227)
+#define CONSOLE_BK_COLOR darkmode ? RGB(50, 50, 50) : RGB(255, 255, 255)
+#define CONSOLE_TEXT_COLOR darkmode ? RGB(232, 230, 227) : RGB(0, 0, 0)
 
 		// todo:
 		// - history
@@ -94,12 +116,10 @@ namespace console
 				break;
 			case WM_CLOSE:
 				game::Cbuf_AddText(0, "quit\n");
+				DestroyWindow(hwnd);
 				return 0;
-			case WM_CTLCOLORSTATIC:
-				SetBkColor(reinterpret_cast<HDC>(wparam), CONSOLE_BK_COLOR);
-				SetTextColor(reinterpret_cast<HDC>(wparam), CONSOLE_TEXT_COLOR);
-				return reinterpret_cast<INT_PTR>(CreateSolidBrush(CONSOLE_BK_COLOR));
 			case WM_CTLCOLOREDIT:
+			case WM_CTLCOLORSTATIC:
 				SetBkColor(reinterpret_cast<HDC>(wparam), CONSOLE_BK_COLOR);
 				SetTextColor(reinterpret_cast<HDC>(wparam), CONSOLE_TEXT_COLOR);
 				return reinterpret_cast<INT_PTR>(CreateSolidBrush(CONSOLE_BK_COLOR));
@@ -166,7 +186,7 @@ namespace console
 
 				s_total_chars += buf_len;
 
-				if (s_total_chars <= 0x8000)
+				if (s_total_chars <= sizeof(s_wcd.cleanBuffer))
 				{
 					SendMessageA(s_wcd.hwndBuffer, EM_SETSEL, 0xFFFF, 0xFFFF);
 				}
@@ -214,7 +234,7 @@ namespace console
 					const auto length = GetWindowTextA(s_wcd.hwndInputLine, s_wcd.consoleText, sizeof(s_wcd.consoleText));
 					if (length)
 					{
-						sprintf_s(dest, sizeof(s_wcd.consoleText), "]%s\n", s_wcd.consoleText);
+						sprintf_s(dest, sizeof(dest), "]%s\n", s_wcd.consoleText);
 						SetWindowTextA(s_wcd.hwndInputLine, "");
 
 						Sys_Print(dest);
@@ -266,7 +286,7 @@ namespace console
 			rect.top = 0;
 			rect.left = 0;
 			rect.right = 620;
-			rect.bottom = 430;
+			rect.bottom = 450;
 			AdjustWindowRect(&rect, DEDSTYLE, 0);
 
 			hdc = GetDC(GetDesktopWindow());
@@ -343,7 +363,7 @@ namespace console
 				0,
 				WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL,
 				6,
-				400,
+				426,
 				608,
 				20,
 				s_wcd.hWnd,
@@ -360,14 +380,14 @@ namespace console
 				6,
 				70,
 				608,
-				324,
+				348,
 				s_wcd.hWnd,
 				reinterpret_cast<HMENU>(0x64),
 				hinstance,
 				0);
 
 			SendMessageA(s_wcd.hwndBuffer, WM_SETFONT, reinterpret_cast<WPARAM>(s_wcd.hfBufferFont), 0);
-			SendMessageA(s_wcd.hwndBuffer, 0xC5u, 0x8000u, 0);
+			SendMessageA(s_wcd.hwndBuffer, EM_LIMITTEXT, sizeof(s_wcd.cleanBuffer), 0);
 			s_wcd.SysInputLineWndProc = reinterpret_cast<WNDPROC>(SetWindowLongPtrA(s_wcd.hwndInputLine, -4,
 				reinterpret_cast<LONG_PTR>(InputLineWndProc)));
 			SendMessageA(s_wcd.hwndInputLine, WM_SETFONT, reinterpret_cast<WPARAM>(s_wcd.hfBufferFont), 0);
