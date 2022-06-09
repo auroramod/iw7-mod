@@ -9,8 +9,8 @@ namespace game
 
 	void load_base_address()
 	{
-		const auto module = GetModuleHandle(NULL);
-		base_address = uint64_t(module);
+		const auto module = GetModuleHandleA(0);
+		base_address = reinterpret_cast<uint64_t>(module);
 	}
 
 	int Cmd_Argc()
@@ -49,7 +49,7 @@ namespace game
 		"xanim",
 		"xmodelsurfs",
 		"xmodel",
-		"mayhem", // not confirmed
+		"mayhem",
 		"material",
 		"computeshader",
 		"vertexshader",

@@ -50,14 +50,13 @@ namespace fastfiles
 			return db_init_load_x_file_hook.invoke<void>(name, offset);
 		}
 
-		void db_load_x_zone_stub(const char* parent_name, unsigned int zone_flags, bool is_base_map, int failure_mode)
+		void db_load_x_zone_stub(const char* parent_name, const unsigned int zone_flags, const bool is_base_map, const int failure_mode)
 		{
 			console::info("Loading zone %s\n", parent_name);
-
 			return db_load_x_zone_hook.invoke<void>(parent_name, zone_flags, is_base_map, failure_mode);
 		}
 
-		game::XAssetHeader db_find_xasset_header_stub(game::XAssetType type, const char* name, int allow_create_default)
+		game::XAssetHeader db_find_xasset_header_stub(game::XAssetType type, const char* name, const int allow_create_default)
 		{
 			auto result = db_find_xasset_header_hook.invoke<game::XAssetHeader>(type, name, allow_create_default);
 			if (!result.data)

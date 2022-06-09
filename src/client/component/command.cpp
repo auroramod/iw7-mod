@@ -140,7 +140,8 @@ namespace command
 
 		bool check_cheats(int client_num)
 		{
-			if (!game::Dvar_FindVar("sv_cheats")->current.enabled)
+			const auto sv_cheats = game::Dvar_FindVar("sv_cheats");
+			if (!sv_cheats || !sv_cheats->current.enabled)
 			{
 				client_println(client_num, "Cheats are not enabled on this server");
 				return false;
