@@ -77,7 +77,7 @@ namespace console
 
 	namespace syscon
 	{
-#define CONSOLE_BK_COLOR darkmode ? RGB(50, 50, 50) : RGB(255, 255, 255)
+#define CONSOLE_BACKGROUND_COLOR darkmode ? RGB(50, 50, 50) : RGB(255, 255, 255)
 #define CONSOLE_TEXT_COLOR darkmode ? RGB(232, 230, 227) : RGB(0, 0, 0)
 
 		// todo:
@@ -99,7 +99,7 @@ namespace console
 			_RTL_CRITICAL_SECTION critSect;
 		} s_wcd;
 
-		HBRUSH bk_brush;
+		HBRUSH bg_brush;
 
 		HICON icon;
 		HANDLE logo;
@@ -120,9 +120,9 @@ namespace console
 				return 0;
 			case WM_CTLCOLOREDIT:
 			case WM_CTLCOLORSTATIC:
-				SetBkColor(reinterpret_cast<HDC>(wparam), CONSOLE_BK_COLOR);
+				SetBkColor(reinterpret_cast<HDC>(wparam), CONSOLE_BACKGROUND_COLOR);
 				SetTextColor(reinterpret_cast<HDC>(wparam), CONSOLE_TEXT_COLOR);
-				return reinterpret_cast<LONG_PTR>(bk_brush);
+				return reinterpret_cast<LONG_PTR>(bg_brush);
 			}
 
 			return DefWindowProcA(hwnd, umsg, wparam, lparam);
@@ -273,7 +273,7 @@ namespace console
 			wndclass.lpfnWndProc = ConWndProc;
 			wndclass.hInstance = hinstance;
 			wndclass.hIcon = icon;
-			wndclass.hbrBackground = bk_brush;
+			wndclass.hbrBackground = bg_brush;
 			wndclass.hCursor = LoadCursorA(0, IDC_ARROW);
 			wndclass.lpszMenuName = nullptr;
 			wndclass.lpszClassName = class_name;
@@ -471,7 +471,7 @@ namespace console
 		{
 			if (!console::is_enabled() || native::is_enabled()) return;
 
-			syscon::bk_brush = CreateSolidBrush(CONSOLE_BK_COLOR);
+			syscon::bg_brush = CreateSolidBrush(CONSOLE_BACKGROUND_COLOR);
 
 			const utils::nt::library self;
 			syscon::icon = LoadIconA(self.get_handle(), MAKEINTRESOURCEA(ID_ICON));
@@ -489,7 +489,7 @@ namespace console
 		{
 			if (!console::is_enabled() || native::is_enabled()) return;
 
-			if (syscon::bk_brush) DeleteObject(syscon::bk_brush);
+			if (syscon::bg_brush) DeleteObject(syscon::bg_brush);
 
 			if (syscon::icon) DestroyIcon(syscon::icon);
 			if (syscon::logo) DeleteObject(syscon::logo);
