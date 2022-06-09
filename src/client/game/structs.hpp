@@ -10,6 +10,10 @@ namespace game
 	typedef vec_t vec3_t[3];
 	typedef vec_t vec4_t[4];
 
+	enum scr_string_t : std::int32_t
+	{
+	};
+
 	struct CmdArgs
 	{
 		int nesting;
@@ -335,13 +339,13 @@ namespace game
 			ASSET_TYPE_XANIMPARTS = 6,
 			ASSET_TYPE_XMODEL_SURFS = 7,
 			ASSET_TYPE_XMODEL = 8,
-			ASSET_TYPE_MAYHEM = 9, // not confirmed
+			ASSET_TYPE_MAYHEM = 9,
 			ASSET_TYPE_MATERIAL = 10,
 			ASSET_TYPE_COMPUTESHADER = 11,
 			ASSET_TYPE_VERTEXSHADER = 12,
 			ASSET_TYPE_HULLSHADER = 13,
 			ASSET_TYPE_DOMAINSHADER = 14,
-			ASSET_TYPE_PIXELSHADER = 15,
+			ASSET_TYPE_PIXELSHADER = 15, // unused
 			ASSET_TYPE_VERTEXDECL = 16,
 			ASSET_TYPE_TECHNIQUE_SET = 17,
 			ASSET_TYPE_IMAGE = 18,
@@ -357,9 +361,9 @@ namespace game
 			ASSET_TYPE_FXWORLD = 28,
 			ASSET_TYPE_GFXWORLD = 29,
 			ASSET_TYPE_GFXWORLD_TRANSIENT_ZONE = 30,
-			ASSET_TYPE_IESPROFILE = 31,
+			ASSET_TYPE_IESPROFILE = 31, // unused
 			ASSET_TYPE_LIGHT_DEF = 32,
-			ASSET_TYPE_UI_MAP = 33,
+			ASSET_TYPE_UI_MAP = 33, // unused
 			ASSET_TYPE_ANIMCLASS = 34,
 			ASSET_TYPE_PLAYERANIM = 35,
 			ASSET_TYPE_GESTURE = 36,
@@ -369,11 +373,11 @@ namespace game
 			ASSET_TYPE_VFX = 40,
 			ASSET_TYPE_IMPACT_FX = 41, // not confirmed
 			ASSET_TYPE_SURFACE_FX = 42, // not confirmed
-			ASSET_TYPE_AITYPE = 43, // not confirmed
-			ASSET_TYPE_MPTYPE = 44, // not confirmed
-			ASSET_TYPE_CHARACTER = 45, // not confirmed
-			ASSET_TYPE_XMODELALIAS = 46, // not confirmed
-			ASSET_TYPE_UNKNOWN = 47, // not confirmed
+			ASSET_TYPE_AITYPE = 43, // not confirmed + unused
+			ASSET_TYPE_MPTYPE = 44, // not confirmed + unused
+			ASSET_TYPE_CHARACTER = 45, // not confirmed + unused
+			ASSET_TYPE_XMODELALIAS = 46, // not confirmed + unused
+			ASSET_TYPE_UNKNOWN = 47, // not confirmed + unused
 			ASSET_TYPE_RAWFILE = 48,
 			ASSET_TYPE_SCRIPTFILE = 49,
 			ASSET_TYPE_STRINGTABLE = 50,
@@ -402,19 +406,783 @@ namespace game
 			ASSET_TYPE_SFX_PACKAGE = 73,
 			ASSET_TYPE_VFX_PACKAGE = 74,
 			ASSET_TYPE_BEHAVIOR_TREE = 75,
-			ASSET_TYPE_ANIMARCHETYPE = 76,
+			ASSET_TYPE_XANIM_ARCHETYPE = 76,
 			ASSET_TYPE_XANIM_PROCEDURALBONES = 77,
 			ASSET_TYPE_RETICLE = 78,
 			ASSET_TYPE_GFXLIGHTMAP = 79,
 			ASSET_TYPE_COUNT = 80
 		};
 
+		struct PhysicsLibrary
+		{
+			const char* name;
+			bool isMaterialList;
+			bool isBodyQualityList;
+			bool isMotionPropertiesList;
+			bool isGlobalTypeCompendium;
+			unsigned int havokDataSize;
+			char* havokData;
+		}; static_assert(sizeof(PhysicsLibrary) == 0x18);
+
+		struct PhysicsSFXEventAssetRule;
+		struct PhysicsSFXEventAssetRules
+		{
+			int numrules;
+			PhysicsSFXEventAssetRule* rules;
+		};
+
+		enum PhysicsSFXEventAssetRuleType
+		{
+			Types_PhysicsSFXEventRule = 0x0,
+			Types_PhysicsSFXEventSoundRule = 0x1,
+			Types_PhysicsSFXEventMaterialRule = 0x2,
+			Types_PhysicsSFXEventAngleRule = 0x3,
+			Types_PhysicsSFXEventSpeedRule = 0x4,
+			Types_PhysicsSFXEventMassRule = 0x5,
+			Types_PhysicsSFXEventGravityRule = 0x6,
+			Types_PhysicsSFXEventAtmosphereRule = 0x7,
+			Types_PhysicsSFXEventCameraDistanceRule = 0x8,
+			Types_PhysicsSFXEventFrequencyRule = 0x9,
+			Types_PhysicsSFXEventRuleCount = 0xA,
+		};
+
+		struct PhysicsSFXEventAssetSoundRule
+		{
+			char* hitSoundAlias;
+			char* scrapeSoundAlias;
+			float scrapeSoundVolumeSpeedThresholdMin;
+			float scrapeSoundVolumeSpeedThresholdMax;
+			float scrapeSoundVolumeBlendSpeed;
+		};
+
+		struct PhysicsSFXEventAssetMaterialEntry
+		{
+			int surfaceType;
+			PhysicsSFXEventAssetRules rules;
+		};
+
+		struct PhysicsSFXEventAssetMaterialRule
+		{
+			int numentries;
+			PhysicsSFXEventAssetMaterialEntry* entries;
+		};
+
+		struct PhysicsSFXEventAssetAngleEntry
+		{
+			float angle;
+			float hitSoundVolumeModifierMin;
+			float hitSoundVolumeModifierMax;
+			float hitSoundPitchModifierMin;
+			float hitSoundPitchModifierMax;
+			PhysicsSFXEventAssetRules rules;
+		};
+
+		struct PhysicsSFXEventAssetAngleRule
+		{
+			int numentries;
+			PhysicsSFXEventAssetAngleEntry* entries;
+		};
+
+		struct PhysicsSFXEventAssetSpeedEntry
+		{
+			float speedThreshold;
+			float hitSoundVolumeModifierMin;
+			float hitSoundVolumeModifierMax;
+			float hitSoundPitchModifierMin;
+			float hitSoundPitchModifierMax;
+			PhysicsSFXEventAssetRules rules;
+		};
+
+		struct PhysicsSFXEventAssetSpeedRule
+		{
+			int numentries;
+			PhysicsSFXEventAssetSpeedEntry* entries;
+		};
+
+		struct PhysicsSFXEventAssetMassEntry
+		{
+			float massThreshold;
+			float hitSoundVolumeModifierMin;
+			float hitSoundVolumeModifierMax;
+			float hitSoundPitchModifierMin;
+			float hitSoundPitchModifierMax;
+			PhysicsSFXEventAssetRules rules;
+		};
+
+		struct PhysicsSFXEventAssetMassRule
+		{
+			int numentries;
+			PhysicsSFXEventAssetMassEntry* entries;
+		};
+
+		struct PhysicsSFXEventAssetGravityEntry
+		{
+			bool gravity;
+			PhysicsSFXEventAssetRules rules;
+		};
+
+		struct PhysicsSFXEventAssetGravityRule
+		{
+			int numentries;
+			PhysicsSFXEventAssetGravityEntry* entries;
+		};
+
+		struct PhysicsSFXEventAssetAtmosphereEntry
+		{
+			bool atmosphere;
+			PhysicsSFXEventAssetRules rules;
+		};
+
+		struct PhysicsSFXEventAssetAtmosphereRule
+		{
+			int numentries;
+			PhysicsSFXEventAssetAtmosphereEntry* entries;
+		};
+
+		struct PhysicsSFXEventAssetCameraDistanceEntry
+		{
+			float distance;
+			PhysicsSFXEventAssetRules rules;
+		};
+
+		struct PhysicsSFXEventAssetCameraDistanceRule
+		{
+			int numentries;
+			PhysicsSFXEventAssetCameraDistanceEntry* entries;
+		};
+
+		struct PhysicsSFXEventAssetFrequencyEntry
+		{
+			int maxEvents;
+			PhysicsSFXEventAssetRules rules;
+		};
+
+		struct PhysicsSFXEventAssetFrequencyRule
+		{
+			int numentries;
+			PhysicsSFXEventAssetFrequencyEntry* entries;
+		};
+
+		union PhysicsSFXEventAssetRuleUnion
+		{
+			PhysicsSFXEventAssetSoundRule soundRule;
+			PhysicsSFXEventAssetMaterialRule materialRule;
+			PhysicsSFXEventAssetAngleRule angleRule;
+			PhysicsSFXEventAssetSpeedRule speedRule;
+			PhysicsSFXEventAssetMassRule massRule;
+			PhysicsSFXEventAssetGravityRule gravityRule;
+			PhysicsSFXEventAssetAtmosphereRule atmosphereRule;
+			PhysicsSFXEventAssetCameraDistanceRule cameraDistanceRule;
+			PhysicsSFXEventAssetFrequencyRule frequencyRule;
+		};
+
+		struct PhysicsSFXEventAssetRule
+		{
+			PhysicsSFXEventAssetRuleType type;
+			PhysicsSFXEventAssetRuleUnion u;
+		};
+
+		struct PhysicsSFXEventAsset
+		{
+			const char* name;
+			int priority;
+			PhysicsSFXEventAssetRules rules;
+		}; static_assert(sizeof(PhysicsSFXEventAsset) == 0x20);
+
+		struct PhysicsVFXEventAssetRule;
+		struct PhysicsVFXEventAssetRules
+		{
+			int numrules;
+			PhysicsVFXEventAssetRule* rules;
+		};
+
+		enum PhysicsVFXEventAssetRuleType
+		{
+			Types_PhysicsVFXEventRule = 0x0,
+			Types_PhysicsVFXEventParticleEffectRule = 0x1,
+			Types_PhysicsVFXEventMaterialRule = 0x2,
+			Types_PhysicsVFXEventAngleRule = 0x3,
+			Types_PhysicsVFXEventSpeedRule = 0x4,
+			Types_PhysicsVFXEventMassRule = 0x5,
+			Types_PhysicsVFXEventGravityRule = 0x6,
+			Types_PhysicsVFXEventAtmosphereRule = 0x7,
+			Types_PhysicsVFXEventCameraDistanceRule = 0x8,
+			Types_PhysicsVFXEventFrequencyRule = 0x9,
+			Types_PhysicsVFXEventRuleCount = 0xA,
+		};
+
+		struct PhysicsVFXEventAssetParticleEffectRule
+		{
+			char* hitParticleEffectAlias;
+			char* scrapeParticleEffectAlias;
+		};
+
+		struct PhysicsVFXEventAssetMaterialEntry
+		{
+			int surfaceType;
+			PhysicsVFXEventAssetRules rules;
+		};
+
+		struct PhysicsVFXEventAssetMaterialRule
+		{
+			int numentries;
+			PhysicsVFXEventAssetMaterialEntry* entries;
+		};
+
+		struct PhysicsVFXEventAssetAngleEntry
+		{
+			float angle;
+			PhysicsVFXEventAssetRules rules;
+		};
+
+		struct PhysicsVFXEventAssetAngleRule
+		{
+			int numentries;
+			PhysicsVFXEventAssetAngleEntry* entries;
+		};
+
+		struct PhysicsVFXEventAssetSpeedEntry
+		{
+			float speedThreshold;
+			PhysicsVFXEventAssetRules rules;
+		};
+
+		struct PhysicsVFXEventAssetSpeedRule
+		{
+			int numentries;
+			PhysicsVFXEventAssetSpeedEntry* entries;
+		};
+
+		struct PhysicsVFXEventAssetMassEntry
+		{
+			float massThreshold;
+			PhysicsVFXEventAssetRules rules;
+		};
+
+		struct PhysicsVFXEventAssetMassRule
+		{
+			int numentries;
+			PhysicsVFXEventAssetMassEntry* entries;
+		};
+
+		struct PhysicsVFXEventAssetGravityEntry
+		{
+			bool gravity;
+			PhysicsVFXEventAssetRules rules;
+		};
+
+		struct PhysicsVFXEventAssetGravityRule
+		{
+			int numentries;
+			PhysicsVFXEventAssetGravityEntry* entries;
+		};
+
+		struct PhysicsVFXEventAssetAtmosphereEntry
+		{
+			bool atmosphere;
+			PhysicsVFXEventAssetRules rules;
+		};
+
+		struct PhysicsVFXEventAssetAtmosphereRule
+		{
+			int numentries;
+			PhysicsVFXEventAssetAtmosphereEntry* entries;
+		};
+
+		struct PhysicsVFXEventAssetCameraDistanceEntry
+		{
+			float distance;
+			PhysicsVFXEventAssetRules rules;
+		};
+
+		struct PhysicsVFXEventAssetCameraDistanceRule
+		{
+			int numentries;
+			PhysicsVFXEventAssetCameraDistanceEntry* entries;
+		};
+
+		struct PhysicsVFXEventAssetFrequencyEntry
+		{
+			int maxEvents;
+			PhysicsVFXEventAssetRules rules;
+		};
+
+		struct PhysicsVFXEventAssetFrequencyRule
+		{
+			int numentries;
+			PhysicsVFXEventAssetFrequencyEntry* entries;
+		};
+
+		union PhysicsVFXEventAssetRuleUnion
+		{
+			PhysicsVFXEventAssetParticleEffectRule particleEffectRule;
+			PhysicsVFXEventAssetMaterialRule materialRule;
+			PhysicsVFXEventAssetAngleRule angleRule;
+			PhysicsVFXEventAssetSpeedRule speedRule;
+			PhysicsVFXEventAssetMassRule massRule;
+			PhysicsVFXEventAssetGravityRule gravityRule;
+			PhysicsVFXEventAssetAtmosphereRule atmosphereRule;
+			PhysicsVFXEventAssetCameraDistanceRule cameraDistanceRule;
+			PhysicsVFXEventAssetFrequencyRule frequencyRule;
+		};
+
+		struct PhysicsVFXEventAssetRule
+		{
+			PhysicsVFXEventAssetRuleType type;
+			PhysicsVFXEventAssetRuleUnion u;
+		};
+
+		struct PhysicsVFXEventAsset
+		{
+			const char* name;
+			int priority;
+			PhysicsVFXEventAssetRules rules;
+		}; static_assert(sizeof(PhysicsVFXEventAsset) == 0x20);
+
+		struct PhysicsAsset
+		{
+			const char* name;
+			unsigned int havokDataSize;
+			char* havokData;
+			char __pad0[8];
+			int numConstraints;
+			int numSFXEventAssets;
+			void** sfxEventAssets;
+			int numVFXEventAssets;
+			void** vfxEventAssets;
+			char __pad1[16];
+		}; static_assert(sizeof(PhysicsAsset) == 0x50);
+
+		struct PhysicsFXPipeline
+		{
+			const char* name;
+			char __pad0[24];
+		}; static_assert(sizeof(PhysicsFXPipeline) == 0x20);
+
+		struct PhysicsFXShape
+		{
+			const char* name;
+			unsigned int size;
+			vec3_t* vecs;
+		}; static_assert(sizeof(PhysicsFXShape) == 0x18);
+
+		union XAnimIndices
+		{
+			char* _1;
+			unsigned short* _2;
+			void* data;
+		};
+
+		struct XAnimNotifyInfo
+		{
+			scr_string_t name;
+			float time;
+		};
+
+		union XAnimDynamicFrames
+		{
+			char(*_1)[3];
+			unsigned short(*_2)[3];
+		};
+
+		union XAnimDynamicIndices
+		{
+			char _1[1];
+			unsigned short _2[1];
+		};
+
+		struct XAnimPartTransFrames
+		{
+			vec3_t mins;
+			vec3_t size;
+			XAnimDynamicFrames frames;
+			XAnimDynamicIndices indices;
+		};
+
+		union XAnimPartTransData
+		{
+			XAnimPartTransFrames frames;
+			vec3_t frame0;
+		};
+
+		struct XAnimPartTrans
+		{
+			unsigned short size;
+			char smallTrans;
+			XAnimPartTransData u;
+		};
+
+		struct XAnimDeltaPartQuatDataFrames2
+		{
+			short(*frames)[2];
+			XAnimDynamicIndices indices;
+		};
+
+		union XAnimDeltaPartQuatData2
+		{
+			XAnimDeltaPartQuatDataFrames2 frames;
+			short frame0[2];
+		};
+
+		struct XAnimDeltaPartQuat2
+		{
+			unsigned short size;
+			XAnimDeltaPartQuatData2 u;
+		};
+
+		struct XAnimDeltaPartQuatDataFrames
+		{
+			short(*frames)[4];
+			XAnimDynamicIndices indices;
+		};
+
+		union XAnimDeltaPartQuatData
+		{
+			XAnimDeltaPartQuatDataFrames frames;
+			short frame0[4];
+		};
+
+		struct XAnimDeltaPartQuat
+		{
+			unsigned short size;
+			XAnimDeltaPartQuatData u;
+		};
+
+		struct XAnimDeltaPart
+		{
+			XAnimPartTrans* trans;
+			XAnimDeltaPartQuat2* quat2;
+			XAnimDeltaPartQuat* quat;
+		};
+
+		struct XAnimParts
+		{
+			const char* name; // 0
+			scr_string_t* names; // 8
+			char* dataByte; // 16
+			short* dataShort; // 24
+			int* dataInt; // 32
+			short* randomDataShort; // 40
+			char* randomDataByte; // 48
+			int* randomDataInt; // 56
+			XAnimIndices indices; // 64
+			XAnimNotifyInfo* notify; // 72
+			XAnimDeltaPart* deltaPart; // 80
+			unsigned int randomDataShortCount; // 88
+			unsigned int randomDataByteCount; // 92
+			unsigned int indexCount; // 96
+			float framerate; // 100
+			float frequency; // 104
+			unsigned short dataByteCount; // 108
+			unsigned short dataShortCount; // 110
+			unsigned short dataIntCount; // 112
+			unsigned short randomDataIntCount; // 114
+			unsigned short numframes; // 116
+			char flags; // 118
+			char boneCount[10]; // 119
+			char notifyCount; // 129
+			char assetType; // 130
+			char ikType; // 131
+		}; static_assert(sizeof(XAnimParts) == 0x88);
+
+		struct DObjAnimMat
+		{
+			float quat[4];
+			float trans[3];
+			float transWeight;
+		};
+
+		struct ReactiveMotionModelPart
+		{
+			float center[3];
+			float stiffness;
+		};
+
+		struct XSurfaceCollisionAabb
+		{
+			unsigned short mins[3];
+			unsigned short maxs[3];
+		};
+
+		struct XSurfaceCollisionNode
+		{
+			XSurfaceCollisionAabb aabb;
+			unsigned short childBeginIndex;
+			unsigned short childCount;
+		};
+
+		struct XSurfaceCollisionLeaf
+		{
+			unsigned short triangleBeginIndex;
+		};
+
+		struct XSurfaceCollisionTree
+		{
+			float trans[3];
+			float scale[3];
+			unsigned int nodeCount;
+			XSurfaceCollisionNode* nodes;
+			unsigned int leafCount;
+			XSurfaceCollisionLeaf* leafs;
+		};
+
+		struct XRigidVertList
+		{
+			unsigned short boneOffset;
+			unsigned short vertCount;
+			unsigned short triOffset;
+			unsigned short triCount;
+			XSurfaceCollisionTree* collisionTree;
+		};
+
+		union PackedUnitVec
+		{
+			unsigned int packed;
+		};
+
+		union PackedTexCoords
+		{
+			unsigned int packed;
+		};
+
+		union GfxColor
+		{
+			unsigned char array[4];
+			unsigned int packed;
+		};
+
+		struct GfxPackedVertex
+		{
+			float xyz[3];
+			float binormalSign;
+			GfxColor color;
+			PackedTexCoords texCoord;
+			PackedUnitVec normal;
+			PackedUnitVec tangent;
+		};
+
+		struct GfxPackedMotionVertex
+		{
+			float xyz[3];
+			float binormalSignAndHeight;
+			GfxColor pieceIndex;
+			PackedTexCoords texCoord;
+			PackedUnitVec normal;
+			PackedUnitVec tangent;
+		};
+
+		union GfxVertexUnion0
+		{
+			GfxPackedVertex* packedVerts0;
+			GfxPackedMotionVertex* packedMotionVerts0;
+			void* verts0;
+		};
+
+		struct Face
+		{
+			unsigned short v1;
+			unsigned short v2;
+			unsigned short v3;
+		};
+
+		struct XSurface // similar to iw6
+		{
+			unsigned short flags; // 0
+			unsigned short vertCount; // 2
+			unsigned short triCount; // 4
+			char rigidVertListCount; // 6
+			char subdivLevelCount; // 7
+			short blendVertCounts[8]; // 8
+			char __pad0[8];
+			GfxVertexUnion0 verts0; // 32
+			Face* triIndices; // 40
+			char __pad1[24];
+			XRigidVertList* rigidVertLists; // 72
+			char __pad2[48];
+			void* subdiv; // XSurfaceSubdivInfo* subdiv // 128
+			unsigned int* blendVerts; // 136
+			char __pad3[80];
+			int partBits[8]; // 224
+		}; static_assert(sizeof(XSurface) == 0x100);
+
+		struct XModelSurfs
+		{
+			const char* name;
+			XSurface* surfs;
+			unsigned short numsurfs;
+			int partBits[8];
+		}; static_assert(sizeof(XModelSurfs) == 0x38);
+
+		struct XModel
+		{
+			const char* name;
+			char __pad0[728];
+		}; static_assert(sizeof(XModel) == 0x2E0);
+
+		struct MayhemModel
+		{
+			XModel* model;
+		};
+
+		struct MayhemTransBounds
+		{
+			vec3_t mins;
+			vec3_t size;
+		};
+
+		struct GfxWrappedBaseBuffer
+		{
+			void* buffer; //ID3D12Resource* buffer;
+			//GfxShaderBufferView view;
+		};
+
+		struct MayhemAnimFramesSplineCompressed
+		{
+			char* diskQuat;
+			char* diskPos;
+			unsigned __int16* diskQuatFrames;
+			unsigned __int16* diskPosFrames;
+			unsigned __int16* numDiskQuatFrames;
+			unsigned __int16* numDiskPosFrames;
+			MayhemTransBounds* transBounds;
+			GfxWrappedBaseBuffer quat;
+			GfxWrappedBaseBuffer pos;
+			unsigned int quatStride;
+			unsigned int posStride;
+			unsigned int totalCompressedQuatFrames;
+			unsigned int totalCompressedPosFrames;
+		}; static_assert(sizeof(MayhemAnimFramesSplineCompressed) == 0x58);
+
+		struct MayhemAnimFramesUncompressed
+		{
+			char* diskQuat;
+			char* diskPos;
+			MayhemTransBounds* transBounds;
+			GfxWrappedBaseBuffer quat;
+			GfxWrappedBaseBuffer pos;
+			unsigned int quatStride;
+			unsigned int posStride;
+		}; static_assert(sizeof(MayhemAnimFramesUncompressed) == 0x30);
+
+		union MayhemFramesUnion
+		{
+			void* data;
+			MayhemAnimFramesSplineCompressed* splineCompressedFrames;
+			MayhemAnimFramesUncompressed* uncompressedFrames;
+		};
+
+		struct MayhemDataKeysSplineCompressed
+		{
+			char* keys;
+			unsigned __int16* numKeys;
+			unsigned __int16* keyFrames;
+			unsigned int totalCompressedKeyFrames;
+			unsigned int numStreams;
+			unsigned int keyStride;
+		}; static_assert(sizeof(MayhemDataKeysSplineCompressed) == 0x28);
+
+		struct MayhemDataKeysUncompressed
+		{
+			char* keys;
+			unsigned int numStreams;
+			unsigned int keyStride;
+		}; static_assert(sizeof(MayhemDataKeysUncompressed) == 0x10);
+
+		union MayhemDataChannelsUnion
+		{
+			void* data;
+			MayhemDataKeysSplineCompressed* splineCompressedKeys;
+			MayhemDataKeysUncompressed* uncompressedKeys;
+		};
+
+		struct MayhemAnim
+		{
+			MayhemFramesUnion frames;
+			unsigned int numBones;
+			unsigned int numFrames;
+			float framerate;
+			float frequency;
+			unsigned int notifyCount;
+			unsigned int dataChannelCount;
+			bool isLooping;
+			bool isSplineCompressed;
+			bool quantizeQuats;
+			bool quantizeTrans;
+			bool quantizeChannels;
+			XAnimNotifyInfo* notify;
+			MayhemDataChannelsUnion dataChannels;
+		}; static_assert(sizeof(MayhemAnim) == 56);
+
+		struct MayhemObject
+		{
+			unsigned int modelIndex;
+			unsigned int animIndex;
+		};
+
+		struct MayhemData
+		{
+			const char* name;
+			XModel* preModel;
+			XModel* postModel;
+			unsigned int numModels;
+			MayhemModel* models;
+			unsigned int numAnims;
+			MayhemAnim* anims;
+			unsigned int numObjects;
+			MayhemObject* objects;
+			float length;
+		}; static_assert(sizeof(MayhemData) == 0x50);
+
 		struct Material
 		{
 			const char* name;
 			char __pad0[0x110];
+		}; static_assert(sizeof(Material) == 0x118);
+
+		enum MapType : std::uint8_t
+		{
+			MAPTYPE_NONE = 0x0,
+			MAPTYPE_INVALID1 = 0x1,
+			MAPTYPE_1D = 0x2,
+			MAPTYPE_2D = 0x3,
+			MAPTYPE_3D = 0x4,
+			MAPTYPE_CUBE = 0x5,
+			MAPTYPE_ARRAY = 0x6,
+			MAPTYPE_CUBE_ARRAY = 0x7,
+			MAPTYPE_COUNT = 0x8,
 		};
-		static_assert(sizeof(Material) == 0x118);
+
+		struct GfxImageStreamData
+		{
+			unsigned short width;
+			unsigned short height;
+			unsigned int pixelSize;
+		};
+
+		struct GfxImage
+		{
+			char __pad0[24];
+			DXGI_FORMAT imageFormat; // 24
+			char flags; // 28
+			char __pad1[3];
+			MapType mapType; // 32
+			char sematic; // 33
+			char category; // 34
+			unsigned char platform[2]; // 35
+			char __pad2[3];
+			unsigned int dataLen1; // 40
+			unsigned int dataLen2; // 44
+			unsigned short width; // 48
+			unsigned short height; // 50
+			unsigned short depth; // 52
+			unsigned short numElements; // 54
+			unsigned char mipmapCount; // 56
+			bool streamed; // 57
+			char __pad3[6];
+			char* pixelData; // 64
+			GfxImageStreamData streams[4]; // 72
+			const char* name; // 104
+		}; static_assert(sizeof(GfxImage) == 0x70);
 
 		struct Glyph
 		{
@@ -430,7 +1198,7 @@ namespace game
 			float t1;
 		};
 
-		struct Font_s
+		struct TTFDef
 		{
 			const char* fontName;
 			int pixelHeight;
@@ -438,6 +1206,10 @@ namespace game
 			Material* material;
 			Material* glowMaterial;
 			Glyph* glyphs;
+		};
+
+		struct Font_s : TTFDef
+		{
 		};
 
 		struct RawFile
@@ -482,11 +1254,85 @@ namespace game
 
 		union XAssetHeader
 		{
+			PhysicsLibrary* physicsLibrary;
+			PhysicsSFXEventAsset* physicsSFXEventAsset;
+			PhysicsVFXEventAsset* physicsVFXEventAsset;
+			PhysicsAsset* physicsAsset;
+			PhysicsFXPipeline* physicsFXPipeline;
+			PhysicsFXShape* physicsFXShape;
+			XAnimParts* parts;
+			XModelSurfs* modelSurfs;
+			XModel* model;
+			MayhemData* mayhem;
 			Material* material;
+			//ComputeShader* computeShader;
+			//MaterialVertexShader* vertexShader;
+			//MaterialHullShader* hullShader;
+			//MaterialDomainShader* domainShader;
+			//MaterialPixelShader* pixelShader;
+			//MaterialVertexDeclaration* vertexDecl;
+			//MaterialTechniqueSet* techniqueSet;
+			GfxImage* image;
+			//SndGlobals* soundGlobals;
+			//SndBankResident* soundBankResident;
+			//SndBankTransient* soundBankTransient;
+			//clipMap_t* clipMap;
+			//ComWorld* comWorld;
+			//GlassWorld* glassWorld;
+			//PathData* pathData;
+			//NavMeshData* navMeshData;
+			//MapEnts* mapEnts;
+			//FxWorld* fxWorld;
+			//GfxWorld* gfxWorld;
+			//GfxWorldTransientZone* gfxWorldTransientZone;
+			//GfxIESProfile* iesProfile;
+			//GfxLightDef* lightDef;
+			//void* uiMap;
+			//AnimationClass* animClass;
+			//PlayerAnimScript* playerAnim;
+			//Gesture* gesture;
+			//LocalizeEntry* localize;
+			//WeaponAttachment* attachment;
+			//WeaponCompleteDef* weapon;
+			//ParticleSystemDef* vfx;
+			//FxImpactTable* impactFx;
+			//SurfaceFxTable* surfaceFx;
+			//void* aiType;
+			//void* mpType;
+			//void* character;
+			//void* modelAlias;
+			//void* unknown;
 			RawFile* rawfile;
 			ScriptFile* scriptfile;
 			StringTable* stringTable;
+			//LeaderboardDef* leaderboardDef;
+			//VirtualLeaderboardDef* virtualLeaderboardDef;
+			//DDLFile* ddlFile;
+			//TracerDef* tracerDef;
+			//VehicleDef* vehDef;
+			//AddonMapEnts* addonMapEnts;
+			//NetConstStrings* netConstStrings;
 			LuaFile* luaFile;
+			//ScriptableDef* scriptable;
+			//EquipmentSoundTable* equipSndTable;
+			//VectorField* vectorField;
+			//FxParticleSimAnimation* particleSimAnimation;
+			//StreamingInfo* streamingInfo;
+			//LaserDef* laserDef;
+			TTFDef* ttfDef;
+			//SuitDef* suitDef;
+			//SuitAnimPackage* suitAnimPackage;
+			//SpaceshipTargetDef* spaceshipTargetDef;
+			//RumbleInfo* rumble;
+			//RumbleGraph* rumbleGraph;
+			//WeaponAnimPackage* weaponAnimPackage;
+			//WeaponSFXPackage* weaponSFXPackage;
+			//WeaponVFXPackage* weaponVFXPackage;
+			//BehaviorTree* behaviorTree;
+			//XAnimArcheType* archeType;
+			//XAnimProceduralBones *proceduralBones;
+			//ReticleDef* reticleDef;
+			//GfxLightMap* lightMap;
 			void* data;
 		};
 
@@ -514,6 +1360,17 @@ namespace game
 			DW_LIVE_UNKNOWN = 0x1,
 			DW_LIVE_CONNECTING = 0x2,
 			DW_LIVE_CONNECTED = 0x3,
+		};
+
+		enum DWNetStatus
+		{
+			DW_NET_ERROR_START_FAILED = 0x0,
+			DW_NET_ERROR_NO_LOCAL_IP = 0x1,
+			DW_NET_NOT_STARTED = 0x2,
+			DW_NET_STARTING_LAN = 0x3,
+			DW_NET_STARTED_LAN = 0x4,
+			DW_NET_STARTING_ONLINE = 0x5,
+			DW_NET_STARTED_ONLINE = 0x6,
 		};
 
 		enum bdLobbyErrorCode : uint32_t
