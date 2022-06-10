@@ -51,8 +51,8 @@ namespace game
 
 	WEAK symbol<Material* (const char* material)> Material_RegisterHandle{ 0xE11CE0 };
 
-	WEAK symbol<Font_s* (const char* font, int size)> R_RegisterFont{ 0xDFC670 };
-	WEAK symbol<int(const char* text, int maxChars, Font_s* font)> R_TextWidth{ 0xDFC770 };
+	WEAK symbol<GfxFont* (const char* font, int size)> R_RegisterFont{ 0xDFC670 };
+	WEAK symbol<int(const char* text, int maxChars, GfxFont* font)> R_TextWidth{ 0xDFC770 };
 	WEAK symbol<int(void* font)> R_GetFontHeight{ 0x12727B0 };
 	WEAK symbol<void* (int a1)> R_DrawSomething{ 0xDFBD00 };
 	WEAK symbol<void()> R_SyncRenderThread{ 0xE27EE0 };

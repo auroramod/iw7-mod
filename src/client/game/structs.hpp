@@ -270,16 +270,30 @@ namespace game
 	struct KeyState
 	{
 		int down;
+		int unk;
 		int repeats;
-		int binding;
+		int unk2;
 	};
 
-	struct PlayerKeyState // probs wrong
+	struct field_t
+	{
+		int cursor;
+		int scroll;
+		int drawWidth;
+		int widthInPixels;
+		float charHeight;
+		int fixedSize;
+		char buffer[256];
+	};
+
+	struct PlayerKeyState
 	{
 		int overstrikeMode;
 		int anyKeyDown;
 		KeyState keys[256];
-	};
+		field_t test;
+		char __pad0[8];
+	}; static_assert(sizeof(PlayerKeyState) == 0x1128);
 
 	struct ScreenPlacement
 	{
@@ -345,7 +359,7 @@ namespace game
 			ASSET_TYPE_VERTEXSHADER = 12,
 			ASSET_TYPE_HULLSHADER = 13,
 			ASSET_TYPE_DOMAINSHADER = 14,
-			ASSET_TYPE_PIXELSHADER = 15, // unused
+			ASSET_TYPE_PIXELSHADER = 15,
 			ASSET_TYPE_VERTEXDECL = 16,
 			ASSET_TYPE_TECHNIQUE_SET = 17,
 			ASSET_TYPE_IMAGE = 18,
@@ -1184,33 +1198,49 @@ namespace game
 			const char* name; // 104
 		}; static_assert(sizeof(GfxImage) == 0x70);
 
-		struct Glyph
+		struct snd_volmod_info_t
 		{
-			unsigned short letter;
-			char x0;
-			char y0;
-			char dx;
-			char pixelWidth;
-			char pixelHeight;
-			float s0;
-			float t0;
-			float s1;
-			float t1;
+			char name[64];
+			unsigned int id;
+			float value;
 		};
 
-		struct TTFDef
+		struct SndGlobals
 		{
-			const char* fontName;
-			int pixelHeight;
-			int glyphCount;
-			Material* material;
-			Material* glowMaterial;
-			Glyph* glyphs;
+			const char* name;
+			float globalVolumeModifier;
+			float binkVolumeModifier;
+			unsigned int volmodinfoCount;
+			snd_volmod_info_t* volmodinfo;
+			char __pad0[176];
+		}; static_assert(sizeof(SndGlobals) == 0xD0);
+
+		struct SndBank
+		{
+			const char* name;
+			const char* zone;
+			const char* gameLanguage;
+			const char* soundLanguage;
+			char __pad0[320];
 		};
 
-		struct Font_s : TTFDef
+		struct SndBankResident
 		{
-		};
+			SndBank bank;
+		}; static_assert(sizeof(SndBankResident) == 0x160);
+
+		struct SndBankTransient
+		{
+			const char* name;
+			unsigned int elementCount;
+			unsigned int* elements;
+		}; static_assert(sizeof(SndBankTransient) == 0x18);
+
+		struct LocalizeEntry
+		{
+			const char* name;
+			const char* value;
+		}; static_assert(sizeof(LocalizeEntry) == 0x10);
 
 		struct RawFile
 		{
@@ -1218,7 +1248,7 @@ namespace game
 			int compressedLen;
 			int len;
 			const char* buffer;
-		};
+		}; static_assert(sizeof(RawFile) == 0x18);
 
 		struct ScriptFile
 		{
@@ -1228,7 +1258,7 @@ namespace game
 			int bytecodeLen;
 			const char* buffer;
 			char* bytecode;
-		};
+		}; static_assert(sizeof(ScriptFile) == 0x28);
 
 		struct StringTableCell
 		{
@@ -1242,7 +1272,25 @@ namespace game
 			int columnCount;
 			int rowCount;
 			StringTableCell* values;
+		}; static_assert(sizeof(StringTable) == 0x18);
+
+		enum NetConstStringType
+		{
 		};
+
+		enum NetConstStringSource
+		{
+		};
+
+		struct NetConstStrings
+		{
+			const char* name;
+			NetConstStringType stringType;
+			NetConstStringSource sourceType;
+			unsigned int flags;
+			unsigned int entryCount;
+			const char** stringList;
+		}; static_assert(sizeof(NetConstStrings) == 0x20);
 
 		struct LuaFile
 		{
@@ -1250,7 +1298,15 @@ namespace game
 			int len;
 			char strippingType;
 			const char* buffer;
-		};
+		}; static_assert(sizeof(LuaFile) == 0x18);
+
+		struct TTFDef
+		{
+			const char* name;
+			int fileLen;
+			const char* file;
+			void* ftFace;
+		}; static_assert(sizeof(TTFDef) == 0x20);
 
 		union XAssetHeader
 		{
@@ -1273,9 +1329,9 @@ namespace game
 			//MaterialVertexDeclaration* vertexDecl;
 			//MaterialTechniqueSet* techniqueSet;
 			GfxImage* image;
-			//SndGlobals* soundGlobals;
-			//SndBankResident* soundBankResident;
-			//SndBankTransient* soundBankTransient;
+			SndGlobals* soundGlobals;
+			SndBankResident* soundBankResident;
+			SndBankTransient* soundBankTransient;
 			//clipMap_t* clipMap;
 			//ComWorld* comWorld;
 			//GlassWorld* glassWorld;
@@ -1291,7 +1347,7 @@ namespace game
 			//AnimationClass* animClass;
 			//PlayerAnimScript* playerAnim;
 			//Gesture* gesture;
-			//LocalizeEntry* localize;
+			LocalizeEntry* localize;
 			//WeaponAttachment* attachment;
 			//WeaponCompleteDef* weapon;
 			//ParticleSystemDef* vfx;
@@ -1311,7 +1367,7 @@ namespace game
 			//TracerDef* tracerDef;
 			//VehicleDef* vehDef;
 			//AddonMapEnts* addonMapEnts;
-			//NetConstStrings* netConstStrings;
+			NetConstStrings* netConstStrings;
 			LuaFile* luaFile;
 			//ScriptableDef* scriptable;
 			//EquipmentSoundTable* equipSndTable;
@@ -1351,6 +1407,13 @@ namespace game
 		static_assert(sizeof(DBFile) == 0xA8);
 	}
 	using namespace assets;
+
+	struct GfxFont
+	{
+		const char* fontName;
+		int pixelHeight;
+		TTFDef* ttfDef;
+	};
 
 	namespace demonware
 	{

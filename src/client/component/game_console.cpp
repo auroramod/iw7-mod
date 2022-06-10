@@ -766,7 +766,7 @@ namespace game_console
 			dvars::con_outputBarColor = game::Dvar_RegisterVec4("con_outputBarColor", 0.5f, 0.5f, 0.5f, 0.6f, 0.0f,
 				1.0f, game::DVAR_FLAG_SAVED,
 				"color of console output bar");
-			dvars::con_outputSliderColor = game::Dvar_RegisterVec4("con_outputSliderColor", 0.3f, 0.7f, 0.3f, 1.0f,
+			dvars::con_outputSliderColor = game::Dvar_RegisterVec4("con_outputSliderColor", 1.0f, 1.0f, 1.0f, 1.0f,
 				0.0f, 1.0f,
 				game::DVAR_FLAG_SAVED, "color of console output slider");
 			dvars::con_outputWindowColor = game::Dvar_RegisterVec4("con_outputWindowColor", 0.25f, 0.25f, 0.25f, 0.85f,
