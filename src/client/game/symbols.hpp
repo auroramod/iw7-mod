@@ -70,7 +70,10 @@ namespace game
 
 	WEAK symbol<ScreenPlacement* ()> ScrPlace_GetViewPlacement{ 0x9E4090 };
 
+	WEAK symbol<void(const char* string)> SV_Cmd_TokenizeString{ 0xB7DD00 };
+	WEAK symbol<void()> SV_Cmd_EndTokenizedString{ 0xB7DCC0 };
 	WEAK symbol<void(int clientNum, svscmd_type type, const char* text)> SV_GameSendServerCommand{ 0xC54780 };
+	WEAK symbol<bool()> SV_Loaded{ 0xC114C0 };
 
 	/***************************************************************
 	 * Variables
@@ -85,4 +88,9 @@ namespace game
 
 	WEAK symbol<int> dvarCount{ 0x7595E54 };
 	WEAK symbol<dvar_t*> dvarPool{ 0x7595E60 };
+
+	WEAK symbol<gentity_s> g_entities{ 0x3D22610 };
+
+	WEAK symbol<int> svs_numclients{ 0x6B229E0 };
+	WEAK symbol<client_t> svs_clients{ 0x6B22950 };
 }

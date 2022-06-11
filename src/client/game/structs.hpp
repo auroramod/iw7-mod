@@ -115,8 +115,7 @@ namespace game
 		dvar_limits domain; // 64
 		char unk2; // 80 always 0?
 		void* unk3; // 88 some pointer related to hash?
-	};
-	static_assert(sizeof(dvar_t) == 96);
+	}; static_assert(sizeof(dvar_t) == 96);
 
 	enum svscmd_type
 	{
@@ -339,6 +338,60 @@ namespace game
 		netsrc_t localNetID;
 		unsigned int addrHandleIndex;
 	};
+
+	namespace entity
+	{
+		struct entityState_t
+		{
+			__int16 number; // 0
+		}; // sizeof = ?
+
+		struct gclient_s
+		{
+			char __pad0[19376];
+			char name[32]; // 19376
+			char __pad1[1516];
+			int flags; // 20924
+		}; // sizeof = 29208?
+
+		static_assert(offsetof(gclient_s, name) == 19376);
+		static_assert(offsetof(gclient_s, flags) == 20924);
+
+#pragma pack(push, 1)
+		struct gentity_s
+		{
+			entityState_t s; // 0
+			char __pad0[368 - sizeof(entityState_t)];
+			gclient_s* client; // 368
+			char __pad1[80];
+			int flags; // 456
+			char __pad3[556];
+		}; static_assert(sizeof(gentity_s) == 1016);
+#pragma pack(pop)
+
+		static_assert(offsetof(gentity_s, client) == 368);
+		static_assert(offsetof(gentity_s, flags) == 456);
+
+		struct clientHeader_t
+		{
+			char __pad0[8];
+			int state; // 8
+		}; // sizeof = ?
+
+		struct client_t
+		{
+			clientHeader_t header; // 0
+			char __pad0[124];
+			gentity_s* gentity; // 136
+			char __pad1[1044];
+			char name[32]; // 1188
+			char __pad2[714196];
+		}; static_assert(sizeof(client_t) == 715416);
+
+		static_assert(offsetof(client_t, gentity) == 136);
+		static_assert(offsetof(client_t, name) == 1188);
+	}
+	using namespace entity;
 
 	namespace assets
 	{
