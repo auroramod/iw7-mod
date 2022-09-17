@@ -14,6 +14,14 @@ namespace game
 	{
 	};
 
+	enum GameModeType : std::uint32_t
+	{
+		GAME_TYPE_NONE = 0x0,
+		GAME_TYPE_SP = 0x1,
+		GAME_TYPE_MP = 0x2,
+		GAME_TYPE_CP = 0x3,
+	};
+
 	struct CmdArgs
 	{
 		int nesting;
@@ -51,8 +59,20 @@ namespace game
 		DVAR_FLAG_READ = 0x2000,
 	};
 
-	enum dvar_type : std::int8_t
+	enum DvarType : std::uint8_t
 	{
+		DVAR_TYPE_BOOL = 0x0,
+		DVAR_TYPE_FLOAT = 0x1,
+		DVAR_TYPE_FLOAT_2 = 0x2,
+		DVAR_TYPE_FLOAT_3 = 0x3,
+		DVAR_TYPE_FLOAT_4 = 0x4,
+		DVAR_TYPE_INT = 0x5,
+		DVAR_TYPE_ENUM = 0x6,
+		DVAR_TYPE_STRING = 0x7,
+		DVAR_TYPE_COLOR = 0x8,
+		DVAR_TYPE_FLOAT_3_COLOR = 0x9,
+		DVAR_TYPE_COUNT = 0xA,
+
 		boolean = 0,
 		value = 1,
 		vec2 = 2,
@@ -62,10 +82,10 @@ namespace game
 		enumeration = 6,
 		string = 7,
 		color = 8,
-		rgb = 9 // Color without alpha
+		rgb = 9, // Color without alpha
 	};
 
-	union dvar_value
+	union DvarValue
 	{
 		bool enabled;
 		int integer;
@@ -94,7 +114,7 @@ namespace game
 		float max;
 	};
 
-	union dvar_limits
+	union DvarLimits
 	{
 		$A37BA207B3DDD6345C554D4661813EDD enumeration;
 		$9CA192F9DB66A3CB7E01DE78A0DEA53D integer;
@@ -104,17 +124,17 @@ namespace game
 
 	struct dvar_t
 	{
-		int hash; // 0
-		unsigned int flags; // 4
-		bool unk; // 8 tls value?
-		dvar_type type; // 9
-		bool modified; // 10
-		dvar_value current; // 16
-		dvar_value latched; // 32
-		dvar_value reset; // 48
-		dvar_limits domain; // 64
-		char unk2; // 80 always 0?
-		void* unk3; // 88 some pointer related to hash?
+		unsigned int checksum;
+		unsigned int flags;
+		char level;
+		DvarType type;
+		bool modified;
+		DvarValue current;
+		DvarValue latched;
+		DvarValue reset;
+		DvarLimits domain;
+		bool(__fastcall* domainFunc)(dvar_t*, DvarValue);
+		dvar_t* hashNext;
 	}; static_assert(sizeof(dvar_t) == 96);
 
 	enum svscmd_type
@@ -271,7 +291,7 @@ namespace game
 		int down;
 		int unk;
 		int repeats;
-		int unk2;
+		int binding;
 	};
 
 	struct field_t
@@ -438,13 +458,13 @@ namespace game
 			ASSET_TYPE_ATTACHMENT = 38,
 			ASSET_TYPE_WEAPON = 39,
 			ASSET_TYPE_VFX = 40,
-			ASSET_TYPE_IMPACT_FX = 41, // not confirmed
-			ASSET_TYPE_SURFACE_FX = 42, // not confirmed
-			ASSET_TYPE_AITYPE = 43, // not confirmed + unused
-			ASSET_TYPE_MPTYPE = 44, // not confirmed + unused
-			ASSET_TYPE_CHARACTER = 45, // not confirmed + unused
-			ASSET_TYPE_XMODELALIAS = 46, // not confirmed + unused
-			ASSET_TYPE_UNKNOWN = 47, // not confirmed + unused
+			ASSET_TYPE_IMPACT_FX = 41,
+			ASSET_TYPE_SURFACE_FX = 42,
+			ASSET_TYPE_AITYPE = 43, // unused
+			ASSET_TYPE_MPTYPE = 44, // unused
+			ASSET_TYPE_CHARACTER = 45, // unused
+			ASSET_TYPE_XMODELALIAS = 46, // unused
+			ASSET_TYPE_UNKNOWN = 47, // unused
 			ASSET_TYPE_RAWFILE = 48,
 			ASSET_TYPE_SCRIPTFILE = 49,
 			ASSET_TYPE_STRINGTABLE = 50,
@@ -1466,6 +1486,26 @@ namespace game
 		const char* fontName;
 		int pixelHeight;
 		TTFDef* ttfDef;
+	};
+
+	enum MaterialTechniqueType
+	{
+		TECHNIQUE_UNLIT = 8,
+		TECHNIQUE_EMISSIVE = 10,
+		TECHNIQUE_LIT = 13,
+	};
+
+	enum GfxDrawSceneMethod
+	{
+		GFX_DRAW_SCENE_STANDARD = 0x1,
+	};
+
+	struct GfxDrawMethod
+	{
+		int drawScene;
+		int baseTechType;
+		int emissiveTechType;
+		int forceTechType;
 	};
 
 	namespace demonware

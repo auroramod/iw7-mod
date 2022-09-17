@@ -1,8 +1,12 @@
 #include <std_include.hpp>
 #include "component_loader.hpp"
 
-void component_loader::register_component(std::unique_ptr<component_interface>&& component_)
+void component_loader::register_component(std::unique_ptr<component_interface>&& component_, [[maybe_unused]] const std::string& name)
 {
+#ifdef DEBUG
+	printf("registering component: %s\n", name.data());
+#endif
+
 	get_components().push_back(std::move(component_));
 }
 
@@ -32,8 +36,6 @@ bool component_loader::post_load()
 	static auto handled = false;
 	if (handled) return true;
 	handled = true;
-
-	clean();
 
 	try
 	{
@@ -65,7 +67,7 @@ void component_loader::post_unpack()
 		catch (std::exception& e)
 		{
 			MessageBoxA(nullptr, e.what(), "ERROR", MB_ICONERROR);
-			quick_exit(-1);
+			quick_exit(EXIT_FAILURE);
 		}
 	}
 }
@@ -78,7 +80,15 @@ void component_loader::pre_destroy()
 
 	for (const auto& component_ : get_components())
 	{
-		component_->pre_destroy();
+		try
+		{
+			component_->pre_destroy();
+		}
+		catch (std::exception& e)
+		{
+			MessageBoxA(nullptr, e.what(), "ERROR", MB_ICONERROR);
+			quick_exit(EXIT_FAILURE);
+		}
 	}
 }
 
@@ -97,6 +107,17 @@ void component_loader::clean()
 			++i;
 		}
 	}
+}
+
+void component_loader::sort()
+{
+	auto& components = get_components();
+
+	std::ranges::stable_sort(components, [](const std::unique_ptr<component_interface>& a,
+		const std::unique_ptr<component_interface>& b)
+	{
+		return a->priority() > b->priority();
+	});
 }
 
 void* component_loader::load_import(const std::string& library, const std::string& function)

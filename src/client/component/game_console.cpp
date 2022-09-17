@@ -278,8 +278,17 @@ namespace game_console
 			if (matches.size() > 24)
 			{
 				draw_hint_box(1, dvars::con_inputHintBoxColor->current.vector);
-				draw_hint_text(0, utils::string::va("%i matches (too many to show here)", matches.size()),
+				draw_hint_text(0, utils::string::va("%i matches (too many to show here). Press SHIFT + TAB to show more", matches.size()),
 					dvars::con_inputDvarMatchColor->current.vector);
+
+				if (game::playerKeys[0].keys[game::keyNum_t::K_SHIFT].down && game::playerKeys[0].keys[game::keyNum_t::K_TAB].down)
+				{
+					console::info("]%s\n", con.buffer);
+					for (size_t i = 0; i < matches.size(); i++)
+					{
+						console::info("\t%s\n", matches[i].data());
+					}
+				}
 			}
 			else if (matches.size() == 1)
 			{
@@ -304,7 +313,7 @@ namespace game_console
 						color_white, 0);
 
 					const auto offset_y = height + 3.f;
-					const auto line_count_ = dvar->type == game::dvar_type::enumeration
+					const auto line_count_ = dvar->type == game::DvarType::enumeration
 						? dvar->domain.enumeration.stringCount + 1
 						: 1;
 
@@ -334,11 +343,15 @@ namespace game_console
 
 					if (dvar)
 					{
-						draw_hint_text(static_cast<int>(i), game::Dvar_ValueToString(dvar, dvar->current),
+						const auto value = game::Dvar_ValueToString(dvar, dvar->current);
+						draw_hint_text(static_cast<int>(i), value,
 							dvars::con_inputDvarValueColor->current.vector, offset_value);
 
-						draw_hint_text(static_cast<int>(i), dvars::dvar_get_description(dvar).data(),
-							dvars::con_inputDvarValueColor->current.vector, offset_description);
+						if (strlen(value) < 0x18)
+						{
+							draw_hint_text(static_cast<int>(i), dvars::dvar_get_description(dvar).data(),
+								dvars::con_inputDvarValueColor->current.vector, offset_description);
+						}
 					}
 				}
 
@@ -554,7 +567,7 @@ namespace game_console
 				return false;
 			}
 
-			if (key < 32)
+			if (key < ' ')
 			{
 				return false;
 			}

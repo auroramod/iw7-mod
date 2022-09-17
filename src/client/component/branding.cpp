@@ -6,6 +6,7 @@
 #include "version.hpp"
 
 #include "game/game.hpp"
+#include "game/dvars.hpp"
 
 // Fonts used in game:
 // fonts/blender_pro_bold.ttf, fonts/blender_pro_book.ttf, fonts/blender_pro_heavy.ttf, fonts/blender_pro_medium.ttf
@@ -16,8 +17,6 @@ namespace branding
 	namespace
 	{
 		float color[4] = { 0.666f, 0.666f, 0.666f, 0.666f };
-
-		game::dvar_t* branding;
 	}
 
 	class component final : public component_interface
@@ -38,12 +37,12 @@ namespace branding
 
 			scheduler::once([]()
 			{
-				branding = game::Dvar_RegisterBool("branding", true, game::DvarFlags::DVAR_FLAG_SAVED, "Show branding in the top left corner");
+				dvars::branding = game::Dvar_RegisterBool("branding", true, game::DvarFlags::DVAR_FLAG_SAVED, "Show branding in the top left corner");
 			}, scheduler::pipeline::renderer);
 
 			scheduler::loop([]()
 			{
-				if (branding && branding->current.enabled)
+				if (dvars::branding && dvars::branding->current.enabled)
 				{
 					const auto font = game::R_RegisterFont("fonts/fira_mono_bold.ttf", 20);
 					if (font)

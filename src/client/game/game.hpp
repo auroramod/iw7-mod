@@ -48,8 +48,6 @@ namespace game
 	int SV_Cmd_Argc();
 	const char* SV_Cmd_Argv(int index);
 
-	bool VirtualLobby_Loaded();
-
 	extern const char* g_assetNames[ASSET_TYPE_COUNT];
 	const char* DB_GetXAssetName(const XAsset* asset);
 	void DB_EnumXAssets(const std::int32_t type, const std::function<void(XAssetHeader)>& callback);

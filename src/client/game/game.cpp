@@ -33,11 +33,6 @@ namespace game
 		return sv_cmd_args->argv[sv_cmd_args->nesting][index];
 	}
 
-	bool VirtualLobby_Loaded()
-	{
-		return 0; //return *mp::virtualLobby_loaded == 1;
-	}
-
 	const char* g_assetNames[ASSET_TYPE_COUNT] =
 	{
 		"physicslibrary",
@@ -81,13 +76,13 @@ namespace game
 		"attachment",
 		"weapon",
 		"vfx",
-		"impactfx", // not confirmed
-		"surfacefx", // not confirmed
-		"aitype", // not confirmed
-		"mptype", // not confirmed
-		"character", // not confirmed
-		"xmodelalias", // not confirmed
-		"ASSET_TYPE_UNKNOWN", // not confirmed
+		"impactfx",
+		"surfacefx",
+		"aitype",
+		"mptype",
+		"character",
+		"xmodelalias",
+		"ASSET_TYPE_UNKNOWN",
 		"rawfile",
 		"scriptfile",
 		"stringtable",

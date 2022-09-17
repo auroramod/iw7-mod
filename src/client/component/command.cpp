@@ -18,7 +18,8 @@ namespace command
 {
 	namespace
 	{
-		utils::hook::detour client_command_hook;
+		utils::hook::detour client_command_mp_hook;
+		utils::hook::detour client_command_sp_hook;
 		utils::hook::detour parse_commandline_hook;
 
 		std::unordered_map<std::string, std::function<void(params&)>> handlers;
@@ -35,7 +36,7 @@ namespace command
 			}
 		}
 
-		void client_command(const int client_num)
+		void client_command_mp(const int client_num)
 		{
 			params_sv params = {};
 
@@ -45,7 +46,22 @@ namespace command
 				handlers_sv[command](client_num, params);
 			}
 
-			client_command_hook.invoke<void>(client_num);
+			client_command_mp_hook.invoke<void>(client_num);
+		}
+
+		void client_command_sp(const int client_num, const char* s)
+		{
+			game::SV_Cmd_TokenizeString(s);
+			params_sv params = {};
+
+			const auto command = utils::string::to_lower(s);
+			if (handlers_sv.find(command) != handlers_sv.end())
+			{
+				handlers_sv[command](client_num, params);
+			}
+			game::SV_Cmd_EndTokenizedString();
+
+			client_command_sp_hook.invoke<void>(client_num, s);
 		}
 
 		// Shamelessly stolen from Quake3
@@ -109,8 +125,8 @@ namespace command
 					const auto current = game::Dvar_ValueToString(dvar, dvar->current);
 					const auto reset = game::Dvar_ValueToString(dvar, dvar->reset);
 
-					console::info("\"%s\" is: \"%s\" default: \"%s\" hash: 0x%08lX type: %i\n",
-						args[0], current, reset, dvar->hash, dvar->type);
+					console::info("\"%s\" is: \"%s\" default: \"%s\" checksum: 0x%08lX type: %i\n",
+						args[0], current, reset, dvar->checksum, dvar->type);
 
 					const auto dvar_info = dvars::dvar_get_description(dvar);
 
@@ -134,16 +150,23 @@ namespace command
 
 		void client_println(int client_num, const std::string& text)
 		{
-			game::SV_GameSendServerCommand(client_num, game::SV_CMD_RELIABLE,
-				utils::string::va("f \"%s\"", text.data()));
+			if (game::Com_GameMode_GetActiveGameMode() == game::GAME_TYPE_SP)
+			{
+				game::CG_Utils_GameMessage(client_num, text.data(), 0); // why is nothing printed?
+			}
+			else
+			{
+				game::SV_GameSendServerCommand(client_num, game::SV_CMD_RELIABLE,
+					utils::string::va("f \"%s\"", text.data()));
+			}
 		}
 
-		bool check_cheats(int client_num)
+		bool cheats_ok(int client_num)
 		{
 			const auto sv_cheats = game::Dvar_FindVar("sv_cheats");
 			if (!sv_cheats || !sv_cheats->current.enabled)
 			{
-				client_println(client_num, "Cheats are not enabled on this server");
+				client_println(client_num, "GAME_CHEATSNOTENABLED");
 				return false;
 			}
 
@@ -289,7 +312,8 @@ namespace command
 		void post_unpack() override
 		{
 			utils::hook::jump(0xBB1DC0_b, dvar_command_stub, true);
-			client_command_hook.create(0xB105D0_b, &client_command);
+			//client_command_mp_hook.create(0xB105D0_b, &client_command_mp);
+			//client_command_sp_hook.create(0x483130_b, &client_command_sp);
 
 			add_commands();
 		}
@@ -301,6 +325,76 @@ namespace command
 			add("crash", []()
 			{
 				*reinterpret_cast<int*>(1) = 0;
+			});
+
+			add("god", []()
+			{
+				if (!game::SV_Loaded())
+				{
+					return;
+				}
+
+				game::g_entities[0].flags ^= 1;
+				client_println(0,
+					game::g_entities[0].flags & 1
+					? "GAME_GODMODE_ON"
+					: "GAME_GODMODE_OFF");
+			});
+
+			add("demigod", []()
+			{
+				if (!game::SV_Loaded())
+				{
+					return;
+				}
+
+				game::g_entities[0].flags ^= 2;
+				client_println(0,
+					game::g_entities[0].flags & 2
+					? "GAME_DEMI_GODMODE_ON"
+					: "GAME_DEMI_GODMODE_OFF");
+			});
+
+			add("notarget", []()
+			{
+				if (!game::SV_Loaded())
+				{
+					return;
+				}
+
+				game::g_entities[0].flags ^= 4;
+				client_println(0,
+					game::g_entities[0].flags & 4
+					? "GAME_NOTARGETON"
+					: "GAME_NOTARGETOFF");
+			});
+
+			add("noclip", []()
+			{
+				if (!game::SV_Loaded())
+				{
+					return;
+				}
+
+				game::g_entities[0].client->flags ^= 1;
+				client_println(0,
+					game::g_entities[0].client->flags & 1
+					? "GAME_NOCLIPON"
+					: "GAME_NOCLIPOFF");
+			});
+
+			add("ufo", []()
+			{
+				if (!game::SV_Loaded())
+				{
+					return;
+				}
+
+				game::g_entities[0].client->flags ^= 1;
+				client_println(0,
+					game::g_entities[0].client->flags & 1
+					? "GAME_UFOON"
+					: "GAME_UFOOFF");
 			});
 		}
 	};

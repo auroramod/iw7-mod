@@ -32,4 +32,9 @@ public:
 	{
 		return true;
 	}
+
+	virtual int priority()
+	{
+		return 0;
+	}
 };

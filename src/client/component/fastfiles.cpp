@@ -75,7 +75,7 @@ namespace fastfiles
 		void post_unpack() override
 		{
 			db_try_load_x_file_internal_hook.create(0x3BBC40_b, db_try_load_x_file_internal_stub);
-#if defined(DEBUG) and defined (XFILE_DEBUG)
+#if defined(DEBUG) and defined(XFILE_DEBUG)
 			db_init_load_x_file_hook.create(0x9E8D10_b, db_init_load_x_file_stub);
 #else
 			db_load_x_zone_hook.create(0x3BA920_b, db_load_x_zone_stub);

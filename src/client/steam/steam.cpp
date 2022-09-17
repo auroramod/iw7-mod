@@ -3,6 +3,8 @@
 
 #include <utils/nt.hpp>
 
+#include "loader/component_loader.hpp"
+
 namespace steam
 {
 	uint64_t callbacks::call_id_ = 0;
@@ -111,12 +113,14 @@ namespace steam
 	bool SteamAPI_Init()
 	{
 		const std::filesystem::path steam_path = steam::SteamAPI_GetSteamInstallPath();
-		if (steam_path.empty()) return true;
+		if (steam_path.empty()) return false;
 
 		::utils::nt::library::load(steam_path / "tier0_s64.dll");
 		::utils::nt::library::load(steam_path / "vstdlib_s64.dll");
 		::utils::nt::library::load(steam_path / "gameoverlayrenderer64.dll");
 		::utils::nt::library::load(steam_path / "steamclient64.dll");
+
+		component_loader::post_unpack();
 		return true;
 	}
 

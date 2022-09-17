@@ -36,7 +36,8 @@ FARPROC load_binary(uint64_t* base_address)
 		}
 		else if (function == "SystemParametersInfoA")
 		{
-			return system_parameters_info_a;
+			// post_unpack called from SteamAPI_Init
+			//return system_parameters_info_a;
 		}
 
 		return component_loader::load_import(library, function);
@@ -118,6 +119,9 @@ int main()
 	remove_crash_file();
 
 	{
+		component_loader::sort();
+		component_loader::clean();
+
 		auto premature_shutdown = true;
 		const auto _ = gsl::finally([&premature_shutdown]()
 		{
@@ -129,7 +133,7 @@ int main()
 
 		try
 		{
-			if (!component_loader::post_start()) return 0;
+			if (!component_loader::post_start()) return EXIT_FAILURE;
 
 			uint64_t base_address{};
 			entry_point = load_binary(&base_address);
@@ -146,14 +150,14 @@ int main()
 			}
 			game::base_address = base_address;
 
-			if (!component_loader::post_load()) return 0;
+			if (!component_loader::post_load()) return EXIT_FAILURE;
 
 			premature_shutdown = false;
 		}
 		catch (std::exception& e)
 		{
 			MessageBoxA(nullptr, e.what(), "ERROR", MB_ICONERROR);
-			return 1;
+			return EXIT_FAILURE;
 		}
 	}
 

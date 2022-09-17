@@ -10,8 +10,14 @@ namespace game
 
 	WEAK symbol<void()> Com_Quit_f{ 0xBADC90 };
 
+	WEAK symbol<bool()> Com_FrontEndScene_IsActive{ 0x5AEBA0 };
+
+	WEAK symbol<GameModeType()> Com_GameMode_GetActiveGameMode{ 0x5AFD50 };
+
 	WEAK symbol<void(int localClientNum, const char* text)> Cbuf_AddText{ 0xB7C290 };
 	WEAK symbol<void(int localClientNum, void(*))> Cbuf_AddCall{ 0xB7C220 };
+
+	WEAK symbol<void(int localClientNum, const char* msg, int flags)> CG_Utils_GameMessage{ 0x1D7FC0 };
 
 	WEAK symbol<void(int localClientNum, int controllerIndex, const char* text)> Cmd_ExecuteSingleCommand{ 0xB7D040 };
 	WEAK symbol<void(const char* cmdName, void(), cmd_function_s* allocedCmd)> Cmd_AddCommandInternal{ 0xB7C8F0 };
@@ -41,11 +47,16 @@ namespace game
 
 	WEAK symbol<void(const char* name, const char* string)> Dvar_SetCommand{ 0xCECB30 };
 	WEAK symbol<dvar_t* (const char* name)> Dvar_FindVar{ 0xCEA460 };
+	WEAK symbol<void(const dvar_t* dvar)> Dvar_ClearModified{ 0xCE9E90 };
 	WEAK symbol<void(char* buffer, int index)> Dvar_GetCombinedString{ 0xBB1F30 };
-	WEAK symbol<const char* (dvar_t* dvar, dvar_value value)> Dvar_ValueToString{ 0xCEED00 };
+	WEAK symbol<const char* (dvar_t* dvar, DvarValue value)> Dvar_ValueToString{ 0xCEED00 };
 	WEAK symbol<int(const char* name)> Dvar_GenerateChecksum{ 0xCEA520 };
 #define Dvar_GenerateHash(name) \
 	Dvar_GenerateChecksum(name);
+
+	WEAK symbol<const char* (int, int, int)> Key_KeynumToString{ 0x9A95E0 };
+
+	WEAK symbol<bool()> LUI_CoD_InFrontEnd{ 0x615080 };
 
 	WEAK symbol<unsigned int(int controllerIndex)> Live_SyncOnlineDataFlags{ 0xDC5CE0 };
 
@@ -82,6 +93,9 @@ namespace game
 	WEAK symbol<CmdArgs> sv_cmd_args{ 0x5D65C20 };
 	WEAK symbol<CmdArgs> cmd_args{ 0x5D65B70 };
 	WEAK symbol<cmd_function_s*> cmd_functions{ 0x5D65CC8 };
+	WEAK symbol<const char*> command_whitelist{ 0x14D1B70 };
+
+	WEAK symbol<GfxDrawMethod> gfxDrawMethod{ 0x83E86A8 };
 
 	WEAK symbol<int> keyCatchers{ 0x2246C34 };
 	WEAK symbol<PlayerKeyState> playerKeys{ 0x523BA0C };
