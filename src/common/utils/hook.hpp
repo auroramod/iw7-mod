@@ -22,9 +22,9 @@ namespace utils::hook
 			{
 				auto functions = get_iota_functions<Entries - 1>();
 				functions.emplace_back([]()
-					{
-						return Entries - 1;
-					});
+				{
+					return Entries - 1;
+				});
 				return functions;
 			}
 		}
@@ -155,6 +155,9 @@ namespace utils::hook
 	void copy(void* place, const void* data, size_t length);
 	void copy(size_t place, const void* data, size_t length);
 
+	void copy_string(void* place, const char* str);
+	void copy_string(size_t place, const char* str);
+
 	bool is_relatively_far(const void* pointer, const void* data, int offset = 5);
 
 	void call(void* pointer, void* data);
@@ -184,19 +187,13 @@ namespace utils::hook
 	void* follow_branch(void* address);
 
 	template <typename T>
-	static void set(void* place, T value)
+	static void set(void* place, T value = false)
 	{
-		DWORD old_protect;
-		VirtualProtect(place, sizeof(T), PAGE_EXECUTE_READWRITE, &old_protect);
-
-		*static_cast<T*>(place) = value;
-
-		VirtualProtect(place, sizeof(T), old_protect, &old_protect);
-		FlushInstructionCache(GetCurrentProcess(), place, sizeof(T));
+		copy(place, &value, sizeof(value));
 	}
 
 	template <typename T>
-	static void set(const size_t place, T value)
+	static void set(const size_t place, T value = false)
 	{
 		return set<T>(reinterpret_cast<void*>(place), value);
 	}
@@ -212,4 +209,6 @@ namespace utils::hook
 	{
 		return static_cast<T(*)(Args ...)>(func)(args...);
 	}
+
+	std::vector<uint8_t> query_original_data(const void* data, size_t length);
 }
