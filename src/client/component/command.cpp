@@ -116,7 +116,11 @@ namespace command
 				return 0;
 			}
 
-			const auto dvar = game::Dvar_FindVar(args[0]);
+			auto* dvar = game::Dvar_FindVar(args[0]);
+			if (dvar == nullptr)
+			{
+				dvar = game::Dvar_FindMalleableVar(atoi(args[0]));
+			}
 
 			if (dvar)
 			{
@@ -125,8 +129,8 @@ namespace command
 					const auto current = game::Dvar_ValueToString(dvar, dvar->current);
 					const auto reset = game::Dvar_ValueToString(dvar, dvar->reset);
 
-					console::info("\"%s\" is: \"%s\" default: \"%s\" checksum: 0x%08lX type: %i\n",
-						args[0], current, reset, dvar->checksum, dvar->type);
+					console::info("\"%s\" is: \"%s\" default: \"%s\" checksum: %d type: %i\n",
+						dvars::dvar_get_name(dvar).data(), current, reset, dvar->checksum, dvar->type);
 
 					const auto dvar_info = dvars::dvar_get_description(dvar);
 

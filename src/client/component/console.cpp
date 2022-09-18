@@ -51,8 +51,8 @@ namespace console
 			return nativeconsole;
 		}
 
-		static volatile bool ingame = false;
-		static volatile bool exit = false;
+		static std::atomic_bool ingame = false;
+		static std::atomic_bool exit = false;
 
 		DWORD WINAPI console(LPVOID)
 		{
