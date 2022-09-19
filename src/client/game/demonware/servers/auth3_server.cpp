@@ -38,7 +38,7 @@ namespace demonware
 	{
 		if (packet.starts_with("POST /auth/"))
 		{
-#ifdef DEBUG
+#ifdef DW_DEBUG
 			printf("[DW]: [auth]: user requested authentication.\n");
 #endif
 			return;
@@ -81,7 +81,7 @@ namespace demonware
 			}
 		}
 
-#ifdef DEBUG
+#ifdef DW_DEBUG
 		printf("[DW]: [auth]: authenticating user %s\n", token.data() + 64);
 #endif
 
@@ -138,22 +138,32 @@ namespace demonware
 		doc.AddMember("client_id", "", doc.GetAllocator());
 		doc.AddMember("account_type", "steam", doc.GetAllocator());
 		doc.AddMember("crossplay_enabled", false, doc.GetAllocator());
-		doc.AddMember("loginqueue_eanbled", false, doc.GetAllocator());
+		doc.AddMember("loginqueue_enabled", false, doc.GetAllocator());
 
 		rapidjson::Value value{};
 		doc.AddMember("lsg_endpoint", value, doc.GetAllocator());
+
+		std::string extended_data = ""; // maybe figure out what this is supposed to be
+		std::string extra_data = utils::string::va("{\"extended_data\": \"%s\"}", extended_data.data());
+		// extra data
+		doc.AddMember("extra_data", rapidjson::StringRef(extra_data.data(), extra_data.size()), doc.GetAllocator());
+
+		doc.AddMember("identity", rapidjson::StringRef(identity.data(), identity.size()), doc.GetAllocator());
 
 		rapidjson::StringBuffer buffer{};
 		rapidjson::Writer<rapidjson::StringBuffer, rapidjson::Document::EncodingType, rapidjson::ASCII<>>
 			writer(buffer);
 		doc.Accept(writer);
 
+		std::string x_signature = "1337"; // maybe figure out how to compute this (patched in demonware.cpp)
+
 		// http stuff
 		std::string result;
 		result.append("HTTP/1.1 200 OK\r\n");
-		result.append("Server: TornadoServer/4.5.3\r\n");
+		result.append("Server: TornadoServer/6.0.3\r\n");
 		result.append("Content-Type: application/json\r\n");
 		result.append(utils::string::va("Date: %s GMT\r\n", date));
+		result.append(utils::string::va("X-Signature: %s\r\n", x_signature.data()));
 		result.append(utils::string::va("Content-Length: %d\r\n\r\n", buffer.GetLength()));
 		result.append(buffer.GetString(), buffer.GetLength());
 
@@ -161,7 +171,7 @@ namespace demonware
 
 		this->send_reply(&reply);
 
-#ifdef DEBUG
+#ifdef DW_DEBUG
 		printf("[DW]: [auth]: user successfully authenticated.\n");
 #endif
 	}

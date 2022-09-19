@@ -51,5 +51,13 @@ namespace steam
 		virtual void AdvertiseGame(steam_id steamIDGameServer, unsigned int unIPServer, unsigned short usPortServer);
 		virtual unsigned long long RequestEncryptedAppTicket(void* pUserData, int cbUserData);
 		virtual bool GetEncryptedAppTicket(void* pTicket, int cbMaxTicket, unsigned int* pcbTicket);
+
+		virtual int GetGameBadgeLevel(int nSeries, bool bFoil);
+		virtual int GetPlayerSteamLevel();
+		virtual uint64_t RequestStoreAuthURL(const char* pchRedirectURL);
+		virtual bool BIsPhoneVerified();
+		virtual bool BIsTwoFactorEnabled();
+		virtual bool BIsPhoneIdentifying();
+		virtual bool BIsPhoneRequiringVerification();
 	};
 }

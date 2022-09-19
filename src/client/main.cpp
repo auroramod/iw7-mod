@@ -12,10 +12,10 @@ DECLSPEC_NORETURN void WINAPI exit_hook(const int code)
 	exit(code);
 }
 
-BOOL WINAPI system_parameters_info_a(const UINT uiAction, const UINT uiParam, const PVOID pvParam, const UINT fWinIni)
+DWORD_PTR WINAPI set_thread_affinity_mask(HANDLE hThread, DWORD_PTR dwThreadAffinityMask)
 {
 	component_loader::post_unpack();
-	return SystemParametersInfoA(uiAction, uiParam, pvParam, fWinIni);
+	return SetThreadAffinityMask(hThread, dwThreadAffinityMask);
 }
 
 FARPROC load_binary(uint64_t* base_address)
@@ -34,10 +34,9 @@ FARPROC load_binary(uint64_t* base_address)
 		{
 			return exit_hook;
 		}
-		else if (function == "SystemParametersInfoA")
+		else if (function == "SetThreadAffinityMask")
 		{
-			// post_unpack called from SteamAPI_Init
-			//return system_parameters_info_a;
+			return set_thread_affinity_mask;
 		}
 
 		return component_loader::load_import(library, function);

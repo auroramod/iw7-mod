@@ -28,5 +28,14 @@ namespace steam
 		virtual unsigned int GetInstalledDepots(int* pvecDepots, unsigned int cMaxDepots);
 		virtual unsigned int GetAppInstallDir(unsigned int appID, char* pchFolder, unsigned int cchFolderBufferSize);
 		virtual bool BIsAppInstalled(unsigned int appID);
+
+		virtual steam_id GetAppOwner();
+		virtual const char* GetLaunchQueryParam(const char* pchKey);
+		virtual bool GetDlcDownloadProgress(uint32_t nAppID, uint64_t* punBytesDownloaded, uint64_t* punBytesTotal);
+		virtual int GetAppBuildId();
+		virtual void RequestAllProofOfPurchaseKeys();
+		virtual uint64_t GetFileDetails(const char* pszFileName);
+		virtual int GetLaunchCommandLine(char* pszCommandLine, int cubCommandLine);
+		virtual bool BIsSubscribedFromFamilySharing();
 	};
 }

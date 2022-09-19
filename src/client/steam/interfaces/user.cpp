@@ -19,7 +19,7 @@ namespace steam
 
 	int user::GetHSteamUser()
 	{
-		return NULL;
+		return 1;
 	}
 
 	bool user::LoggedOn()
@@ -71,7 +71,7 @@ namespace steam
 	                   unsigned int cbUncompressedDestBufferSize, unsigned int* nUncompressBytesWritten,
 	                   unsigned int nUncompressedVoiceDesiredSampleRate)
 	{
-		return 0;
+		return 2;
 	}
 
 	int user::DecompressVoice(void* pCompressed, unsigned int cbCompressed, void* pDestBuffer,
@@ -87,6 +87,7 @@ namespace steam
 
 	unsigned int user::GetAuthSessionTicket(void* pTicket, int cbMaxTicket, unsigned int* pcbTicket)
 	{
+
 		static uint32_t ticket = 0;
 		*pcbTicket = 1;
 
@@ -116,7 +117,7 @@ namespace steam
 
 	unsigned int user::UserHasLicenseForApp(steam_id steamID, unsigned int appID)
 	{
-		return 0;
+		return 1;
 	}
 
 	bool user::BIsBehindNAT()
@@ -140,7 +141,8 @@ namespace steam
 
 		// Create the call response
 		const auto result = callbacks::register_call();
-		const auto retvals = static_cast<encrypted_app_ticket_response*>(calloc(1, sizeof(encrypted_app_ticket_response)));
+		const auto retvals = static_cast<encrypted_app_ticket_response*>(calloc(
+			1, sizeof(encrypted_app_ticket_response)));
 		//::Utils::Memory::AllocateArray<EncryptedAppTicketResponse>();
 		retvals->m_e_result = 1;
 
@@ -155,10 +157,51 @@ namespace steam
 	{
 		if (cbMaxTicket < 0 || auth_ticket.empty()) return false;
 
-		const auto size = std::min(size_t(cbMaxTicket), auth_ticket.size());
+		const auto size = auth_ticket.size();
+		if (size_t(cbMaxTicket) < size)
+		{
+			*pcbTicket = static_cast<unsigned>(size);
+			return false;
+		}
+
 		std::memcpy(pTicket, auth_ticket.data(), size);
 		*pcbTicket = static_cast<unsigned>(size);
 
 		return true;
+	}
+
+	int user::GetGameBadgeLevel(int nSeries, bool bFoil)
+	{
+		return 1;
+	}
+
+	int user::GetPlayerSteamLevel()
+	{
+		return 0;
+	}
+
+	uint64_t user::RequestStoreAuthURL(const char* pchRedirectURL)
+	{
+		return 0;
+	}
+
+	bool user::BIsPhoneVerified()
+	{
+		return true;
+	}
+
+	bool user::BIsTwoFactorEnabled()
+	{
+		return true;
+	}
+
+	bool user::BIsPhoneIdentifying()
+	{
+		return false;
+	}
+
+	bool user::BIsPhoneRequiringVerification()
+	{
+		return false;
 	}
 }

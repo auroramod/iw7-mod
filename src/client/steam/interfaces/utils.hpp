@@ -33,5 +33,11 @@ namespace steam
 		                                  unsigned int uMaxLength);
 		virtual unsigned int GetEnteredGamepadTextLength();
 		virtual bool GetEnteredGamepadTextInput(char* pchValue, unsigned int cchValueMax);
+
+		virtual const char* GetSteamUILanguage();
+		virtual bool IsSteamRunningInVR();
+		virtual void SetOverlayNotificationInset(int nHorizontalInset, int nVerticalInset);
+		virtual bool IsSteamInBigPictureMode();
+		virtual void StartVRDashboard();
 	};
 }

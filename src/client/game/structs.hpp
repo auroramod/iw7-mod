@@ -1510,7 +1510,7 @@ namespace game
 
 	namespace demonware
 	{
-		enum DWOnlineStatus
+		enum DWOnlineStatus : std::int32_t
 		{
 			DW_LIVE_DISCONNECTED = 0x0,
 			DW_LIVE_UNKNOWN = 0x1,
@@ -1518,7 +1518,7 @@ namespace game
 			DW_LIVE_CONNECTED = 0x3,
 		};
 
-		enum DWNetStatus
+		enum DWNetStatus : std::int32_t
 		{
 			DW_NET_ERROR_START_FAILED = 0x0,
 			DW_NET_ERROR_NO_LOCAL_IP = 0x1,
@@ -1529,7 +1529,7 @@ namespace game
 			DW_NET_STARTED_ONLINE = 0x6,
 		};
 
-		enum bdLobbyErrorCode : uint32_t
+		enum bdLobbyErrorCode : std::int32_t
 		{
 			BD_NO_ERROR = 0x0,
 			BD_TOO_MANY_TASKS = 0x1,

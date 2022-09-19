@@ -120,4 +120,27 @@ namespace steam
 	{
 		return false;
 	}
+
+	 const char* utils::GetSteamUILanguage()
+	{
+	   return "english";
+	}
+	 bool utils::IsSteamRunningInVR()
+	 {
+	   return false;
+	 }
+
+	 void utils::SetOverlayNotificationInset(int nHorizontalInset, int nVerticalInset)
+	 {
+	   
+	 }
+	 bool utils::IsSteamInBigPictureMode()
+	 {
+	   return false;
+	 }
+
+	 void utils::StartVRDashboard()
+	 {
+	   
+	 }
 }

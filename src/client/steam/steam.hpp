@@ -39,7 +39,14 @@ typedef union
 #include "interfaces/game_server.hpp"
 #include "interfaces/networking.hpp"
 #include "interfaces/matchmaking.hpp"
+#include "interfaces/matchmaking_servers.hpp"
 #include "interfaces/remote_storage.hpp"
+#include "interfaces/screenshots.hpp"
+#include "interfaces/game_server_stats.hpp"
+#include "interfaces/http.hpp"
+#include "interfaces/unified_messages.hpp"
+#include "interfaces/controller.hpp"
+#include "interfaces/client.hpp"
 
 namespace steam
 {
@@ -105,6 +112,15 @@ namespace steam
 	STEAM_EXPORT void SteamAPI_UnregisterCallback(callbacks::base* handler);
 	STEAM_EXPORT const char* SteamAPI_GetSteamInstallPath();
 
+	STEAM_EXPORT void* SteamGameServer_GetHSteamPipe();
+	STEAM_EXPORT void* SteamGameServer_GetHSteamUser();
+
+	STEAM_EXPORT void* SteamAPI_GetHSteamUser();
+	STEAM_EXPORT void* SteamAPI_GetHSteamPipe();
+
+	STEAM_EXPORT void* SteamInternal_CreateInterface(const char* interfacename);
+
+	STEAM_EXPORT bool SteamInternal_GameServer_Init();
 	STEAM_EXPORT bool SteamGameServer_Init();
 	STEAM_EXPORT void SteamGameServer_RunCallbacks();
 	STEAM_EXPORT void SteamGameServer_Shutdown();

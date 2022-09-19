@@ -5,14 +5,11 @@
 #include <utils/thread.hpp>
 
 #include "game/game.hpp"
-#include <game/dvars.hpp>
 #include "game/demonware/servers/lobby_server.hpp"
 #include "game/demonware/servers/auth3_server.hpp"
 #include "game/demonware/servers/stun_server.hpp"
 #include "game/demonware/servers/umbrella_server.hpp"
 #include "game/demonware/server_registry.hpp"
-
-#include "console.hpp"
 
 #define TCP_BLOCKING true
 #define UDP_BLOCKING false
@@ -21,7 +18,7 @@ namespace demonware
 {
 	namespace
 	{
-		volatile bool exit_server;
+		std::atomic_bool exit_server;
 		std::thread server_thread;
 		utils::concurrency::container<std::unordered_map<SOCKET, bool>> blocking_sockets;
 		utils::concurrency::container<std::unordered_map<SOCKET, tcp_server*>> socket_map;
@@ -121,7 +118,7 @@ namespace demonware
 			int getaddrinfo_stub(const char* name, const char* service,
 				const addrinfo* hints, addrinfo** res)
 			{
-#ifdef DEBUG
+#ifdef DW_DEBUG
 				printf("[ network ]: [getaddrinfo]: \"%s\" \"%s\"\n", name, service);
 #endif
 
@@ -172,8 +169,6 @@ namespace demonware
 			{
 				auto* server = find_server(s);
 
-				printf("getpeername\n");
-
 				if (server)
 				{
 					auto in_addr = reinterpret_cast<sockaddr_in*>(addr);
@@ -206,7 +201,7 @@ namespace demonware
 
 			hostent* gethostbyname_stub(const char* name)
 			{
-#ifdef DEBUG
+#ifdef DW_DEBUG
 				printf("[ network ]: [gethostbyname]: \"%s\"\n", name);
 #endif
 
@@ -264,8 +259,6 @@ namespace demonware
 			{
 				auto* server = find_server(s);
 
-				printf("send: %s\n", buf);
-
 				if (server)
 				{
 					server->handle_input(buf, len);
@@ -278,8 +271,6 @@ namespace demonware
 			int recv_stub(const SOCKET s, char* buf, const int len, const int flags)
 			{
 				auto* server = find_server(s);
-
-				printf("recv: %s\n", buf);
 
 				if (server)
 				{
@@ -303,8 +294,6 @@ namespace demonware
 				const auto* in_addr = reinterpret_cast<const sockaddr_in*>(to);
 				auto* server = udp_servers.find(in_addr->sin_addr.s_addr);
 
-				printf("sendto: %s\n", buf);
-
 				if (server)
 				{
 					server->handle_input(buf, len, { s, to, tolen });
@@ -317,8 +306,6 @@ namespace demonware
 			int recvfrom_stub(const SOCKET s, char* buf, const int len, const int flags, struct sockaddr* from,
 				int* fromlen)
 			{
-				//printf("recvfrom: %s\n", buf);
-
 				// Not supported yet
 				if (is_socket_blocking(s, UDP_BLOCKING))
 				{
@@ -437,7 +424,7 @@ namespace demonware
 			}
 		}
 
-		void bd_logger_stub(int type, const char* const /*channelName*/, const char* /*fileLoc*/, const char* const /*file*/,
+		void bd_logger_stub(int /*type*/, const char* const /*channelName*/, const char* /*fileLoc*/, const char* const /*file*/,
 			const char* const function, const unsigned int /*line*/, const char* const msg, ...)
 		{
 			char buffer[2048];
@@ -446,78 +433,16 @@ namespace demonware
 			va_start(ap, msg);
 
 			vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, msg, ap);
-			console::print(type, "%s: %s\n", function, buffer);
+#ifdef DW_DEBUG
+			printf("%s: %s\n", function, buffer);
+#endif
 
 			va_end(ap);
 		}
 
-/*#ifdef DEBUG
-		void a(unsigned int n)
+		bool return_true()
 		{
-			printf("bdAuth: Auth task failed with HTTP code [%u]\n", n);
-		}
-
-		void b(unsigned int n)
-		{
-			printf("bdAuth: Decoded client ticket of unexpected size [%u]\n", n);
-		}
-
-		void c(unsigned int n)
-		{
-			printf("bdAuth: Decoded server ticket of unexpected size [%u]\n", n);
-		}
-
-		void d()
-		{
-			printf("bdAuth: Auth ticket magic number mismatch\n");
-		}
-
-		void e()
-		{
-			printf("bdAuth: Cross Authentication completed\n");
-		}
-
-		void f()
-		{
-			printf("bdAuth: Auth task reply contains invalid data / format\n");
-		}
-
-		void g(unsigned int n)
-		{
-			printf("bdAuth: Auth task returned with error code [%u]\n", n);
-		}
-
-		void h(unsigned int n)
-		{
-			printf("bdAuth: Invalid or No Task ID [%u] in Auth reply\n", n);
-		}
-
-		void i()
-		{
-			printf("bdAuth: Received reply from DemonWare Auth server\n");
-		}
-
-		void l()
-		{
-			printf("bdAuth: Unknown error\n");
-		}
-#endif*/
-
-		utils::hook::detour handle_auth_reply_hook;
-		bool handle_auth_reply_stub(void* a1, void* a2, void* a3)
-		{
-			// Skip bdAuth::validateResponseSignature
-			//utils::hook::set(0x7D4AB0_b, 0xC301B0);
-			// Skip bdAuth::processPlatformData
-			//utils::hook::set(0x7D55C0_b, 0xC301B0);
-
-			//return handle_auth_reply_hook.invoke<bool>(a1, a2, a3);
-		}
-
-		void request_start_match_stub()
-		{
-			//const auto* args = "StartServer";
-			//utils::hook::invoke<void>(0x1E35B0_b, 0, &args);
+			return true;
 		}
 	}
 
@@ -576,7 +501,7 @@ namespace demonware
 
 		void post_unpack() override
 		{
-#ifdef DEBUG
+#if defined(DEBUG) and defined(DW_DEBUG)
 			utils::hook::jump(0x1285040_b, bd_logger_stub, true);
 #endif
 
@@ -584,67 +509,19 @@ namespace demonware
 			utils::hook::set<uint8_t>(0xB7C6CB1_b, 0xAF); // CURLOPT_SSL_VERIFYHOST
 			utils::hook::set<uint8_t>(0x15E4650_b, 0x0);  // HTTPS -> HTTP
 
-			// umbrella dev
-			const char* umbrella_dev = "http://dev.umbrella.demonware.net";
-			std::memset(reinterpret_cast<void*>(0x15E8010_b), 0, strlen(umbrella_dev) + 1);
-			std::memcpy(reinterpret_cast<void*>(0x15E8010_b),
-				umbrella_dev, strlen(umbrella_dev));
+			utils::hook::copy_string(0x15E8010_b, "http://dev.umbrella.demonware.net");
+			utils::hook::copy_string(0x15E8038_b, "http://cert.umbrella.demonware.net");
+			utils::hook::copy_string(0x15E8060_b, "http://prod.umbrella.demonware.net");
+			utils::hook::copy_string(0x15E8418_b, "http://dev.uno.demonware.net/v1.0");
+			utils::hook::copy_string(0x15E8440_b, "http://cert.uno.demonware.net/v1.0");
+			utils::hook::copy_string(0x15E8468_b, "http://prod.uno.demonware.net/v1.0");
+			utils::hook::copy_string(0x15E3600_b, "http://%s:%d/auth/");
 
-			// umbrella cert
-			const char* umbrella_cert = "http://cert.umbrella.demonware.net";
-			std::memset(reinterpret_cast<void*>(0x15E8038_b), 0, strlen(umbrella_cert) + 1);
-			std::memcpy(reinterpret_cast<void*>(0x15E8038_b),
-				umbrella_cert, strlen(umbrella_cert));
-
-			// umbrella prod
-			const char* umbrella_prod = "http://prod.umbrella.demonware.net";
-			std::memset(reinterpret_cast<void*>(0x15E8060_b), 0, strlen(umbrella_prod) + 1);
-			std::memcpy(reinterpret_cast<void*>(0x15E8060_b),
-				umbrella_prod, strlen(umbrella_prod));
-
-			// uno dev
-			const char* uno_dev = "http://dev.uno.demonware.net/v1.0";
-			std::memset(reinterpret_cast<void*>(0x15E8418_b), 0, strlen(uno_dev) + 1);
-			std::memcpy(reinterpret_cast<void*>(0x15E8418_b),
-				uno_dev, strlen(uno_dev));
-
-			// uno cert
-			const char* uno_cert = "http://cert.uno.demonware.net/v1.0";
-			std::memset(reinterpret_cast<void*>(0x15E8440_b), 0, strlen(uno_cert) + 1);
-			std::memcpy(reinterpret_cast<void*>(0x15E8440_b),
-				uno_cert, strlen(uno_cert));
-
-			// uno prod
-			const char* uno = "http://prod.uno.demonware.net/v1.0";
-			std::memset(reinterpret_cast<void*>(0x15E8468_b), 0, strlen(uno) + 1);
-			std::memcpy(reinterpret_cast<void*>(0x15E8468_b),
-				uno, strlen(uno));
-
-			// auth
-			const char* auth = "http://%s:%d/auth/";
-			std::memset(reinterpret_cast<void*>(0x15E3600_b), 0, strlen(auth) + 1);
-			std::memcpy(reinterpret_cast<void*>(0x15E3600_b), auth, strlen(auth));
-
-			// utils::hook::set<uint8_t>(0x19F8C0_b, 0xC3); // SV_SendMatchData, not sure
-			//utils::hook::nop(0x19BB67_b, 5); // LiveStorage_SendMatchDataComplete
-			//utils::hook::set<uint8_t>(0x1A3340_b, 0xC3); // Live_CheckForFullDisconnect
-
-			// Remove some while loop that freezes the rendering for a few secs while connecting
-			//utils::hook::nop(0x625555_b, 5);
-
-			//handle_auth_reply_hook.create(0x7AC600_b, handle_auth_reply_stub);
-
-			// Skip update check in Live_SyncOnlineDataFlags
-			//utils::hook::set(0x47A6D0_b, 0xC301B0);
-			// Remove update failed popup
-			//utils::hook::set(0x47B2B0_b, 0xC301B0);
-
-			// xpartygo -> just start the match
-			//utils::hook::jump(0x355B80_b, request_start_match_stub, true);
-
-			//utils::hook::set(0x396AD0_b, 0xC301B0); // DB_IsZoneLoaded("ffotd")
-			//utils::hook::set(0x4DD600_b, 0xC300B0); // dont use ffotd
-			//utils::hook::set(0x4DD5B0_b, 0xC300B0); // dont dl ffotd
+			// Skip bdAuth::validateResponseSignature
+			utils::hook::call(0x1245440_b, return_true); // bdRSAKey::importKey
+			utils::hook::call(0x1245472_b, return_true); // bdRSAKey::verifySignatureSHA256
+			// Skip bdAuth::processPlatformData
+			utils::hook::call(0x124863A_b, return_true); // bdExtendedAuthInfo::setData
 		}
 
 		void pre_destroy() override

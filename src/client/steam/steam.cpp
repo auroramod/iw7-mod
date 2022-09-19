@@ -2,6 +2,7 @@
 #include "steam.hpp"
 
 #include <utils/nt.hpp>
+#include <utils/io.hpp>
 
 #include "loader/component_loader.hpp"
 
@@ -112,15 +113,13 @@ namespace steam
 
 	bool SteamAPI_Init()
 	{
-		const std::filesystem::path steam_path = steam::SteamAPI_GetSteamInstallPath();
+		const std::filesystem::path steam_path = SteamAPI_GetSteamInstallPath();
 		if (steam_path.empty()) return false;
 
 		::utils::nt::library::load(steam_path / "tier0_s64.dll");
 		::utils::nt::library::load(steam_path / "vstdlib_s64.dll");
 		::utils::nt::library::load(steam_path / "gameoverlayrenderer64.dll");
 		::utils::nt::library::load(steam_path / "steamclient64.dll");
-
-		component_loader::post_unpack();
 		return true;
 	}
 
@@ -178,6 +177,43 @@ namespace steam
 		return install_path.data();
 	}
 
+	void* SteamGameServer_GetHSteamPipe()
+	{
+		return reinterpret_cast<void*>(1);
+	}
+
+	void* SteamGameServer_GetHSteamUser()
+	{
+		return reinterpret_cast<void*>(1);
+	}
+
+	void* SteamAPI_GetHSteamUser()
+	{
+		return reinterpret_cast<void*>(1);
+	}
+
+	void* SteamAPI_GetHSteamPipe()
+	{
+		return reinterpret_cast<void*>(1);
+	}
+
+	void* SteamInternal_CreateInterface(const char* interfacename)
+	{
+		if (std::string(interfacename) == "SteamClient017")
+		{
+			static client c;
+			return &c;
+		}
+
+
+		MessageBoxA(0, interfacename, __FUNCTION__, 0);
+		return nullptr;
+	}
+
+	bool SteamInternal_GameServer_Init()
+	{
+		return true;
+	}
 
 	bool SteamGameServer_Init()
 	{

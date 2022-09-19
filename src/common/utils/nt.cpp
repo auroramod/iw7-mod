@@ -12,10 +12,11 @@ namespace utils::nt
 		return library::load(path.generic_string());
 	}
 
-	library library::get_by_address(void* address)
+	library library::get_by_address(const void* address)
 	{
 		HMODULE handle = nullptr;
-		GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, static_cast<LPCSTR>(address), &handle);
+		GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+			static_cast<LPCSTR>(address), &handle);
 		return library(handle);
 	}
 
@@ -93,7 +94,7 @@ namespace utils::nt
 
 		DWORD protection;
 		VirtualProtect(this->get_ptr(), this->get_optional_header()->SizeOfImage, PAGE_EXECUTE_READWRITE,
-		               &protection);
+			&protection);
 	}
 
 	size_t library::get_relative_entry_point() const
@@ -128,7 +129,7 @@ namespace utils::nt
 	{
 		if (!this->is_valid()) return "";
 
-		char name[MAX_PATH] = {0};
+		char name[MAX_PATH] = { 0 };
 		GetModuleFileNameA(this->module_, name, sizeof name);
 
 		return name;
@@ -183,14 +184,20 @@ namespace utils::nt
 
 				while (original_thunk_data->u1.AddressOfData)
 				{
-					const size_t ordinal_number = original_thunk_data->u1.AddressOfData & 0xFFFFFFF;
-
-					if (ordinal_number > 0xFFFF) continue;
-
-					if (GetProcAddress(other_module.module_, reinterpret_cast<char*>(ordinal_number)) ==
-						target_function)
+					if (thunk_data->u1.Function == (uint64_t)target_function)
 					{
 						return reinterpret_cast<void**>(&thunk_data->u1.Function);
+					}
+
+					const size_t ordinal_number = original_thunk_data->u1.AddressOfData & 0xFFFFFFF;
+
+					if (ordinal_number <= 0xFFFF)
+					{
+						if (GetProcAddress(other_module.module_, reinterpret_cast<char*>(ordinal_number)) ==
+							target_function)
+						{
+							return reinterpret_cast<void**>(&thunk_data->u1.Function);
+						}
 					}
 
 					++original_thunk_data;
@@ -204,6 +211,17 @@ namespace utils::nt
 		}
 
 		return nullptr;
+	}
+
+	bool is_shutdown_in_progress()
+	{
+		static auto* shutdown_in_progress = []
+		{
+			const library ntdll("ntdll.dll");
+			return ntdll.get_proc<BOOLEAN(*)()>("RtlDllShutdownInProgress");
+		}();
+
+		return shutdown_in_progress();
 	}
 
 	void raise_hard_exception()
@@ -241,7 +259,7 @@ namespace utils::nt
 		auto* const command_line = GetCommandLineA();
 
 		CreateProcessA(self.get_path().data(), command_line, nullptr, nullptr, false, NULL, nullptr, current_dir,
-		               &startup_info, &process_info);
+			&startup_info, &process_info);
 
 		if (process_info.hThread && process_info.hThread != INVALID_HANDLE_VALUE) CloseHandle(process_info.hThread);
 		if (process_info.hProcess && process_info.hProcess != INVALID_HANDLE_VALUE) CloseHandle(process_info.hProcess);
