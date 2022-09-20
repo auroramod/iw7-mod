@@ -38,37 +38,39 @@ namespace demonware
 		}
 	};
 
-	class bdFileInfo final : public bdTaskResult
+	struct bdFileInfo final : public bdTaskResult
 	{
-	public:
 		uint64_t file_id;
 		uint32_t create_time;
 		uint32_t modified_time;
-		bool priv;
+		bool visibility;
 		uint64_t owner_id;
 		std::string filename;
 		uint32_t file_size;
+		std::string checksum;
 
-		void serialize(byte_buffer* buffer) override
+		void serialize(byte_buffer* data) override
 		{
-			buffer->write_uint32(this->file_size);
-			buffer->write_uint64(this->file_id);
-			buffer->write_uint32(this->create_time);
-			buffer->write_uint32(this->modified_time);
-			buffer->write_bool(this->priv);
-			buffer->write_uint64(this->owner_id);
-			buffer->write_string(this->filename);
+			data->write_uint32(file_size);
+			data->write_uint64(file_id);
+			data->write_uint32(create_time);
+			data->write_uint32(modified_time);
+			data->write_bool(visibility);
+			data->write_uint64(owner_id);
+			data->write_string(filename);
+			data->write_string(checksum);
 		}
 
-		void deserialize(byte_buffer* buffer) override
+		void deserialize(byte_buffer* data) override
 		{
-			buffer->read_uint32(&this->file_size);
-			buffer->read_uint64(&this->file_id);
-			buffer->read_uint32(&this->create_time);
-			buffer->read_uint32(&this->modified_time);
-			buffer->read_bool(&this->priv);
-			buffer->read_uint64(&this->owner_id);
-			buffer->read_string(&this->filename);
+			data->read_uint32(&file_size);
+			data->read_uint64(&file_id);
+			data->read_uint32(&create_time);
+			data->read_uint32(&modified_time);
+			data->read_bool(&visibility);
+			data->read_uint64(&owner_id);
+			data->read_string(&filename);
+			data->read_string(&checksum);
 		}
 	};
 

@@ -11,8 +11,10 @@ namespace demonware
 		//this->register_task(43, &bdMarketplace::purchaseOnSteamInitialize); // COD POINTS purchase ?
 		this->register_task(49, &bdMarketplace::getExpiredInventoryItems);
 		this->register_task(60, &bdMarketplace::steamProcessDurable);
+		this->register_task(85, &bdMarketplace::unk85);
 		this->register_task(122, &bdMarketplace::purchaseSkus);
 		this->register_task(130, &bdMarketplace::getBalance);
+		this->register_task(132, &bdMarketplace::getBalanceV2);
 		this->register_task(165, &bdMarketplace::getInventoryPaginated);
 		this->register_task(193, &bdMarketplace::putPlayersInventoryItems);
 		this->register_task(232, &bdMarketplace::getEntitlements);
@@ -46,6 +48,13 @@ namespace demonware
 		reply->send();
 	}
 
+	void bdMarketplace::unk85(service_server* server, byte_buffer* /*buffer*/) const
+	{
+		// TODO:
+		auto reply = server->create_reply(this->task_id());
+		reply->send();
+	}
+
 	void bdMarketplace::purchaseSkus(service_server* server, byte_buffer* buffer) const
 	{
 		// TODO:
@@ -57,7 +66,13 @@ namespace demonware
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
+		reply->send();
+	}
 
+	void bdMarketplace::getBalanceV2(service_server* server, byte_buffer* buffer) const
+	{
+		// TODO:
+		auto reply = server->create_reply(this->task_id());
 		reply->send();
 	}
 

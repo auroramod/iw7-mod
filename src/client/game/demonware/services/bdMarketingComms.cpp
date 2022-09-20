@@ -7,6 +7,7 @@ namespace demonware
 	{
 		this->register_task(1, &bdMarketingComms::getMessages);
 		this->register_task(4, &bdMarketingComms::reportFullMessagesViewed);
+		this->register_task(6, &bdMarketingComms::reportFullMessagesViewed);
 	}
 
 	void bdMarketingComms::getMessages(service_server* server, byte_buffer* /*buffer*/) const
@@ -17,6 +18,13 @@ namespace demonware
 	}
 
 	void bdMarketingComms::reportFullMessagesViewed(service_server* server, byte_buffer* /*buffer*/) const
+	{
+		// TODO:
+		auto reply = server->create_reply(this->task_id());
+		reply->send();
+	}
+
+	void bdMarketingComms::unk6(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());

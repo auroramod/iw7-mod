@@ -66,6 +66,10 @@ namespace demonware
 
 	void bdStorage::list_publisher_files(service_server* server, byte_buffer* buffer)
 	{
+#ifdef DEBUG
+		utils::io::write_file("demonware/bdStorage/list_publisher_files", buffer->get_buffer());
+#endif
+
 		uint32_t date;
 		uint16_t num_results, offset;
 		std::string unk, filename, data;
@@ -92,7 +96,8 @@ namespace demonware
 			info->modified_time = info->create_time;
 			info->file_size = uint32_t(data.size());
 			info->owner_id = 0;
-			info->priv = false;
+			info->visibility = false;
+			info->checksum = "f5f1fb4ddd2d85e2ed9a28b3204125ec";
 
 			reply->add(info);
 		}
@@ -102,6 +107,10 @@ namespace demonware
 
 	void bdStorage::get_publisher_file(service_server* server, byte_buffer* buffer)
 	{
+#ifdef DEBUG
+		utils::io::write_file("demonware/bdStorage/get_publisher_file", buffer->get_buffer());
+#endif
+
 		std::string unk, filename;
 		buffer->read_string(&unk);
 		buffer->read_string(&filename);
@@ -135,6 +144,10 @@ namespace demonware
 
 	void bdStorage::set_user_file(service_server* server, byte_buffer* buffer) const
 	{
+#ifdef DEBUG
+		utils::io::write_file("demonware/bdStorage/set_user_file", buffer->get_buffer());
+#endif
+
 		uint64_t owner;
 		uint32_t numfiles;
 		std::string game, platform;
@@ -183,21 +196,30 @@ namespace demonware
 
 	void bdStorage::get_user_file(service_server* server, byte_buffer* buffer) const
 	{
-		uint32_t unk32_0;
-		uint32_t numfiles, count = 0;
-		uint64_t owner;
-		std::string game, platform;
+#ifdef DEBUG
+		utils::io::write_file("demonware/bdStorage/get_user_file", buffer->get_buffer());
+#endif
 
-		buffer->read_string(&game);
-		buffer->read_uint32(&unk32_0);
-		buffer->read_uint64(&owner);
+		std::string platform;
+		uint32_t numunk;
+		uint32_t numfiles;
+		uint64_t owner = 0;
+		std::string game;
+
 		buffer->read_string(&platform);
-		buffer->read_uint64(&owner);
-		buffer->read_string(&platform);
+		buffer->read_uint32(&numunk);
+
+		for (uint32_t i = 0; i < numunk; i++)
+		{
+			buffer->read_uint64(&owner);
+			buffer->read_string(&game);
+		}
+
 		buffer->read_uint32(&numfiles);
 
 		auto reply = server->create_reply(this->task_id());
 
+		uint32_t count = 0;
 		for (uint32_t i = 0; i < numfiles; i++)
 		{
 			std::string filename, data;
@@ -239,6 +261,10 @@ namespace demonware
 
 	void bdStorage::unk12(service_server* server, byte_buffer* buffer) const
 	{
+#ifdef DEBUG
+		utils::io::write_file("demonware/bdStorage/unk12", buffer->get_buffer());
+#endif
+
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
 		reply->send();
