@@ -520,8 +520,6 @@ namespace demonware
 			// Skip bdAuth::validateResponseSignature
 			utils::hook::call(0x1245440_b, return_true); // bdRSAKey::importKey
 			utils::hook::call(0x1245472_b, return_true); // bdRSAKey::verifySignatureSHA256
-			// Skip bdAuth::processPlatformData
-			utils::hook::call(0x124863A_b, return_true); // bdExtendedAuthInfo::setData
 		}
 
 		void pre_destroy() override
@@ -535,4 +533,4 @@ namespace demonware
 	};
 }
 
-//REGISTER_COMPONENT(demonware::component)
+REGISTER_COMPONENT(demonware::component)

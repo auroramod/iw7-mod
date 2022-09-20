@@ -148,7 +148,7 @@ namespace demonware
 		// extra data
 		doc.AddMember("extra_data", rapidjson::StringRef(extra_data.data(), extra_data.size()), doc.GetAllocator());
 
-		doc.AddMember("identity", rapidjson::StringRef(identity.data(), identity.size()), doc.GetAllocator());
+		//doc.AddMember("identity", rapidjson::StringRef(identity.data(), identity.size()), doc.GetAllocator());
 
 		rapidjson::StringBuffer buffer{};
 		rapidjson::Writer<rapidjson::StringBuffer, rapidjson::Document::EncodingType, rapidjson::ASCII<>>
