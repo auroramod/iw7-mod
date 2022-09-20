@@ -444,6 +444,11 @@ namespace demonware
 		{
 			return true;
 		}
+
+		int get_patching_status_stub()
+		{
+			return 1; // complete
+		}
 	}
 
 	class component final : public component_interface
@@ -520,6 +525,11 @@ namespace demonware
 			// Skip bdAuth::validateResponseSignature
 			utils::hook::call(0x1245440_b, return_true); // bdRSAKey::importKey
 			utils::hook::call(0x1245472_b, return_true); // bdRSAKey::verifySignatureSHA256
+
+			// Skip update check in Live_SyncOnlineDataFlags
+			utils::hook::set(0x14052AB60, 0xC301B0);
+			utils::hook::set<uint8_t>(0x14052A6D0, 0xC3);
+			utils::hook::jump(0x14052B800, get_patching_status_stub);
 		}
 
 		void pre_destroy() override

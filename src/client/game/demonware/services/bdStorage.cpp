@@ -249,14 +249,7 @@ namespace demonware
 #endif
 		}
 
-		if (count == numfiles)
-		{
-			reply->send();
-		}
-		else
-		{
-			server->create_reply(this->task_id(), game::BD_NO_FILE)->send();
-		}
+		reply->send();
 	}
 
 	void bdStorage::unk12(service_server* server, byte_buffer* buffer) const
