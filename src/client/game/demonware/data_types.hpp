@@ -144,32 +144,30 @@ namespace demonware
 		}
 	};
 
-	// made up name
-	class bdFile final : public bdTaskResult
+	struct bdFileQueryResult final : public bdTaskResult
 	{
-	public:
-		uint64_t owner_id;
+		uint64_t user_id;
 		std::string platform;
 		std::string filename;
-		uint32_t unk;
-		std::string data;
+		uint32_t errorcode;
+		std::string filedata;
 
-		void serialize(byte_buffer* buffer) override
+		void serialize(byte_buffer* data) override
 		{
-			buffer->write_uint64(this->owner_id);
-			buffer->write_string(this->platform);
-			buffer->write_string(this->filename);
-			buffer->write_uint32(this->unk);
-			buffer->write_blob(this->data);
+			data->write_uint64(user_id);
+			data->write_string(platform);
+			data->write_string(filename);
+			data->write_uint32(errorcode);
+			data->write_blob(filedata);
 		}
 
-		void deserialize(byte_buffer* buffer) override
+		void deserialize(byte_buffer* data) override
 		{
-			buffer->read_uint64(&this->owner_id);
-			buffer->read_string(&this->platform);
-			buffer->read_string(&this->filename);
-			buffer->read_uint32(&this->unk);
-			buffer->read_blob(&this->data);
+			data->read_uint64(&user_id);
+			data->read_string(&platform);
+			data->read_string(&filename);
+			data->read_uint32(&errorcode);
+			data->read_blob(&filedata);
 		}
 	};
 

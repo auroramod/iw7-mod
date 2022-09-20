@@ -203,7 +203,7 @@ namespace demonware
 		std::string platform;
 		uint32_t numunk;
 		uint32_t numfiles;
-		uint64_t owner = 0;
+		uint64_t user_id = 0;
 		std::string game;
 
 		buffer->read_string(&platform);
@@ -211,7 +211,7 @@ namespace demonware
 
 		for (uint32_t i = 0; i < numunk; i++)
 		{
-			buffer->read_uint64(&owner);
+			buffer->read_uint64(&user_id);
 			buffer->read_string(&game);
 		}
 
@@ -234,12 +234,12 @@ namespace demonware
 				continue;
 			}
 
-			auto response = new bdFile;
-			response->owner_id = owner;
-			response->unk = 0;
+			auto response = new bdFileQueryResult;
+			response->user_id = user_id;
 			response->platform = platform;
 			response->filename = filename;
-			response->data = data;
+			response->errorcode = 0;
+			response->filedata = data;
 
 			reply->add(response);
 			++count;
