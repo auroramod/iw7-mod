@@ -3,8 +3,6 @@
 
 #include "game/game.hpp"
 
-#include <utils/io.hpp>
-
 namespace demonware
 {
 	bdMarketingComms::bdMarketingComms() : service(104, "bdMarketingComms")
@@ -30,10 +28,6 @@ namespace demonware
 
 	void bdMarketingComms::unk6(service_server* server, byte_buffer* buffer) const
 	{
-#ifdef DEBUG
-		utils::io::write_file("demonware/bdMarketingComms/unk6", buffer->get_buffer());
-#endif
-
 		server->create_reply(this->task_id(), game::BD_NO_FILE)->send();
 	}
 }

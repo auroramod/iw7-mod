@@ -66,10 +66,6 @@ namespace demonware
 
 	void bdStorage::list_publisher_files(service_server* server, byte_buffer* buffer)
 	{
-#ifdef DEBUG
-		utils::io::write_file("demonware/bdStorage/list_publisher_files", buffer->get_buffer());
-#endif
-
 		uint32_t date;
 		uint16_t num_results, offset;
 		std::string unk, filename, data;
@@ -107,10 +103,6 @@ namespace demonware
 
 	void bdStorage::get_publisher_file(service_server* server, byte_buffer* buffer)
 	{
-#ifdef DEBUG
-		utils::io::write_file("demonware/bdStorage/get_publisher_file", buffer->get_buffer());
-#endif
-
 		std::string unk, filename;
 		buffer->read_string(&unk);
 		buffer->read_string(&filename);
@@ -144,10 +136,6 @@ namespace demonware
 
 	void bdStorage::set_user_file(service_server* server, byte_buffer* buffer) const
 	{
-#ifdef DEBUG
-		utils::io::write_file("demonware/bdStorage/set_user_file", buffer->get_buffer());
-#endif
-
 		uint64_t owner;
 		uint32_t numfiles;
 		std::string game, platform;
@@ -196,10 +184,6 @@ namespace demonware
 
 	void bdStorage::get_user_file(service_server* server, byte_buffer* buffer) const
 	{
-#ifdef DEBUG
-		utils::io::write_file("demonware/bdStorage/get_user_file", buffer->get_buffer());
-#endif
-
 		std::string platform;
 		uint32_t numunk;
 		uint32_t numfiles;
@@ -254,10 +238,6 @@ namespace demonware
 
 	void bdStorage::unk12(service_server* server, byte_buffer* buffer) const
 	{
-#ifdef DEBUG
-		utils::io::write_file("demonware/bdStorage/unk12", buffer->get_buffer());
-#endif
-
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
 		reply->send();
