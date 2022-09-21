@@ -69,6 +69,21 @@ namespace fastfiles
 		}
 	}
 
+	bool exists(const std::string& zone)
+	{
+		const auto is_localized = game::DB_IsLocalized(zone.data());
+		const auto handle = game::Sys_CreateFile((is_localized ? game::SF_ZONE_LOC : game::SF_ZONE),
+			utils::string::va("%s.ff", zone.data()));
+
+		if (handle != INVALID_HANDLE_VALUE)
+		{
+			CloseHandle(handle);
+			return true;
+		}
+
+		return false;
+	}
+
 	class component final : public component_interface
 	{
 	public:

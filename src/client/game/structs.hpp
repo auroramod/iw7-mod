@@ -22,6 +22,23 @@ namespace game
 		GAME_TYPE_CP = 0x3,
 	};
 
+	enum errorParm
+	{
+		ERR_FATAL = 0,
+		ERR_DROP = 1,
+	};
+
+	enum Sys_Folder
+	{
+		SF_ZONE = 0x0,
+		SF_ZONE_LOC = 0x1,
+		SF_VIDEO = 0x2,
+		SF_VIDEO_LOC = 0x3,
+		SF_PAKFILE = 0x4,
+		SF_PAKFILE_LOC = 0x5,
+		SF_COUNT = 0x6,
+	};
+
 	struct CmdArgs
 	{
 		int nesting;
@@ -55,6 +72,8 @@ namespace game
 		DVAR_FLAG_LATCHED = 0x2,
 		DVAR_FLAG_CHEAT = 0x4,
 		DVAR_FLAG_REPLICATED = 0x8,
+		DVAR_FLAG_NETWORK = 0x10,
+		DVAR_FLAG_EXTERNAL = 0x100,
 		DVAR_FLAG_WRITE = 0x800,
 		DVAR_FLAG_READ = 0x2000,
 	};

@@ -8,6 +8,8 @@ namespace game
 	 * Functions
 	 **************************************************************/
 
+	WEAK symbol<void(errorParm code, const char* message, ...)> Com_Error{ 0xB8D830 };
+
 	WEAK symbol<void()> Com_Quit_f{ 0xBADC90 };
 
 	WEAK symbol<bool()> Com_FrontEndScene_IsActive{ 0x5AEBA0 };
@@ -30,6 +32,8 @@ namespace game
 	WEAK symbol<bool(XAssetType type, const char* name)> DB_IsXAssetDefault{ 0xA780D0 };
 	WEAK symbol<XAssetHeader(XAssetType type, const char* name, int allowCreateDefault)> DB_FindXAssetHeader{ 0xA76E00 };
 
+	WEAK symbol<bool(const char* zoneName)> DB_IsLocalized{ 0x3BC500 };
+
 	WEAK symbol<dvar_t* (const char* name, bool value,
 		unsigned int flags, const char* description)> Dvar_RegisterBool{ 0xCEB380 };
 	WEAK symbol<dvar_t* (const char* name, int value, int min, int max,
@@ -45,6 +49,10 @@ namespace game
 	WEAK symbol<dvar_t* (const char* name, float x, float y, float z,
 		float w, float min, float max, unsigned int flags, const char* description)> Dvar_RegisterVec4{ 0xCEC110 };
 
+	WEAK symbol<dvar_t*(unsigned int checksum, const char* string, DvarSetSource source)> Dvar_SetFromStringByChecksum{ 0xCECDB0 };
+	WEAK symbol<dvar_t* (const char* name, const char* string, DvarSetSource source)> Dvar_SetFromStringByName{ 0xCECF30 };
+	WEAK symbol<void(dvar_t* dvar, const char* string, DvarSetSource source)> Dvar_SetFromStringFromSource{ 0xCECFF0 };
+
 	WEAK symbol<void(const char* name, const char* string)> Dvar_SetCommand{ 0xCECB30 };
 	WEAK symbol<dvar_t* (const char* name)> Dvar_FindVar{ 0xCEA460 };
 	WEAK symbol<dvar_t* (unsigned int checksum)> Dvar_FindMalleableVar{ 0xCEA3C0 };
@@ -52,9 +60,7 @@ namespace game
 	WEAK symbol<const char* (const dvar_t* dvar)> Dvar_DisplayableLatchedValue{ 0xCEA1D0 };
 	WEAK symbol<void(char* buffer, int index)> Dvar_GetCombinedString{ 0xBB1F30 };
 	WEAK symbol<const char* (dvar_t* dvar, DvarValue value)> Dvar_ValueToString{ 0xCEED00 };
-	WEAK symbol<int(const char* name)> Dvar_GenerateChecksum{ 0xCEA520 };
-#define Dvar_GenerateHash(name) \
-	Dvar_GenerateChecksum(name);
+	WEAK symbol<unsigned int(const char* name)> Dvar_GenerateChecksum{ 0xCEA520 };
 
 	WEAK symbol<void(int h, const char* fmt, ...)> FS_Printf{ 0xCDD1C0 };
 
@@ -82,6 +88,8 @@ namespace game
 	IW7_AddBaseDrawTextCmd(TXT, MC, F, game::R_GetFontHeight(F), X, Y, XS, YS, R, C, CP, CC, game::R_DrawSomething(S), 0, 0, 0, 0)
 
 	WEAK symbol<int()> Sys_Milliseconds{ 0xD58110 };
+
+	WEAK symbol<HANDLE(Sys_Folder folder, const char* baseFilename)> Sys_CreateFile{ 0xCFDF50 };
 
 	WEAK symbol<ScreenPlacement* ()> ScrPlace_GetViewPlacement{ 0x9E4090 };
 
