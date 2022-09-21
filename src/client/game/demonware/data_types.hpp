@@ -144,8 +144,9 @@ namespace demonware
 		}
 	};
 
-	struct bdFileQueryResult final : public bdTaskResult
+	class bdFileQueryResult final : public bdTaskResult
 	{
+	public:
 		uint64_t user_id;
 		std::string platform;
 		std::string filename;

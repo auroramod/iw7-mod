@@ -28,6 +28,7 @@ namespace demonware
 
 	void bdMarketingComms::unk6(service_server* server, byte_buffer* buffer) const
 	{
+		// TODO:
 		server->create_reply(this->task_id(), game::BD_NO_FILE)->send();
 	}
 }
