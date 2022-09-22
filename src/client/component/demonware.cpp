@@ -530,6 +530,8 @@ namespace demonware
 			utils::hook::set(0x52AB60_b, 0xC301B0);
 			utils::hook::set<uint8_t>(0x52A6D0_b, 0xC3);
 			utils::hook::jump(0x52B800_b, get_patching_status_stub);
+
+			utils::hook::set<uint8_t>(0xDC0C00_b, 0xC3); // Live_CheckForFullDisconnect
 		}
 
 		void pre_destroy() override

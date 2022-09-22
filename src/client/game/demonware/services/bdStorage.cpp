@@ -11,11 +11,11 @@ namespace demonware
 {
 	bdStorage::bdStorage() : service(10, "bdStorage")
 	{
-		this->register_task(20, &bdStorage::list_publisher_files);
-		this->register_task(21, &bdStorage::get_publisher_file);
-		this->register_task(24, &bdStorage::set_user_file);
-		this->register_task(16, &bdStorage::get_user_file);
-		this->register_task(12, &bdStorage::unk12);
+		this->register_task(20, &bdStorage::listAllPublisherFiles);
+		this->register_task(21, &bdStorage::getPublisherFile);
+		this->register_task(24, &bdStorage::uploadAndValidateFiles);
+		this->register_task(16, &bdStorage::getFiles);
+		this->register_task(12, &bdStorage::getFile);
 
 		this->map_publisher_resource("motd-.*\\.txt", DW_MOTD);
 		// this->map_publisher_resource("ffotd-.*\\.ff", DW_FASTFILE);
@@ -64,7 +64,7 @@ namespace demonware
 		return false;
 	}
 
-	void bdStorage::list_publisher_files(service_server* server, byte_buffer* buffer)
+	void bdStorage::listAllPublisherFiles(service_server* server, byte_buffer* buffer)
 	{
 		uint32_t date;
 		uint16_t num_results, offset;
@@ -101,7 +101,7 @@ namespace demonware
 		reply->send();
 	}
 
-	void bdStorage::get_publisher_file(service_server* server, byte_buffer* buffer)
+	void bdStorage::getPublisherFile(service_server* server, byte_buffer* buffer)
 	{
 		std::string unk, filename;
 		buffer->read_string(&unk);
@@ -134,7 +134,7 @@ namespace demonware
 		return "players2/user/" + name;
 	}
 
-	void bdStorage::set_user_file(service_server* server, byte_buffer* buffer) const
+	void bdStorage::uploadAndValidateFiles(service_server* server, byte_buffer* buffer) const
 	{
 		uint64_t owner;
 		uint32_t numfiles;
@@ -182,7 +182,7 @@ namespace demonware
 		reply->send();
 	}
 
-	void bdStorage::get_user_file(service_server* server, byte_buffer* buffer) const
+	void bdStorage::getFiles(service_server* server, byte_buffer* buffer) const
 	{
 		std::string platform;
 		uint32_t numunk;
@@ -236,7 +236,7 @@ namespace demonware
 		reply->send();
 	}
 
-	void bdStorage::unk12(service_server* server, byte_buffer* buffer) const
+	void bdStorage::getFile(service_server* server, byte_buffer* buffer) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
