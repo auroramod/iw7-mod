@@ -12,14 +12,26 @@ namespace game
 
 	WEAK symbol<void()> Com_Quit_f{ 0xBADC90 };
 
+	WEAK symbol<bool()> Com_FrontEnd_IsInFrontEnd{ 0x5AE6C0 };
 	WEAK symbol<bool()> Com_FrontEndScene_IsActive{ 0x5AEBA0 };
+	WEAK symbol<void()> Com_FrontEndScene_ShutdownAndDisable{ 0x5AEFB0 };
 
+	WEAK symbol<void(GameModeType)> Com_GameMode_SetDesiredGameMode{ 0x5AFDA0 };
 	WEAK symbol<GameModeType()> Com_GameMode_GetActiveGameMode{ 0x5AFD50 };
+	WEAK symbol<bool(const char* name)> Com_GameMode_SupportsMap{ 0x5AFE10 };
+
+	WEAK symbol<bool()> Com_IsAnyLocalServerStarting{ 0xBAD9C0 };
+	WEAK symbol<bool()> Com_IsAnyLocalServerRunning{ 0xBAD9A0 };
+
+	WEAK symbol<void(const char* finalmsg)> Com_Shutdown{ 0xBAFEA0 };
 
 	WEAK symbol<void(int localClientNum, const char* text)> Cbuf_AddText{ 0xB7C290 };
 	WEAK symbol<void(int localClientNum, void(*))> Cbuf_AddCall{ 0xB7C220 };
 
 	WEAK symbol<void(int localClientNum, const char* msg, int flags)> CG_Utils_GameMessage{ 0x1D7FC0 };
+	WEAK symbol<void(int localClientNum, const char* msg, int flags)> CG_Utils_BoldGameMessage{ 0x1D7F10 };
+
+	WEAK symbol<void(int localClientNum, int andMask)> CL_Keys_RemoveCatcher{ 0x9A9B00 };
 
 	WEAK symbol<void(int localClientNum, int controllerIndex, const char* text)> Cmd_ExecuteSingleCommand{ 0xB7D040 };
 	WEAK symbol<void(const char* cmdName, void(), cmd_function_s* allocedCmd)> Cmd_AddCommandInternal{ 0xB7C8F0 };
@@ -49,7 +61,7 @@ namespace game
 	WEAK symbol<dvar_t* (const char* name, float x, float y, float z,
 		float w, float min, float max, unsigned int flags, const char* description)> Dvar_RegisterVec4{ 0xCEC110 };
 
-	WEAK symbol<dvar_t*(unsigned int checksum, const char* string, DvarSetSource source)> Dvar_SetFromStringByChecksum{ 0xCECDB0 };
+	WEAK symbol<dvar_t* (unsigned int checksum, const char* string, DvarSetSource source)> Dvar_SetFromStringByChecksum{ 0xCECDB0 };
 	WEAK symbol<dvar_t* (const char* name, const char* string, DvarSetSource source)> Dvar_SetFromStringByName{ 0xCECF30 };
 	WEAK symbol<void(dvar_t* dvar, const char* string, DvarSetSource source)> Dvar_SetFromStringFromSource{ 0xCECFF0 };
 
@@ -67,6 +79,11 @@ namespace game
 	WEAK symbol<const char* (int, int, int)> Key_KeynumToString{ 0x9A95E0 };
 
 	WEAK symbol<bool()> LUI_CoD_InFrontEnd{ 0x615080 };
+	WEAK symbol<void(bool frontend, bool errorRecovery)> LUI_CoD_Init{ 0x615090 };
+	WEAK symbol<void()> LUI_CoD_Shutdown{ 0x617610 };
+	WEAK symbol<void(int localClientNum, const char* menuName, int isPopup, int isModal, int isExclusive)> LUI_OpenMenu{ 0xCC0CA0 };
+	WEAK symbol<void(int localClientNum, const char* menuName, int immediate)> LUI_CloseMenu{ 0xCC0C40 };
+	WEAK symbol<void(int localClientNum)> LUI_CoD_CLoseAll{ 0x6135C0 };
 
 	WEAK symbol<unsigned int(int controllerIndex)> Live_SyncOnlineDataFlags{ 0xDC5CE0 };
 
@@ -95,8 +112,17 @@ namespace game
 
 	WEAK symbol<void(const char* string)> SV_Cmd_TokenizeString{ 0xB7DD00 };
 	WEAK symbol<void()> SV_Cmd_EndTokenizedString{ 0xB7DCC0 };
+	WEAK symbol<void(const char* map, const char* gameType, int clientCount, int agentCount, bool hardcore,
+		bool mapIsPreloaded, bool migrate)> SV_CmdsMP_StartMapForParty{ 0xC4D150 };
+	WEAK symbol<void()> SV_CmdsMP_CheckLoadGame{ 0xC4C9E0 };
+	WEAK symbol<void()> SV_CmdsSP_MapRestart_f{ 0xC12B30 };
+	WEAK symbol<void()> SV_CmdsSP_FastRestart_f{ 0xC12AF0 };
 	WEAK symbol<void(int clientNum, svscmd_type type, const char* text)> SV_GameSendServerCommand{ 0xC54780 };
 	WEAK symbol<bool()> SV_Loaded{ 0xC114C0 };
+	WEAK symbol<bool(const char* name)> SV_MapExists{ 0xCDB620 };
+
+	WEAK symbol<void(int)> SND_StopSounds{ 0xCA06E0 };
+	WEAK symbol<void(const char*)> SND_SetMusicState{ 0xC9E110 };
 
 	/***************************************************************
 	 * Variables
@@ -119,4 +145,8 @@ namespace game
 
 	WEAK symbol<int> svs_numclients{ 0x6B229E0 };
 	WEAK symbol<client_t> svs_clients{ 0x6B22950 };
+
+	WEAK symbol<int> sv_map_restart{ 0x6B2C9D4 };
+	WEAK symbol<int> sv_loadScripts{ 0x6B2C9D8 };
+	WEAK symbol<int> sv_migrate{ 0x6B2C9DC };
 }

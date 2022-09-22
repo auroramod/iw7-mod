@@ -14,7 +14,7 @@ namespace command
 
 		const char* operator[](const int index) const
 		{
-			return this->get(index); //
+			return this->get(index);
 		}
 
 	private:
@@ -33,7 +33,7 @@ namespace command
 
 		const char* operator[](const int index) const
 		{
-			return this->get(index); //
+			return this->get(index);
 		}
 
 	private:

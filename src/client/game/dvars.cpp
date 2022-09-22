@@ -21,6 +21,8 @@ namespace dvars
 
 	game::dvar_t* branding = nullptr;
 
+	game::dvar_t* lui_debug = nullptr;
+
 	game::dvar_t* r_fullbright = nullptr;
 
 	std::string dvar_get_vector_domain(const int components, const game::DvarLimits& domain)
@@ -131,7 +133,7 @@ namespace dvars
 		}
 	}
 
-	std::unordered_map<const game::dvar_t*, std::string> dvar_names;
+	std::unordered_map<const game::dvar_t*, const char*> dvar_names;
 
 	std::string dvar_get_name(const game::dvar_t* dvar)
 	{
@@ -144,12 +146,12 @@ namespace dvars
 		return "";
 	}
 
-	void dvar_set_name(const game::dvar_t* dvar, const std::string& name)
+	void dvar_set_name(const game::dvar_t* dvar, const char* name)
 	{
 		dvar_names[dvar] = name;
 	}
 
-	std::unordered_map<const game::dvar_t*, std::string> dvar_descriptions;
+	std::unordered_map<const game::dvar_t*, const char*> dvar_descriptions;
 
 	std::string dvar_get_description(const game::dvar_t* dvar)
 	{
@@ -162,7 +164,7 @@ namespace dvars
 		return "";
 	}
 
-	void dvar_set_description(const game::dvar_t* dvar, const std::string& description)
+	void dvar_set_description(const game::dvar_t* dvar, const char* description)
 	{
 		dvar_descriptions[dvar] = description;
 	}

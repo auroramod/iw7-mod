@@ -13,6 +13,15 @@ namespace game
 		base_address = reinterpret_cast<uint64_t>(module);
 	}
 
+	namespace environment
+	{
+		bool is_dedi()
+		{
+			static const auto dedicated = utils::flags::has_flag("dedicated");
+			return dedicated;
+		}
+	}
+
 	int Cmd_Argc()
 	{
 		return cmd_args->argc[cmd_args->nesting];
@@ -131,12 +140,16 @@ namespace game
 		}), &callback);
 	}
 
-	namespace environment
+	void SV_CmdsMP_RequestMapRestart(bool loadScripts, bool migrate)
 	{
-		bool is_dedi()
+		if (!Com_IsAnyLocalServerStarting())
 		{
-			static const auto dedicated = utils::flags::has_flag("dedicated");
-			return dedicated;
+			SND_StopSounds(2);
+			SND_SetMusicState("\0");
+			*sv_map_restart = 1;
+			*sv_loadScripts = loadScripts;
+			*sv_migrate = migrate;
+			Cbuf_AddCall(0, SV_CmdsMP_CheckLoadGame);
 		}
 	}
 }

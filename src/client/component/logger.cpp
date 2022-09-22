@@ -95,9 +95,6 @@ namespace logger
 
 			if (!game::environment::is_dedi())
 			{
-				// LUI_Interface_DebugPrint
-				utils::hook::jump(0x61C430_b, print_debug);
-
 				// R_WarnOncePerFrame
 				utils::hook::call(0xE4B121_b, r_warn_once_per_frame_vsnprintf_stub);
 			}

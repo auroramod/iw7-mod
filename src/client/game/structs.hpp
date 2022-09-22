@@ -16,10 +16,15 @@ namespace game
 
 	enum GameModeType : std::uint32_t
 	{
-		GAME_TYPE_NONE = 0x0,
-		GAME_TYPE_SP = 0x1,
-		GAME_TYPE_MP = 0x2,
-		GAME_TYPE_CP = 0x3,
+		GAME_MODE_NONE = 0x0,
+		GAME_MODE_SP = 0x1,
+		GAME_MODE_MP = 0x2,
+		GAME_MODE_CP = 0x3,
+	};
+
+	enum Com_GameMode_Feature : std::int32_t
+	{
+		FEATURE_TIMESCALE = 69,
 	};
 
 	enum errorParm
@@ -53,6 +58,14 @@ namespace game
 		cmd_function_s* next;
 		const char* name;
 		void(__cdecl* function)();
+	};
+
+	struct SvCommandInfo
+	{
+		const char* name;
+		void(__fastcall* func)();
+		cmd_function_s clvar;
+		cmd_function_s svvar;
 	};
 
 	enum DvarSetSource : std::uint32_t

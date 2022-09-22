@@ -154,7 +154,7 @@ namespace command
 
 		void client_println(int client_num, const std::string& text)
 		{
-			if (game::Com_GameMode_GetActiveGameMode() == game::GAME_TYPE_SP)
+			if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
 			{
 				game::CG_Utils_GameMessage(client_num, text.data(), 0); // why is nothing printed?
 			}
@@ -167,6 +167,11 @@ namespace command
 
 		bool cheats_ok(int client_num)
 		{
+			if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+			{
+				return true;
+			}
+
 			const auto sv_cheats = game::Dvar_FindVar("sv_cheats");
 			if (!sv_cheats || !sv_cheats->current.enabled)
 			{
@@ -174,6 +179,87 @@ namespace command
 				return false;
 			}
 
+			return true;
+		}
+
+		void start_map_for_party()
+		{
+			auto* mapname = game::Dvar_FindVar("ui_mapname");
+			auto* gametype = game::Dvar_FindVar("ui_gametype");
+			auto* clients = game::Dvar_FindVar("ui_maxclients");
+			auto* private_clients = game::Dvar_FindVar("ui_privateClients");
+			auto* hardcore = game::Dvar_FindVar("ui_hardcore");
+
+			game::Com_FrontEndScene_ShutdownAndDisable();
+
+			if (!game::environment::is_dedi() && !game::Com_FrontEndScene_IsActive())
+			{
+				game::Com_Shutdown("EXE_ENDOFGAME");
+			}
+
+			game::SV_CmdsMP_StartMapForParty(
+				mapname->current.string,
+				gametype->current.string,
+				clients->current.integer,
+				private_clients->current.integer,
+				hardcore->current.enabled,
+				false,
+				false);
+		}
+
+		void perform_game_initialization()
+		{
+			command::execute("onlinegame 1", true);
+			command::execute("xstartprivatematch", true); //command::execute("xstartprivateparty", true);
+			command::execute("xblive_privatematch 1", true);
+		}
+
+		bool start_map(const std::string& mapname, bool dev)
+		{
+			if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+			{
+				console::info("Starting sp map: %s\n", mapname.data());
+				command::execute(utils::string::va("spmap %s", mapname.data()), true);
+				return true;
+			}
+
+			if (mapname.empty())
+			{
+				console::error("No map specified.\n");
+				return false;
+			}
+
+			if (!game::SV_MapExists(mapname.data()))
+			{
+				console::error("Map \"%s\" doesn't exist.\n", mapname.data());
+				return false;
+			}
+
+			if (!game::Com_GameMode_SupportsMap(mapname.data()))
+			{
+				console::error("Cannot load map \"%s\" in current game mode.\n", mapname.data());
+				return false;
+			}
+
+			auto* current_mapname = game::Dvar_FindVar("mapname");
+
+			command::execute((dev ? "set sv_cheats 1" : "set sv_cheats 0"), true);
+
+			if (current_mapname && utils::string::to_lower(current_mapname->current.string) ==
+				utils::string::to_lower(mapname) && (game::SV_Loaded() && !game::Com_FrontEndScene_IsActive()))
+			{
+				console::info("Restarting map: %s\n", mapname.data());
+				command::execute("map_restart", false);
+				return true;
+			}
+
+			command::execute(utils::string::va("ui_mapname %s", mapname.data()), true);
+
+			console::info("Starting map: %s\n", mapname.data());
+
+			perform_game_initialization();
+
+			game::Cbuf_AddCall(0, start_map_for_party);
 			return true;
 		}
 	}
@@ -316,8 +402,8 @@ namespace command
 		void post_unpack() override
 		{
 			utils::hook::jump(0xBB1DC0_b, dvar_command_stub, true);
-			//client_command_mp_hook.create(0xB105D0_b, &client_command_mp);
-			//client_command_sp_hook.create(0x483130_b, &client_command_sp);
+			client_command_mp_hook.create(0xB105D0_b, &client_command_mp);
+			client_command_sp_hook.create(0x483130_b, &client_command_sp);
 
 			add_commands();
 		}
@@ -331,72 +417,175 @@ namespace command
 				*reinterpret_cast<int*>(1) = 0;
 			});
 
-			add("god", []()
+			add("noMode", []()
 			{
-				if (!game::SV_Loaded())
+				game::Com_GameMode_SetDesiredGameMode(game::GAME_MODE_NONE);
+			});
+
+			add("spMode", []()
+			{
+				game::Com_GameMode_SetDesiredGameMode(game::GAME_MODE_SP);
+			});
+
+			add("mpMode", []()
+			{
+				game::Com_GameMode_SetDesiredGameMode(game::GAME_MODE_MP);
+			});
+
+			add("cpMode", []()
+			{
+				game::Com_GameMode_SetDesiredGameMode(game::GAME_MODE_CP);
+			});
+
+			static const char* a1 = "map_sp";
+			static const char* a2 = "map_restart_sp";
+			static const char* a3 = "fast_restart_sp";
+
+			// patch singleplayer "map" -> "map_sp"
+			utils::hook::set(0x1BBA800_b + 0, a1);
+			utils::hook::set(0x1BBA800_b + 24, a1);
+			utils::hook::set(0x1BBA800_b + 56, a1);
+
+			// patch singleplayer map_restart -> "map_restart_sp"
+			utils::hook::set(0x1BBA740_b + 0, a2);
+			utils::hook::set(0x1BBA740_b + 24, a2);
+			utils::hook::set(0x1BBA740_b + 56, a2);
+
+			// patch singleplayer fast_restart -> "fast_restart_sp"
+			utils::hook::set(0x1BBA700_b + 0, a3);
+			utils::hook::set(0x1BBA700_b + 24, a3);
+			utils::hook::set(0x1BBA700_b + 56, a3);
+
+			add("map", [](const params& args)
+			{
+				if (args.size() != 2)
 				{
 					return;
 				}
 
-				game::g_entities[0].flags ^= 1;
-				client_println(0,
-					game::g_entities[0].flags & 1
+				if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+				{
+					command::execute(utils::string::va("spmap %s", args.get(1)));
+					return;
+				}
+
+				start_map(args.get(1), false);
+			});
+
+			add("devmap", [](const params& args)
+			{
+				if (args.size() != 2)
+				{
+					return;
+				}
+
+				if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+				{
+					command::execute(utils::string::va("spmap %s", args.get(1)));
+					return;
+				}
+
+				start_map(args.get(1), true);
+			});
+
+			add("map_restart", [](const params&)
+			{
+				if (!game::SV_Loaded() || game::Com_FrontEnd_IsInFrontEnd())
+				{
+					return;
+				}
+
+				if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+				{
+					game::Cbuf_AddCall(0, game::SV_CmdsSP_MapRestart_f);
+					return;
+				}
+
+				game::SV_CmdsMP_RequestMapRestart(1, 0);
+			});
+
+			add("fast_restart", [](const params&)
+			{
+				if (!game::SV_Loaded() || game::Com_FrontEnd_IsInFrontEnd())
+				{
+					return;
+				}
+
+				if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+				{
+					game::Cbuf_AddCall(0, game::SV_CmdsSP_FastRestart_f);
+					return;
+				}
+
+				game::SV_CmdsMP_RequestMapRestart(0, 0);
+			});
+
+			add_sv("god", [](const int client_num, const params_sv&)
+			{
+				if (!cheats_ok(client_num))
+				{
+					return;
+				}
+
+				game::g_entities[client_num].flags ^= 1;
+				client_println(client_num,
+					game::g_entities[client_num].flags & 1
 					? "GAME_GODMODE_ON"
 					: "GAME_GODMODE_OFF");
 			});
 
-			add("demigod", []()
+			add_sv("demigod", [](const int client_num, const params_sv&)
 			{
-				if (!game::SV_Loaded())
+				if (!cheats_ok(client_num))
 				{
 					return;
 				}
 
-				game::g_entities[0].flags ^= 2;
-				client_println(0,
-					game::g_entities[0].flags & 2
+				game::g_entities[client_num].flags ^= 2;
+				client_println(client_num,
+					game::g_entities[client_num].flags & 2
 					? "GAME_DEMI_GODMODE_ON"
 					: "GAME_DEMI_GODMODE_OFF");
 			});
 
-			add("notarget", []()
+			add_sv("notarget", [](const int client_num, const params_sv&)
 			{
-				if (!game::SV_Loaded())
+				if (!cheats_ok(client_num))
 				{
 					return;
 				}
 
-				game::g_entities[0].flags ^= 4;
-				client_println(0,
-					game::g_entities[0].flags & 4
+				game::g_entities[client_num].flags ^= 4;
+				client_println(client_num,
+					game::g_entities[client_num].flags & 4
 					? "GAME_NOTARGETON"
 					: "GAME_NOTARGETOFF");
 			});
 
-			add("noclip", []()
+			add_sv("noclip", [](const int client_num, const params_sv&)
 			{
-				if (!game::SV_Loaded())
+				if (!cheats_ok(client_num))
 				{
 					return;
 				}
 
-				game::g_entities[0].client->flags ^= 1;
-				client_println(0,
-					game::g_entities[0].client->flags & 1
+				game::g_entities[client_num].client->flags ^= 1;
+				client_println(client_num,
+					game::g_entities[client_num].client->flags & 1
 					? "GAME_NOCLIPON"
 					: "GAME_NOCLIPOFF");
 			});
 
-			add("ufo", []()
+			add_sv("ufo", [](const int client_num, const params_sv&)
 			{
-				if (!game::SV_Loaded())
+				if (!cheats_ok(client_num))
 				{
 					return;
 				}
 
-				game::g_entities[0].client->flags ^= 1;
-				client_println(0,
-					game::g_entities[0].client->flags & 1
+				game::g_entities[client_num].client->flags ^= 1;
+				client_println(client_num,
+					game::g_entities[client_num].client->flags & 1
 					? "GAME_UFOON"
 					: "GAME_UFOOFF");
 			});

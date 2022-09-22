@@ -15,6 +15,7 @@ namespace patches
 	namespace
 	{
 		utils::hook::detour com_register_common_dvars_hook;
+		utils::hook::detour com_game_mode_supports_feature_hook;
 		utils::hook::detour cg_set_client_dvar_from_server_hook;
 		utils::hook::detour live_get_map_index_hook;
 		utils::hook::detour content_do_we_have_content_pack_hook;
@@ -31,12 +32,13 @@ namespace patches
 			return std::string{ username, username_len - 1 };
 		}
 
-		game::dvar_t* name_dvar;
-		game::dvar_t* com_maxfps;
-		game::dvar_t* cg_fov;
-		game::dvar_t* cg_fovScale;
 		void com_register_common_dvars_stub()
 		{
+			game::dvar_t* name_dvar;
+			game::dvar_t* com_maxfps;
+			game::dvar_t* cg_fov;
+			game::dvar_t* cg_fovScale;
+
 			name_dvar = game::Dvar_RegisterString("name", get_login_username().data(), game::DVAR_FLAG_SAVED, "Player name.");
 			com_maxfps = game::Dvar_RegisterInt("com_maxfps", 0, 0, 1000, game::DVAR_FLAG_SAVED, "Cap frames per second");
 			cg_fov = game::Dvar_RegisterFloat("cg_fov", 65.0f, 1.0f, 160.f, game::DVAR_FLAG_SAVED,
@@ -57,6 +59,16 @@ namespace patches
 			dvars::disable::de_register("cg_fovScale");
 
 			return com_register_common_dvars_hook.invoke<void>();
+		}
+
+		bool com_game_mode_supports_feature_stub(game::Com_GameMode_Feature feature)
+		{
+			if (feature == game::FEATURE_TIMESCALE)
+			{
+				return true;
+			}
+
+			return com_game_mode_supports_feature_hook.invoke<bool>(feature);
 		}
 
 		const char* live_get_local_client_name()
@@ -168,6 +180,9 @@ namespace patches
 			// register custom dvars
 			com_register_common_dvars_hook.create(0xBADF30_b, com_register_common_dvars_stub);
 
+			// patch some features
+			com_game_mode_supports_feature_hook.create(0x5AFDE0_b, com_game_mode_supports_feature_stub);
+
 			// get client name from dvar
 			utils::hook::jump(0xD32770_b, live_get_local_client_name);
 
@@ -193,6 +208,9 @@ namespace patches
 
 			// don't reset our fov
 			utils::hook::set<uint8_t>(0x8A6160_b, 0xC3);
+
+			// some [data validation] anti tamper thing that kills performance
+			dvars::override::register_int("dvl", 0, 0, 0, game::DVAR_FLAG_READ);
 		}
 	};
 }
