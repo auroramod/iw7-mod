@@ -5,7 +5,15 @@ namespace demonware
 {
 	bdTitleUtilities::bdTitleUtilities() : service(12, "bdTitleUtilities")
 	{
+		this->register_task(1, &bdTitleUtilities::is_profanity);
 		this->register_task(6, &bdTitleUtilities::get_server_time);
+	}
+
+	void bdTitleUtilities::is_profanity(service_server* server, byte_buffer* /*buffer*/) const
+	{
+		// TODO:
+		auto reply = server->create_reply(this->task_id());
+		reply->send();
 	}
 
 	void bdTitleUtilities::get_server_time(service_server* server, byte_buffer* /*buffer*/) const
