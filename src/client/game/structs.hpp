@@ -391,6 +391,22 @@ namespace game
 		unsigned int addrHandleIndex;
 	};
 
+	struct msg_t
+	{
+		int overflowed;
+		int readOnly;
+		char* data;
+		char* splitData;
+		int maxsize;
+		int cursize;
+		int splitSize;
+		int readcount;
+		int bit;
+		int lastEntityRef;
+		netsrc_t targetLocalNetID;
+		int useZlib;
+	};
+
 	namespace entity
 	{
 		struct entityState_t

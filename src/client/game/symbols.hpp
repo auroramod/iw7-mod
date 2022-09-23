@@ -23,6 +23,8 @@ namespace game
 	WEAK symbol<bool()> Com_IsAnyLocalServerStarting{ 0xBAD9C0 };
 	WEAK symbol<bool()> Com_IsAnyLocalServerRunning{ 0xBAD9A0 };
 
+	WEAK symbol<void(const char* localizedMessage, const char* localizedTitle)> Com_SetLocalizedErrorMessage{ 0xBAF300 };
+
 	WEAK symbol<void(const char* finalmsg)> Com_Shutdown{ 0xBAFEA0 };
 
 	WEAK symbol<void(int localClientNum, const char* text)> Cbuf_AddText{ 0xB7C290 };
@@ -30,6 +32,9 @@ namespace game
 
 	WEAK symbol<void(int localClientNum, const char* msg, int flags)> CG_Utils_GameMessage{ 0x1D7FC0 };
 	WEAK symbol<void(int localClientNum, const char* msg, int flags)> CG_Utils_BoldGameMessage{ 0x1D7F10 };
+
+	WEAK symbol<void(int localClientNum, void* hostInfo, const netadr_s* addr, const char* mapname, const char* gametype)>
+		CL_MainMP_ConnectAndPreloadMap{ 0x9AED80 };
 
 	WEAK symbol<void(int localClientNum, int andMask)> CL_Keys_RemoveCatcher{ 0x9A9B00 };
 
@@ -89,6 +94,13 @@ namespace game
 
 	WEAK symbol<Material* (const char* material)> Material_RegisterHandle{ 0xE11CE0 };
 
+	WEAK symbol<void(netadr_s*, sockaddr*)> NetadrToSockadr{ 0xCE6B90 };
+	WEAK symbol<void(netsrc_t, netadr_s*, const char*)> NET_OutOfBandPrint{ 0xBB4EE0 };
+	WEAK symbol<void(netsrc_t sock, int length, const void* data, const netadr_s* to)> NET_SendLoopPacket{ 0xBB50A0 };
+	WEAK symbol<bool(const char* s, netadr_s* a)> NET_StringToAdr{ 0xBB5180 };
+	WEAK symbol<int(netadr_s a, netadr_s b)> NET_CompareAdr{ 0xBB49B0 };
+	WEAK symbol<int(netadr_s a, netadr_s b)> NET_CompareBaseAdr{ 0xBB4A00 };
+
 	WEAK symbol<GfxFont* (const char* font, int size)> R_RegisterFont{ 0xDFC670 };
 	WEAK symbol<int(const char* text, int maxChars, GfxFont* font)> R_TextWidth{ 0xDFC770 };
 	WEAK symbol<int(void* font)> R_GetFontHeight{ 0x12727B0 };
@@ -107,6 +119,8 @@ namespace game
 	WEAK symbol<int()> Sys_Milliseconds{ 0xD58110 };
 
 	WEAK symbol<HANDLE(Sys_Folder folder, const char* baseFilename)> Sys_CreateFile{ 0xCFDF50 };
+
+	WEAK symbol<void(int, void const*, const netadr_s*)> Sys_SendPacket{ 0xD57DE0 };
 
 	WEAK symbol<ScreenPlacement* ()> ScrPlace_GetViewPlacement{ 0x9E4090 };
 
@@ -149,4 +163,6 @@ namespace game
 	WEAK symbol<int> sv_map_restart{ 0x6B2C9D4 };
 	WEAK symbol<int> sv_loadScripts{ 0x6B2C9D8 };
 	WEAK symbol<int> sv_migrate{ 0x6B2C9DC };
+
+	WEAK symbol<SOCKET> query_socket{ 0x779FDC8 };
 }
