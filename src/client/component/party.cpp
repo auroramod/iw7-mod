@@ -118,6 +118,8 @@ namespace party
 	{
 		//command::execute("lui_open_popup popup_acceptinginvite", false);
 
+		printf("connect called...\n");
+
 		connect_state.host = target;
 		connect_state.challenge = utils::cryptography::random::get_challenge();
 		connect_state.hostDefined = true;
@@ -159,6 +161,8 @@ namespace party
 
 			network::on("getInfo", [](const game::netadr_s& target, const std::string_view& data)
 			{
+				printf("getInfo called...\n");
+
 				utils::info_string info{};
 				info.set("challenge", std::string{ data });
 				info.set("gamename", "IW7");
@@ -181,6 +185,8 @@ namespace party
 
 			network::on("infoResponse", [](const game::netadr_s& target, const std::string_view& data)
 			{
+				printf("infoResponse called...\n");
+
 				const utils::info_string info{ data };
 				//server_list::handle_info_response(target, info);
 

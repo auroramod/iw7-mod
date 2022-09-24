@@ -25,6 +25,7 @@ namespace network
 
 	bool handle_command(game::netadr_s* address, const char* command, game::msg_t* message)
 	{
+		printf("hamdle_cmd: %s\n", command);
 		const auto cmd_string = utils::string::to_lower(command);
 		auto& callbacks = get_callbacks();
 		const auto handler = callbacks.find(cmd_string);
@@ -36,35 +37,37 @@ namespace network
 
 		const std::string_view data(message->data + offset, message->cursize - offset);
 
-		handler->second(*address, data);
 #ifdef DEBUG
 		console::info("[Network] Handling command %s\n", cmd_string.data());
 #endif
+
+		handler->second(*address, data);
 		return true;
 	}
 
 	namespace
 	{
-		utils::hook::detour cl_main_connectionless_packet_universal_hook;
-		bool cl_main_connectionless_packet_universal_stub(int client_num, game::netadr_s* from, game::msg_t* msg, int time, const char* c)
+		utils::hook::detour cl_main_connectionless_packet_connect_handshake_hook;
+		bool cl_main_connectionless_packet_connect_handshake_stub(int client_num, game::netadr_s* from, game::msg_t* msg, int time, const char* c)
 		{
 			if (handle_command(from, c, msg))
 			{
 				return true;
 			}
 
-			return cl_main_connectionless_packet_universal_hook.invoke<bool>(client_num, from, msg, time, c);
+			return cl_main_connectionless_packet_connect_handshake_hook.invoke<bool>(client_num, from, msg, time, c);
 		}
 
 		int sys_send_packet_stub(const int size, const char* src, game::netadr_s* to)
 		{
+			console::info("Sys_SendPacket: type: %i, query_socket: %p\n", to->type, *game::query_socket);
 			if (to->type == game::NA_BROADCAST || to->type == game::NA_IP)
 			{
 				if (*game::query_socket)
 				{
 					sockaddr s = {};
 					game::NetadrToSockadr(to, &s);
-					return sendto(*game::query_socket, src, size, 0, &s, 16) >= 0;
+					return sendto(*game::query_socket, src, size, 0, &s, sizeof(sockaddr)) >= 0;
 				}
 			}
 			else
@@ -74,8 +77,67 @@ namespace network
 			return 0;
 		}
 
+		void sockadr_to_netadr(const sockaddr* s, game::netadr_s* a)
+		{
+			if (s->sa_family == 2)
+			{
+				a->type = game::NA_IP;
+				*a->ip = *&s->sa_data[2];
+				a->port = ntohs(*s->sa_data);
+			}
+		}
+
+		int sys_get_packet_stub(game::netadr_s* net_from, game::msg_t* net_message)
+		{
+			int ret;
+			int fromlen;
+			sockaddr from;
+			int datalen;
+
+			if (!*game::query_socket)
+			{
+				return 0;
+			}
+
+			fromlen = sizeof(sockaddr);
+			ret = recvfrom(*game::query_socket, net_message->data, net_message->maxsize, 0, &from, &fromlen);
+
+			if (ret == SOCKET_ERROR)
+			{
+				return 0;
+			}
+
+			printf("%s\n", std::string(net_message->data, ret).data());
+
+			sockadr_to_netadr(&from, net_from);
+			net_message->readcount = 0;
+
+			datalen = ret;
+			if (!datalen)
+			{
+				console::warn("Sys_GetPacket: Empty or discarded packet from %s\n", net_adr_to_string(*net_from));
+				return 0;
+			}
+			if (datalen == net_message->maxsize)
+			{
+				console::warn("Sys_GetPacket: Oversize packet from %s\n", net_adr_to_string(*net_from));
+				return 0;
+			}
+
+			net_message->cursize = datalen - 1;
+			net_message->targetLocalNetID = static_cast<game::netsrc_t>(net_message->data[net_message->cursize] >> 4);
+			net_from->localNetID = static_cast<game::netsrc_t>(net_message->data[net_message->cursize] & 0xF);
+
+			return 1;
+		}
+
 		int net_compare_base_address(const game::netadr_s* a, const game::netadr_s* b)
 		{
+			if (a->type != b->type)
+			{
+				return a->type - b->type;
+			}
+
 			if (a->type == b->type)
 			{
 				switch (a->type)
@@ -123,18 +185,34 @@ namespace network
 
 			const auto sock = socket(AF_INET, SOCK_DGRAM, protocol);
 
-			u_long arg = 1;
-			ioctlsocket(sock, FIONBIO, &arg);
-			char optval[4] = {1};
-			setsockopt(sock, 0xFFFF, 32, optval, 4);
-
-			if (bind(sock, reinterpret_cast<sockaddr*>(&address), sizeof(address)) != -1)
+			if (sock == INVALID_SOCKET)
 			{
-				return sock;
+				console::warn("WARNING: UDP_OpenSocket: socket");
+				return INVALID_SOCKET;
 			}
 
-			closesocket(sock);
-			return 0;
+			u_long arg = 1;
+			if (ioctlsocket(sock, FIONBIO, &arg) == SOCKET_ERROR)
+			{
+				console::warn("WARNING: UDP_OpenSocket: ioctl FIONBIO");
+				return INVALID_SOCKET;
+			}
+			char optval[4] = { 0 };
+			optval[0] = 1;
+			if (setsockopt(sock, 0xFFFF, SO_BROADCAST, optval, 4) == SOCKET_ERROR)
+			{
+				console::warn("WARNING: UDP_OpenSocket: setsockopt SO_BROADCAST");
+				return INVALID_SOCKET;
+			}
+
+			if (bind(sock, reinterpret_cast<sockaddr*>(&address), sizeof(address)) == SOCKET_ERROR)
+			{
+				console::warn("WARNING: UDP_OpenSocket: bind");
+				closesocket(sock);
+				return INVALID_SOCKET;
+			}
+
+			return sock;
 		}
 
 		void init_socket()
@@ -146,7 +224,7 @@ namespace network
 			for (port_diff = 0; port_diff < 10; port_diff++)
 			{
 				*game::query_socket = create_socket(
-					net_ip->current.string, net_port->current.integer + port_diff, 17);
+					net_ip->current.string, net_port->current.integer + port_diff, IPPROTO_UDP);
 				if (*game::query_socket)
 				{
 					break;
@@ -155,6 +233,7 @@ namespace network
 
 			if (!*game::query_socket)
 			{
+				console::warn("WARNING: Couldn't allocate IP/UDP port, LAN discovery will not work!\n");
 				return;
 			}
 
@@ -236,8 +315,12 @@ namespace network
 			// redirect packet sends to our stub
 			utils::hook::jump(game::Sys_SendPacket, sys_send_packet_stub);
 
+			// redirect packet receives to our stub
+			utils::hook::jump(game::Sys_GetPacket, sys_get_packet_stub);
+
 			// intercept command handling
-			cl_main_connectionless_packet_universal_hook.create(0x9B06E0_b, cl_main_connectionless_packet_universal_stub);
+			cl_main_connectionless_packet_connect_handshake_hook.create(0x9AFF90_b,
+				cl_main_connectionless_packet_connect_handshake_stub);
 
 			// handle xuid without secure connection
 			utils::hook::nop(0xC53315_b, 2);
@@ -267,12 +350,6 @@ namespace network
 			utils::hook::set<uint8_t>(0xC4EE1A_b, 0xEB);
 			utils::hook::set<uint8_t>(0xC4F0FB_b, 0xEB);
 
-			// increase cl_maxpackets
-			//dvars::override::register_int("cl_maxpackets", 1000, 1, 1000, game::DVAR_FLAG_SAVED);
-
-			// increase snaps
-			//dvars::override::register_int("sv_remote_client_snapshot_msec", 33, 33, 100, game::DVAR_FLAG_NONE);
-
 			// ignore impure client
 			utils::hook::jump(0xC500C8_b, 0xC500DE_b); // maybe add sv_pure dvar?
 
@@ -280,7 +357,7 @@ namespace network
 			//utils::hook::set<uint8_t>(0x0, 0);
 
 			// don't read checksum
-			utils::hook::set(0xCE6E60_b, 0xC301B0);
+			//utils::hook::set(0xCE6E60_b, 0xC301B0);
 
 			// don't try to reconnect client
 			//utils::hook::call(0x0, reconnect_migratated_client);
@@ -292,6 +369,12 @@ namespace network
 			//utils::hook::set<int>(0x0, max_packet_size);
 			//utils::hook::set<int>(0x0, max_packet_size);
 			//utils::hook::set<int>(0x0, max_packet_size);
+
+			// increase cl_maxpackets
+			//dvars::override::register_int("cl_maxpackets", 1000, 1, 1000, game::DVAR_FLAG_SAVED);
+
+			// increase snaps
+			//dvars::override::register_int("sv_remote_client_snapshot_msec", 33, 33, 100, game::DVAR_FLAG_NONE);
 
 			// ignore built in "print" oob command and add in our own
 			utils::hook::set<uint8_t>(0x9B0326_b, 0xEB);
