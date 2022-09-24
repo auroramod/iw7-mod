@@ -78,6 +78,7 @@ namespace game
 	WEAK symbol<void(char* buffer, int index)> Dvar_GetCombinedString{ 0xBB1F30 };
 	WEAK symbol<const char* (dvar_t* dvar, DvarValue value)> Dvar_ValueToString{ 0xCEED00 };
 	WEAK symbol<unsigned int(const char* name)> Dvar_GenerateChecksum{ 0xCEA520 };
+	WEAK symbol<void(dvar_t* dvar, int value)> Dvar_SetInt{ 0xCED3D0 };
 
 	WEAK symbol<void(int h, const char* fmt, ...)> FS_Printf{ 0xCDD1C0 };
 

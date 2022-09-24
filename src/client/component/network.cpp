@@ -101,6 +101,71 @@ namespace network
 		{
 			return net_compare_base_address(a, b) && a->port == b->port;
 		}
+
+		void string_to_sockaddr(const char* str, sockaddr_in* address)
+		{
+			game::netadr_s addr{};
+			game::NET_StringToAdr(str, &addr);
+			game::NetadrToSockadr(&addr, reinterpret_cast<sockaddr*>(address));
+		}
+
+		SOCKET create_socket(const char* net_interface, int port, int protocol)
+		{
+			sockaddr_in address{};
+
+			if (net_interface && net_interface != "localhost"s)
+			{
+				string_to_sockaddr(net_interface, &address);
+			}
+
+			address.sin_family = AF_INET;
+			address.sin_port = ntohs(static_cast<short>(port));
+
+			const auto sock = socket(AF_INET, SOCK_DGRAM, protocol);
+
+			u_long arg = 1;
+			ioctlsocket(sock, FIONBIO, &arg);
+			char optval[4] = {1};
+			setsockopt(sock, 0xFFFF, 32, optval, 4);
+
+			if (bind(sock, reinterpret_cast<sockaddr*>(&address), sizeof(address)) != -1)
+			{
+				return sock;
+			}
+
+			closesocket(sock);
+			return 0;
+		}
+
+		void init_socket()
+		{
+			const auto net_ip = game::Dvar_FindVar("net_ip");
+			const auto net_port = game::Dvar_FindVar("net_port");
+
+			auto port_diff = 0;
+			for (port_diff = 0; port_diff < 10; port_diff++)
+			{
+				*game::query_socket = create_socket(
+					net_ip->current.string, net_port->current.integer + port_diff, 17);
+				if (*game::query_socket)
+				{
+					break;
+				}
+			}
+
+			if (!*game::query_socket)
+			{
+				return;
+			}
+
+			game::Dvar_SetInt(net_port, net_port->current.integer + port_diff);
+		}
+
+		void net_init_stub()
+		{
+			init_socket();
+			utils::hook::invoke<void>(0xD57A00_b);
+		}
 	}
 
 	void send(const game::netadr_s& address, const std::string& command, const std::string& data, const char separator)
@@ -239,6 +304,8 @@ namespace network
 			// Use our own socket since the game's socket doesn't work with non localhost addresses
 			// why? no idea
 			//utils::hook::jump(0x0, create_socket);
+
+			utils::hook::jump(0xD57C7E_b, net_init_stub);
 		}
 	};
 }
