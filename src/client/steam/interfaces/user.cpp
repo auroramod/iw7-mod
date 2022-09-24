@@ -12,7 +12,7 @@ namespace steam
 		steam_id generate_steam_id()
 		{
 			steam_id id{};
-			id.bits = 76561197960287930;
+			id.bits = auth::get_guid();
 			return id;
 		}
 	}

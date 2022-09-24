@@ -5,6 +5,8 @@
 #include "game/game.hpp"
 #include "steam/steam.hpp"
 
+#include "command.hpp"
+
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
 #include <utils/smbios.hpp>
@@ -82,12 +84,12 @@ namespace auth
 
 	uint64_t get_guid()
 	{
-		if (game::environment::is_dedi())
+		//if (game::environment::is_dedi())
 		{
 			return 0x110000100000000 | (::utils::cryptography::random::get_integer() & ~0x80000000);
 		}
 
-		return get_key().get_hash();
+		//return get_key().get_hash();
 	}
 
 	class component final : public component_interface
@@ -95,7 +97,10 @@ namespace auth
 	public:
 		void post_unpack() override
 		{
-
+			command::add("guid", []()
+			{
+				printf("Your guid: %llX\n", steam::SteamUser()->GetSteamID().bits);
+			});
 		}
 	};
 }

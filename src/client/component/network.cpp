@@ -47,34 +47,16 @@ namespace network
 
 	namespace
 	{
-		utils::hook::detour cl_main_connectionless_packet_connect_handshake_hook;
-		bool cl_main_connectionless_packet_connect_handshake_stub(int client_num, game::netadr_s* from, game::msg_t* msg, int time, const char* c)
+		utils::hook::detour cl_dispatch_connectionless_packet_hook;
+		bool cl_dispatch_connectionless_packet_stub(int client_num, game::netadr_s* from, game::msg_t* msg, int time)
 		{
-			if (handle_command(from, c, msg))
+			printf("connectionless packet: type: %d, adr: %s\n", from->type, net_adr_to_string(*from));
+			if (handle_command(from, game::Cmd_Argv(0), msg))
 			{
 				return true;
 			}
 
-			return cl_main_connectionless_packet_connect_handshake_hook.invoke<bool>(client_num, from, msg, time, c);
-		}
-
-		int sys_send_packet_stub(const int size, const char* src, game::netadr_s* to)
-		{
-			console::info("Sys_SendPacket: type: %i, query_socket: %p\n", to->type, *game::query_socket);
-			if (to->type == game::NA_BROADCAST || to->type == game::NA_IP)
-			{
-				if (*game::query_socket)
-				{
-					sockaddr s = {};
-					game::NetadrToSockadr(to, &s);
-					return sendto(*game::query_socket, src, size, 0, &s, sizeof(sockaddr)) >= 0;
-				}
-			}
-			else
-			{
-				game::Com_Error(game::ERR_DROP, "Sys_SendPacket: bad address type %i", to->type);
-			}
-			return 0;
+			return cl_dispatch_connectionless_packet_hook.invoke<bool>(client_num, from, msg, time);
 		}
 
 		void sockadr_to_netadr(const sockaddr* s, game::netadr_s* a)
@@ -82,53 +64,50 @@ namespace network
 			if (s->sa_family == 2)
 			{
 				a->type = game::NA_IP;
-				*a->ip = *&s->sa_data[2];
-				a->port = ntohs(*s->sa_data);
+				*(int*)&a->ip = *(int*)&s->sa_data[2];
+				a->port = *(unsigned short*)(&s->sa_data[0]);
 			}
 		}
 
-		int sys_get_packet_stub(game::netadr_s* net_from, game::msg_t* net_message)
+		int dw_send_to_stub(const int length, const char* data, game::netadr_s* to)
 		{
-			int ret;
-			int fromlen;
-			sockaddr from;
-			int datalen;
-
-			if (!*game::query_socket)
+			if (!*game::query_socket || *game::query_socket == INVALID_SOCKET)
 			{
-				return 0;
+				printf("query socket is not initialized\n");
 			}
+			sockaddr s = {};
+			game::NetadrToSockadr(to, &s);
+			return sendto(*game::query_socket, data, length, 0, &s, sizeof(sockaddr)) >= 0;
+		}
 
-			fromlen = sizeof(sockaddr);
-			ret = recvfrom(*game::query_socket, net_message->data, net_message->maxsize, 0, &from, &fromlen);
-
+		int dw_recv_from_stub(game::netadr_s* from, char* data, int maxsize)
+		{
+			sockaddr s = {};
+			int slen = sizeof(sockaddr);
+			int ret;
+			int datalen;
+			ret = recvfrom(*game::query_socket, data, maxsize, 0, &s, &slen);
 			if (ret == SOCKET_ERROR)
 			{
 				return 0;
 			}
-
-			printf("%s\n", std::string(net_message->data, ret).data());
-
-			sockadr_to_netadr(&from, net_from);
-			net_message->readcount = 0;
-
+			sockadr_to_netadr(&s, from);
+			if (from->type == game::NA_IP)
+			{
+				//printf("recv: %s\n", std::string(data, ret).data());
+			}
 			datalen = ret;
 			if (!datalen)
 			{
-				console::warn("Sys_GetPacket: Empty or discarded packet from %s\n", net_adr_to_string(*net_from));
+				console::warn("Sys_GetPacket: Empty or discarded packet from %s\n", net_adr_to_string(*from));
 				return 0;
 			}
-			if (datalen == net_message->maxsize)
+			if (datalen == maxsize)
 			{
-				console::warn("Sys_GetPacket: Oversize packet from %s\n", net_adr_to_string(*net_from));
+				console::warn("Sys_GetPacket: Oversize packet from %s\n", net_adr_to_string(*from));
 				return 0;
 			}
-
-			net_message->cursize = datalen - 1;
-			net_message->targetLocalNetID = static_cast<game::netsrc_t>(net_message->data[net_message->cursize] >> 4);
-			net_from->localNetID = static_cast<game::netsrc_t>(net_message->data[net_message->cursize] & 0xF);
-
-			return 1;
+			return datalen - 2; // dunno why -2
 		}
 
 		int net_compare_base_address(const game::netadr_s* a, const game::netadr_s* b)
@@ -187,27 +166,27 @@ namespace network
 
 			if (sock == INVALID_SOCKET)
 			{
-				console::warn("WARNING: UDP_OpenSocket: socket");
+				console::warn("WARNING: UDP_OpenSocket: socket\n");
 				return INVALID_SOCKET;
 			}
 
 			u_long arg = 1;
 			if (ioctlsocket(sock, FIONBIO, &arg) == SOCKET_ERROR)
 			{
-				console::warn("WARNING: UDP_OpenSocket: ioctl FIONBIO");
+				console::warn("WARNING: UDP_OpenSocket: ioctl FIONBIO\n");
 				return INVALID_SOCKET;
 			}
 			char optval[4] = { 0 };
 			optval[0] = 1;
 			if (setsockopt(sock, 0xFFFF, SO_BROADCAST, optval, 4) == SOCKET_ERROR)
 			{
-				console::warn("WARNING: UDP_OpenSocket: setsockopt SO_BROADCAST");
+				console::warn("WARNING: UDP_OpenSocket: setsockopt SO_BROADCAST\n");
 				return INVALID_SOCKET;
 			}
 
 			if (bind(sock, reinterpret_cast<sockaddr*>(&address), sizeof(address)) == SOCKET_ERROR)
 			{
-				console::warn("WARNING: UDP_OpenSocket: bind");
+				console::warn("WARNING: UDP_OpenSocket: bind\n");
 				closesocket(sock);
 				return INVALID_SOCKET;
 			}
@@ -225,18 +204,19 @@ namespace network
 			{
 				*game::query_socket = create_socket(
 					net_ip->current.string, net_port->current.integer + port_diff, IPPROTO_UDP);
-				if (*game::query_socket)
+				if (*game::query_socket != INVALID_SOCKET)
 				{
 					break;
 				}
 			}
 
-			if (!*game::query_socket)
+			if (*game::query_socket == INVALID_SOCKET)
 			{
 				console::warn("WARNING: Couldn't allocate IP/UDP port, LAN discovery will not work!\n");
 				return;
 			}
 
+			printf("net_port: %d\n", port_diff);
 			game::Dvar_SetInt(net_port, net_port->current.integer + port_diff);
 		}
 
@@ -244,6 +224,11 @@ namespace network
 		{
 			init_socket();
 			utils::hook::invoke<void>(0xD57A00_b);
+		}
+
+		int get_protocol_version_stub()
+		{
+			return PROTOCOL;
 		}
 	}
 
@@ -273,6 +258,7 @@ namespace network
 		}
 		else
 		{
+			printf("send_data: type: %d, data: %s\n", address.type, data.data());
 			game::Sys_SendPacket(size, data.data(), &address);
 		}
 	}
@@ -312,15 +298,14 @@ namespace network
 	public:
 		void post_unpack() override
 		{
-			// redirect packet sends to our stub
-			utils::hook::jump(game::Sys_SendPacket, sys_send_packet_stub);
+			// redirect dw packet sends to our stub
+			utils::hook::jump(0xD942C0_b, dw_send_to_stub);
 
-			// redirect packet receives to our stub
-			utils::hook::jump(game::Sys_GetPacket, sys_get_packet_stub);
+			// redirect dw packet receives to our stub
+			utils::hook::jump(0xD93D70_b, dw_recv_from_stub);
 
 			// intercept command handling
-			cl_main_connectionless_packet_connect_handshake_hook.create(0x9AFF90_b,
-				cl_main_connectionless_packet_connect_handshake_stub);
+			cl_dispatch_connectionless_packet_hook.create(0x9B2250_b, cl_dispatch_connectionless_packet_stub);
 
 			// handle xuid without secure connection
 			utils::hook::nop(0xC53315_b, 2);
@@ -332,6 +317,7 @@ namespace network
 			utils::hook::set<uint8_t>(0x9DBFDD_b, 0xEB);
 			utils::hook::set<uint8_t>(0x9DC47D_b, 0xEB);
 			utils::hook::set<uint8_t>(0x9DDC79_b, 0xEB);
+			utils::hook::set<uint8_t>(0x9AA9F9_b, 0xEB);
 
 			// ignore unregistered connection
 			utils::hook::jump(0xC4F200_b, 0xC4F1AB_b);
@@ -357,7 +343,7 @@ namespace network
 			//utils::hook::set<uint8_t>(0x0, 0);
 
 			// don't read checksum
-			//utils::hook::set(0xCE6E60_b, 0xC301B0);
+			utils::hook::set(0xCE6E60_b, 0xC301B0);
 
 			// don't try to reconnect client
 			//utils::hook::call(0x0, reconnect_migratated_client);
@@ -388,7 +374,11 @@ namespace network
 			// why? no idea
 			//utils::hook::jump(0x0, create_socket);
 
+			// initialize query_socket
 			utils::hook::jump(0xD57C7E_b, net_init_stub);
+
+			// use our own protocol version
+			utils::hook::jump(0xCE8290_b, get_protocol_version_stub);
 		}
 	};
 }
