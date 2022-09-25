@@ -94,7 +94,7 @@ namespace network
 			sockadr_to_netadr(&s, from);
 			if (from->type == game::NA_IP)
 			{
-				//printf("recv: %s\n", std::string(data, ret).data());
+				//printf("recv: %s, size: %i\n", std::string(data, ret).data(), ret);
 			}
 			datalen = ret;
 			if (!datalen)
@@ -107,16 +107,11 @@ namespace network
 				console::warn("Sys_GetPacket: Oversize packet from %s\n", net_adr_to_string(*from));
 				return 0;
 			}
-			return datalen - 2; // dunno why -2
+			return datalen;
 		}
 
 		int net_compare_base_address(const game::netadr_s* a, const game::netadr_s* b)
 		{
-			if (a->type != b->type)
-			{
-				return a->type - b->type;
-			}
-
 			if (a->type == b->type)
 			{
 				switch (a->type)
@@ -134,7 +129,6 @@ namespace network
 				}
 			}
 
-			console::warn("NET_CompareBaseAdr: bad address type\n");
 			return false;
 		}
 
@@ -230,6 +224,15 @@ namespace network
 		{
 			return PROTOCOL;
 		}
+
+		void reconnect_migratated_client(void*, game::netadr_s* from, const int, const int, const char*,
+			const char*, bool)
+		{
+			// This happens when a client tries to rejoin after being recently disconnected, OR by a duplicated guid
+			// We don't want this to do anything. It decides to crash seemingly randomly
+			// Rather than try and let the player in, just tell them they are a duplicate player and reject connection
+			game::NET_OutOfBandPrint(game::NS_SERVER, from, "error\nYou are already connected to the server.");
+		}
 	}
 
 	void send(const game::netadr_s& address, const std::string& command, const std::string& data, const char separator)
@@ -258,7 +261,7 @@ namespace network
 		}
 		else
 		{
-			printf("send_data: type: %d, data: %s\n", address.type, data.data());
+			printf("send_data: type: %d, data: %s, size: %i\n", address.type, data.data(), size);
 			game::Sys_SendPacket(size, data.data(), &address);
 		}
 	}
@@ -318,36 +321,44 @@ namespace network
 			utils::hook::set<uint8_t>(0x9DC47D_b, 0xEB);
 			utils::hook::set<uint8_t>(0x9DDC79_b, 0xEB);
 			utils::hook::set<uint8_t>(0x9AA9F9_b, 0xEB);
+			utils::hook::set<uint8_t>(0xC56030_b, 0xEB);
+			utils::hook::set<uint8_t>(0xC5341A_b, 0xEB);
+			utils::hook::set<uint8_t>(0xC4FFC6_b, 0xEB);
+			utils::hook::nop(0xC533BD_b, 2);
 
 			// ignore unregistered connection
 			utils::hook::jump(0xC4F200_b, 0xC4F1AB_b);
 			utils::hook::jump(0xC4F2F6_b, 0xC4F399_b);
 
 			// disable xuid verification
-			//utils::hook::set<uint8_t>(0x728BF_b, 0xEB);
+			//utils::hook::set<uint8_t>(0x_b, 0xEB);
+
+			// disable xuid verification
+			//utils::hook::nop(0x_b, 2);
+			//utils::hook::set<uint8_t>(0x_b, 0xEB);
 
 			// ignore configstring mismatch
 			utils::hook::set<uint8_t>(0x9B6F91_b, 0xEB);
 
 			// ignore dw handle in SvClientMP::FindClientAtAddress
-			utils::hook::set<uint8_t>(0xC58B2B_b, 0xEB);
+			//utils::hook::set<uint8_t>(0xC58B2B_b, 0xEB); // DO NOT USE
 
 			// ignore dw handle in SV_DirectConnect
-			utils::hook::set<uint8_t>(0xC4EE1A_b, 0xEB);
-			utils::hook::set<uint8_t>(0xC4F0FB_b, 0xEB);
+			//utils::hook::set<uint8_t>(0xC4EE1A_b, 0xEB); ^
+			//utils::hook::set<uint8_t>(0xC4F0FB_b, 0xEB); ^
 
 			// ignore impure client
 			utils::hook::jump(0xC500C8_b, 0xC500DE_b); // maybe add sv_pure dvar?
 
 			// don't send checksum
-			//utils::hook::set<uint8_t>(0x0, 0);
+			utils::hook::set<uint8_t>(0xCE6C7C_b, 0x0);
 
 			// don't read checksum
 			utils::hook::set(0xCE6E60_b, 0xC301B0);
 
 			// don't try to reconnect client
-			//utils::hook::call(0x0, reconnect_migratated_client);
-			//utils::hook::nop(0x0, 4); // this crashes when reconnecting for some reason
+			utils::hook::call(0xC4F05F_b, reconnect_migratated_client);
+			utils::hook::nop(0xC4F03C_b, 4); // this crashes when reconnecting for some reason
 
 			// increase allowed packet size
 			//const auto max_packet_size = 0x20000;
@@ -379,6 +390,9 @@ namespace network
 
 			// use our own protocol version
 			utils::hook::jump(0xCE8290_b, get_protocol_version_stub);
+
+			//utils::hook::set<uint8_t>(0x4030F0_b, 0xC3);
+			//utils::hook::nop(0x9B014B_b, 2);
 		}
 	};
 }
