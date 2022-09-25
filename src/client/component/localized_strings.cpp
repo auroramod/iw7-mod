@@ -19,16 +19,20 @@ namespace localized_strings
 
 		const char* seh_string_ed_get_string(const char* reference)
 		{
-			return localized_overrides.access<const char*>([&](const localized_map& map)
+			const auto* str = localized_overrides.access<const char*>([&](const localized_map& map)
 			{
 				const auto entry = map.find(reference);
 				if (entry != map.end())
 				{
-					return utils::string::va("%s", entry->second.data());
+					return entry->second.data();
 				}
-
-				return seh_string_ed_get_string_hook.invoke<const char*>(reference);
+				return static_cast<const char*>(nullptr);
 			});
+			if (str != nullptr)
+			{
+				return str;
+			}
+			return seh_string_ed_get_string_hook.invoke<const char*>(reference);
 		}
 	}
 
