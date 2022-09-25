@@ -162,6 +162,8 @@ namespace game
 	WEAK symbol<int> svs_numclients{ 0x6B229E0 };
 	WEAK symbol<client_t> svs_clients{ 0x6B22950 };
 
+	WEAK symbol<clientUIActive_t> clientUIActives{ 0x2246C30 };
+
 	WEAK symbol<int> sv_map_restart{ 0x6B2C9D4 };
 	WEAK symbol<int> sv_loadScripts{ 0x6B2C9D8 };
 	WEAK symbol<int> sv_migrate{ 0x6B2C9DC };

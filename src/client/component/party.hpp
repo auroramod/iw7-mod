@@ -3,12 +3,12 @@
 
 namespace party
 {
-	void menu_error(const std::string& error);
+	void info_response_error(const std::string& error);
 
 	void reset_connect_state();
 
 	void connect(const game::netadr_s& target);
-	void start_map(const std::string& mapname, bool dev = false);
+	bool start_map(const std::string& mapname, bool dev = false);
 
 	void clear_sv_motd();
 	game::netadr_s get_state_host();

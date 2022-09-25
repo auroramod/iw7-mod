@@ -57,14 +57,13 @@ namespace game
 	{
 		cmd_function_s* next;
 		const char* name;
-		void(__cdecl* function)();
+		void(__fastcall* function)();
 	};
 
 	struct SvCommandInfo
 	{
 		const char* name;
-		void(__fastcall* func)();
-		cmd_function_s clvar;
+		void(__fastcall* function)();
 		cmd_function_s svvar;
 	};
 
@@ -409,6 +408,37 @@ namespace game
 
 	namespace entity
 	{
+		enum connstate_t : std::uint32_t
+		{
+			CA_DISCONNECTED = 0x0,
+			CA_CONNECTING = 0x1,
+			CA_CHALLENGING = 0x2,
+			CA_CONNECTED = 0x3,
+			CA_SENDINGSTATS = 0x4,
+			CA_REQUESTING_MATCH_RULES = 0x5,
+			CA_STARTING = 0x6,
+			CA_LOADING = 0x7,
+			CA_PRIMED = 0x8,
+			CA_ACTIVE = 0x9,
+			CA_MAP_RESTART = 0xA,
+		};
+
+		struct clientUIActive_t
+		{
+			bool active;
+			bool isRunning;
+			int keyCatchers;
+			connstate_t connectionState;
+			char __pad0[20];
+			BYTE frontEndSceneState[1];
+			bool cgameInitialized;
+			bool cgameInitCalled;
+			char __pad1[161];
+		}; static_assert(sizeof(clientUIActive_t) == 196);
+		static_assert(offsetof(clientUIActive_t, connectionState) == 8);
+		static_assert(offsetof(clientUIActive_t, frontEndSceneState) == 32);
+		static_assert(offsetof(clientUIActive_t, cgameInitialized) == 33);
+
 		struct entityState_t
 		{
 			__int16 number; // 0

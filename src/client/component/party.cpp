@@ -28,6 +28,14 @@ namespace party
 			bool hostDefined{ false };
 		} connect_state;
 
+		void perform_game_initialization()
+		{
+			command::execute("onlinegame 1", true);
+			command::execute("xblive_privatematch 1", true);
+			command::execute("xstartprivateparty", true);
+			//command::execute("xstartprivatematch", true);
+		}
+
 		void connect_to_party(const game::netadr_s& target, const std::string& mapname, const std::string& gametype)
 		{
 			if (game::Com_GameMode_GetActiveGameMode() != game::GAME_MODE_MP &&
@@ -60,7 +68,7 @@ namespace party
 				}
 			}*/
 
-			//perform_game_initialization();
+			perform_game_initialization();
 
 			// shutdown frontend
 			game::Com_FrontEndScene_ShutdownAndDisable();
@@ -104,6 +112,85 @@ namespace party
 		}
 	}
 
+	void start_map_for_party()
+	{
+		auto* mapname = game::Dvar_FindVar("ui_mapname");
+		auto* gametype = game::Dvar_FindVar("ui_gametype");
+		auto* clients = game::Dvar_FindVar("ui_maxclients");
+		auto* private_clients = game::Dvar_FindVar("ui_privateClients");
+		auto* hardcore = game::Dvar_FindVar("ui_hardcore");
+
+		game::Com_FrontEndScene_ShutdownAndDisable();
+
+		if (!game::environment::is_dedi() && !game::Com_FrontEndScene_IsActive())
+		{
+			game::Com_Shutdown("EXE_ENDOFGAME");
+		}
+
+		game::SV_CmdsMP_StartMapForParty(
+			mapname->current.string,
+			gametype->current.string,
+			clients->current.integer,
+			private_clients->current.integer,
+			hardcore->current.enabled,
+			false,
+			false);
+	}
+
+	bool start_map(const std::string& mapname, bool dev)
+	{
+		if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+		{
+			console::info("Starting sp map: %s\n", mapname.data());
+			command::execute(utils::string::va("spmap %s", mapname.data()), false);
+			return true;
+		}
+
+		if (mapname.empty())
+		{
+			console::error("No map specified.\n");
+			return false;
+		}
+
+		if (!game::SV_MapExists(mapname.data()))
+		{
+			console::error("Map \"%s\" doesn't exist.\n", mapname.data());
+			return false;
+		}
+
+		if (!game::Com_GameMode_SupportsMap(mapname.data()))
+		{
+			console::error("Cannot load map \"%s\" in current game mode.\n", mapname.data());
+			return false;
+		}
+
+		auto* current_mapname = game::Dvar_FindVar("mapname");
+
+		command::execute((dev ? "set sv_cheats 1" : "set sv_cheats 0"), true);
+
+		if (current_mapname && utils::string::to_lower(current_mapname->current.string) ==
+			utils::string::to_lower(mapname) && (game::SV_Loaded() && !game::Com_FrontEndScene_IsActive()))
+		{
+			console::info("Restarting map: %s\n", mapname.data());
+			command::execute("map_restart", false);
+			return true;
+		}
+
+		command::execute(utils::string::va("ui_mapname %s", mapname.data()), true);
+
+		console::info("Starting map: %s\n", mapname.data());
+
+		perform_game_initialization();
+
+		game::Cbuf_AddCall(0, start_map_for_party);
+		return true;
+	}
+
+	int get_client_num_by_name(const std::string& name)
+	{
+		return 0;
+	}
+
 	int get_client_count()
 	{
 		return 0;
@@ -145,10 +232,104 @@ namespace party
 	public:
 		void post_unpack() override
 		{
+			command::add("live", []()
+			{
+				console::info("%d\n", game::Live_SyncOnlineDataFlags(0));
+			});
+
+			static const char* a1 = "map_sp";
+			static const char* a2 = "map_restart_sp";
+			static const char* a3 = "fast_restart_sp";
+
+			// patch singleplayer "map" -> "map_sp"
+			utils::hook::set(0x1BBA800_b + 0, a1);
+			utils::hook::set(0x1BBA800_b + 24, a1);
+			utils::hook::set(0x1BBA800_b + 56, a1);
+
+			// patch singleplayer map_restart -> "map_restart_sp"
+			utils::hook::set(0x1BBA740_b + 0, a2);
+			utils::hook::set(0x1BBA740_b + 24, a2);
+			utils::hook::set(0x1BBA740_b + 56, a2);
+
+			// patch singleplayer fast_restart -> "fast_restart_sp"
+			utils::hook::set(0x1BBA700_b + 0, a3);
+			utils::hook::set(0x1BBA700_b + 24, a3);
+			utils::hook::set(0x1BBA700_b + 56, a3);
+
+			command::add("map", [](const command::params& args)
+			{
+				if (args.size() != 2)
+				{
+					return;
+				}
+
+				if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+				{
+					command::execute(utils::string::va("spmap %s", args.get(1)));
+					return;
+				}
+
+				start_map(args.get(1), false);
+			});
+
+			command::add("devmap", [](const command::params& args)
+			{
+				if (args.size() != 2)
+				{
+					return;
+				}
+
+				if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+				{
+					command::execute(utils::string::va("spmap %s", args.get(1)));
+					return;
+				}
+
+				start_map(args.get(1), true);
+			});
+
+			command::add("map_restart", []()
+			{
+				if (!game::SV_Loaded() || game::Com_FrontEnd_IsInFrontEnd())
+				{
+					return;
+				}
+
+				if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+				{
+					game::Cbuf_AddCall(0, game::SV_CmdsSP_MapRestart_f);
+					return;
+				}
+
+				game::SV_CmdsMP_RequestMapRestart(1, 0);
+			});
+
+			command::add("fast_restart", []()
+			{
+				if (!game::SV_Loaded() || game::Com_FrontEnd_IsInFrontEnd())
+				{
+					return;
+				}
+
+				if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+				{
+					game::Cbuf_AddCall(0, game::SV_CmdsSP_FastRestart_f);
+					return;
+				}
+
+				game::SV_CmdsMP_RequestMapRestart(0, 0);
+			});
+
 			command::add("connect", [](const command::params& argument)
 			{
 				if (argument.size() != 2)
 				{
+					return;
+				}
+
+				if (game::CL_IsGameClientActive(0))
+				{
+					console::info("Cannot use \"connect\" command while ingame.\n");
 					return;
 				}
 

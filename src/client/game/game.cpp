@@ -42,6 +42,15 @@ namespace game
 		return sv_cmd_args->argv[sv_cmd_args->nesting][index];
 	}
 
+	bool CL_IsGameClientActive(const int localClientNum)
+	{
+		if (game::clientUIActives[localClientNum].frontEndSceneState[0])
+		{
+			return false;
+		}
+		return game::clientUIActives[localClientNum].cgameInitialized;
+	}
+
 	const char* g_assetNames[ASSET_TYPE_COUNT] =
 	{
 		"physicslibrary",
