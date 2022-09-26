@@ -81,7 +81,6 @@
 #include <udis86.h>
 #include <MinHook.h>
 #include <tomcrypt.h>
-#include <udis86.h>
 
 #include <rapidjson/document.h>
 #include <rapidjson/prettywriter.h>

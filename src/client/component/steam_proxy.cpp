@@ -182,7 +182,7 @@ namespace steam_proxy
 			game_id.raw.type = 1; // k_EGameIDTypeGameMod
 			game_id.raw.app_id = app_id & 0xFFFFFF;
 
-			const auto* mod_id = "iw7-Mod";
+			const auto* mod_id = "IW7-Mod";
 			game_id.raw.mod_id = *reinterpret_cast<const unsigned int*>(mod_id) | 0x80000000;
 
 			this->client_user_.invoke<bool>("SpawnProcess", path.data(), cmdline.data(), our_directory,
