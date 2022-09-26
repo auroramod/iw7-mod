@@ -169,6 +169,11 @@ namespace steam_proxy
 				//app_id = 480; // Spacewar
 				return ownership_state::unowned;
 			}
+			
+			if (is_disabled())
+			{
+					return ownership_state::success;
+			}
 
 			this->client_utils_.invoke<void>("SetAppIDForCurrentPipe", app_id, false);
 
