@@ -20,6 +20,14 @@ namespace steam_proxy
 	{
 		utils::binary_resource runner_file(RUNNER, "runner.exe");
 
+		enum class ownership_state
+		{
+			success,
+			unowned,
+			nosteam,
+			error,
+		};
+
 		bool is_disabled()
 		{
 			static const auto disabled = utils::flags::has_flag("nosteam");
@@ -32,10 +40,10 @@ namespace steam_proxy
 	public:
 		void post_load() override
 		{
-			if (game::environment::is_dedi() || is_disabled())
+			/*if (game::environment::is_dedi() || is_disabled())
 			{
 				return;
-			}
+			}*/
 
 			this->load_client();
 			this->clean_up_on_error();
@@ -43,11 +51,25 @@ namespace steam_proxy
 #ifndef DEV_BUILD
 			try
 			{
-				this->start_mod("\xF0\x9F\x8E\xAE IW7-Mod ", 292730);
+				const auto res = this->start_mod("\xF0\x9F\x8E\xAE" "IW7-Mod", steam::SteamUtils()->GetAppID());
+
+				switch (res)
+				{
+				case ownership_state::nosteam:
+					throw std::runtime_error("Steam must be running to play this game!");
+				case ownership_state::unowned:
+					throw std::runtime_error("You must own the game on steam to play this mod!");
+				case ownership_state::error:
+					throw std::runtime_error("Failed to verify ownership of the game!");
+				case ownership_state::success:
+					break;
+				}
 			}
 			catch (std::exception& e)
 			{
 				printf("Steam: %s\n", e.what());
+				MessageBoxA(GetForegroundWindow(), e.what(), "Error", MB_ICONERROR);
+				TerminateProcess(GetCurrentProcess(), 1234);
 			}
 #endif
 		}
@@ -122,13 +144,35 @@ namespace steam_proxy
 			this->client_utils_ = this->client_engine_.invoke<void*>(14, this->steam_pipe_); // GetIClientUtils
 		}
 
-		void start_mod(const std::string& title, size_t app_id)
+		ownership_state start_mod(const std::string& title, const size_t app_id)
 		{
-			if (!this->client_utils_ || !this->client_user_) return;
+			__try
+			{
+				return this->start_mod_unsafe(title, app_id);
+			}
+			__except (EXCEPTION_EXECUTE_HANDLER)
+			{
+				this->do_cleanup();
+				return ownership_state::error;
+			}
+		}
+
+		ownership_state start_mod_unsafe(const std::string& title, size_t app_id)
+		{
+			if (!this->client_utils_ || !this->client_user_)
+			{
+				return ownership_state::nosteam;
+			}
 
 			if (!this->client_user_.invoke<bool>("BIsSubscribedApp", app_id))
 			{
-				app_id = 480; // Spacewar
+				//app_id = 480; // Spacewar
+				return ownership_state::unowned;
+			}
+			
+			if (is_disabled())
+			{
+					return ownership_state::success;
 			}
 
 			this->client_utils_.invoke<void>("SetAppIDForCurrentPipe", app_id, false);
@@ -148,6 +192,20 @@ namespace steam_proxy
 
 			this->client_user_.invoke<bool>("SpawnProcess", path.data(), cmdline.data(), our_directory,
 				&game_id.bits, title.data(), 0, 0, 0);
+
+			return ownership_state::success;
+		}
+
+		void do_cleanup()
+		{
+			this->client_engine_ = nullptr;
+			this->client_user_ = nullptr;
+			this->client_utils_ = nullptr;
+
+			this->steam_pipe_ = nullptr;
+			this->global_user_ = nullptr;
+
+			this->steam_client_module_ = utils::nt::library{ nullptr };
 		}
 
 		void clean_up_on_error()
@@ -186,4 +244,4 @@ namespace steam_proxy
 	}
 }
 
-//REGISTER_COMPONENT(steam_proxy::component)
+REGISTER_COMPONENT(steam_proxy::component)
