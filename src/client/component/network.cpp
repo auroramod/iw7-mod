@@ -6,6 +6,7 @@
 #include "game/game.hpp"
 
 #include "console.hpp"
+#include "dvars.hpp"
 
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
@@ -77,7 +78,11 @@ namespace network
 			}
 			sockaddr s = {};
 			game::NetadrToSockadr(to, &s);
-			return sendto(*game::query_socket, data, length, 0, &s, sizeof(sockaddr)) >= 0;
+			if (to->type == game::NA_IP)
+			{
+				//printf("sendto: size: %i\n", length);
+			}
+			return sendto(*game::query_socket, data, length, 0, &s, sizeof(sockaddr));
 		}
 
 		int dw_recv_from_stub(game::netadr_s* from, char* data, int maxsize)
@@ -89,12 +94,12 @@ namespace network
 			ret = recvfrom(*game::query_socket, data, maxsize, 0, &s, &slen);
 			if (ret == SOCKET_ERROR)
 			{
-				return 0;
+				return -2;
 			}
 			sockadr_to_netadr(&s, from);
 			if (from->type == game::NA_IP)
 			{
-				//printf("recv: %s, size: %i\n", std::string(data, ret).data(), ret);
+				//printf("recv: size: %i\n", ret);
 			}
 			datalen = ret;
 			if (!datalen)
@@ -312,6 +317,7 @@ namespace network
 
 			// handle xuid without secure connection
 			utils::hook::nop(0xC53315_b, 2);
+			utils::hook::nop(0xC55EC7_b, 6);
 
 			utils::hook::jump(game::NET_CompareAdr, net_compare_address);
 			utils::hook::jump(game::NET_CompareBaseAdr, net_compare_base_address);
@@ -341,11 +347,11 @@ namespace network
 			utils::hook::set<uint8_t>(0x9B6F91_b, 0xEB);
 
 			// ignore dw handle in SvClientMP::FindClientAtAddress
-			//utils::hook::set<uint8_t>(0xC58B2B_b, 0xEB); // DO NOT USE
+			utils::hook::set<uint8_t>(0xC58B2B_b, 0xEB);
 
 			// ignore dw handle in SV_DirectConnect
-			//utils::hook::set<uint8_t>(0xC4EE1A_b, 0xEB); ^
-			//utils::hook::set<uint8_t>(0xC4F0FB_b, 0xEB); ^
+			utils::hook::nop(0xC4EE1A_b, 2);
+			utils::hook::nop(0xC4F0FB_b, 6);
 
 			// ignore impure client
 			utils::hook::jump(0xC500C8_b, 0xC500DE_b); // maybe add sv_pure dvar?
@@ -361,25 +367,31 @@ namespace network
 			utils::hook::nop(0xC4F03C_b, 4); // this crashes when reconnecting for some reason
 
 			// increase allowed packet size
-			//const auto max_packet_size = 0x20000;
-			//utils::hook::set<int>(0x0, max_packet_size);
-			//utils::hook::set<int>(0x0, max_packet_size);
-			//utils::hook::set<int>(0x0, max_packet_size);
-			//utils::hook::set<int>(0x0, max_packet_size);
+			const auto max_packet_size = 0x20000;
+			utils::hook::set<int>(0xBB4F01_b, max_packet_size);
+			utils::hook::set<int>(0xBB4F31_b, max_packet_size);
+			utils::hook::set<int>(0xBB4E22_b, max_packet_size);
+			utils::hook::set<int>(0xBB4F31_b, max_packet_size);
 
 			// increase cl_maxpackets
-			//dvars::override::register_int("cl_maxpackets", 1000, 1, 1000, game::DVAR_FLAG_SAVED);
+			dvars::override::register_int("cl_maxpackets", 1000, 1, 1000, game::DVAR_FLAG_SAVED);
 
 			// increase snaps
 			//dvars::override::register_int("sv_remote_client_snapshot_msec", 33, 33, 100, game::DVAR_FLAG_NONE);
 
+			dvars::override::register_int("sv_timeout", 1800, 0, 1800, game::DVAR_FLAG_NONE); // no work
+			dvars::override::register_int("sv_connectTimeout", 1800, 0, 1800, game::DVAR_FLAG_NONE); // ^
+			//dvars::override::register_int("sv_zombietime", 1800, 0, 1800, game::DVAR_FLAG_NONE); // ^
+
+			dvars::override::register_int("pt_connectTimeout", 60000, 0, 60000, game::DVAR_FLAG_READ);
+
 			// ignore built in "print" oob command and add in our own
-			utils::hook::set<uint8_t>(0x9B0326_b, 0xEB);
-			network::on("print", [](const game::netadr_s&, const std::string_view& data)
-			{
-				const std::string message{ data };
-				console::info(message.data());
-			});
+			//utils::hook::set<uint8_t>(0x9B0326_b, 0xEB);
+			//network::on("print", [](const game::netadr_s&, const std::string_view& data)
+			//{
+			//	const std::string message{ data };
+			//	console::info(message.data());
+			//});
 
 			// Use our own socket since the game's socket doesn't work with non localhost addresses
 			// why? no idea

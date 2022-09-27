@@ -13,8 +13,10 @@ namespace game
 	WEAK symbol<void()> Com_Quit_f{ 0xBADC90 };
 
 	WEAK symbol<bool()> Com_FrontEnd_IsInFrontEnd{ 0x5AE6C0 };
+	WEAK symbol<void()> Com_FrontEnd_ExitFrontEnd{ 0x5AE4F0 };
 	WEAK symbol<bool()> Com_FrontEndScene_IsActive{ 0x5AEBA0 };
 	WEAK symbol<void()> Com_FrontEndScene_ShutdownAndDisable{ 0x5AEFB0 };
+	WEAK symbol<void()> Com_FrontEndScene_Shutdown{ 0x5AED00 };
 
 	WEAK symbol<void(GameModeType)> Com_GameMode_SetDesiredGameMode{ 0x5AFDA0 };
 	WEAK symbol<GameModeType()> Com_GameMode_GetActiveGameMode{ 0x5AFD50 };
@@ -24,6 +26,8 @@ namespace game
 	WEAK symbol<bool()> Com_IsAnyLocalServerRunning{ 0xBAD9A0 };
 
 	WEAK symbol<void(const char* localizedMessage, const char* localizedTitle)> Com_SetLocalizedErrorMessage{ 0xBAF300 };
+
+	WEAK symbol<void()> Com_SyncThreads{ 0xBB02D0 };
 
 	WEAK symbol<void(const char* finalmsg)> Com_Shutdown{ 0xBAFEA0 };
 
@@ -101,6 +105,8 @@ namespace game
 	WEAK symbol<bool(const char* s, netadr_s* a)> NET_StringToAdr{ 0xBB5180 };
 	WEAK symbol<int(netadr_s a, netadr_s b)> NET_CompareAdr{ 0xBB49B0 };
 	WEAK symbol<int(netadr_s a, netadr_s b)> NET_CompareBaseAdr{ 0xBB4A00 };
+
+	WEAK symbol<PartyData* ()> Lobby_GetPartyData{ 0x9C3E20 };
 
 	WEAK symbol<GfxFont* (const char* font, int size)> R_RegisterFont{ 0xDFC670 };
 	WEAK symbol<int(const char* text, int maxChars, GfxFont* font)> R_TextWidth{ 0xDFC770 };

@@ -32,8 +32,8 @@ namespace party
 		{
 			command::execute("onlinegame 1", true);
 			command::execute("xblive_privatematch 1", true);
-			command::execute("xstartprivateparty", true);
-			//command::execute("xstartprivatematch", true);
+			//command::execute("xstartprivateparty", true);
+			command::execute("xstartprivatematch", true);
 		}
 
 		void connect_to_party(const game::netadr_s& target, const std::string& mapname, const std::string& gametype)
@@ -69,9 +69,6 @@ namespace party
 			}*/
 
 			perform_game_initialization();
-
-			// shutdown frontend
-			game::Com_FrontEndScene_ShutdownAndDisable();
 
 			// connect
 			char session_info[0x100] = {};
@@ -120,13 +117,17 @@ namespace party
 		auto* private_clients = game::Dvar_FindVar("ui_privateClients");
 		auto* hardcore = game::Dvar_FindVar("ui_hardcore");
 
+		//game::Com_FrontEndScene_Shutdown();
+
+		//if (!game::environment::is_dedi() && !game::Com_FrontEndScene_IsActive())
+		//{
+		//	game::Com_Shutdown("EXE_ENDOFGAME");
+		//}
+
+		//utils::hook::invoke<void>(0x9D6F40_b, game::Lobby_GetPartyData(), mapname->current.string, gametype->current.string);
+
 		game::Com_FrontEndScene_ShutdownAndDisable();
-
-		if (!game::environment::is_dedi() && !game::Com_FrontEndScene_IsActive())
-		{
-			game::Com_Shutdown("EXE_ENDOFGAME");
-		}
-
+		
 		game::SV_CmdsMP_StartMapForParty(
 			mapname->current.string,
 			gametype->current.string,
@@ -166,7 +167,7 @@ namespace party
 
 		auto* current_mapname = game::Dvar_FindVar("mapname");
 
-		command::execute((dev ? "set sv_cheats 1" : "set sv_cheats 0"), true);
+		command::execute((dev ? "seta sv_cheats 1" : "seta sv_cheats 0"), true);
 
 		if (current_mapname && utils::string::to_lower(current_mapname->current.string) ==
 			utils::string::to_lower(mapname) && (game::SV_Loaded() && !game::Com_FrontEndScene_IsActive()))
@@ -235,6 +236,11 @@ namespace party
 			command::add("live", []()
 			{
 				console::info("%d\n", game::Live_SyncOnlineDataFlags(0));
+			});
+
+			command::add("connstate", []()
+			{
+				console::info("%d\n", game::clientUIActives[0].connectionState);
 			});
 
 			static const char* a1 = "map_sp";

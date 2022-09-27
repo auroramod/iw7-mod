@@ -24,54 +24,23 @@ namespace dedicated
 
 		void init_dedicated_server()
 		{
+			printf("init called...\n");
+
+			// R_RegisterDvars
+			utils::hook::invoke<void>(0xDF62C0_b);
+
+			// R_RegisterCmds
+			utils::hook::invoke<void>(0xDD7E50_b);
+
+			// RB_Tonemap_RegisterDvars
+			utils::hook::invoke<void>(0x4B1320_b);
+
 			static bool initialized = false;
 			if (initialized) return;
 			initialized = true;
 
-			// R_RegisterDvars
-			//utils::hook::invoke<void>(0xDF62C0_b);
-
-			// R_RegisterCmds
-			//utils::hook::invoke<void>(0xDD7E50_b);
-
 			// R_LoadGraphicsAssets
 			utils::hook::invoke<void>(0xE06220_b);
-		}
-
-		utils::hook::detour dvar_set_float_from_source_hook;
-		void dvar_set_float_from_source_stub(const game::dvar_t* dvar, double value, game::DvarSetSource source)
-		{
-			if (dvar)
-			{
-				printf("%s\n", dvars::dvar_get_name(dvar).data());
-			}
-			else
-			{
-				printf("fuck\n");
-				return;
-			}
-			dvar_set_float_from_source_hook.invoke<void>(dvar, value, source);
-		}
-
-		utils::hook::detour cmd_add_client_command_list_hook;
-		void cmd_add_client_command_list_stub(game::SvCommandInfo* cmds, unsigned int size)
-		{
-			printf("add: %p, %d\n", cmds, size);
-
-			for (auto i = 0u; i < size; i++)
-			{
-				/*printf("cmd[%d]: name: %s, func: %p, svvar.name: %s, svvar.func: %p, svvar.next: %p\n",
-					i, 
-					cmds[i].name, 
-					cmds[i].function,
-					cmds[i].svvar.name,
-					cmds[i].svvar.function, 
-					cmds[i].svvar.next);*/
-
-				//memset(&cmds[i].svvar, 0, sizeof(game::cmd_function_s));
-			}
-
-			cmd_add_client_command_list_hook.invoke<void>(cmds, size);
 		}
 	}
 
@@ -119,11 +88,7 @@ namespace dedicated
 #ifdef DEBUG
 			printf("Starting dedicated server\n");
 #endif
-
-			dvar_set_float_from_source_hook.create(0xCECD00_b, dvar_set_float_from_source_stub);
-			cmd_add_client_command_list_hook.create(0xB7C840_b, cmd_add_client_command_list_stub);
-			//utils::hook::set<uint8_t>(0xB7C840_b, 0xC3);
-
+			
 			// Register dedicated dvar
 			game::Dvar_RegisterBool("dedicated", true, game::DVAR_FLAG_READ, "Dedicated server");
 
@@ -136,11 +101,11 @@ namespace dedicated
 			// Disable shader preload
 			dvars::override::register_bool("r_preloadShaders", false, game::DVAR_FLAG_READ);
 
-			// Disable renderer
+			// Disable load for renderer
 			dvars::override::register_bool("r_loadForRenderer", false, game::DVAR_FLAG_READ);
 
 			// Preload game mode fastfiles on launch
-			dvars::override::register_bool("fastfilePreloadGamemode", true, game::DVAR_FLAG_NONE);
+			//dvars::override::register_bool("fastfilePreloadGamemode", true, game::DVAR_FLAG_NONE);
 
 			dvars::override::register_bool("intro", false, game::DVAR_FLAG_READ);
 
@@ -160,7 +125,7 @@ namespace dedicated
 			utils::hook::set<uint8_t>(0x3471A0_b, 0xC3); // called from Com_Frame, seems to do renderer stuff // done CL_Screen_Update
 			utils::hook::set<uint8_t>(0x9AA9A0_b, 0xC3); // CL_CheckForResend, which tries to connect to the local server constantly // done CL_MainMP_CheckForResend
 			//utils::hook::set<uint8_t>(0x67ADCE_b, 0x00); // r_loadForRenderer default to 0 // done via dvar override
-			utils::hook::set<uint8_t>(0xD2EBB0_b, 0xC3); // recommended settings check // done
+			//utils::hook::set<uint8_t>(0xD2EBB0_b, 0xC3); // recommended settings check // done
 			//utils::hook::set<uint8_t>(0x5BE850_b, 0xC3); // some mixer-related function called on shutdown // not needed, only called from Voice_Init
 			//utils::hook::set<uint8_t>(0x4DEA50_b, 0xC3); // dont load ui gametype stuff // don't add this for now
 
@@ -233,7 +198,7 @@ namespace dedicated
 			utils::hook::set<uint8_t>(0xE05E20_b, 0xC3); // ^ buffer
 			utils::hook::set<uint8_t>(0xE11270_b, 0xC3); // ^
 			utils::hook::set<uint8_t>(0xDD3C50_b, 0xC3); // ^
-			utils::hook::set<uint8_t>(0x0C1210_b, 0xC3); // ^ idk
+			utils::hook::set(0x0C1210_b, 0xC3C033); //utils::hook::set<uint8_t>(0x0C1210_b, 0xC3); // ^ idk
 			utils::hook::set<uint8_t>(0x0C12B0_b, 0xC3); // ^ idk
 			utils::hook::set<uint8_t>(0xE423A0_b, 0xC3); // directx
 			utils::hook::set<uint8_t>(0xE04680_b, 0xC3); // ^
@@ -252,21 +217,30 @@ namespace dedicated
 			utils::hook::set<uint8_t>(0x5F0820_b, 0xC3); // ^
 			utils::hook::set<uint8_t>(0x5F0790_b, 0xC3); // ^
 
-			utils::hook::set<uint8_t>(0x3B9E72_b, 0xEB); // skip R_GetFrameIndex check in DB_LoadLevelXAssets
+			// r_loadForRenderer
+			utils::hook::set<uint8_t>(0xE114A0_b, 0xC3); // ^
+			utils::hook::set<uint8_t>(0xE11380_b, 0xC3); // ^
+			utils::hook::set<uint8_t>(0xE113D0_b, 0xC3); // ^
+			utils::hook::set<uint8_t>(0xE476F0_b, 0xC3); // ^
+			utils::hook::set<uint8_t>(0xE11420_b, 0xC3); // ^
+			utils::hook::set<uint8_t>(0xDD2300_b, 0xC3); // ^
+			utils::hook::set<uint8_t>(0xDD2610_b, 0xC3); // ^
+			utils::hook::set<uint8_t>(0xE11F40_b, 0xC3); // ^
 
-			// release buffer
+			// skip R_GetFrameIndex check in DB_LoadLevelXAssets
+			utils::hook::set<uint8_t>(0x3B9E72_b, 0xEB);
+
+			// don't release buffer
 			utils::hook::set<uint8_t>(0xDD4430_b, 0xEB);
 
 			// R_LoadWorld
 			utils::hook::set<uint8_t>(0xDD14C0_b, 0xC3);
 
-			scheduler::loop([]() // maybe not needed
-			{
-				// snd_enabled
-				*reinterpret_cast<DWORD*>(0x7201A88_b) = 0;
+			// vls shit
+			utils::hook::set<uint8_t>(0xD02CB0_b, 0xC3);
 
-
-			}, scheduler::pipeline::async);
+			// renderer
+			utils::hook::set<uint8_t>(0xDD4370_b, 0xC3);
 
 			command::add("startserver", []()
 			{

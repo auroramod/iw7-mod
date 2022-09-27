@@ -491,6 +491,46 @@ namespace game
 	}
 	using namespace entity;
 
+	namespace party
+	{
+		enum PartyPreloadMapStage : std::uint32_t
+		{
+			PRELOAD_MAP_IDLE = 0x0,
+			PRELOAD_MAP_INITIATED = 0x1,
+			PRELOAD_MAP_STARTED = 0x2,
+			PRELOAD_MAP_COUNT = 0x3,
+		};
+
+		struct PartyData
+		{
+			char __pad0[11444];
+			PartyPreloadMapStage preloadingMapStage;
+		};
+		static_assert(offsetof(PartyData, preloadingMapStage) == 11444);
+	}
+	using namespace party;
+
+	namespace sv
+	{
+		struct SvServerInitSettings
+		{
+			char mapName[64];
+			char gameType[64];
+			char serverHostName[64];
+			bool hardcoreMode;
+			unsigned int maxClientCount;
+			unsigned int maxAgentCount;
+			bool isMapPreloaded;
+			bool isSaveGame;
+			bool isRestart;
+			bool isFrontEnd;
+		}; //static_assert(sizeof(SvServerInitSettings) == 212);
+		static_assert(offsetof(SvServerInitSettings, maxClientCount) == 196);
+		static_assert(offsetof(SvServerInitSettings, isMapPreloaded) == 204);
+		static_assert(offsetof(SvServerInitSettings, isFrontEnd) == 207);
+	}
+	using namespace sv;
+
 	namespace assets
 	{
 		enum XAssetType : std::int32_t
