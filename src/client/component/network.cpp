@@ -60,16 +60,6 @@ namespace network
 			return cl_dispatch_connectionless_packet_hook.invoke<bool>(client_num, from, msg, time);
 		}
 
-		void sockadr_to_netadr(const sockaddr* s, game::netadr_s* a)
-		{
-			if (s->sa_family == 2)
-			{
-				a->type = game::NA_IP;
-				*(int*)&a->ip = *(int*)&s->sa_data[2];
-				a->port = *(unsigned short*)(&s->sa_data[0]);
-			}
-		}
-
 		int dw_send_to_stub(const int length, const char* data, game::netadr_s* to)
 		{
 			if (!*game::query_socket || *game::query_socket == INVALID_SOCKET)
@@ -83,6 +73,16 @@ namespace network
 				//printf("sendto: size: %i\n", length);
 			}
 			return sendto(*game::query_socket, data, length, 0, &s, sizeof(sockaddr));
+		}
+
+		void sockadr_to_netadr(const sockaddr* s, game::netadr_s* a)
+		{
+			if (s->sa_family == 2)
+			{
+				a->type = game::NA_IP;
+				*(int*)&a->ip = *(int*)&s->sa_data[2];
+				a->port = *(unsigned short*)(&s->sa_data[0]);
+			}
 		}
 
 		int dw_recv_from_stub(game::netadr_s* from, char* data, int maxsize)
@@ -166,28 +166,28 @@ namespace network
 			if (sock == INVALID_SOCKET)
 			{
 				console::warn("WARNING: UDP_OpenSocket: socket\n");
-				return INVALID_SOCKET;
+				return 0;
 			}
 
 			u_long arg = 1;
 			if (ioctlsocket(sock, FIONBIO, &arg) == SOCKET_ERROR)
 			{
 				console::warn("WARNING: UDP_OpenSocket: ioctl FIONBIO\n");
-				return INVALID_SOCKET;
+				return 0;
 			}
-			char optval[4] = { 0 };
-			optval[0] = 1;
-			if (setsockopt(sock, 0xFFFF, SO_BROADCAST, optval, 4) == SOCKET_ERROR)
+
+			char optval[4] = { 1, 0, 0, 0 };
+			if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, optval, sizeof(optval)) == SOCKET_ERROR)
 			{
 				console::warn("WARNING: UDP_OpenSocket: setsockopt SO_BROADCAST\n");
-				return INVALID_SOCKET;
+				return 0;
 			}
 
 			if (bind(sock, reinterpret_cast<sockaddr*>(&address), sizeof(address)) == SOCKET_ERROR)
 			{
 				console::warn("WARNING: UDP_OpenSocket: bind\n");
 				closesocket(sock);
-				return INVALID_SOCKET;
+				return 0;
 			}
 
 			return sock;
@@ -203,13 +203,13 @@ namespace network
 			{
 				*game::query_socket = create_socket(
 					net_ip->current.string, net_port->current.integer + port_diff, IPPROTO_UDP);
-				if (*game::query_socket != INVALID_SOCKET)
+				if (*game::query_socket)
 				{
 					break;
 				}
 			}
 
-			if (*game::query_socket == INVALID_SOCKET)
+			if (!*game::query_socket)
 			{
 				console::warn("WARNING: Couldn't allocate IP/UDP port, LAN discovery will not work!\n");
 				return;
@@ -228,6 +228,11 @@ namespace network
 		int get_protocol_version_stub()
 		{
 			return PROTOCOL;
+		}
+
+		int dw_get_addr_handle_connection_task_status_stub()
+		{
+			return 1; // TASK_COMPLETE
 		}
 
 		void reconnect_migratated_client(void*, game::netadr_s* from, const int, const int, const char*,
@@ -330,7 +335,7 @@ namespace network
 			utils::hook::set<uint8_t>(0xC56030_b, 0xEB);
 			utils::hook::set<uint8_t>(0xC5341A_b, 0xEB);
 			utils::hook::set<uint8_t>(0xC4FFC6_b, 0xEB);
-			utils::hook::nop(0xC533BD_b, 2);
+			utils::hook::set<uint8_t>(0xC533B4_b, 0xEB);
 
 			// ignore unregistered connection
 			utils::hook::jump(0xC4F200_b, 0xC4F1AB_b);
@@ -379,11 +384,19 @@ namespace network
 			// increase snaps
 			//dvars::override::register_int("sv_remote_client_snapshot_msec", 33, 33, 100, game::DVAR_FLAG_NONE);
 
+			dvars::override::register_float("cl_timeout", 3600.0f, 0.0f, 3600.0f, game::DVAR_FLAG_NONE);
+			dvars::override::register_float("cl_connectTimeout", 3600.0f, 0.0f, 3600.0f, game::DVAR_FLAG_NONE);
+
 			dvars::override::register_int("sv_timeout", 1800, 0, 1800, game::DVAR_FLAG_NONE); // no work
 			dvars::override::register_int("sv_connectTimeout", 1800, 0, 1800, game::DVAR_FLAG_NONE); // ^
+
 			//dvars::override::register_int("sv_zombietime", 1800, 0, 1800, game::DVAR_FLAG_NONE); // ^
 
 			dvars::override::register_int("pt_connectTimeout", 60000, 0, 60000, game::DVAR_FLAG_READ);
+
+			dvars::override::register_int("ds_serverConnectTimeout", 60000, 0, -1, game::DVAR_FLAG_READ);
+
+			dvars::override::register_int("dw_addrHandleTimeout", -1, 0, -1, game::DVAR_FLAG_READ);
 
 			// ignore built in "print" oob command and add in our own
 			//utils::hook::set<uint8_t>(0x9B0326_b, 0xEB);
@@ -393,18 +406,26 @@ namespace network
 			//	console::info(message.data());
 			//});
 
-			// Use our own socket since the game's socket doesn't work with non localhost addresses
-			// why? no idea
-			//utils::hook::jump(0x0, create_socket);
-
 			// initialize query_socket
 			utils::hook::jump(0xD57C7E_b, net_init_stub);
 
 			// use our own protocol version
-			utils::hook::jump(0xCE8290_b, get_protocol_version_stub);
+			//utils::hook::jump(0xCE8290_b, get_protocol_version_stub);
 
 			//utils::hook::set<uint8_t>(0x4030F0_b, 0xC3);
 			//utils::hook::nop(0x9B014B_b, 2);
+
+			// don't establish secure conenction pt2
+			/*utils::hook::nop(0xC572A2_b, 2);
+			utils::hook::nop(0xC72980_b, 2);
+			utils::hook::nop(0xC73512_b, 2);
+			utils::hook::nop(0xC739C9_b, 2);
+			utils::hook::set<uint8_t>(0xCFD928_b, 0xEB);*/
+			//utils::hook::jump(0xD93390_b, dw_get_addr_handle_connection_task_status_stub);
+
+#ifdef DEBUG
+			//dvars::override::register_bool("frontEndSceneEnabled", false, game::DVAR_FLAG_READ);
+#endif
 		}
 	};
 }

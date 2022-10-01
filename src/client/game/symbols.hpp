@@ -97,6 +97,8 @@ namespace game
 
 	WEAK symbol<unsigned int(int controllerIndex)> Live_SyncOnlineDataFlags{ 0xDC5CE0 };
 
+	WEAK symbol<PartyData* ()> Lobby_GetPartyData{ 0x9C3E20 };
+
 	WEAK symbol<Material* (const char* material)> Material_RegisterHandle{ 0xE11CE0 };
 
 	WEAK symbol<void(netadr_s*, sockaddr*)> NetadrToSockadr{ 0xCE6B90 };
@@ -106,7 +108,7 @@ namespace game
 	WEAK symbol<int(netadr_s a, netadr_s b)> NET_CompareAdr{ 0xBB49B0 };
 	WEAK symbol<int(netadr_s a, netadr_s b)> NET_CompareBaseAdr{ 0xBB4A00 };
 
-	WEAK symbol<PartyData* ()> Lobby_GetPartyData{ 0x9C3E20 };
+	WEAK symbol<PartyData* ()> Party_GetActiveParty{ 0x9CC010 };
 
 	WEAK symbol<GfxFont* (const char* font, int size)> R_RegisterFont{ 0xDFC670 };
 	WEAK symbol<int(const char* text, int maxChars, GfxFont* font)> R_TextWidth{ 0xDFC770 };

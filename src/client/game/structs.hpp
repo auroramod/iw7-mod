@@ -406,6 +406,11 @@ namespace game
 		int useZlib;
 	};
 
+	enum CriticalSection : std::int32_t
+	{
+		CRITSECT_DEMONWARE = 39,
+	};
+
 	namespace entity
 	{
 		enum connstate_t : std::uint32_t
@@ -505,8 +510,16 @@ namespace game
 		{
 			char __pad0[11444];
 			PartyPreloadMapStage preloadingMapStage;
+			char __pad1[101];
+			bool m_gameStartSkipCountdown;
+			char __pad2[110];
+			int lobbyFlags;
+			bool gameStartRequested;
 		};
 		static_assert(offsetof(PartyData, preloadingMapStage) == 11444);
+		static_assert(offsetof(PartyData, m_gameStartSkipCountdown) == 11549);
+		static_assert(offsetof(PartyData, lobbyFlags) == 11660);
+		static_assert(offsetof(PartyData, gameStartRequested) == 11664);
 	}
 	using namespace party;
 
@@ -524,10 +537,13 @@ namespace game
 			bool isSaveGame;
 			bool isRestart;
 			bool isFrontEnd;
+			char __pad0[2];
+			bool serverThreadStartup;
 		}; //static_assert(sizeof(SvServerInitSettings) == 212);
 		static_assert(offsetof(SvServerInitSettings, maxClientCount) == 196);
 		static_assert(offsetof(SvServerInitSettings, isMapPreloaded) == 204);
 		static_assert(offsetof(SvServerInitSettings, isFrontEnd) == 207);
+		static_assert(offsetof(SvServerInitSettings, serverThreadStartup) == 210);
 	}
 	using namespace sv;
 

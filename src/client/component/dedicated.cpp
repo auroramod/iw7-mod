@@ -17,6 +17,11 @@ namespace dedicated
 {
 	namespace
 	{
+		bool party_is_server_dedicated_stub()
+		{
+			return true;
+		}
+
 		void sync_gpu_stub()
 		{
 			std::this_thread::sleep_for(1ms);
@@ -109,6 +114,9 @@ namespace dedicated
 
 			dvars::override::register_bool("intro", false, game::DVAR_FLAG_READ);
 
+			// Is party dedicated
+			utils::hook::jump(0x5DFC10_b, party_is_server_dedicated_stub);
+
 			// Hook R_SyncGpu
 			utils::hook::jump(0xE08AE0_b, sync_gpu_stub, true);
 
@@ -192,46 +200,51 @@ namespace dedicated
 			//utils::hook::set<uint8_t>(0x3A1940_b, 0xC3); // DB_ReadPackedLoadedSounds // not done
 
 			// iw7 patches
-			utils::hook::set<uint8_t>(0xE06060_b, 0xC3); // directx
-			utils::hook::set<uint8_t>(0xE05B80_b, 0xC3); // ^
-			utils::hook::set<uint8_t>(0xDD2760_b, 0xC3); // ^
-			utils::hook::set<uint8_t>(0xE05E20_b, 0xC3); // ^ buffer
-			utils::hook::set<uint8_t>(0xE11270_b, 0xC3); // ^
-			utils::hook::set<uint8_t>(0xDD3C50_b, 0xC3); // ^
+			utils::hook::set(0xE06060_b, 0xC3C033); //utils::hook::set<uint8_t>(0xE06060_b, 0xC3); // directx
+			utils::hook::set(0xE05B80_b, 0xC3C033); //utils::hook::set<uint8_t>(0xE05B80_b, 0xC3); // ^
+			utils::hook::set(0xDD2760_b, 0xC3C033); //utils::hook::set<uint8_t>(0xDD2760_b, 0xC3); // ^
+			utils::hook::set(0xE05E20_b, 0xC3C033); //utils::hook::set<uint8_t>(0xE05E20_b, 0xC3); // ^ buffer
+			utils::hook::set(0xE11270_b, 0xC3C033); //utils::hook::set<uint8_t>(0xE11270_b, 0xC3); // ^
+			utils::hook::set(0xDD3C50_b, 0xC3C033); //utils::hook::set<uint8_t>(0xDD3C50_b, 0xC3); // ^
 			utils::hook::set(0x0C1210_b, 0xC3C033); //utils::hook::set<uint8_t>(0x0C1210_b, 0xC3); // ^ idk
-			utils::hook::set<uint8_t>(0x0C12B0_b, 0xC3); // ^ idk
-			utils::hook::set<uint8_t>(0xE423A0_b, 0xC3); // directx
-			utils::hook::set<uint8_t>(0xE04680_b, 0xC3); // ^
+			utils::hook::set(0x0C12B0_b, 0xC3C033); //utils::hook::set<uint8_t>(0x0C12B0_b, 0xC3); // ^ idk
+			utils::hook::set(0xE423A0_b, 0xC3C033); //utils::hook::set<uint8_t>(0xE423A0_b, 0xC3); // directx
+			utils::hook::set(0xE04680_b, 0xC3C033); //utils::hook::set<uint8_t>(0xE04680_b, 0xC3); // ^
 
-			utils::hook::set<uint8_t>(0xE00ED0_b, 0xC3); // Image_Create1DTexture_PC
-			utils::hook::set<uint8_t>(0xE00FC0_b, 0xC3); // Image_Create2DTexture_PC
-			utils::hook::set<uint8_t>(0xE011A0_b, 0xC3); // Image_Create3DTexture_PC
-			utils::hook::set<uint8_t>(0xE015C0_b, 0xC3); // Image_CreateCubeTexture_PC
-			utils::hook::set<uint8_t>(0xE01300_b, 0xC3); // Image_CreateArrayTexture_PC
+			utils::hook::set(0xE00ED0_b, 0xC3C033); //utils::hook::set<uint8_t>(0xE00ED0_b, 0xC3); // Image_Create1DTexture_PC
+			utils::hook::set(0xE00FC0_b, 0xC3C033); //utils::hook::set<uint8_t>(0xE00FC0_b, 0xC3); // Image_Create2DTexture_PC
+			utils::hook::set(0xE011A0_b, 0xC3C033); //utils::hook::set<uint8_t>(0xE011A0_b, 0xC3); // Image_Create3DTexture_PC
+			utils::hook::set(0xE015C0_b, 0xC3C033); //utils::hook::set<uint8_t>(0xE015C0_b, 0xC3); // Image_CreateCubeTexture_PC
+			utils::hook::set(0xE01300_b, 0xC3C033); //utils::hook::set<uint8_t>(0xE01300_b, 0xC3); // Image_CreateArrayTexture_PC
 
-			utils::hook::set<uint8_t>(0x5F1EA0_b, 0xC3); // renderer
-			utils::hook::set<uint8_t>(0x0C1370_b, 0xC3); // ^
-			utils::hook::set<uint8_t>(0xDD26E0_b, 0xC3); // directx
-			utils::hook::set<uint8_t>(0x5F0610_b, 0xC3); // ^
-			utils::hook::set<uint8_t>(0x5F0580_b, 0xC3); // ^
-			utils::hook::set<uint8_t>(0x5F0820_b, 0xC3); // ^
-			utils::hook::set<uint8_t>(0x5F0790_b, 0xC3); // ^
+			utils::hook::set(0x5F1EA0_b, 0xC3C033); //utils::hook::set<uint8_t>(0x5F1EA0_b, 0xC3); // renderer
+			utils::hook::set(0x0C1370_b, 0xC3C033); //utils::hook::set<uint8_t>(0x0C1370_b, 0xC3); // ^
+			utils::hook::set(0xDD26E0_b, 0xC3C033); //utils::hook::set<uint8_t>(0xDD26E0_b, 0xC3); // directx
+			utils::hook::set(0x5F0610_b, 0xC3C033); //utils::hook::set<uint8_t>(0x5F0610_b, 0xC3); // ^
+			utils::hook::set(0x5F0580_b, 0xC3C033); //utils::hook::set<uint8_t>(0x5F0580_b, 0xC3); // ^
+			utils::hook::set(0x5F0820_b, 0xC3C033); //utils::hook::set<uint8_t>(0x5F0820_b, 0xC3); // ^
+			utils::hook::set(0x5F0790_b, 0xC3C033); //utils::hook::set<uint8_t>(0x5F0790_b, 0xC3); // ^
+
+			utils::hook::set(0xDD42A0_b, 0xC3C033); // shutdown
+			utils::hook::set(0xDD42E0_b, 0xC3C033); // ^
+			utils::hook::set(0xDD42E0_b, 0xC3C033); // ^
+			utils::hook::set(0xDD4280_b, 0xC3C033); // ^
 
 			// r_loadForRenderer
-			utils::hook::set<uint8_t>(0xE114A0_b, 0xC3); // ^
-			utils::hook::set<uint8_t>(0xE11380_b, 0xC3); // ^
-			utils::hook::set<uint8_t>(0xE113D0_b, 0xC3); // ^
-			utils::hook::set<uint8_t>(0xE476F0_b, 0xC3); // ^
-			utils::hook::set<uint8_t>(0xE11420_b, 0xC3); // ^
-			utils::hook::set<uint8_t>(0xDD2300_b, 0xC3); // ^
-			utils::hook::set<uint8_t>(0xDD2610_b, 0xC3); // ^
-			utils::hook::set<uint8_t>(0xE11F40_b, 0xC3); // ^
+			//utils::hook::set<uint8_t>(0xE114A0_b, 0xC3); // ^
+			//utils::hook::set<uint8_t>(0xE11380_b, 0xC3); // ^
+			//utils::hook::set<uint8_t>(0xE113D0_b, 0xC3); // ^
+			//utils::hook::set<uint8_t>(0xE476F0_b, 0xC3); // ^
+			//utils::hook::set<uint8_t>(0xE11420_b, 0xC3); // ^
+			//utils::hook::set<uint8_t>(0xDD2300_b, 0xC3); // ^
+			//utils::hook::set<uint8_t>(0xDD2610_b, 0xC3); // ^
+			//utils::hook::set<uint8_t>(0xE11F40_b, 0xC3); // ^
 
 			// skip R_GetFrameIndex check in DB_LoadLevelXAssets
 			utils::hook::set<uint8_t>(0x3B9E72_b, 0xEB);
 
 			// don't release buffer
-			utils::hook::set<uint8_t>(0xDD4430_b, 0xEB);
+			utils::hook::set<uint8_t>(0xDD4430_b, 0xC3);
 
 			// R_LoadWorld
 			utils::hook::set<uint8_t>(0xDD14C0_b, 0xC3);
@@ -240,7 +253,13 @@ namespace dedicated
 			utils::hook::set<uint8_t>(0xD02CB0_b, 0xC3);
 
 			// renderer
-			utils::hook::set<uint8_t>(0xDD4370_b, 0xC3);
+			//utils::hook::set<uint8_t>(0xDD4370_b, 0xC3);
+
+			// image stream (pak)
+			utils::hook::set<uint8_t>(0xA7DB10_b, 0xC3); // DB_CreateGfxImageStreamInternal
+
+			// sound stream (sabl, sabs)
+			//utils::hook::nop(0xCFDC03_b, 2);
 
 			command::add("startserver", []()
 			{

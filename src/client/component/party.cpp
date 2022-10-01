@@ -31,9 +31,13 @@ namespace party
 		void perform_game_initialization()
 		{
 			command::execute("onlinegame 1", true);
+			//command::execute("exec default_xboxlive.cfg", true);
 			command::execute("xblive_privatematch 1", true);
-			//command::execute("xstartprivateparty", true);
-			command::execute("xstartprivatematch", true);
+			//command::execute("xstopparty 0", true);
+			//command::execute("xstartprivateparty 0", true);
+			command::execute("xstartprivatematch 0", true);
+			command::execute("uploadstats", true);
+			//command::execute("entitlements_delay 0", true);
 		}
 
 		void connect_to_party(const game::netadr_s& target, const std::string& mapname, const std::string& gametype)
@@ -117,17 +121,10 @@ namespace party
 		auto* private_clients = game::Dvar_FindVar("ui_privateClients");
 		auto* hardcore = game::Dvar_FindVar("ui_hardcore");
 
-		//game::Com_FrontEndScene_Shutdown();
+		//utils::hook::invoke<void>(0x9D8900_b, game::Party_GetActiveParty(), true);
 
-		//if (!game::environment::is_dedi() && !game::Com_FrontEndScene_IsActive())
-		//{
-		//	game::Com_Shutdown("EXE_ENDOFGAME");
-		//}
-
-		//utils::hook::invoke<void>(0x9D6F40_b, game::Lobby_GetPartyData(), mapname->current.string, gametype->current.string);
-
-		game::Com_FrontEndScene_ShutdownAndDisable();
-		
+		utils::hook::invoke<void>(0xE4DDC0_b); // Sys_WaitWorkerCmds
+		utils::hook::invoke<void>(0xBAFFD0_b, ""); // Com_ShutdownInternal
 		game::SV_CmdsMP_StartMapForParty(
 			mapname->current.string,
 			gametype->current.string,
