@@ -38,12 +38,12 @@ namespace steam_proxy
 	class component final : public component_interface
 	{
 	public:
-		void post_load() override
+		void post_unpack() override
 		{
-			/*if (game::environment::is_dedi() || is_disabled())
+			if (game::environment::is_dedi())
 			{
 				return;
-			}*/
+			}
 
 			this->load_client();
 			this->clean_up_on_error();
@@ -187,7 +187,7 @@ namespace steam_proxy
 			game_id.raw.type = 1; // k_EGameIDTypeGameMod
 			game_id.raw.app_id = app_id & 0xFFFFFF;
 
-			const auto* mod_id = "IW7-Mod";
+			const auto* mod_id = "iw7";
 			game_id.raw.mod_id = *reinterpret_cast<const unsigned int*>(mod_id) | 0x80000000;
 
 			this->client_user_.invoke<bool>("SpawnProcess", path.data(), cmdline.data(), our_directory,
