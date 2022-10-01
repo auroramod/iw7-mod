@@ -1,146 +1,93 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
-
 #include "game/game.hpp"
-
 #include "game_module.hpp"
 
-#include <utils/hook.hpp>
 #include <utils/nt.hpp>
+#include <utils/hook.hpp>
 
 namespace splash
 {
-	namespace
-	{
-		HANDLE load_splash_image()
-		{
-			const auto self = game_module::get_host_module();
-			return LoadImageA(self, MAKEINTRESOURCE(IMAGE_SPLASH), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
-		}
-	}
-
 	class component final : public component_interface
 	{
 	public:
-		component()
-			: image_(load_splash_image())
+		void post_start() override
 		{
-			this->window_thread_ = std::thread([this]
-			{
-				this->draw();
-			});
+			const utils::nt::library self;
+			image_ = LoadImageA(self, MAKEINTRESOURCE(IMAGE_SPLASH), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
 		}
 
-		~component()
+		void post_load() override
 		{
-			if (this->window_thread_.joinable())
+			if (game::environment::is_dedi())
 			{
-				this->window_thread_.detach();
+				return;
 			}
+
+			this->show();
+		}
+
+		void post_unpack() override
+		{
+			// Disable native splash screen
+			utils::hook::set<uint8_t>(0xD58240_b, 0xC3);
+			utils::hook::jump(0xD584F0_b, destroy_stub, true);
+			utils::hook::jump(0xD58530_b, destroy_stub, true);
 		}
 
 		void pre_destroy() override
 		{
 			this->destroy();
-		}
 
-		void post_unpack() override
-		{
-			utils::hook::set<uint8_t>(0xD58240_b, 0xC3); // disable splash
-			this->destroy();
-		}
-
-		void hide()
-		{
-			if (this->window_ && IsWindow(this->window_))
+			MSG msg;
+			while (this->window_ && IsWindow(this->window_))
 			{
-				ShowWindow(this->window_, SW_HIDE);
-				UpdateWindow(this->window_);
+				if (PeekMessageA(&msg, nullptr, NULL, NULL, PM_REMOVE))
+				{
+					TranslateMessage(&msg);
+					DispatchMessage(&msg);
+				}
+				else
+				{
+					std::this_thread::sleep_for(1ms);
+				}
 			}
 
-			this->destroy();
+			this->window_ = nullptr;
 		}
 
 	private:
-		std::atomic_bool join_safe_{ false };
 		HWND window_{};
 		HANDLE image_{};
-		std::thread window_thread_{};
 
-		void destroy()
+		static void destroy_stub()
+		{
+			component_loader::get<component>()->destroy();
+		}
+
+		void destroy() const
 		{
 			if (this->window_ && IsWindow(this->window_))
 			{
 				ShowWindow(this->window_, SW_HIDE);
 				DestroyWindow(this->window_);
-				this->window_ = nullptr;
-
-				if (this->window_thread_.joinable())
-				{
-					this->window_thread_.join();
-				}
-
-				this->window_ = nullptr;
+				UnregisterClassA("IW7 Splash Screen", utils::nt::library{});
 			}
-			else if (this->window_thread_.joinable())
-			{
-				this->window_thread_.detach();
-			}
-		}
-
-		void draw()
-		{
-			this->show();
-			while (this->draw_frame())
-			{
-				std::this_thread::sleep_for(1ms);
-			}
-
-			this->window_ = nullptr;
-			UnregisterClassA("IW7 Splash Screen", game_module::get_host_module());
-		}
-
-		bool draw_frame() const
-		{
-			if (!this->window_)
-			{
-				return false;
-			}
-
-			MSG msg{};
-			bool success = true;
-
-			while (PeekMessageW(&msg, nullptr, NULL, NULL, PM_REMOVE))
-			{
-				TranslateMessage(&msg);
-				DispatchMessageW(&msg);
-
-				if (msg.message == WM_DESTROY && msg.hwnd == this->window_)
-				{
-					PostQuitMessage(0);
-				}
-
-				if (msg.message == WM_QUIT)
-				{
-					success = false;
-				}
-			}
-			return success;
 		}
 
 		void show()
 		{
 			WNDCLASSA wnd_class;
 
-			const utils::nt::library host = game_module::get_host_module();
+			const auto self = game_module::get_host_module();
 
 			wnd_class.style = CS_DROPSHADOW;
 			wnd_class.cbClsExtra = 0;
 			wnd_class.cbWndExtra = 0;
 			wnd_class.lpszMenuName = nullptr;
 			wnd_class.lpfnWndProc = DefWindowProcA;
-			wnd_class.hInstance = host;
-			wnd_class.hIcon = LoadIconA(host, MAKEINTRESOURCEA(1));
+			wnd_class.hInstance = self;
+			wnd_class.hIcon = LoadIconA(self, reinterpret_cast<LPCSTR>(102));
 			wnd_class.hCursor = LoadCursorA(nullptr, IDC_APPSTARTING);
 			wnd_class.hbrBackground = reinterpret_cast<HBRUSH>(6);
 			wnd_class.lpszClassName = "IW7 Splash Screen";
@@ -156,13 +103,13 @@ namespace splash
 						WS_POPUP | WS_SYSMENU,
 						(x_pixels - 320) / 2, (y_pixels - 100) / 2, 320, 100, nullptr,
 						nullptr,
-						host, nullptr);
+						self, nullptr);
 
 					if (this->window_)
 					{
 						auto* const image_window = CreateWindowExA(0, "Static", nullptr, WS_CHILD | WS_VISIBLE | 0xEu,
 							0, 0,
-							320, 100, this->window_, nullptr, host, nullptr);
+							320, 100, this->window_, nullptr, self, nullptr);
 						if (image_window)
 						{
 							RECT rect;
@@ -180,10 +127,6 @@ namespace splash
 							AdjustWindowRect(&rect, WS_CHILD | WS_VISIBLE | 0xEu, 0);
 							SetWindowPos(this->window_, nullptr, rect.left, rect.top, rect.right - rect.left,
 								rect.bottom - rect.top, SWP_NOZORDER);
-
-							SetWindowRgn(this->window_,
-								CreateRoundRectRgn(0, 0, rect.right - rect.left, rect.bottom - rect.top, 15,
-									15), TRUE);
 
 							ShowWindow(this->window_, SW_SHOW);
 							UpdateWindow(this->window_);
