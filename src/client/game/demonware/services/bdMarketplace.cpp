@@ -86,7 +86,7 @@ namespace demonware
 		
 		for (auto const& pair : LootID_ranges)
 		{
-			for (size_t loot_id = pair.first; loot_id <= pair.second; loot_id++)
+			for (uint32_t loot_id = pair.first; loot_id <= pair.second; loot_id++)
 			{
 				auto loot_item = new bdMarketplaceInventory{};
 				loot_item->m_userID = 0;
