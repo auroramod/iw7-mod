@@ -18,6 +18,49 @@ namespace demonware
 		}
 	};
 
+	class bdMarketplaceInventory final : public bdTaskResult
+	{
+	public:
+		uint64_t m_userID;
+		std::string m_accountType;
+		uint32_t m_itemId;
+		uint32_t m_itemQuantity;
+		uint32_t m_itemXp;
+		std::string m_itemData;
+		uint32_t m_expireDateTime;
+		int64_t m_expiryDuration;
+		uint16_t m_collisionField;
+		uint32_t m_modDateTime;
+
+		void serialize(byte_buffer* buffer) override
+		{
+			buffer->write_uint64(this->m_userID);
+			buffer->write_string(this->m_accountType);
+			buffer->write_uint32(this->m_itemId);
+			buffer->write_uint32(this->m_itemQuantity);
+			buffer->write_uint32(this->m_itemXp);
+			buffer->write_blob(this->m_itemData);
+			buffer->write_uint32(this->m_expireDateTime);
+			buffer->write_int64(this->m_expiryDuration);
+			buffer->write_uint16(this->m_collisionField);
+			buffer->write_uint32(this->m_modDateTime);
+		}
+
+		void deserialize(byte_buffer* buffer) override
+		{
+			buffer->read_uint64(&this->m_userID);
+			buffer->read_string(&this->m_accountType);
+			buffer->read_uint32(&this->m_itemId);
+			buffer->read_uint32(&this->m_itemQuantity);
+			buffer->read_uint32(&this->m_itemXp);
+			buffer->read_blob(&this->m_itemData);
+			buffer->read_uint32(&this->m_expireDateTime);
+			buffer->read_int64(&this->m_expiryDuration);
+			buffer->read_uint16(&this->m_collisionField);
+			buffer->read_uint32(&this->m_modDateTime);
+		}
+	};
+	
 	class bdFileData final : public bdTaskResult
 	{
 	public:
