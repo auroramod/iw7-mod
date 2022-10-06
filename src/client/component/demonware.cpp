@@ -531,6 +531,9 @@ namespace demonware
 			utils::hook::set<uint8_t>(0x52A6D0_b, 0xC3);
 			utils::hook::jump(0x52B800_b, get_patching_status_stub);
 
+			// Skip some other thing in Live_SyncOnlineDataFlags
+			utils::hook::set(0x533390_b, 0xC301B0);
+
 			utils::hook::set<uint8_t>(0xDC0C00_b, 0xC3); // Live_CheckForFullDisconnect
 
 			// isProfanity
