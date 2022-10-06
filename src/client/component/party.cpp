@@ -40,7 +40,7 @@ namespace party
 			//command::execute("entitlements_delay 0", true);
 		}
 
-		void connect_to_party(const game::netadr_s& target, const std::string& mapname, const std::string& gametype)
+		void connect_to_party(const game::netadr_s& target, const std::string& mapname, const std::string& gametype, int sv_maxclients)
 		{
 			if (game::Com_GameMode_GetActiveGameMode() != game::GAME_MODE_MP &&
 				game::Com_GameMode_GetActiveGameMode() != game::GAME_MODE_CP)
@@ -48,7 +48,7 @@ namespace party
 				return;
 			}
 
-			/*if (game::Live_SyncOnlineDataFlags(0) != 0)
+			if (game::Live_SyncOnlineDataFlags(0) != 0)
 			{
 				// initialize the game after onlinedataflags is 32 (workaround)
 				if (game::Live_SyncOnlineDataFlags(0) == 32)
@@ -58,7 +58,7 @@ namespace party
 						command::execute("xstartprivateparty", true);
 						command::execute("disconnect", true); // 32 -> 0
 
-						connect_to_party(target, mapname, gametype);
+						connect_to_party(target, mapname, gametype, sv_maxclients);
 					}, scheduler::pipeline::main, 1s);
 					return;
 				}
@@ -66,13 +66,19 @@ namespace party
 				{
 					scheduler::once([=]()
 					{
-						connect_to_party(target, mapname, gametype);
+						connect_to_party(target, mapname, gametype, sv_maxclients);
 					}, scheduler::pipeline::main, 1s);
 					return;
 				}
-			}*/
+			}
+
+			const auto ui_maxclients = game::Dvar_FindVar("ui_maxclients");
+			game::Dvar_SetInt(ui_maxclients, sv_maxclients);
 
 			perform_game_initialization();
+
+			// setup agent count
+			utils::hook::invoke<void>(0xC19B00_b, gametype.data());
 
 			// connect
 			char session_info[0x100] = {};
@@ -420,13 +426,21 @@ namespace party
 					return;
 				}
 
+				const auto sv_maxclients_str = info.get("sv_maxclients");
+				const auto sv_maxclients = std::atoi(sv_maxclients_str.data());
+				if (!sv_maxclients)
+				{
+					info_response_error("Invalid sv_maxclients.");
+					return;
+				}
+
 				//party::sv_motd = info.get("sv_motd");
 				//party::sv_maxclients = std::stoi(info.get("sv_maxclients"));
 
-				connect_to_party(target, mapname, gametype);
+				connect_to_party(target, mapname, gametype, sv_maxclients);
 			});
 		}
 	};
 }
 
-//REGISTER_COMPONENT(party::component)
+REGISTER_COMPONENT(party::component)

@@ -410,7 +410,7 @@ namespace network
 			utils::hook::jump(0xD57C7E_b, net_init_stub);
 
 			// use our own protocol version
-			//utils::hook::jump(0xCE8290_b, get_protocol_version_stub);
+			utils::hook::jump(0xCE8290_b, get_protocol_version_stub);
 
 			//utils::hook::set<uint8_t>(0x4030F0_b, 0xC3);
 			//utils::hook::nop(0x9B014B_b, 2);
@@ -430,4 +430,4 @@ namespace network
 	};
 }
 
-//REGISTER_COMPONENT(network::component)
+REGISTER_COMPONENT(network::component)
