@@ -127,8 +127,8 @@ namespace dedicated
 			utils::hook::set<uint8_t>(0xBB0930_b, 0xC3); // don't save config file
 
 			utils::hook::set<uint8_t>(0x9D49C0_b, 0xC3); // disable self-registration // done
-			//utils::hook::set<uint8_t>(0xD597C0_b, 0xC3); // init sound system (1) // done Voice_Init
-			//utils::hook::set<uint8_t>(0x701820_b, 0xC3); // init sound system (2) // can't find ( arxan'd ) SND_Init?
+			utils::hook::set(0xC93120_b, 0xC3C033); // init sound system (1) // done SND_InitDriver
+			utils::hook::set<uint8_t>(0xD597C0_b, 0xC3); // init sound system (2) // done Voice_Init
 			utils::hook::set<uint8_t>(0xE574E0_b, 0xC3); // render thread // done RB_RenderThread
 			utils::hook::set<uint8_t>(0x3471A0_b, 0xC3); // called from Com_Frame, seems to do renderer stuff // done CL_Screen_Update
 			utils::hook::set<uint8_t>(0x9AA9A0_b, 0xC3); // CL_CheckForResend, which tries to connect to the local server constantly // done CL_MainMP_CheckForResend
