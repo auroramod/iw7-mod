@@ -14,6 +14,16 @@ namespace gameplay
 {
 	namespace
 	{
+		utils::hook::detour stuck_in_client_hook;
+
+		void stuck_in_client_stub(void* entity)
+		{
+			if (dvars::g_playerEjection->current.enabled)
+			{
+				stuck_in_client_hook.invoke<void>(entity);
+			}
+		}
+
 		void* bg_bounces_stub()
 		{
 			return utils::hook::assemble([](utils::hook::assembler& a)
@@ -63,13 +73,16 @@ namespace gameplay
 		void post_unpack() override
 		{
 			// Implement bounces
-			dvars::bg_bounces = game::Dvar_RegisterBool("bg_bounces", false, game::DVAR_FLAG_REPLICATED, "Enables bouncing");
+			dvars::bg_bounces = game::Dvar_RegisterBool("bg_bounces", false, game::DVAR_FLAG_REPLICATED, "Enables bounces");
 			utils::hook::jump(0x70FBB7_b, bg_bounces_stub(), true);
 
 			// Implement gravity dvar
 			dvars::bg_gravity = game::Dvar_RegisterInt("bg_gravity", 800, 0, 1000, game::DVAR_FLAG_REPLICATED, "Game gravity in inches per second squared");
 			utils::hook::nop(0xAFA330_b, 13);
 			utils::hook::jump(0xAFA330_b, bg_gravity_stub(), true);
+
+			dvars::g_playerEjection = game::Dvar_RegisterBool("g_playerEjection", true, game::DVAR_FLAG_REPLICATED, "Flag whether player ejection is on or off");
+			stuck_in_client_hook.create(0xAFD9B0_b, stuck_in_client_stub);
 		}
 	};
 }
