@@ -22,7 +22,7 @@ namespace dvars
 	extern game::dvar_t* r_fullbright;
 
 	extern game::dvar_t* bg_bounces;
-	extern game::dvar_t* bg_gravity;
+	extern game::dvar_t* g_gravity;
 
 	extern game::dvar_t* g_playerEjection;
 

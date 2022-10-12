@@ -26,7 +26,7 @@ namespace dvars
 	game::dvar_t* r_fullbright = nullptr;
 
 	game::dvar_t* bg_bounces = nullptr;
-	game::dvar_t* bg_gravity = nullptr;
+	game::dvar_t* g_gravity = nullptr;
 
 	game::dvar_t* g_playerEjection = nullptr;
 
