@@ -86,6 +86,7 @@ namespace utils::string
 	std::string to_upper(std::string text);
 	bool starts_with(const std::string& text, const std::string& substring);
 	bool ends_with(const std::string& text, const std::string& substring);
+	bool is_numeric(const std::string& text);
 
 	std::string dump_hex(const std::string& data, const std::string& separator = " ");
 

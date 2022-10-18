@@ -2,6 +2,7 @@
 #include "loader/component_loader.hpp"
 
 #include "game/game.hpp"
+#include "game/dvars.hpp"
 
 #include "dvars.hpp"
 #include "command.hpp"
@@ -10,13 +11,41 @@
 
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
-
-#include "game/dvars.hpp"
+#include <utils/flags.hpp>
 
 namespace dedicated
 {
 	namespace
 	{
+		std::vector<std::string>& get_startup_command_queue()
+		{
+			static std::vector<std::string> startup_command_queue;
+			return startup_command_queue;
+		}
+
+		void execute_startup_command(int client, int /*controllerIndex*/, const char* command)
+		{
+			if (game::Live_SyncOnlineDataFlags(0) == 0)
+			{
+				game::Cbuf_ExecuteBufferInternal(0, 0, command, game::Cmd_ExecuteSingleCommand);
+			}
+			else
+			{
+				get_startup_command_queue().emplace_back(command);
+			}
+		}
+
+		void execute_startup_command_queue()
+		{
+			const auto queue = get_startup_command_queue();
+			get_startup_command_queue().clear();
+
+			for (const auto& command : queue)
+			{
+				game::Cbuf_ExecuteBufferInternal(0, 0, command.data(), game::Cmd_ExecuteSingleCommand);
+			}
+		}
+
 		bool party_is_server_dedicated_stub()
 		{
 			return true;
@@ -27,10 +56,13 @@ namespace dedicated
 			std::this_thread::sleep_for(1ms);
 		}
 
+		void gscr_is_using_match_rules_data_stub()
+		{
+			game::Scr_AddInt(0);
+		}
+
 		void init_dedicated_server()
 		{
-			printf("init called...\n");
-
 			// R_RegisterDvars
 			utils::hook::invoke<void>(0xDF62C0_b);
 
@@ -53,7 +85,6 @@ namespace dedicated
 	{
 		if (handle == *reinterpret_cast<HANDLE*>(0x8B1BC98_b))
 		{
-			//printf("not waiting for mutex\n");
 			return 0;
 		}
 
@@ -62,7 +93,6 @@ namespace dedicated
 
 	void initialize()
 	{
-		//command::execute("exec default_xboxlive.cfg", true);
 		command::execute("onlinegame 1", true);
 		command::execute("xblive_privatematch 1", true);
 	}
@@ -76,7 +106,7 @@ namespace dedicated
 			{
 				if (function == "WaitForSingleObject")
 				{
-					return wait_for_single_object_stub;
+				//	return wait_for_single_object_stub;
 				}
 			}
 
@@ -109,95 +139,44 @@ namespace dedicated
 			// Disable load for renderer
 			dvars::override::register_bool("r_loadForRenderer", false, game::DVAR_FLAG_READ);
 
-			// Preload game mode fastfiles on launch
-			//dvars::override::register_bool("fastfilePreloadGamemode", true, game::DVAR_FLAG_NONE);
-
 			dvars::override::register_bool("intro", false, game::DVAR_FLAG_READ);
 
 			// Is party dedicated
 			utils::hook::jump(0x5DFC10_b, party_is_server_dedicated_stub);
+
+			// Make GScr_IsUsingMatchRulesData return 0 so the game doesn't override the cfg
+			utils::hook::jump(0xB53950_b, gscr_is_using_match_rules_data_stub);
 
 			// Hook R_SyncGpu
 			utils::hook::jump(0xE08AE0_b, sync_gpu_stub, true);
 
 			utils::hook::jump(0x341B60_b, init_dedicated_server, true);
 
+			// delay startup commands until the initialization is done
+			utils::hook::call(0xB8D20F_b, execute_startup_command);
+
 			utils::hook::nop(0xCDD5D3_b, 5); // don't load config file
 			utils::hook::nop(0xB7CE46_b, 5); // ^
 			utils::hook::set<uint8_t>(0xBB0930_b, 0xC3); // don't save config file
 
-			utils::hook::set<uint8_t>(0x9D49C0_b, 0xC3); // disable self-registration // done
-			utils::hook::set(0xC93120_b, 0xC3C033); // init sound system (1) // done SND_InitDriver
-			utils::hook::set<uint8_t>(0xD597C0_b, 0xC3); // init sound system (2) // done Voice_Init
-			utils::hook::set<uint8_t>(0xE574E0_b, 0xC3); // render thread // done RB_RenderThread
-			utils::hook::set<uint8_t>(0x3471A0_b, 0xC3); // called from Com_Frame, seems to do renderer stuff // done CL_Screen_Update
-			utils::hook::set<uint8_t>(0x9AA9A0_b, 0xC3); // CL_CheckForResend, which tries to connect to the local server constantly // done CL_MainMP_CheckForResend
-			//utils::hook::set<uint8_t>(0x67ADCE_b, 0x00); // r_loadForRenderer default to 0 // done via dvar override
-			//utils::hook::set<uint8_t>(0xD2EBB0_b, 0xC3); // recommended settings check // done
-			//utils::hook::set<uint8_t>(0x5BE850_b, 0xC3); // some mixer-related function called on shutdown // not needed, only called from Voice_Init
-			//utils::hook::set<uint8_t>(0x4DEA50_b, 0xC3); // dont load ui gametype stuff // don't add this for now
+			utils::hook::set<uint8_t>(0x9D49C0_b, 0xC3); // disable self-registration
+			utils::hook::set<uint8_t>(0xE574E0_b, 0xC3); // render thread
+			utils::hook::set<uint8_t>(0x3471A0_b, 0xC3); // called from Com_Frame, seems to do renderer stuff
+			utils::hook::set<uint8_t>(0x9AA9A0_b, 0xC3); // CL_CheckForResend, which tries to connect to the local server constantly
+			utils::hook::set<uint8_t>(0xD2EBB0_b, 0xC3); // recommended settings check
 
-			utils::hook::nop(0xC5007B_b, 6); // unknown check in SV_ExecuteClientMessage // done
-			utils::hook::nop(0xC4F407_b, 3); // allow first slot to be occupied // done
-			utils::hook::nop(0x3429A7_b, 2); // properly shut down dedicated servers // done
-			utils::hook::nop(0x34296F_b, 2); // ^ // done
-			utils::hook::nop(0x3429CD_b, 5); // don't shutdown renderer // done ( maybe need to add R_ShutdownWorld to this too? )
+			// sound initialization
+			utils::hook::nop(0xC93213_b, 5); // snd stream thread
+			utils::hook::set<uint8_t>(0xC93206_b, 0); // snd_active
+			utils::hook::set<uint8_t>(0xD597C0_b, 0xC3); // init voice system
 
-			//utils::hook::set<uint8_t>(0xAA290_b, 0xC3); // something to do with blendShapeVertsView // not a thing in iw7
-			//utils::hook::nop(0x70465D_b, 8); // sound thing // dunno if needed
+			utils::hook::nop(0xC5007B_b, 6); // unknown check in SV_ExecuteClientMessage
+			utils::hook::nop(0xC4F407_b, 3); // allow first slot to be occupied
+			utils::hook::nop(0x3429A7_b, 2); // properly shut down dedicated servers
+			utils::hook::nop(0x34296F_b, 2); // ^
+			utils::hook::set<uint8_t>(0xE08360_b, 0xC3); // don't shutdown renderer
 
-			//utils::hook::set<uint8_t>(0x1D8A20_b, 0xC3); // cpu detection stuff? // can't find
-			//utils::hook::set<uint8_t>(0x690F30_b, 0xC3); // gfx stuff during fastfile loading // not there
-			//utils::hook::set<uint8_t>(0x690E00_b, 0xC3); // ^
-			//utils::hook::set<uint8_t>(0x690ED0_b, 0xC3); // ^
-			//utils::hook::set<uint8_t>(0x39B980_b, 0xC3); // ^
-			//utils::hook::set<uint8_t>(0x690E50_b, 0xC3); // ^
-			//utils::hook::set<uint8_t>(0xDD26E0_b, 0xC3); // directx stuff // done
-			//utils::hook::set<uint8_t>(0xE00FC0_b, 0xC3); // ^
-			//utils::hook::set<uint8_t>(0x6CE390_b, 0xC3); // ^ - mutex // not done
-			//utils::hook::set<uint8_t>(0x681ED0_b, 0xC3); // ^
-
-			//utils::hook::set<uint8_t>(0x0A3CD0_b, 0xC3); // rendering stuff // not done
-			//utils::hook::set<uint8_t>(0x682150_b, 0xC3); // ^
-			//utils::hook::set<uint8_t>(0x682260_b, 0xC3); // ^
-			//utils::hook::set<uint8_t>(0x6829C0_b, 0xC3); // ^
-			//utils::hook::set<uint8_t>(0x6834A0_b, 0xC3); // ^
-			//utils::hook::set<uint8_t>(0x683B40_b, 0xC3); // ^ 
-
-			// shaders
-			//utils::hook::set<uint8_t>(0x5F0610_b, 0xC3); // ^ // done
-			//utils::hook::set<uint8_t>(0x5F0580_b, 0xC3); // ^ // done
-			//utils::hook::set<uint8_t>(0xE51020_b, 0xC3); // ^ - mutex // done
-
-			//utils::hook::set<uint8_t>(0x5BFD10_b, 0xC3); // idk // not done
-			//utils::hook::set<uint8_t>(0xDD4430_b, 0xC3); // ^ // R_ReleaseBuffer
-
-			//utils::hook::set<uint8_t>(0xE08360_b, 0xC3); // R_Shutdown
-			//utils::hook::set<uint8_t>(0x652BA0_b, 0xC3); // shutdown stuff // not done
-			//utils::hook::set<uint8_t>(0x687DF0_b, 0xC3); // ^ // not done
-			//utils::hook::set<uint8_t>(0x686DE0_b, 0xC3); // ^ // not done
-
-			// utils::hook::set<uint8_t>(0x1404B67E0, 0xC3); // sound crashes (H1 - questionable, function looks way different)
-
-			utils::hook::set<uint8_t>(0xC5A200_b, 0xC3); // disable host migration // done SV_MigrationStart
-
-			//utils::hook::set<uint8_t>(0xBB66B0_b, 0xC3); // render synchronization lock // done
-			//utils::hook::set<uint8_t>(0xBB64A0_b, 0xC3); // render synchronization unlock // done
-
-			//utils::hook::set<uint8_t>(0x615359_b, 0xEB); // LUI: Unable to start the LUI system due to errors in main.lua // done
-			//utils::hook::set<uint8_t>(0x27AAC5_b, 0xEB); // LUI: Unable to start the LUI system due to errors in depot.lua // no
-			//utils::hook::set<uint8_t>(0x27AADC_b, 0xEB); // ^
-
-			//utils::hook::nop(0xCFDA7E_b, 5); // Disable sound pak file loading // done
-			//utils::hook::nop(0xCFDA97_b, 2); // ^ // done
-			//utils::hook::set<uint8_t>(0x3A0BA0_b, 0xC3); // Disable image pak file loading // not done
-
-			// Reduce min required memory
-			//utils::hook::set<uint64_t>(0x5B7F37_b, 0x80000000); // not done
-
-			//utils::hook::set<uint8_t>(0x399E10_b, 0xC3); // some loop // not done
-			//utils::hook::set<uint8_t>(0x1D48B0_b, 0xC3); // related to shader caching / techsets / fastfilesc // not done
-			//utils::hook::set<uint8_t>(0x3A1940_b, 0xC3); // DB_ReadPackedLoadedSounds // not done
+			utils::hook::set<uint8_t>(0xC5A200_b, 0xC3); // disable host migration
 
 			// iw7 patches
 			utils::hook::set(0xE06060_b, 0xC3C033); //utils::hook::set<uint8_t>(0xE06060_b, 0xC3); // directx
@@ -230,6 +209,8 @@ namespace dedicated
 			utils::hook::set(0xDD42E0_b, 0xC3C033); // ^
 			utils::hook::set(0xDD4280_b, 0xC3C033); // ^
 
+			utils::hook::set(0xDD4230_b, 0xC3C033); // ^
+
 			// r_loadForRenderer
 			//utils::hook::set<uint8_t>(0xE114A0_b, 0xC3); // ^
 			//utils::hook::set<uint8_t>(0xE11380_b, 0xC3); // ^
@@ -249,11 +230,8 @@ namespace dedicated
 			// R_LoadWorld
 			utils::hook::set<uint8_t>(0xDD14C0_b, 0xC3);
 
-			// vls shit
+			// something to do with vls?
 			utils::hook::set<uint8_t>(0xD02CB0_b, 0xC3);
-
-			// renderer
-			//utils::hook::set<uint8_t>(0xDD4370_b, 0xC3);
 
 			// image stream (pak)
 			utils::hook::set<uint8_t>(0xA7DB10_b, 0xC3); // DB_CreateGfxImageStreamInternal
@@ -261,14 +239,60 @@ namespace dedicated
 			// sound stream (sabl, sabs)
 			//utils::hook::nop(0xCFDC03_b, 2);
 
-			command::add("startserver", []()
+			// set game mode
+			scheduler::once([]()
+			{
+				if (utils::flags::has_flag("cpMode") || utils::flags::has_flag("zombies"))
+				{
+					game::Com_GameMode_SetDesiredGameMode(game::GAME_MODE_CP);
+				}
+				else
+				{
+					game::Com_GameMode_SetDesiredGameMode(game::GAME_MODE_MP);
+				}
+			}, scheduler::pipeline::main);
+
+			// initialization
+			scheduler::on_game_initialized([]()
 			{
 				initialize();
 
 				console::info("==================================\n");
 				console::info("Server started!\n");
 				console::info("==================================\n");
-			});
+
+				// remove disconnect command
+				game::Cmd_RemoveCommand("disconnect");
+
+				execute_startup_command_queue();
+			}, scheduler::pipeline::main, 1s);
+
+			// dedicated info
+			scheduler::loop([]()
+			{
+				auto* sv_running = game::Dvar_FindVar("sv_running");
+				if (!sv_running || !sv_running->current.enabled)
+				{
+					console::set_title("IW7-Mod Dedicated Server");
+					return;
+				}
+
+				auto* const sv_hostname = game::Dvar_FindVar("sv_hostname");
+				auto* const mapname = game::Dvar_FindVar("mapname");
+
+				if (!sv_hostname || !mapname)
+				{
+					return;
+				}
+
+				std::string cleaned_hostname;
+				cleaned_hostname.resize(static_cast<int>(strlen(sv_hostname->current.string) + 1));
+
+				utils::string::strip(sv_hostname->current.string, cleaned_hostname.data(),
+					static_cast<int>(strlen(sv_hostname->current.string)) + 1);
+
+				console::set_title(utils::string::va("%s on %s", cleaned_hostname.data(), mapname->current.string));
+			}, scheduler::pipeline::main, 1s);
 		}
 	};
 }

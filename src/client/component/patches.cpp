@@ -63,7 +63,11 @@ namespace patches
 
 		bool com_game_mode_supports_feature_stub(game::Com_GameMode_Feature feature)
 		{
-			if (feature == game::FEATURE_TIMESCALE)
+			if (feature == game::FEATURE_GRAVITY)
+			{
+				return true;
+			}
+			else if (feature == game::FEATURE_TIMESCALE)
 			{
 				return true;
 			}

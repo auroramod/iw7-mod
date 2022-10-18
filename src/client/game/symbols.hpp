@@ -8,6 +8,8 @@ namespace game
 	 * Functions
 	 **************************************************************/
 
+	WEAK symbol<float()> BG_GetGravity{ 0x68DD0 };
+
 	WEAK symbol<void(errorParm code, const char* message, ...)> Com_Error{ 0xB8D830 };
 
 	WEAK symbol<void()> Com_Quit_f{ 0xBADC90 };
@@ -33,6 +35,8 @@ namespace game
 
 	WEAK symbol<void(int localClientNum, const char* text)> Cbuf_AddText{ 0xB7C290 };
 	WEAK symbol<void(int localClientNum, void(*))> Cbuf_AddCall{ 0xB7C220 };
+	WEAK symbol<void(int localClientNum, int controllerIndex, const char* buffer)> Cbuf_ExecuteBuffer{ 0xB7C3B0 };
+	WEAK symbol<void(int localClientNum, int controllerIndex, const char* buffer, void(int, int, const char*))> Cbuf_ExecuteBufferInternal{ 0xB7C3C0 };
 
 	WEAK symbol<void(int localClientNum, const char* msg, int flags)> CG_Utils_GameMessage{ 0x1D7FC0 };
 	WEAK symbol<void(int localClientNum, const char* msg, int flags)> CG_Utils_BoldGameMessage{ 0x1D7F10 };
@@ -131,6 +135,9 @@ namespace game
 
 	WEAK symbol<int(int length, void const* data, const netadr_s* to)> Sys_SendPacket{ 0xD57DE0 };
 	WEAK symbol<int(netadr_s* net_from, msg_t* net_message)> Sys_GetPacket{ 0xD57D50 };
+
+	WEAK symbol<void(int)> Scr_AddInt{ 0xC0A580 };
+	WEAK symbol<int()> Scr_GetInt{ 0xC0B950 };
 
 	WEAK symbol<ScreenPlacement* ()> ScrPlace_GetViewPlacement{ 0x9E4090 };
 

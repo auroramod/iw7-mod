@@ -65,6 +65,11 @@ namespace utils::string
 		return std::equal(substring.rbegin(), substring.rend(), text.rbegin());
 	}
 
+	bool is_numeric(const std::string& text)
+	{
+		return std::to_string(atoi(text.data())) == text;
+	}
+
 	std::string dump_hex(const std::string& data, const std::string& separator)
 	{
 		std::string result;

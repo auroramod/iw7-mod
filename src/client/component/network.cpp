@@ -26,7 +26,6 @@ namespace network
 
 	bool handle_command(game::netadr_s* address, const char* command, game::msg_t* message)
 	{
-		printf("hamdle_cmd: %s\n", command);
 		const auto cmd_string = utils::string::to_lower(command);
 		auto& callbacks = get_callbacks();
 		const auto handler = callbacks.find(cmd_string);
@@ -51,7 +50,6 @@ namespace network
 		utils::hook::detour cl_dispatch_connectionless_packet_hook;
 		bool cl_dispatch_connectionless_packet_stub(int client_num, game::netadr_s* from, game::msg_t* msg, int time)
 		{
-			printf("connectionless packet: type: %d, adr: %s\n", from->type, net_adr_to_string(*from));
 			if (handle_command(from, game::Cmd_Argv(0), msg))
 			{
 				return true;
@@ -62,16 +60,8 @@ namespace network
 
 		int dw_send_to_stub(const int length, const char* data, game::netadr_s* to)
 		{
-			if (!*game::query_socket || *game::query_socket == INVALID_SOCKET)
-			{
-				printf("query socket is not initialized\n");
-			}
 			sockaddr s = {};
 			game::NetadrToSockadr(to, &s);
-			if (to->type == game::NA_IP)
-			{
-				//printf("sendto: size: %i\n", length);
-			}
 			return sendto(*game::query_socket, data, length, 0, &s, sizeof(sockaddr));
 		}
 
@@ -97,10 +87,6 @@ namespace network
 				return -2;
 			}
 			sockadr_to_netadr(&s, from);
-			if (from->type == game::NA_IP)
-			{
-				//printf("recv: size: %i\n", ret);
-			}
 			datalen = ret;
 			if (!datalen)
 			{
@@ -165,27 +151,23 @@ namespace network
 
 			if (sock == INVALID_SOCKET)
 			{
-				console::warn("WARNING: UDP_OpenSocket: socket\n");
 				return 0;
 			}
 
 			u_long arg = 1;
 			if (ioctlsocket(sock, FIONBIO, &arg) == SOCKET_ERROR)
 			{
-				console::warn("WARNING: UDP_OpenSocket: ioctl FIONBIO\n");
 				return 0;
 			}
 
 			char optval[4] = { 1, 0, 0, 0 };
 			if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, optval, sizeof(optval)) == SOCKET_ERROR)
 			{
-				console::warn("WARNING: UDP_OpenSocket: setsockopt SO_BROADCAST\n");
 				return 0;
 			}
 
 			if (bind(sock, reinterpret_cast<sockaddr*>(&address), sizeof(address)) == SOCKET_ERROR)
 			{
-				console::warn("WARNING: UDP_OpenSocket: bind\n");
 				closesocket(sock);
 				return 0;
 			}
@@ -215,7 +197,6 @@ namespace network
 				return;
 			}
 
-			printf("net_port: %d\n", port_diff);
 			game::Dvar_SetInt(net_port, net_port->current.integer + port_diff);
 		}
 
@@ -228,11 +209,6 @@ namespace network
 		int get_protocol_version_stub()
 		{
 			return PROTOCOL;
-		}
-
-		int dw_get_addr_handle_connection_task_status_stub()
-		{
-			return 1; // TASK_COMPLETE
 		}
 
 		void reconnect_migratated_client(void*, game::netadr_s* from, const int, const int, const char*,
@@ -271,7 +247,6 @@ namespace network
 		}
 		else
 		{
-			printf("send_data: type: %d, data: %s, size: %i\n", address.type, data.data(), size);
 			game::Sys_SendPacket(size, data.data(), &address);
 		}
 	}
@@ -341,13 +316,6 @@ namespace network
 			utils::hook::jump(0xC4F200_b, 0xC4F1AB_b);
 			utils::hook::jump(0xC4F2F6_b, 0xC4F399_b);
 
-			// disable xuid verification
-			//utils::hook::set<uint8_t>(0x_b, 0xEB);
-
-			// disable xuid verification
-			//utils::hook::nop(0x_b, 2);
-			//utils::hook::set<uint8_t>(0x_b, 0xEB);
-
 			// ignore configstring mismatch
 			utils::hook::set<uint8_t>(0x9B6F91_b, 0xEB);
 
@@ -378,54 +346,19 @@ namespace network
 			utils::hook::set<int>(0xBB4E22_b, max_packet_size);
 			utils::hook::set<int>(0xBB4F31_b, max_packet_size);
 
-			// increase cl_maxpackets
-			dvars::override::register_int("cl_maxpackets", 1000, 1, 1000, game::DVAR_FLAG_SAVED);
-
-			// increase snaps
-			//dvars::override::register_int("sv_remote_client_snapshot_msec", 33, 33, 100, game::DVAR_FLAG_NONE);
-
-			dvars::override::register_float("cl_timeout", 3600.0f, 0.0f, 3600.0f, game::DVAR_FLAG_NONE);
-			dvars::override::register_float("cl_connectTimeout", 3600.0f, 0.0f, 3600.0f, game::DVAR_FLAG_NONE);
-
-			dvars::override::register_int("sv_timeout", 1800, 0, 1800, game::DVAR_FLAG_NONE); // no work
-			dvars::override::register_int("sv_connectTimeout", 1800, 0, 1800, game::DVAR_FLAG_NONE); // ^
-
-			//dvars::override::register_int("sv_zombietime", 1800, 0, 1800, game::DVAR_FLAG_NONE); // ^
-
-			dvars::override::register_int("pt_connectTimeout", 60000, 0, 60000, game::DVAR_FLAG_READ);
-
-			dvars::override::register_int("ds_serverConnectTimeout", 60000, 0, -1, game::DVAR_FLAG_READ);
-
-			dvars::override::register_int("dw_addrHandleTimeout", -1, 0, -1, game::DVAR_FLAG_READ);
-
 			// ignore built in "print" oob command and add in our own
-			//utils::hook::set<uint8_t>(0x9B0326_b, 0xEB);
-			//network::on("print", [](const game::netadr_s&, const std::string_view& data)
-			//{
-			//	const std::string message{ data };
-			//	console::info(message.data());
-			//});
+			utils::hook::set<uint8_t>(0x9B0326_b, 0xEB);
+			network::on("print", [](const game::netadr_s&, const std::string_view& data)
+			{
+				const std::string message{ data };
+				console::info(message.data());
+			});
 
 			// initialize query_socket
 			utils::hook::jump(0xD57C7E_b, net_init_stub);
 
 			// use our own protocol version
 			utils::hook::jump(0xCE8290_b, get_protocol_version_stub);
-
-			//utils::hook::set<uint8_t>(0x4030F0_b, 0xC3);
-			//utils::hook::nop(0x9B014B_b, 2);
-
-			// don't establish secure conenction pt2
-			/*utils::hook::nop(0xC572A2_b, 2);
-			utils::hook::nop(0xC72980_b, 2);
-			utils::hook::nop(0xC73512_b, 2);
-			utils::hook::nop(0xC739C9_b, 2);
-			utils::hook::set<uint8_t>(0xCFD928_b, 0xEB);*/
-			//utils::hook::jump(0xD93390_b, dw_get_addr_handle_connection_task_status_stub);
-
-#ifdef DEBUG
-			//dvars::override::register_bool("frontEndSceneEnabled", false, game::DVAR_FLAG_READ);
-#endif
 		}
 	};
 }

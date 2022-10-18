@@ -26,9 +26,10 @@ namespace dvars
 	game::dvar_t* r_fullbright = nullptr;
 
 	game::dvar_t* bg_bounces = nullptr;
-	game::dvar_t* g_gravity = nullptr;
+	game::dvar_t* bg_gravity = nullptr;
+	game::dvar_t* bg_playerEjection = nullptr;
 
-	game::dvar_t* g_playerEjection = nullptr;
+	game::dvar_t* g_speed = nullptr;
 
 	std::string dvar_get_vector_domain(const int components, const game::DvarLimits& domain)
 	{
@@ -138,7 +139,7 @@ namespace dvars
 		}
 	}
 
-	std::unordered_map<const game::dvar_t*, const char*> dvar_names;
+	std::unordered_map<const game::dvar_t*, std::string> dvar_names;
 
 	std::string dvar_get_name(const game::dvar_t* dvar)
 	{
@@ -151,12 +152,12 @@ namespace dvars
 		return "";
 	}
 
-	void dvar_set_name(const game::dvar_t* dvar, const char* name)
+	void dvar_set_name(const game::dvar_t* dvar, const std::string& name)
 	{
 		dvar_names[dvar] = name;
 	}
 
-	std::unordered_map<const game::dvar_t*, const char*> dvar_descriptions;
+	std::unordered_map<const game::dvar_t*, std::string> dvar_descriptions;
 
 	std::string dvar_get_description(const game::dvar_t* dvar)
 	{
@@ -169,7 +170,7 @@ namespace dvars
 		return "";
 	}
 
-	void dvar_set_description(const game::dvar_t* dvar, const char* description)
+	void dvar_set_description(const game::dvar_t* dvar, const std::string& description)
 	{
 		dvar_descriptions[dvar] = description;
 	}

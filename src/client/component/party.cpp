@@ -31,13 +31,10 @@ namespace party
 		void perform_game_initialization()
 		{
 			command::execute("onlinegame 1", true);
-			//command::execute("exec default_xboxlive.cfg", true);
 			command::execute("xblive_privatematch 1", true);
-			//command::execute("xstopparty 0", true);
-			//command::execute("xstartprivateparty 0", true);
-			command::execute("xstartprivatematch 0", true);
+			//command::execute("xstartprivateparty", true);
+			command::execute("xstartprivatematch", true);
 			command::execute("uploadstats", true);
-			//command::execute("entitlements_delay 0", true);
 		}
 
 		void connect_to_party(const game::netadr_s& target, const std::string& mapname, const std::string& gametype, int sv_maxclients)
@@ -50,26 +47,11 @@ namespace party
 
 			if (game::Live_SyncOnlineDataFlags(0) != 0)
 			{
-				// initialize the game after onlinedataflags is 32 (workaround)
-				if (game::Live_SyncOnlineDataFlags(0) == 32)
+				scheduler::once([=]()
 				{
-					scheduler::once([=]()
-					{
-						command::execute("xstartprivateparty", true);
-						command::execute("disconnect", true); // 32 -> 0
-
-						connect_to_party(target, mapname, gametype, sv_maxclients);
-					}, scheduler::pipeline::main, 1s);
-					return;
-				}
-				else
-				{
-					scheduler::once([=]()
-					{
-						connect_to_party(target, mapname, gametype, sv_maxclients);
-					}, scheduler::pipeline::main, 1s);
-					return;
-				}
+					connect_to_party(target, mapname, gametype, sv_maxclients);
+				}, scheduler::pipeline::main, 1s);
+				return;
 			}
 
 			const auto ui_maxclients = game::Dvar_FindVar("ui_maxclients");
@@ -83,6 +65,28 @@ namespace party
 			// connect
 			char session_info[0x100] = {};
 			game::CL_MainMP_ConnectAndPreloadMap(0, reinterpret_cast<void*>(session_info), &target, mapname.data(), gametype.data());
+		}
+
+		void start_map_for_party()
+		{
+			auto* mapname = game::Dvar_FindVar("ui_mapname");
+			auto* gametype = game::Dvar_FindVar("ui_gametype");
+			auto* clients = game::Dvar_FindVar("ui_maxclients");
+			auto* private_clients = game::Dvar_FindVar("ui_privateClients");
+			auto* hardcore = game::Dvar_FindVar("ui_hardcore");
+
+			//utils::hook::invoke<void>(0x9D8900_b, game::Party_GetActiveParty(), true);
+
+			utils::hook::invoke<void>(0xE4DDC0_b); // Sys_WaitWorkerCmds
+			utils::hook::invoke<void>(0xBAFFD0_b, ""); // Com_ShutdownInternal
+			game::SV_CmdsMP_StartMapForParty(
+				mapname->current.string,
+				gametype->current.string,
+				clients->current.integer,
+				private_clients->current.integer,
+				hardcore->current.enabled,
+				false,
+				false);
 		}
 
 		std::string get_dvar_string(const std::string& dvar)
@@ -119,53 +123,40 @@ namespace party
 		}
 	}
 
-	void start_map_for_party()
-	{
-		auto* mapname = game::Dvar_FindVar("ui_mapname");
-		auto* gametype = game::Dvar_FindVar("ui_gametype");
-		auto* clients = game::Dvar_FindVar("ui_maxclients");
-		auto* private_clients = game::Dvar_FindVar("ui_privateClients");
-		auto* hardcore = game::Dvar_FindVar("ui_hardcore");
-
-		//utils::hook::invoke<void>(0x9D8900_b, game::Party_GetActiveParty(), true);
-
-		utils::hook::invoke<void>(0xE4DDC0_b); // Sys_WaitWorkerCmds
-		utils::hook::invoke<void>(0xBAFFD0_b, ""); // Com_ShutdownInternal
-		game::SV_CmdsMP_StartMapForParty(
-			mapname->current.string,
-			gametype->current.string,
-			clients->current.integer,
-			private_clients->current.integer,
-			hardcore->current.enabled,
-			false,
-			false);
-	}
-
-	bool start_map(const std::string& mapname, bool dev)
+	void start_map(const std::string& mapname, bool dev)
 	{
 		if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
 		{
 			console::info("Starting sp map: %s\n", mapname.data());
 			command::execute(utils::string::va("spmap %s", mapname.data()), false);
-			return true;
+			return;
+		}
+
+		if (game::Live_SyncOnlineDataFlags(0) != 0)
+		{
+			scheduler::once([=]()
+			{
+				start_map(mapname, dev);
+			}, scheduler::pipeline::main, 1s);
+			return;
 		}
 
 		if (mapname.empty())
 		{
 			console::error("No map specified.\n");
-			return false;
+			return;
 		}
 
 		if (!game::SV_MapExists(mapname.data()))
 		{
 			console::error("Map \"%s\" doesn't exist.\n", mapname.data());
-			return false;
+			return;
 		}
 
 		if (!game::Com_GameMode_SupportsMap(mapname.data()))
 		{
 			console::error("Cannot load map \"%s\" in current game mode.\n", mapname.data());
-			return false;
+			return;
 		}
 
 		auto* current_mapname = game::Dvar_FindVar("mapname");
@@ -177,17 +168,22 @@ namespace party
 		{
 			console::info("Restarting map: %s\n", mapname.data());
 			command::execute("map_restart", false);
-			return true;
+			return;
 		}
 
+		auto* gametype = game::Dvar_FindVar("g_gametype");
+		if (gametype && gametype->current.string)
+		{
+			command::execute(utils::string::va("ui_gametype %s", gametype->current.string), true);
+		}
 		command::execute(utils::string::va("ui_mapname %s", mapname.data()), true);
-
-		console::info("Starting map: %s\n", mapname.data());
 
 		perform_game_initialization();
 
-		game::Cbuf_AddCall(0, start_map_for_party);
-		return true;
+		console::info("Starting map: %s\n", mapname.data());
+
+		start_map_for_party();
+		return;
 	}
 
 	int get_client_num_by_name(const std::string& name)
@@ -209,8 +205,6 @@ namespace party
 	{
 		//command::execute("lui_open_popup popup_acceptinginvite", false);
 
-		printf("connect called...\n");
-
 		connect_state.host = target;
 		connect_state.challenge = utils::cryptography::random::get_challenge();
 		connect_state.hostDefined = true;
@@ -227,7 +221,6 @@ namespace party
 		//}
 
 		game::Com_SetLocalizedErrorMessage(error.data(), "MENU_NOTICE");
-		//*reinterpret_cast<int*>(0x0) = 1;
 	}
 
 
@@ -236,16 +229,6 @@ namespace party
 	public:
 		void post_unpack() override
 		{
-			command::add("live", []()
-			{
-				console::info("%d\n", game::Live_SyncOnlineDataFlags(0));
-			});
-
-			command::add("connstate", []()
-			{
-				console::info("%d\n", game::clientUIActives[0].connectionState);
-			});
-
 			static const char* a1 = "map_sp";
 			static const char* a2 = "map_restart_sp";
 			static const char* a3 = "fast_restart_sp";
@@ -265,6 +248,7 @@ namespace party
 			utils::hook::set(0x1BBA700_b + 24, a3);
 			utils::hook::set(0x1BBA700_b + 56, a3);
 
+			// need to fix this, currently it will disconnect everyone from the server when a new map is rotated
 			command::add("map", [](const command::params& args)
 			{
 				if (args.size() != 2)
@@ -297,6 +281,7 @@ namespace party
 				start_map(args.get(1), true);
 			});
 
+			// need to fix this, currently game will freeze in loadingnewmap command
 			command::add("map_restart", []()
 			{
 				if (!game::SV_Loaded() || game::Com_FrontEnd_IsInFrontEnd())
@@ -351,8 +336,6 @@ namespace party
 
 			network::on("getInfo", [](const game::netadr_s& target, const std::string_view& data)
 			{
-				printf("getInfo called...\n");
-
 				utils::info_string info{};
 				info.set("challenge", std::string{ data });
 				info.set("gamename", "IW7");
@@ -375,8 +358,6 @@ namespace party
 
 			network::on("infoResponse", [](const game::netadr_s& target, const std::string_view& data)
 			{
-				printf("infoResponse called...\n");
-
 				const utils::info_string info{ data };
 				//server_list::handle_info_response(target, info);
 

@@ -6,6 +6,7 @@
 #include "game/dvars.hpp"
 
 #include <utils/hook.hpp>
+#include <utils/string.hpp>
 
 namespace dvars
 {
@@ -358,7 +359,7 @@ namespace dvars
 
 		if (dvar)
 		{
-			if (name)
+			if (name && !utils::string::is_numeric(name))
 			{
 				dvars::dvar_set_name(dvar, name);
 			}

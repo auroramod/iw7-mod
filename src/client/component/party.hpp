@@ -8,7 +8,7 @@ namespace party
 	void reset_connect_state();
 
 	void connect(const game::netadr_s& target);
-	bool start_map(const std::string& mapname, bool dev = false);
+	void start_map(const std::string& mapname, bool dev = false);
 
 	void clear_sv_motd();
 	game::netadr_s get_state_host();

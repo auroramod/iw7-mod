@@ -24,6 +24,7 @@ namespace game
 
 	enum Com_GameMode_Feature : std::int32_t
 	{
+		FEATURE_GRAVITY = 33,
 		FEATURE_TIMESCALE = 69,
 	};
 
