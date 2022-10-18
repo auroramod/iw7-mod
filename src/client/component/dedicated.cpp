@@ -81,16 +81,6 @@ namespace dedicated
 		}
 	}
 
-	DWORD __stdcall wait_for_single_object_stub(HANDLE handle, DWORD ms)
-	{
-		if (handle == *reinterpret_cast<HANDLE*>(0x8B1BC98_b))
-		{
-			return 0;
-		}
-
-		return WaitForSingleObject(handle, ms);
-	}
-
 	void initialize()
 	{
 		command::execute("onlinegame 1", true);
@@ -100,19 +90,6 @@ namespace dedicated
 	class component final : public component_interface
 	{
 	public:
-		void* load_import(const std::string& library, const std::string& function) override
-		{
-			if (game::environment::is_dedi())
-			{
-				if (function == "WaitForSingleObject")
-				{
-				//	return wait_for_single_object_stub;
-				}
-			}
-
-			return nullptr;
-		}
-
 		void post_unpack() override
 		{
 			if (!game::environment::is_dedi())
@@ -235,9 +212,6 @@ namespace dedicated
 
 			// image stream (pak)
 			utils::hook::set<uint8_t>(0xA7DB10_b, 0xC3); // DB_CreateGfxImageStreamInternal
-
-			// sound stream (sabl, sabs)
-			//utils::hook::nop(0xCFDC03_b, 2);
 
 			// set game mode
 			scheduler::once([]()
