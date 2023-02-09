@@ -463,9 +463,9 @@ namespace command
 					return;
 				}
 
-				game::g_entities[client_num].client->flags ^= 1;
+				game::g_entities[client_num].client->flags ^= 2;
 				client_println(client_num,
-					game::g_entities[client_num].client->flags & 1
+					game::g_entities[client_num].client->flags & 2
 					? "GAME_UFOON"
 					: "GAME_UFOOFF");
 			});
