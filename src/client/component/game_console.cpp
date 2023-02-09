@@ -318,6 +318,8 @@ namespace game_console
 			}
 			else if (matches.size() > 1)
 			{
+				std::sort(matches.begin(), matches.end()); // alphabetize sort
+
 				draw_hint_box(static_cast<int>(matches.size()), dvars::con_inputHintBoxColor->current.vector);
 
 				const auto offset_value = floor((con.screen_max[0] - con.globals.x) / 4.f);

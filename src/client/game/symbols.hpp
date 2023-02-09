@@ -80,6 +80,7 @@ namespace game
 
 	WEAK symbol<void(const char* name, const char* string)> Dvar_SetCommand{ 0xCECB30 };
 	WEAK symbol<dvar_t* (const char* name)> Dvar_FindVar{ 0xCEA460 };
+	WEAK symbol<void(void* callback, void* userData)> Dvar_ForEach{ 0xCEA480 };
 	WEAK symbol<dvar_t* (unsigned int checksum)> Dvar_FindMalleableVar{ 0xCEA3C0 };
 	WEAK symbol<void(const dvar_t* dvar)> Dvar_ClearModified{ 0xCE9E90 };
 	WEAK symbol<const char* (const dvar_t* dvar)> Dvar_DisplayableLatchedValue{ 0xCEA1D0 };

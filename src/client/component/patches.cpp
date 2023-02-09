@@ -80,21 +80,40 @@ namespace patches
 			return game::Dvar_FindVar("name")->current.string;
 		}
 
-		void dvar_write_single_variable_stub(const game::dvar_t* dvar, int* user_data)
+		std::vector<std::string> dvar_save_variables;
+		void dvar_write_single_variable(const game::dvar_t* dvar, int* user_data)
 		{
 			if ((dvar->flags & game::DVAR_FLAG_SAVED) != 0)
 			{
 				const char* val = game::Dvar_DisplayableLatchedValue(dvar);
 				auto h = *user_data;
-				auto dvar_name = dvars::dvar_get_name(dvar);
-				if (!dvar_name.empty())
-				{
-					game::FS_Printf(h, "seta %s \"%s\"\n", dvar_name.data(), val);
-				}
-				else
+
+				std::string dvar_name = dvars::dvar_get_name(dvar);
+				if (dvar_name.empty())
 				{
 					game::FS_Printf(h, "setcl %d \"%s\"\n", dvar->checksum, val);
 				}
+				else
+				{
+					dvar_save_variables.push_back(dvar_name);
+				}
+			}
+		}
+
+		void dvar_write_variables_stub(int handle)
+		{
+			dvar_save_variables.clear();
+
+			int* user_data = &handle;
+			game::Dvar_ForEach(dvar_write_single_variable, user_data);
+
+			std::sort(dvar_save_variables.begin(), dvar_save_variables.end()); // alphabetize sort
+			for (size_t i = 0; i < dvar_save_variables.size(); i++)
+			{
+				const auto* dvar_name = dvar_save_variables.at(i).data();
+				const auto* dvar = game::Dvar_FindVar(dvar_name);
+				const char* val = game::Dvar_DisplayableLatchedValue(dvar);
+				game::FS_Printf(handle, "seta %s \"%s\"\n", dvar_name, val);
 			}
 		}
 
@@ -191,7 +210,7 @@ namespace patches
 			utils::hook::jump(0xD32770_b, live_get_local_client_name);
 
 			// write better config
-			utils::hook::jump(0xBB2A50_b, dvar_write_single_variable_stub);
+			utils::hook::jump(0xBB2A90_b, dvar_write_variables_stub);
 
 			// show missing fastfiles
 			utils::hook::call(0x3BBD4B_b, missing_content_error_stub);
