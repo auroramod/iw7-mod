@@ -56,8 +56,8 @@ namespace game
 	WEAK symbol<bool(std::int32_t, void(__cdecl*)(XAssetHeader, void*), const void*)> DB_EnumXAssets_FastFile{ 0xA76CE0 };
 	WEAK symbol<bool(XAssetType type, const char* name)> DB_IsXAssetDefault{ 0xA780D0 };
 	WEAK symbol<XAssetHeader(XAssetType type, const char* name, int allowCreateDefault)> DB_FindXAssetHeader{ 0xA76E00 };
-
 	WEAK symbol<bool(const char* zoneName)> DB_IsLocalized{ 0x3BC500 };
+	WEAK symbol<char* (const char* filename, char* buf, int size)> DB_ReadRawFile{ 0xA79E30 };
 
 	WEAK symbol<dvar_t* (const char* name, bool value,
 		unsigned int flags, const char* description)> Dvar_RegisterBool{ 0xCEB380 };
@@ -89,6 +89,8 @@ namespace game
 	WEAK symbol<unsigned int(const char* name)> Dvar_GenerateChecksum{ 0xCEA520 };
 	WEAK symbol<void(dvar_t* dvar, int value)> Dvar_SetInt{ 0xCED3D0 };
 
+	WEAK symbol<__int64(const char* qpath, char** buffer)> FS_ReadFile{ 0xCDE200 };
+	WEAK symbol<void(char* buffer)> FS_FreeFile{ 0xCDE1F0 };
 	WEAK symbol<void(int h, const char* fmt, ...)> FS_Printf{ 0xCDD1C0 };
 
 	WEAK symbol<const char* (int, int, int)> Key_KeynumToString{ 0x9A95E0 };

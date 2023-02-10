@@ -19,6 +19,8 @@ namespace dvars
 
 	extern game::dvar_t* lui_debug;
 
+	extern game::dvar_t* cg_draw2D;
+
 	extern game::dvar_t* r_fullbright;
 
 	extern game::dvar_t* bg_bounces;

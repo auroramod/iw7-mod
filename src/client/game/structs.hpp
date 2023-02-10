@@ -635,6 +635,93 @@ namespace game
 			ASSET_TYPE_COUNT = 80
 		};
 
+		struct PhysicsLibrary;
+		struct PhysicsSFXEventAsset;
+		struct PhysicsVFXEventAsset;
+		struct PhysicsAsset;
+		struct PhysicsFXPipeline;
+		struct PhysicsFXShape;
+		struct XAnimParts;
+		struct XModelSurfs;
+		struct XModel;
+		struct Mayhem;
+		struct Material;
+		struct ComputeShader;
+		struct MaterialVertexShader;
+		struct MaterialHullShader;
+		struct MaterialDomainShader;
+		struct MaterialPixelShader;
+		struct MaterialVertexDeclaration;
+		struct MaterialTechniqueSet;
+		struct GfxImage;
+		//ASSET_TYPE_SOUND_GLOBALS = 19,
+		//ASSET_TYPE_SOUND_BANK = 20,
+		//ASSET_TYPE_SOUND_BANK_TRANSIENT = 21,
+		//ASSET_TYPE_CLIPMAP = 22,
+		//ASSET_TYPE_COMWORLD = 23,
+		//ASSET_TYPE_GLASSWORLD = 24,
+		//ASSET_TYPE_PATHDATA = 25,
+		//ASSET_TYPE_NAVMESH = 26,
+		struct MapEnts;
+		//ASSET_TYPE_FXWORLD = 28,
+		//ASSET_TYPE_GFXWORLD = 29,
+		//ASSET_TYPE_GFXWORLD_TRANSIENT_ZONE = 30,
+		//ASSET_TYPE_IESPROFILE = 31, // unused
+		//ASSET_TYPE_LIGHT_DEF = 32,
+		//ASSET_TYPE_UI_MAP = 33, // unused
+		//ASSET_TYPE_ANIMCLASS = 34,
+		//ASSET_TYPE_PLAYERANIM = 35,
+		//ASSET_TYPE_GESTURE = 36,
+		//ASSET_TYPE_LOCALIZE_ENTRY = 37,
+		//ASSET_TYPE_ATTACHMENT = 38,
+		//ASSET_TYPE_WEAPON = 39,
+		//ASSET_TYPE_VFX = 40,
+		//ASSET_TYPE_IMPACT_FX = 41,
+		//ASSET_TYPE_SURFACE_FX = 42,
+		//ASSET_TYPE_AITYPE = 43, // unused
+		//ASSET_TYPE_MPTYPE = 44, // unused
+		//ASSET_TYPE_CHARACTER = 45, // unused
+		//ASSET_TYPE_XMODELALIAS = 46, // unused
+		//ASSET_TYPE_UNKNOWN = 47, // unused
+		struct RawFile;
+		//ASSET_TYPE_SCRIPTFILE = 49,
+		//ASSET_TYPE_STRINGTABLE = 50,
+		//ASSET_TYPE_LEADERBOARD = 51,
+		//ASSET_TYPE_VIRTUAL_LEADERBOARD = 52,
+		//ASSET_TYPE_STRUCTUREDDATADEF = 53,
+		//ASSET_TYPE_DDL = 54,
+		//ASSET_TYPE_TRACER = 55,
+		//ASSET_TYPE_VEHICLE = 56,
+		//ASSET_TYPE_ADDON_MAP_ENTS = 57,
+		//ASSET_TYPE_NET_CONST_STRINGS = 58,
+		//ASSET_TYPE_LUA_FILE = 59,
+		struct ScriptableDef;
+		//ASSET_TYPE_EQUIPMENT_SND_TABLE = 61,
+		//ASSET_TYPE_VECTORFIELD = 62,
+		//ASSET_TYPE_PARTICLE_SIM_ANIMATION = 63,
+		//ASSET_TYPE_STREAMING_INFO = 64,
+		//ASSET_TYPE_LASER = 65,
+		//ASSET_TYPE_TTF = 66,
+		//ASSET_TYPE_SUIT = 67,
+		//ASSET_TYPE_SUITANIMPACKAGE = 68,
+		//ASSET_TYPE_SPACESHIPTARGET = 69,
+		//ASSET_TYPE_RUMBLE = 70,
+		//ASSET_TYPE_RUMBLE_GRAPH = 71,
+		//ASSET_TYPE_ANIM_PACKAGE = 72,
+		//ASSET_TYPE_SFX_PACKAGE = 73,
+		//ASSET_TYPE_VFX_PACKAGE = 74,
+		//ASSET_TYPE_BEHAVIOR_TREE = 75,
+		//ASSET_TYPE_XANIM_ARCHETYPE = 76,
+		struct XAnimProceduralBones;
+		//ASSET_TYPE_RETICLE = 78,
+		//ASSET_TYPE_GFXLIGHTMAP = 79,
+
+		struct Bounds
+		{
+			vec3_t midPoint;
+			vec3_t halfSize;
+		};
+
 		struct PhysicsLibrary
 		{
 			const char* name;
@@ -1107,19 +1194,6 @@ namespace game
 			char ikType; // 131
 		}; static_assert(sizeof(XAnimParts) == 0x88);
 
-		struct DObjAnimMat
-		{
-			float quat[4];
-			float trans[3];
-			float transWeight;
-		};
-
-		struct ReactiveMotionModelPart
-		{
-			float center[3];
-			float stiffness;
-		};
-
 		struct XSurfaceCollisionAabb
 		{
 			unsigned short mins[3];
@@ -1207,7 +1281,99 @@ namespace game
 			unsigned short v3;
 		};
 
-		struct XSurface // similar to iw6
+		typedef unsigned int XBlendInfo;
+
+		struct XSubdivRigidVertList
+		{
+			unsigned int firstFace;
+			unsigned int faceCount;
+			unsigned int firstRegularPatch;
+			unsigned int regularPatchCount;
+		};
+
+		struct XSurfaceSubdivLevel
+		{
+			XSubdivRigidVertList* rigidVertLists;
+			unsigned int faceCount;
+			unsigned int regularPatchCount;
+			unsigned int regularPatchOffset;
+			unsigned int facePointCount;
+			unsigned int facePointValence4Count;
+			unsigned int facePointBufferSize;
+			unsigned int edgePointCount;
+			unsigned int edgePointSmoothEnd;
+			unsigned int edgePointUVBorderEnd;
+			unsigned int vertexPointCount;
+			unsigned int vertexPointValence4Count;
+			unsigned int vertexPointBufferSize;
+			unsigned int normalCount;
+			unsigned int normalBufferSize;
+			unsigned int transitionPointCount;
+			unsigned int vertCount;
+			unsigned int vertOffset;
+			unsigned short* faceIndices;
+			unsigned short* regularPatchIndices;
+			unsigned int* regularPatchFlags;
+			unsigned int* facePoints;
+			unsigned int* edgePoints;
+			unsigned int* vertexPoints;
+			unsigned int* normals;
+			unsigned int* transitionPoints;
+			float* regularPatchCones;
+			ID3D11Buffer* regularPatchIndexBuffer;
+			ID3D11Buffer* faceIndexBuffer;
+			ID3D11ShaderResourceView* regularPatchIndexBufferView;
+			ID3D11ShaderResourceView* regularPatchFlagsView;
+			ID3D11ShaderResourceView* facePointsView;
+			ID3D11ShaderResourceView* edgePointsView;
+			ID3D11ShaderResourceView* vertexPointsView;
+			ID3D11ShaderResourceView* normalsView;
+			ID3D11ShaderResourceView* transitionPointsView;
+			ID3D11ShaderResourceView* regularPatchConesView;
+		}; static_assert(sizeof(XSurfaceSubdivLevel) == 0xE8);
+
+		struct GfxSubdivCache
+		{
+			unsigned int size;
+			ID3D11Buffer* subdivCacheBuffer;
+			ID3D11ShaderResourceView* subdivCacheView;
+		}; static_assert(sizeof(GfxSubdivCache) == 0x18);
+
+		struct XSurfaceSubdivInfo
+		{
+			XSurfaceSubdivLevel* levels;
+			char __pad0[24];
+			GfxSubdivCache cache;
+		}; static_assert(sizeof(XSurfaceSubdivInfo) == 0x38);
+
+		struct TensionData
+		{
+			char __pad0[32];
+		};
+
+		struct SHProbeSimplexData0
+		{
+			char __pad0[32];
+		};
+
+		struct SHProbeSimplexData1
+		{
+			char __pad0[8];
+		};
+
+		struct SHProbeSimplexData2
+		{
+			char __pad0[24];
+		};
+
+		union SHProbeSimplexDataUnion
+		{
+			SHProbeSimplexData0 data0;
+			SHProbeSimplexData1 data1;
+			SHProbeSimplexData2 data2;
+		};
+
+		struct XSurface
 		{
 			unsigned short flags; // 0
 			unsigned short vertCount; // 2
@@ -1215,15 +1381,32 @@ namespace game
 			char rigidVertListCount; // 6
 			char subdivLevelCount; // 7
 			short blendVertCounts[8]; // 8
-			char __pad0[8];
+			int unkBlendCount; // 24
+			char __pad0[4]; // 28
 			GfxVertexUnion0 verts0; // 32
 			Face* triIndices; // 40
-			char __pad1[24];
+			ID3D11Buffer* vb0; // 48
+			ID3D11ShaderResourceView* vb0View; // 56
+			ID3D11Buffer* indexBuffer; // 64
 			XRigidVertList* rigidVertLists; // 72
-			char __pad2[48];
-			void* subdiv; // XSurfaceSubdivInfo* subdiv // 128
-			unsigned int* blendVerts; // 136
-			char __pad3[80];
+			char* unkBlend; // 80
+			ID3D11Buffer* blendVertsBuffer; // 88
+			ID3D11ShaderResourceView* blendVertsView; // 96
+			__int64* lmapUnwrap; // 104
+			ID3D11Buffer* vblmapBuffer; // 112
+			ID3D11ShaderResourceView* vblmapView; // 120
+			XSurfaceSubdivInfo* subdiv; // 128
+			XBlendInfo* blendVerts; // 136
+			TensionData* tensionData; // 144
+			void* tensionAccumTable; // 152
+			ID3D11Buffer* tensionAccumTableBuffer; // 160
+			ID3D11ShaderResourceView* tensionAccumTableView; // 168
+			ID3D11Buffer* tensionDataBuffer; // 176
+			ID3D11ShaderResourceView* tensionDataView; // 184
+			ID3D11ShaderResourceView* indexBufferView; // 192
+			SHProbeSimplexDataUnion* shProbeSimplexVertData; // 200
+			ID3D11Buffer* shProbeSimplexVertBuffer; // 208
+			ID3D11ShaderResourceView* shProbeSimplexVertBufferView; // 216
 			int partBits[8]; // 224
 		}; static_assert(sizeof(XSurface) == 0x100);
 
@@ -1235,11 +1418,122 @@ namespace game
 			int partBits[8];
 		}; static_assert(sizeof(XModelSurfs) == 0x38);
 
+		struct XModelAngle
+		{
+			short x;
+			short y;
+			short z;
+			short base;
+		};
+
+		struct XModelTagPos
+		{
+			float x;
+			float y;
+			float z;
+		};
+
+		struct DObjAnimMat
+		{
+			float quat[4];
+			float trans[3];
+			float transWeight;
+		};
+
+		struct ReactiveMotionModelPart
+		{
+			float center[3];
+			float stiffness;
+		};
+
+		struct ReactiveMotionModelTweaks
+		{
+			float scale[4];
+		};
+
+		struct XModelLodInfo
+		{
+			float dist;
+			unsigned short numsurfs;
+			unsigned short surfIndex;
+			XModelSurfs* modelSurfs;
+			int partBits[8];
+			XSurface* surfs;
+			int unk; // subdivLodValidMask?
+			char flags;
+			char pad[3];
+		}; static_assert(sizeof(XModelLodInfo) == 0x40);
+
+		struct XModelCollSurf_s
+		{
+			Bounds bounds;
+			int boneIdx;
+			int contents;
+			int surfFlags;
+		}; static_assert(sizeof(XModelCollSurf_s) == 36);
+
+		struct XBoneInfo
+		{
+			Bounds bounds;
+			union
+			{
+				float radiusSquared;
+				unsigned int radiusSquaredAsInt;
+			};
+		};
+
 		struct XModel
 		{
-			const char* name;
-			char __pad0[728];
-		}; static_assert(sizeof(XModel) == 0x2E0);
+			const char* name; // 0
+			char __pad0[12];
+			unsigned char numBones; // 20
+			unsigned char numRootBones; // 21
+			unsigned char numReactiveMotionParts; // 22
+			char b;
+			unsigned short numClientBones; // 24
+			unsigned char numsurfs; // 26
+			char __pad1[5];
+			unsigned short numCollSurfs; // 32
+			char __pad2[38];
+			unsigned char unk1Count; // 72
+			char __pad3[15];
+			ScriptableDef* scriptableMoverDef; // 88
+			XAnimProceduralBones* proceduralBones; // 96
+			scr_string_t* aimAssistBones; // 104
+			unsigned char numAimAssistBones; // 112
+			char __pad4[39];
+			scr_string_t* boneNames; // 152
+			unsigned char* parentList; // 160
+			XModelAngle* tagAngles; // 168
+			XModelTagPos* tagPositions; // 176
+			unsigned char* partClassification; // 184
+			DObjAnimMat* baseMat; // 192
+			ReactiveMotionModelPart* reactiveMotionParts; // 200
+			ReactiveMotionModelTweaks* reactiveMotionTweaks; // 208
+			Material** materialHandles; // 216
+			XModelLodInfo lodInfo[6]; // 224
+			XModelCollSurf_s* collSurfs; // 608
+			XBoneInfo* boneInfo; // 616
+			unsigned short* invHighMipRadius; // 624
+			PhysicsAsset* physAsset; // 632
+			PhysicsFXShape* physFxShape; // 640
+			char* unk1; // 648
+			unsigned short unkNamesCount; // 656
+			char __pad5[6];
+			scr_string_t* unkNames; // 664
+			char __pad6[16];
+			int unk2Count;
+			char __pad8[4];
+			char* unk2;
+			char __pad9[1];
+			unsigned char unkVec3Count;
+			char __pad10[6];
+			vec3_t* unkVec3;
+			char __pad11[1];
+			char unk3Count;
+			char __pad12[6];
+			void* unk3;
+		}; static_assert(sizeof(XModel) == 0x2E0); // 736
 
 		struct MayhemModel
 		{
@@ -1254,8 +1548,8 @@ namespace game
 
 		struct GfxWrappedBaseBuffer
 		{
-			void* buffer; //ID3D12Resource* buffer;
-			//GfxShaderBufferView view;
+			ID3D11Resource* buffer;
+			//ID3D11ShaderResourceView* view;
 		};
 
 		struct MayhemAnimFramesSplineCompressed
@@ -1355,11 +1649,330 @@ namespace game
 			float length;
 		}; static_assert(sizeof(MayhemData) == 0x50);
 
-		struct Material
+		enum MaterialTechniqueType
+		{
+			TECHNIQUE_UNLIT = 8,
+			TECHNIQUE_EMISSIVE = 10,
+			TECHNIQUE_LIT = 13,
+		};
+
+		struct Packed128
+		{
+			std::uint64_t p0;
+			std::uint64_t p1;
+		};
+
+		struct GfxDrawSurfFields
+		{
+			
+		};
+
+		union GfxDrawSurf
+		{
+			GfxDrawSurfFields fields;
+			Packed128 packed;
+		};
+
+		enum SurfaceTypeBits : std::uint64_t
+		{
+
+		};
+
+		struct MaterialInfo
 		{
 			const char* name;
-			char __pad0[0x110];
+			unsigned char gameFlags;
+			unsigned char sortKey;
+			unsigned char textureAtlasRowCount;
+			unsigned char textureAtlasColumnCount;
+			unsigned char textureAtlasFrameBlend;
+			unsigned char textureAtlasAsArray;
+			unsigned char renderFlags;
+			GfxDrawSurf drawSurf;
+			SurfaceTypeBits surfaceTypeBits;
+			unsigned int hashIndex;
+		}; static_assert(sizeof(MaterialInfo) == 48);
+
+		struct MaterialTextureDef
+		{
+			unsigned int nameHash;
+			char nameStart;
+			char nameEnd;
+			unsigned char samplerState;
+			unsigned char semantic;
+			GfxImage* image;
+		}; static_assert(sizeof(MaterialTextureDef) == 16);
+
+		struct MaterialConstantDef
+		{
+			unsigned int nameHash;
+			char name[12];
+			float literal[4];
+		}; static_assert(sizeof(MaterialConstantDef) == 32);
+
+		struct GfxStateBits
+		{
+			unsigned int loadBits[6]; // loadbits[3], blendstatebits[3]
+			unsigned short zone;
+			unsigned char depthStencilState[14];
+			unsigned char blendState;
+			unsigned char rasterizerState;
+		}; static_assert(sizeof(GfxStateBits) == 44);
+		static_assert(offsetof(GfxStateBits, zone) == 24);
+
+		struct MaterialConstantBufferDef
+		{
+			unsigned int vsDataSize;
+			unsigned int hsDataSize;
+			unsigned int dsDataSize;
+			unsigned int psDataSize;
+			unsigned int vsOffsetDataSize;
+			unsigned int hsOffsetDataSize;
+			unsigned int dsOffsetDataSize;
+			unsigned int psOffsetDataSize;
+			unsigned char* vsData;
+			unsigned char* hsData;
+			unsigned char* dsData;
+			unsigned char* psData;
+			unsigned short* vsOffsetData;
+			unsigned short* hsOffsetData;
+			unsigned short* dsOffsetData;
+			unsigned short* psOffsetData;
+			ID3D11Buffer* vsConstantBuffer;
+			ID3D11Buffer* hsConstantBuffer;
+			ID3D11Buffer* dsConstantBuffer;
+			ID3D11Buffer* psConstantBuffer;
+		};
+
+		struct Material
+		{
+			union
+			{
+				const char* name;
+				MaterialInfo info;
+			};
+			unsigned char textureCount;
+			unsigned char constantCount;
+			unsigned char stateFlags;
+			unsigned char cameraRegion;
+			unsigned char materialType;
+			unsigned char layerCount;
+			unsigned char assetFlags;
+			char pad;
+			MaterialTechniqueSet* techniqueSet;
+			MaterialTextureDef* textureTable;
+			MaterialConstantDef* constantTable;
+			unsigned char stateBitsEntry[152];
+			unsigned char stateBitsCount;
+			GfxStateBits* stateBitsTable;
+			unsigned char* constantBufferIndex; // [152]
+			MaterialConstantBufferDef* constantBufferTable;
+			unsigned char constantBufferCount;
+			const char** subMaterials;
 		}; static_assert(sizeof(Material) == 0x118);
+		static_assert(offsetof(Material, techniqueSet) == 56);
+		static_assert(offsetof(Material, textureCount) == 48);
+		static_assert(offsetof(Material, constantCount) == 49);
+		static_assert(offsetof(Material, stateBitsTable) == 240);
+		static_assert(offsetof(Material, constantBufferIndex) == 248);
+		static_assert(offsetof(Material, stateBitsCount) == 232);
+		static_assert(offsetof(Material, constantBufferTable) == 256);
+		static_assert(offsetof(Material, constantBufferCount) == 264);
+		static_assert(offsetof(Material, subMaterials) == 272);
+		static_assert(offsetof(Material, layerCount) == 53);
+
+		struct GfxComputeShaderLoadDef
+		{
+			unsigned char* program;
+			unsigned int programSize;
+		};
+
+		struct ComputeShaderProgram
+		{
+			ID3D11ComputeShader* cs;
+			GfxComputeShaderLoadDef loadDef;
+		};
+
+		struct ComputeShader
+		{
+			const char* name;
+			const char* debugName;
+			ComputeShaderProgram prog;
+		}; static_assert(sizeof(ComputeShader) == 0x28);
+
+		struct GfxPixelShaderLoadDef
+		{
+			unsigned char* program;
+			unsigned int programSize;
+			unsigned int microCodeCrc;
+		};
+
+		struct MaterialPixelShaderProgram
+		{
+			ID3D11PixelShader* ps;
+			GfxPixelShaderLoadDef loadDef;
+		};
+
+		struct MaterialPixelShader
+		{
+			const char* name;
+			const char* debugName;
+			MaterialPixelShaderProgram prog;
+		}; static_assert(sizeof(MaterialPixelShader) == 0x28);
+
+		struct GfxVertexShaderLoadDef
+		{
+			unsigned char* program;
+			unsigned int programSize;
+			unsigned int microCodeCrc;
+		};
+
+		struct MaterialVertexShaderProgram
+		{
+			ID3D11VertexShader* vs;
+			GfxVertexShaderLoadDef loadDef;
+		};
+
+		struct MaterialVertexShader
+		{
+			const char* name;
+			const char* debugName;
+			MaterialVertexShaderProgram prog;
+		}; static_assert(sizeof(MaterialVertexShader) == 0x28);
+
+		struct GfxHullShaderLoadDef
+		{
+			unsigned char* program;
+			unsigned int programSize;
+		};
+
+		struct MaterialHullShaderProgram
+		{
+			ID3D11HullShader* hs;
+			GfxHullShaderLoadDef loadDef;
+		};
+
+		struct MaterialHullShader
+		{
+			const char* name;
+			const char* debugName;
+			MaterialHullShaderProgram prog;
+		}; static_assert(sizeof(MaterialHullShader) == 0x28);
+
+		struct GfxDomainShaderLoadDef
+		{
+			unsigned char* program;
+			unsigned int programSize;
+		};
+
+		struct MaterialDomainShaderProgram
+		{
+			ID3D11DomainShader* ds;
+			GfxDomainShaderLoadDef loadDef;
+		};
+
+		struct MaterialDomainShader
+		{
+			const char* name;
+			const char* debugName;
+			MaterialDomainShaderProgram prog;
+		}; static_assert(sizeof(MaterialDomainShader) == 0x28);
+
+		struct MaterialStreamRouting
+		{
+			unsigned char source;
+			unsigned char dest;
+			unsigned char mask;
+		};
+
+		struct MaterialVertexStreamRouting
+		{
+			MaterialStreamRouting data[34];
+			ID3D11InputLayout* decl[270];
+		};
+
+		struct MaterialVertexDeclaration
+		{
+			const char* name;
+			unsigned char streamCount;
+			bool hasOptionalSource;
+			MaterialVertexStreamRouting routing;
+		}; static_assert(sizeof(MaterialVertexDeclaration) == 0x8E8);
+
+		struct MaterialArgumentCodeConst
+		{
+			unsigned short index;
+			unsigned char firstRow;
+			unsigned char rowCount;
+		};
+
+		union MaterialArgumentDef
+		{
+			const float* literalConst;
+			MaterialArgumentCodeConst codeConst;
+			unsigned int codeSampler;
+			unsigned int nameHash;
+		};
+
+		enum MaterialShaderArgumentType : std::uint8_t
+		{
+			
+		};
+
+		struct MaterialShaderArgument
+		{
+			unsigned char type;
+			unsigned char shader;
+			unsigned short dest;
+			MaterialArgumentDef u;
+		}; static_assert(sizeof(MaterialShaderArgument) == 0x10);
+
+		struct MaterialPass
+		{
+			MaterialVertexShader* vertexShader;
+			MaterialVertexDeclaration* vertexDecl;
+			MaterialHullShader* hullShader;
+			MaterialDomainShader* domainShader;
+			MaterialPixelShader* pixelShader;
+			unsigned char pixelOutputMask;
+			unsigned char perPrimArgCount;
+			unsigned char perObjArgCount;
+			unsigned char stableArgCount;
+			unsigned short perPrimArgSize;
+			unsigned short perObjArgSize;
+			unsigned short stableArgSize;
+			unsigned short zone;
+			char __pad0[44];
+			MaterialShaderArgument* args;
+		}; static_assert(sizeof(MaterialPass) == 104);
+		static_assert(offsetof(MaterialPass, zone) == 50);
+		static_assert(offsetof(MaterialPass, args) == 96);
+
+		struct MaterialTechniqueHeader
+		{
+			const char* name;
+			unsigned short flags;
+			unsigned short passCount;
+		}; static_assert(sizeof(MaterialTechniqueHeader) == 0x10);
+
+		struct MaterialTechnique
+		{
+			MaterialTechniqueHeader hdr;
+			MaterialPass passArray[1];
+		};
+
+		struct MaterialTechniqueSet
+		{
+			const char* name;
+			unsigned short flags;
+			unsigned char worldVertFormat;
+			unsigned char preDisplacementOnlyCount;
+			unsigned int techniqueCount;
+			char __pad0[32];
+			MaterialTechnique* techniques;
+		}; static_assert(sizeof(MaterialTechniqueSet) == 0x38);
+		static_assert(offsetof(MaterialTechniqueSet, techniqueCount) == 12);
+		static_assert(offsetof(MaterialTechniqueSet, techniques) == 48);
 
 		enum MapType : std::uint8_t
 		{
@@ -1621,13 +2234,6 @@ namespace game
 		const char* fontName;
 		int pixelHeight;
 		TTFDef* ttfDef;
-	};
-
-	enum MaterialTechniqueType
-	{
-		TECHNIQUE_UNLIT = 8,
-		TECHNIQUE_EMISSIVE = 10,
-		TECHNIQUE_LIT = 13,
 	};
 
 	enum GfxDrawSceneMethod
