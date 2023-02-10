@@ -67,26 +67,29 @@ namespace party
 			game::CL_MainMP_ConnectAndPreloadMap(0, reinterpret_cast<void*>(session_info), &target, mapname.data(), gametype.data());
 		}
 
-		void start_map_for_party()
+		void start_map_for_party(std::string map_name)
 		{
-			auto* mapname = game::Dvar_FindVar("ui_mapname");
+			[[maybe_unused]]auto* mapname = game::Dvar_FindVar("ui_mapname");
 			auto* gametype = game::Dvar_FindVar("ui_gametype");
 			auto* clients = game::Dvar_FindVar("ui_maxclients");
 			auto* private_clients = game::Dvar_FindVar("ui_privateClients");
 			auto* hardcore = game::Dvar_FindVar("ui_hardcore");
 
-			//utils::hook::invoke<void>(0x9D8900_b, game::Party_GetActiveParty(), true);
+			// Com_FrontEndScene_ShutdownAndDisable
+			utils::hook::invoke<void>(0x5AEFB0_b);
 
-			utils::hook::invoke<void>(0xE4DDC0_b); // Sys_WaitWorkerCmds
-			utils::hook::invoke<void>(0xBAFFD0_b, ""); // Com_ShutdownInternal
+			utils::hook::set<uint8_t>(0x5EBED0_b, 0xC3); // ret
+			utils::hook::set<uint8_t>(0xC69890_b, 0xC3); // ret
 			game::SV_CmdsMP_StartMapForParty(
-				mapname->current.string,
+				map_name.data(),
 				gametype->current.string,
 				clients->current.integer,
 				private_clients->current.integer,
 				hardcore->current.enabled,
 				false,
 				false);
+			utils::hook::set<uint8_t>(0xC69890_b, 0x48); // restore
+			utils::hook::set<uint8_t>(0x5EBED0_b, 0x40); // restore
 		}
 
 		std::string get_dvar_string(const std::string& dvar)
@@ -176,13 +179,12 @@ namespace party
 		{
 			command::execute(utils::string::va("ui_gametype %s", gametype->current.string), true);
 		}
-		command::execute(utils::string::va("ui_mapname %s", mapname.data()), true);
 
 		perform_game_initialization();
 
 		console::info("Starting map: %s\n", mapname.data());
 
-		start_map_for_party();
+		start_map_for_party(mapname);
 		return;
 	}
 
@@ -247,6 +249,9 @@ namespace party
 			utils::hook::set(0x1BBA700_b + 0, a3);
 			utils::hook::set(0x1BBA700_b + 24, a3);
 			utils::hook::set(0x1BBA700_b + 56, a3);
+
+			utils::hook::set<uint8_t>(0xC562FD_b, 0xEB); // allow mapname to be changed while server is running
+			utils::hook::set<uint8_t>(0x9B37B0_b, 0xC3); // CL_MainMp_PreloadMap ( map restart issue )
 
 			// need to fix this, currently it will disconnect everyone from the server when a new map is rotated
 			command::add("map", [](const command::params& args)
@@ -355,6 +360,11 @@ namespace party
 
 				network::send(target, "infoResponse", info.build(), '\n');
 			});
+
+			if (game::environment::is_dedi())
+			{
+				return;
+			}
 
 			network::on("infoResponse", [](const game::netadr_s& target, const std::string_view& data)
 			{

@@ -51,8 +51,11 @@ namespace dedicated
 			return true;
 		}
 
-		void sync_gpu_stub()
+		void sync_gpu_stub(void* a1)
 		{
+			// R_SyncGpu
+			utils::hook::invoke<void>(0xE08AE0_b, a1);
+
 			std::this_thread::sleep_for(1ms);
 		}
 
@@ -125,7 +128,7 @@ namespace dedicated
 			utils::hook::jump(0xB53950_b, gscr_is_using_match_rules_data_stub);
 
 			// Hook R_SyncGpu
-			utils::hook::jump(0xE08AE0_b, sync_gpu_stub, true);
+			utils::hook::call(0x3428B1_b, sync_gpu_stub);
 
 			utils::hook::jump(0x341B60_b, init_dedicated_server, true);
 
