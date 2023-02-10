@@ -31,7 +31,7 @@ public:
 				std::make_unique<T>(),
 				std::string(
 					component_name.begin(),
-					component_name.begin() + component_name.find("::")
+					component_name.begin() + component_name.find("::component")
 				)
 			);
 		}
