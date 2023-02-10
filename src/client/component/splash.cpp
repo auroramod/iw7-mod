@@ -128,6 +128,8 @@ namespace splash
 							SetWindowPos(this->window_, nullptr, rect.left, rect.top, rect.right - rect.left,
 								rect.bottom - rect.top, SWP_NOZORDER);
 
+							SetWindowRgn(this->window_, CreateRoundRectRgn(0, 0, rect.right - rect.left, rect.bottom - rect.top, 15, 15), TRUE);
+
 							ShowWindow(this->window_, SW_SHOW);
 							UpdateWindow(this->window_);
 						}
