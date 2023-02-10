@@ -59,7 +59,7 @@ namespace fastfiles
 		game::XAssetHeader db_find_xasset_header_stub(game::XAssetType type, const char* name, const int allow_create_default)
 		{
 			auto result = db_find_xasset_header_hook.invoke<game::XAssetHeader>(type, name, allow_create_default);
-			if (!result.data)
+			if (!result.data && type != game::ASSET_TYPE_LOCALIZE_ENTRY)
 			{
 				console::error("Error: Could not find %s \"%s\"\n",
 					game::g_assetNames[static_cast<unsigned int>(type)],

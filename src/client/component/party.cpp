@@ -28,6 +28,8 @@ namespace party
 			bool hostDefined{ false };
 		} connect_state;
 
+		bool preloaded_map = false;
+
 		void perform_game_initialization()
 		{
 			command::execute("onlinegame 1", true);
@@ -45,7 +47,7 @@ namespace party
 				return;
 			}
 
-			if (game::Live_SyncOnlineDataFlags(0) != 0)
+			if (game::Live_SyncOnlineDataFlags(0) != 0/* || !utils::hook::invoke<bool>(0xBB5E70_b)*/)
 			{
 				scheduler::once([=]()
 				{
@@ -55,16 +57,35 @@ namespace party
 			}
 
 			const auto ui_maxclients = game::Dvar_FindVar("ui_maxclients");
+			const auto party_maxplayers = game::Dvar_FindVar("party_maxplayers");
 			game::Dvar_SetInt(ui_maxclients, sv_maxclients);
+			game::Dvar_SetInt(party_maxplayers, sv_maxclients);
+
+			command::execute(utils::string::va("ui_mapname %s", mapname.data()), true);
+			command::execute(utils::string::va("ui_gametype %s", gametype.data()), true);
 
 			perform_game_initialization();
 
 			// setup agent count
 			utils::hook::invoke<void>(0xC19B00_b, gametype.data());
 
+			preloaded_map = false;
+
 			// connect
 			char session_info[0x100] = {};
 			game::CL_MainMP_ConnectAndPreloadMap(0, reinterpret_cast<void*>(session_info), &target, mapname.data(), gametype.data());
+		}
+
+		void pre_disaster()
+		{
+			utils::hook::set<uint8_t>(0x5EBED0_b, 0xC3); // ret // client snapshot
+			utils::hook::set<uint8_t>(0xC69890_b, 0xC3); // ret // nav mesh
+		}
+
+		void post_disaster()
+		{
+			utils::hook::set<uint8_t>(0xC69890_b, 0x48); // restore // client snapshot
+			//utils::hook::set<uint8_t>(0x5EBED0_b, 0x40); // restore // nav mesh
 		}
 
 		void start_map_for_party(std::string map_name)
@@ -75,11 +96,21 @@ namespace party
 			auto* private_clients = game::Dvar_FindVar("ui_privateClients");
 			auto* hardcore = game::Dvar_FindVar("ui_hardcore");
 
-			// Com_FrontEndScene_ShutdownAndDisable
-			utils::hook::invoke<void>(0x5AEFB0_b);
+			if (game::Com_FrontEnd_IsInFrontEnd())
+			{
+				// Com_FrontEndScene_ShutdownAndDisable
+				utils::hook::invoke<void>(0x5AEFB0_b);
+			}
 
-			utils::hook::set<uint8_t>(0x5EBED0_b, 0xC3); // ret
-			utils::hook::set<uint8_t>(0xC69890_b, 0xC3); // ret
+			if (game::CL_IsGameClientActive(0))
+			{
+				//utils::hook::invoke<void>(0xC58E20_b, game::Lobby_GetPartyData()); // SV_MainMP_MatchEnd
+				//utils::hook::invoke<void>(0xB200F0_b); // G_MainMP_ExitLevel
+			}
+
+			utils::hook::invoke<void>(0xC12850_b); // SV_GameMP_ShutdownGameProgs
+
+			pre_disaster();
 			game::SV_CmdsMP_StartMapForParty(
 				map_name.data(),
 				gametype->current.string,
@@ -88,8 +119,7 @@ namespace party
 				hardcore->current.enabled,
 				false,
 				false);
-			utils::hook::set<uint8_t>(0xC69890_b, 0x48); // restore
-			utils::hook::set<uint8_t>(0x5EBED0_b, 0x40); // restore
+			post_disaster();
 		}
 
 		std::string get_dvar_string(const std::string& dvar)
@@ -123,6 +153,42 @@ namespace party
 			}
 
 			return false;
+		}
+
+		void com_gamestart_beginclient_stub(const char* mapname, const char* gametype, char a3)
+		{
+			if (preloaded_map)
+			{
+				// Com_GameStart_BeginClient
+				utils::hook::invoke<void>(0x5B0130_b, mapname, gametype, 0);
+			}
+			else
+			{
+				// DB_LoadLevelXAssets
+				utils::hook::invoke<void>(0x3B9C90_b, mapname, 0);
+			}
+		}
+
+		void com_restart_for_frontend_stub()
+		{
+			if (preloaded_map)
+			{
+				// Com_RestartForFrontend
+				utils::hook::invoke<void>(0xBAF0B0_b);
+			}
+			else
+			{
+				// Com_Restart
+				utils::hook::invoke<void>(0xBAF0A0_b);
+			}
+		}
+
+		utils::hook::detour sv_start_map_for_party_hook;
+		void sv_start_map_for_party_stub(const char* map, const char* game_type, int client_count, int agent_count, bool hardcore,
+			bool map_is_preloaded, bool migrate)
+		{
+			preloaded_map = map_is_preloaded;
+			sv_start_map_for_party_hook.invoke<void>(map, game_type, client_count, agent_count, hardcore, map_is_preloaded, migrate);
 		}
 	}
 
@@ -190,17 +256,50 @@ namespace party
 
 	int get_client_num_by_name(const std::string& name)
 	{
-		return 0;
+		for (auto i = 0; !name.empty() && i < *game::svs_numclients; ++i)
+		{
+			if (game::g_entities[i].client)
+			{
+				char client_name[32] = { 0 };
+				strncpy_s(client_name, game::g_entities[i].client->name, sizeof(client_name));
+				game::I_CleanStr(client_name);
+
+				if (client_name == name)
+				{
+					return i;
+				}
+			}
+		}
+		return -1;
 	}
 
 	int get_client_count()
 	{
-		return 0;
+		auto count = 0;
+		for (auto i = 0; i < *game::svs_numclients; ++i)
+		{
+			if (game::svs_clients[i].header.state >= 1)
+			{
+				++count;
+			}
+		}
+
+		return count;
 	}
 
 	int get_bot_count()
 	{
-		return 0;
+		auto count = 0;
+		for (auto i = 0; i < *game::svs_numclients; ++i)
+		{
+			if (game::svs_clients[i].header.state >= 1 &&
+				game::SV_BotIsBot(i))
+			{
+				++count;
+			}
+		}
+
+		return count;
 	}
 
 	void connect(const game::netadr_s& target)
@@ -224,7 +323,6 @@ namespace party
 
 		game::Com_SetLocalizedErrorMessage(error.data(), "MENU_NOTICE");
 	}
-
 
 	class component final : public component_interface
 	{
@@ -251,9 +349,15 @@ namespace party
 			utils::hook::set(0x1BBA700_b + 56, a3);
 
 			utils::hook::set<uint8_t>(0xC562FD_b, 0xEB); // allow mapname to be changed while server is running
-			utils::hook::set<uint8_t>(0x9B37B0_b, 0xC3); // CL_MainMp_PreloadMap ( map restart issue )
 
-			// need to fix this, currently it will disconnect everyone from the server when a new map is rotated
+			utils::hook::nop(0xA7A8DF_b, 5); // R_SyncRenderThread inside CL_MainMp_PreloadMap ( freezes )
+
+			utils::hook::call(0x9AFE84_b, com_gamestart_beginclient_stub); // blackscreen issue on connect
+			utils::hook::call(0x9B4077_b, com_gamestart_beginclient_stub); // crash on map rotate
+			utils::hook::call(0x9B404A_b, com_restart_for_frontend_stub); // crash on map rotate
+
+			// TODO: fix disaster shit, those patches are shite.
+
 			command::add("map", [](const command::params& args)
 			{
 				if (args.size() != 2)
@@ -286,7 +390,6 @@ namespace party
 				start_map(args.get(1), true);
 			});
 
-			// need to fix this, currently game will freeze in loadingnewmap command
 			command::add("map_restart", []()
 			{
 				if (!game::SV_Loaded() || game::Com_FrontEnd_IsInFrontEnd())
@@ -300,7 +403,9 @@ namespace party
 					return;
 				}
 
+				pre_disaster();
 				game::SV_CmdsMP_RequestMapRestart(1, 0);
+				post_disaster();
 			});
 
 			command::add("fast_restart", []()
@@ -316,7 +421,9 @@ namespace party
 					return;
 				}
 
+				pre_disaster();
 				game::SV_CmdsMP_RequestMapRestart(0, 0);
+				post_disaster();
 			});
 
 			command::add("connect", [](const command::params& argument)
