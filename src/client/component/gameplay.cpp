@@ -82,11 +82,7 @@ namespace gameplay
 		{
 			return utils::hook::assemble([](utils::hook::assembler& a)
 			{
-				// original code
-				a.add(eax, ptr(rdi, 0x1FD0));
-
 				a.push(rax);
-				a.push(eax);
 
 				a.mov(rax, qword_ptr(reinterpret_cast<int64_t>(&*reinterpret_cast<game::dvar_t**>(0x3C98330_b))));
 				a.mov(eax, dword_ptr(rax, 0x10));
@@ -94,7 +90,10 @@ namespace gameplay
 				a.mov(dword_ptr(rdi, 0x7C), eax);
 
 				a.pop(rax);
-				a.pop(eax);
+
+				// original code
+				a.mov(eax, ptr(rdi, 0x1FD4));
+				a.add(eax, ptr(rdi, 0x1FD0));
 
 				a.jmp(0xAFB1EC_b);
 			});
