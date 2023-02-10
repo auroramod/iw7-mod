@@ -5,6 +5,7 @@
 #include "game/dvars.hpp"
 
 #include "fastfiles.hpp"
+#include "filesystem.hpp"
 #include "dvars.hpp"
 
 #include <utils/hook.hpp>
@@ -193,6 +194,18 @@ namespace patches
 			*checksum = dvar->checksum;
 			return true;
 		}
+
+		char* db_read_raw_file_stub(const char* filename, char* buf, const int size)
+		{
+			const auto file = game::filesystem::file(filename);
+			if (file.exists())
+			{
+				snprintf(buf, size, "%s\n", file.get_buffer().data());
+				return buf;
+			}
+
+			return game::DB_ReadRawFile(filename, buf, size);
+		}
 	}
 
 	class component final : public component_interface
@@ -228,6 +241,9 @@ namespace patches
 			utils::hook::call(0xB0AC9F_b, get_client_dvar); // setclientdvars
 			utils::hook::set<uint8_t>(0xB0A9AC_b, 0xEB); // setclientdvar
 			utils::hook::set<uint8_t>(0xB0ACC8_b, 0xEB); // setclientdvars
+
+			// Allow executing custom cfg files with the "exec" command
+			utils::hook::call(0xB7CEF9_b, db_read_raw_file_stub);
 
 			// don't reset our fov
 			utils::hook::set<uint8_t>(0x8A6160_b, 0xC3);
