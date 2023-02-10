@@ -7,6 +7,8 @@
 
 #include "game/game.hpp"
 #include "game/dvars.hpp"
+#include "utils/hook.hpp"
+#include <utils/string.hpp>
 
 // Fonts used in game:
 // fonts/blender_pro_bold.ttf, fonts/blender_pro_book.ttf, fonts/blender_pro_heavy.ttf, fonts/blender_pro_medium.ttf
@@ -16,7 +18,14 @@ namespace branding
 {
 	namespace
 	{
+		utils::hook::detour ui_get_formatted_build_number_hook;
 		float color[4] = { 0.666f, 0.666f, 0.666f, 0.666f };
+
+		const char* ui_get_formatted_build_number_stub()
+		{
+			const auto* const build_num = ui_get_formatted_build_number_hook.invoke<const char*>();
+			return utils::string::va("%s (%s)", VERSION, build_num);
+		}
 	}
 
 	class component final : public component_interface
@@ -52,6 +61,8 @@ namespace branding
 					}
 				}
 			}, scheduler::pipeline::renderer);
+
+			ui_get_formatted_build_number_hook.create(0xCD1170_b, ui_get_formatted_build_number_stub);
 		}
 	};
 }
