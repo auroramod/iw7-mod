@@ -112,6 +112,7 @@ namespace dedicated
 
 			// Disable frontend
 			dvars::override::register_bool("frontEndSceneEnabled", false, game::DVAR_FLAG_READ);
+			utils::hook::set<uint8_t>(0x5AC8F0_b, 0xC3); // Com_FastFile_Frame_FrontEnd
 
 			// Disable shader preload
 			dvars::override::register_bool("r_preloadShaders", false, game::DVAR_FLAG_READ);
@@ -146,8 +147,9 @@ namespace dedicated
 			utils::hook::set<uint8_t>(0xD2EBB0_b, 0xC3); // recommended settings check
 
 			// sound initialization
-			utils::hook::nop(0xC93213_b, 5); // snd stream thread
-			utils::hook::set<uint8_t>(0xC93206_b, 0); // snd_active
+			// crashes in cp_disco
+			//utils::hook::nop(0xC93213_b, 5); // snd stream thread
+			//utils::hook::set<uint8_t>(0xC93206_b, 0); // snd_active
 			utils::hook::set<uint8_t>(0xD597C0_b, 0xC3); // init voice system
 
 			utils::hook::nop(0xC5007B_b, 6); // unknown check in SV_ExecuteClientMessage
@@ -215,6 +217,9 @@ namespace dedicated
 
 			// image stream (pak)
 			utils::hook::set<uint8_t>(0xA7DB10_b, 0xC3); // DB_CreateGfxImageStreamInternal
+
+			// recipe save threads
+			utils::hook::set<uint8_t>(0xE7C970_b, 0xC3);
 
 			// set game mode
 			scheduler::once([]()

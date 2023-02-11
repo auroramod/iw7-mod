@@ -93,6 +93,8 @@ namespace game
 	WEAK symbol<void(char* buffer)> FS_FreeFile{ 0xCDE1F0 };
 	WEAK symbol<void(int h, const char* fmt, ...)> FS_Printf{ 0xCDD1C0 };
 
+	WEAK symbol<char* (char* string)> I_CleanStr{ 0xCFACC0 };
+
 	WEAK symbol<const char* (int, int, int)> Key_KeynumToString{ 0x9A95E0 };
 
 	WEAK symbol<bool()> LUI_CoD_InFrontEnd{ 0x615080 };
@@ -154,6 +156,7 @@ namespace game
 	WEAK symbol<void(int clientNum, svscmd_type type, const char* text)> SV_GameSendServerCommand{ 0xC54780 };
 	WEAK symbol<bool()> SV_Loaded{ 0xC114C0 };
 	WEAK symbol<bool(const char* name)> SV_MapExists{ 0xCDB620 };
+	WEAK symbol<bool(int clientNum)> SV_BotIsBot{ 0xC3BC90 };
 
 	WEAK symbol<void(int)> SND_StopSounds{ 0xCA06E0 };
 	WEAK symbol<void(const char*)> SND_SetMusicState{ 0xC9E110 };
@@ -187,4 +190,6 @@ namespace game
 	WEAK symbol<int> sv_migrate{ 0x6B2C9DC };
 
 	WEAK symbol<SOCKET> query_socket{ 0x779FDC8 };
+
+	WEAK symbol<DWORD> threadIds{ 0x602BAB0 };
 }
