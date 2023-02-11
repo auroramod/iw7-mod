@@ -96,6 +96,16 @@ namespace steam_proxy
 			return steam_overlay_module_;
 		}
 
+		const char* get_player_name()
+		{
+			if (this->client_friends_)
+			{
+				return this->client_friends_.invoke<const char*>("GetPersonaName");
+			}
+
+			return "IW7-Player";
+		}
+
 	private:
 		utils::nt::library steam_client_module_{};
 		utils::nt::library steam_overlay_module_{};
@@ -103,6 +113,7 @@ namespace steam_proxy
 		steam::interface client_engine_ {};
 		steam::interface client_user_ {};
 		steam::interface client_utils_ {};
+		steam::interface client_friends_ {};
 
 		void* steam_pipe_ = nullptr;
 		void* global_user_ = nullptr;
@@ -142,6 +153,7 @@ namespace steam_proxy
 			this->client_user_ = this->client_engine_.invoke<void*>(8, this->steam_pipe_, this->global_user_);
 			// GetIClientUser
 			this->client_utils_ = this->client_engine_.invoke<void*>(14, this->steam_pipe_); // GetIClientUtils
+			this->client_friends_ = this->client_engine_.invoke<void*>(13, this->steam_pipe_);
 		}
 
 		ownership_state start_mod(const std::string& title, const size_t app_id)
@@ -229,6 +241,7 @@ namespace steam_proxy
 
 				this->steam_pipe_ = nullptr;
 				this->global_user_ = nullptr;
+				this->client_friends_ = nullptr;
 
 				this->steam_client_module_ = utils::nt::library{ nullptr };
 
@@ -241,6 +254,12 @@ namespace steam_proxy
 	{
 		// TODO: Find a better way to do this
 		return component_loader::get<component>()->get_overlay_module();
+	}
+
+	const char* get_player_name()
+	{
+		// TODO: Find a better way to do this
+		return component_loader::get<component>()->get_player_name();
 	}
 }
 
