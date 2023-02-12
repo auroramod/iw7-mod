@@ -47,7 +47,7 @@ namespace party
 				return;
 			}
 
-			if (game::Live_SyncOnlineDataFlags(0) != 0/* || !utils::hook::invoke<bool>(0xBB5E70_b)*/)
+			if (game::Live_SyncOnlineDataFlags(0) != 0)
 			{
 				scheduler::once([=]()
 				{
@@ -76,18 +76,6 @@ namespace party
 			game::CL_MainMP_ConnectAndPreloadMap(0, reinterpret_cast<void*>(session_info), &target, mapname.data(), gametype.data());
 		}
 
-		void pre_disaster()
-		{
-			utils::hook::set<uint8_t>(0x5EBED0_b, 0xC3); // ret // client snapshot
-			utils::hook::set<uint8_t>(0xC69890_b, 0xC3); // ret // nav mesh
-		}
-
-		void post_disaster()
-		{
-			utils::hook::set<uint8_t>(0xC69890_b, 0x48); // restore // client snapshot
-			//utils::hook::set<uint8_t>(0x5EBED0_b, 0x40); // restore // nav mesh
-		}
-
 		void start_map_for_party(std::string map_name)
 		{
 			[[maybe_unused]]auto* mapname = game::Dvar_FindVar("ui_mapname");
@@ -102,15 +90,6 @@ namespace party
 				utils::hook::invoke<void>(0x5AEFB0_b);
 			}
 
-			if (game::CL_IsGameClientActive(0))
-			{
-				//utils::hook::invoke<void>(0xC58E20_b, game::Lobby_GetPartyData()); // SV_MainMP_MatchEnd
-				//utils::hook::invoke<void>(0xB200F0_b); // G_MainMP_ExitLevel
-			}
-
-			utils::hook::invoke<void>(0xC12850_b); // SV_GameMP_ShutdownGameProgs
-
-			pre_disaster();
 			game::SV_CmdsMP_StartMapForParty(
 				map_name.data(),
 				gametype->current.string,
@@ -119,7 +98,6 @@ namespace party
 				hardcore->current.enabled,
 				false,
 				false);
-			post_disaster();
 		}
 
 		std::string get_dvar_string(const std::string& dvar)
@@ -160,7 +138,7 @@ namespace party
 			if (preloaded_map)
 			{
 				// Com_GameStart_BeginClient
-				utils::hook::invoke<void>(0x5B0130_b, mapname, gametype, 0);
+				utils::hook::invoke<void>(0x5B0130_b, mapname, gametype, a3);
 			}
 			else
 			{
@@ -190,6 +168,35 @@ namespace party
 			preloaded_map = map_is_preloaded;
 			sv_start_map_for_party_hook.invoke<void>(map, game_type, client_count, agent_count, hardcore, map_is_preloaded, migrate);
 		}
+
+		void reset_mem_stuff(game::SvServerInitSettings* init_settings)
+		{
+			if (init_settings->maxClientCount != *game::svs_numclients)
+			{
+				game::Com_Error(game::ERR_DROP, reinterpret_cast<const char*>(0x1512140_b));
+			}
+
+			if (!init_settings->serverThreadStartup)
+			{
+				if (!init_settings->isRestart)
+				{
+					// Nav_AllocNavPower
+					memset(&*reinterpret_cast<__int64*>(0x4E3A490_b + 8), 0, 0x78680ui64 - 8);
+				}
+			}
+		}
+
+		void reset_mem_stuff_stub(utils::hook::assembler& a)
+		{
+			a.pushad64();
+
+			a.mov(rcx, rbx);
+			a.call_aligned(reset_mem_stuff);
+
+			a.popad64();
+
+			a.jmp(0xC563E2_b);
+		};
 	}
 
 	void start_map(const std::string& mapname, bool dev)
@@ -353,10 +360,13 @@ namespace party
 			utils::hook::nop(0xA7A8DF_b, 5); // R_SyncRenderThread inside CL_MainMp_PreloadMap ( freezes )
 
 			utils::hook::call(0x9AFE84_b, com_gamestart_beginclient_stub); // blackscreen issue on connect
-			utils::hook::call(0x9B4077_b, com_gamestart_beginclient_stub); // crash on map rotate
-			utils::hook::call(0x9B404A_b, com_restart_for_frontend_stub); // crash on map rotate
+			utils::hook::call(0x9B4077_b, com_gamestart_beginclient_stub); // may not be necessary (map rotate)
+			utils::hook::call(0x9B404A_b, com_restart_for_frontend_stub); // may not be necessary (map rotate)
 
-			// TODO: fix disaster shit, those patches are shite.
+			sv_start_map_for_party_hook.create(0xC4D150_b, sv_start_map_for_party_stub);
+
+			utils::hook::nop(0xC563C3_b, 12); // far jump = 12 bytes
+			utils::hook::jump(0xC563C3_b, utils::hook::assemble(reset_mem_stuff_stub), true);
 
 			command::add("map", [](const command::params& args)
 			{
@@ -403,9 +413,7 @@ namespace party
 					return;
 				}
 
-				pre_disaster();
 				game::SV_CmdsMP_RequestMapRestart(1, 0);
-				post_disaster();
 			});
 
 			command::add("fast_restart", []()
@@ -421,9 +429,7 @@ namespace party
 					return;
 				}
 
-				pre_disaster();
 				game::SV_CmdsMP_RequestMapRestart(0, 0);
-				post_disaster();
 			});
 
 			command::add("connect", [](const command::params& argument)
