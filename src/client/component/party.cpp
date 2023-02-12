@@ -263,7 +263,7 @@ namespace party
 
 	int get_client_num_by_name(const std::string& name)
 	{
-		for (auto i = 0; !name.empty() && i < *game::svs_numclients; ++i)
+		for (unsigned int i = 0; !name.empty() && i < *game::svs_numclients; ++i)
 		{
 			if (game::g_entities[i].client)
 			{
@@ -283,7 +283,7 @@ namespace party
 	int get_client_count()
 	{
 		auto count = 0;
-		for (auto i = 0; i < *game::svs_numclients; ++i)
+		for (unsigned int i = 0; i < *game::svs_numclients; ++i)
 		{
 			if (game::svs_clients[i].header.state >= 1)
 			{
@@ -297,7 +297,7 @@ namespace party
 	int get_bot_count()
 	{
 		auto count = 0;
-		for (auto i = 0; i < *game::svs_numclients; ++i)
+		for (unsigned int i = 0; i < *game::svs_numclients; ++i)
 		{
 			if (game::svs_clients[i].header.state >= 1 &&
 				game::SV_BotIsBot(i))
