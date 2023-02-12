@@ -181,7 +181,7 @@ namespace game
 
 	WEAK symbol<gentity_s> g_entities{ 0x3D22610 };
 
-	WEAK symbol<int> svs_numclients{ 0x6B229E0 };
+	WEAK symbol<unsigned int> svs_numclients{ 0x6B229E0 };
 	WEAK symbol<client_t> svs_clients{ 0x6B22950 };
 
 	WEAK symbol<clientUIActive_t> clientUIActives{ 0x2246C30 };
