@@ -144,6 +144,10 @@ namespace colors
 				return;
 			}
 
+			// color is still cleaned somewhere when sending client name between host and client
+			// this causes CG_MainMP_CheckForLocalClientGamertagMismatch to kick the client...
+			// edit: I cannot find where this happens for the life of me...
+
 			// allows colored name in-game
 			utils::hook::jump(0xCFA700_b, com_clean_name_stub, true);
 
@@ -176,4 +180,4 @@ namespace colors
 	};
 }
 
-REGISTER_COMPONENT(colors::component)
+//REGISTER_COMPONENT(colors::component)
