@@ -85,12 +85,12 @@ namespace auth
 
 	uint64_t get_guid()
 	{
-		//if (game::environment::is_dedi())
+		if (game::environment::is_dedi())
 		{
 			return 0x110000100000000 | (::utils::cryptography::random::get_integer() & ~0x80000000);
 		}
 
-		//return get_key().get_hash();
+		return 0x110000100000000 | get_key().get_hash();
 	}
 
 	class component final : public component_interface
@@ -98,6 +98,40 @@ namespace auth
 	public:
 		void post_unpack() override
 		{
+			// Patch steam id bit check
+			std::vector<std::pair<size_t, size_t>> patches{};
+			const auto p = [&patches](const size_t a, const size_t b)
+			{
+				patches.emplace_back(a, b);
+			};
+
+			p(0x5CC014_b, 0x5CC057_b);
+			p(0x5CC0D4_b, 0x5CC12B_b);
+			p(0x5CC1D4_b, 0x5CC227_b);
+			p(0x5CC2C4_b, 0x5CC317_b);
+			p(0x5CC3B4_b, 0x5CC407_b);
+			p(0x5CE0C0_b, 0x5CE131_b); // party
+			p(0xD2F495_b, 0xD2F4F7_b);
+			p(0xD304FD_b, 0xD3053D_b);
+			p(0xDA8650_b, 0xDA86AF_b);
+			p(0xDA891E_b, 0xDA898A_b); // steamlobbycreatefail
+			p(0xDA8B1A_b, 0xDA8B86_b); // steamlobbyjoinfail
+			p(0xDBCF55_b, 0xDBCF95_b);
+
+			p(0x5CE425_b, 0x5CE466_b); // party
+			p(0xDA8516_b, 0xDA853C_b);
+			p(0xDA8C89_b, 0xDA8CCF_b);
+
+			p(0x5CCD2B_b, 0x5CCDD7_b);
+			p(0x5CCF25_b, 0x5CCF71_b);
+			p(0xD30126_b, 0xD30172_b);
+			p(0xDA8D76_b, 0xDA8DE2_b);
+
+			for (const auto& patch : patches)
+			{
+				utils::hook::jump(patch.first, patch.second);
+			}
+
 			command::add("guid", []()
 			{
 				console::info("Your guid: %llX\n", steam::SteamUser()->GetSteamID().bits);
