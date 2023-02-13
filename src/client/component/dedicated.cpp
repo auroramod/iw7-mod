@@ -9,9 +9,12 @@
 #include "console.hpp"
 #include "scheduler.hpp"
 
+#include <utils/json.hpp>
+
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
 #include <utils/flags.hpp>
+#include <utils/io.hpp>
 
 namespace dedicated
 {
@@ -82,12 +85,81 @@ namespace dedicated
 			// R_LoadGraphicsAssets
 			utils::hook::invoke<void>(0xE06220_b);
 		}
-	}
 
-	void initialize()
-	{
-		command::execute("onlinegame 1", true);
-		command::execute("xblive_privatematch 1", true);
+		void initialize()
+		{
+			const auto initialize_gamemode = []() -> void
+			{
+				if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_CP)
+				{
+					command::execute("exec default_systemlink_cp.cfg", true);
+					command::execute("exec default_cp.cfg", true);
+				}
+				else if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_MP)
+				{
+					command::execute("exec default_systemlink_mp.cfg", true);
+					command::execute("exec default_mp.cfg", true);
+				}
+			};
+
+			command::execute("onlinegame 1", true);
+			command::execute("xblive_privatematch 1", true);
+			initialize_gamemode();
+		}
+
+		nlohmann::json snd_alias_length_data;
+
+		nlohmann::json get_snd_alias_length_data(const char* mapname, const std::string& game_mode = "")
+		{
+			const auto path = "sounddata/"s + game_mode + "/"s + mapname + ".json"s;
+			const auto buffer = utils::io::read_file(path);
+			if (!buffer.empty())
+			{
+				try
+				{
+					return nlohmann::json::parse(buffer);
+				}
+				catch (const std::exception& e)
+				{
+					console::error("[SND]: failed to read sound lengths file \"%s\"\n    %s\n", path.data(), e.what());
+				}
+			}
+			else
+			{
+				console::error("[SND]: failed to find sound lengths file \"%s\"\n", path.data());
+			}
+			return{};
+		}
+
+		nlohmann::json get_snd_alias_length_data_for_map(const char* mapname)
+		{
+			return get_snd_alias_length_data(mapname, game::Com_GameMode_GetActiveGameModeStr());
+		}
+
+		int get_snd_alias_length(const char* alias)
+		{
+			if (snd_alias_length_data.is_object() && snd_alias_length_data.contains(alias))
+			{
+				return snd_alias_length_data[alias];
+			}
+			else
+			{
+				return 0;
+			}
+		}
+
+		utils::hook::detour snd_lookup_sound_length_hook;
+		int snd_lookup_sound_length_stub(const char* alias)
+		{
+			return get_snd_alias_length(alias);
+		}
+
+		utils::hook::detour start_server_hook;
+		void start_server_stub(game::SvServerInitSettings* init_settings)
+		{
+			snd_alias_length_data = get_snd_alias_length_data_for_map(init_settings->mapName);
+			start_server_hook.invoke<void>(init_settings);
+		}
 	}
 
 	class component final : public component_interface
@@ -99,7 +171,7 @@ namespace dedicated
 			{
 				return;
 			}
-
+			
 #ifdef DEBUG
 			printf("Starting dedicated server\n");
 #endif
@@ -111,7 +183,7 @@ namespace dedicated
 			game::Dvar_RegisterBool("sv_lanOnly", false, game::DVAR_FLAG_NONE, "Don't send heartbeat");
 
 			// Disable frontend
-			dvars::override::register_bool("frontEndSceneEnabled", false, game::DVAR_FLAG_READ);
+			//dvars::override::register_bool("frontEndSceneEnabled", false, game::DVAR_FLAG_READ);
 			utils::hook::set<uint8_t>(0x5AC8F0_b, 0xC3); // Com_FastFile_Frame_FrontEnd
 
 			// Disable shader preload
@@ -146,12 +218,6 @@ namespace dedicated
 			utils::hook::set<uint8_t>(0x9AA9A0_b, 0xC3); // CL_CheckForResend, which tries to connect to the local server constantly
 			utils::hook::set<uint8_t>(0xD2EBB0_b, 0xC3); // recommended settings check
 
-			// sound initialization
-			// crashes in cp_disco
-			//utils::hook::nop(0xC93213_b, 5); // snd stream thread
-			//utils::hook::set<uint8_t>(0xC93206_b, 0); // snd_active
-			utils::hook::set<uint8_t>(0xD597C0_b, 0xC3); // init voice system
-
 			utils::hook::nop(0xC5007B_b, 6); // unknown check in SV_ExecuteClientMessage
 			utils::hook::nop(0xC4F407_b, 3); // allow first slot to be occupied
 			utils::hook::nop(0x3429A7_b, 2); // properly shut down dedicated servers
@@ -160,7 +226,30 @@ namespace dedicated
 
 			utils::hook::set<uint8_t>(0xC5A200_b, 0xC3); // disable host migration
 
-			// iw7 patches
+			// SOUND patches
+			//utils::hook::nop(0xC93213_b, 5); // snd stream thread
+			//utils::hook::set<uint8_t>(0xC93206_b, 0); // snd_active
+			//utils::hook::set<uint8_t>(0xCB9150_b, 0xC3); // sound queue thing
+			//utils::hook::set<uint8_t>(0xC75550_b, 0xC3); // SD_AllocInit
+			//utils::hook::set<uint8_t>(0xC75CA0_b, 0xC3); // SD_Init
+
+			utils::hook::set<uint8_t>(0xD597C0_b, 0xC3); // Voice_Init
+			utils::hook::set(0xCFDC40_b, 0xC3C033); // sound stream reading
+
+			// lookup the length from our list
+			snd_lookup_sound_length_hook.create(0xC9BCE0_b, snd_lookup_sound_length_stub);
+
+			// check the sounddata when server is launched
+			start_server_hook.create(0xC56050_b, start_server_stub);
+
+			// IMAGE patches
+			// image stream (pak)
+			utils::hook::set<uint8_t>(0xA7DB10_b, 0xC3); // DB_CreateGfxImageStreamInternal
+
+			// UI patches
+			utils::hook::set<uint8_t>(0x615090_b, 0xC3); // LUI_CoD_Init
+
+			// IW7 patches
 			utils::hook::set(0xE06060_b, 0xC3C033); //utils::hook::set<uint8_t>(0xE06060_b, 0xC3); // directx
 			utils::hook::set(0xE05B80_b, 0xC3C033); //utils::hook::set<uint8_t>(0xE05B80_b, 0xC3); // ^
 			utils::hook::set(0xDD2760_b, 0xC3C033); //utils::hook::set<uint8_t>(0xDD2760_b, 0xC3); // ^
@@ -214,9 +303,6 @@ namespace dedicated
 
 			// something to do with vls?
 			utils::hook::set<uint8_t>(0xD02CB0_b, 0xC3);
-
-			// image stream (pak)
-			utils::hook::set<uint8_t>(0xA7DB10_b, 0xC3); // DB_CreateGfxImageStreamInternal
 
 			// recipe save threads
 			utils::hook::set<uint8_t>(0xE7C970_b, 0xC3);
