@@ -254,8 +254,8 @@ namespace patches
 			// block changing name in-game
 			utils::hook::set<uint8_t>(0xC4DF90_b, 0xC3);
 
-			// disable codPointStore
-			dvars::override::register_int("codPointStore_enabled", 0, 0, 0, game::DVAR_FLAG_NONE);
+			// disable using codpoints in store
+			dvars::override::register_bool("killswitch_cod_points", true, game::DVAR_FLAG_READ);
 
 			// patch "Server is different version" to show the server client version
 			utils::hook::inject(0xC4FA5D_b, VERSION);
