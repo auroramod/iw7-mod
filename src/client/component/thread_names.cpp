@@ -32,6 +32,7 @@ namespace thread_names
 				{game::THREAD_CONTEXT_DATABASE, "Database"},
 				{game::THREAD_CONTEXT_SOUND_STREAM, "Sound Stream"},
 				{game::THREAD_CONTEXT_SOUND, "Snd stream packet callback"},
+				{game::THREAD_CONTEXT_SOUND_DECODE, "Sound Decoder"},
 				{game::THREAD_CONTEXT_RECIPE, "Recipe"},
 			};
 

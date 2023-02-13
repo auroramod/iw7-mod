@@ -48,6 +48,9 @@ namespace game
 	int SV_Cmd_Argc();
 	const char* SV_Cmd_Argv(int index);
 
+	const char* Com_GameMode_GetActiveGameModeStr();
+	const char* Com_GameMode_GetGameModeStr(GameModeType gameMode);
+
 	bool CL_IsGameClientActive(const int localClientNum);
 
 	extern const char* g_assetNames[ASSET_TYPE_COUNT];

@@ -431,7 +431,7 @@ namespace game
 		THREAD_CONTEXT_DATABASE = 14,
 		THREAD_CONTEXT_SOUND_STREAM = 15,
 		THREAD_CONTEXT_SOUND = 16,
-		THREAD_CONTEXT_UNKNOWN17 = 17,
+		THREAD_CONTEXT_SOUND_DECODE = 17,
 		THREAD_CONTEXT_UNKNOWN18 = 18,
 		THREAD_CONTEXT_UNKNOWN19 = 19,
 		THREAD_CONTEXT_RECIPE = 20,
@@ -2061,14 +2061,89 @@ namespace game
 			char __pad0[176];
 		}; static_assert(sizeof(SndGlobals) == 0xD0);
 
+		struct SndAlias
+		{
+			const char* aliasName;
+			char __pad0[192];
+		}; static_assert(sizeof(SndAlias) == 200);
+
+		struct SndAliasList
+		{
+			const char* aliasName;
+			unsigned int id;
+			SndAlias* head;
+			int count;
+			int sequence;
+		}; static_assert(sizeof(SndAliasList) == 32);
+		static_assert(offsetof(SndAliasList, head) == 16);
+		static_assert(offsetof(SndAliasList, count) == 24);
+
+		struct SndIndexEntry
+		{
+			unsigned short value;
+			unsigned short next;
+		}; static_assert(sizeof(SndIndexEntry) == 4);
+
+		struct SndSendEffectParams
+		{
+			char __pad0[136];
+		}; static_assert(sizeof(SndSendEffectParams) == 136);
+
+		struct SoundTable
+		{
+			char __pad0[248];
+		}; static_assert(sizeof(SoundTable) == 248);
+
+		struct SndDuck
+		{
+			char __pad0[144];
+		}; static_assert(sizeof(SndDuck) == 144);
+
+		struct SndMusicState
+		{
+			char __pad0[384];
+		}; static_assert(sizeof(SndMusicState) == 384);
+
+		struct SndMusicSet
+		{
+			char name[64];
+			unsigned int id;
+			unsigned int stateCount;
+			SndMusicState* states;
+		}; static_assert(sizeof(SndMusicSet) == 80);
+		static_assert(offsetof(SndMusicSet, stateCount) == 68);
+		static_assert(offsetof(SndMusicSet, states) == 72);
+
 		struct SndBank
 		{
 			const char* name;
 			const char* zone;
 			const char* gameLanguage;
 			const char* soundLanguage;
-			char __pad0[320];
+			unsigned int aliasCount;
+			SndAliasList* alias;
+			SndIndexEntry* aliasIndex;
+			unsigned int sendEffectCount;
+			SndSendEffectParams* sendEffects;
+			SoundTable soundTable;
+			unsigned int duckCount;
+			SndDuck* ducks;
+			unsigned int musicSetCount;
+			SndMusicSet* musicSets;
 		};
+		static_assert(offsetof(SndBank, name) == 0);
+		static_assert(offsetof(SndBank, zone) == 8);
+		static_assert(offsetof(SndBank, gameLanguage) == 16);
+		static_assert(offsetof(SndBank, soundLanguage) == 24);
+		static_assert(offsetof(SndBank, aliasCount) == 32);
+		static_assert(offsetof(SndBank, aliasIndex) == 48);
+		static_assert(offsetof(SndBank, sendEffectCount) == 56);
+		static_assert(offsetof(SndBank, sendEffects) == 64);
+		static_assert(offsetof(SndBank, soundTable) == 72);
+		static_assert(offsetof(SndBank, duckCount) == 320);
+		static_assert(offsetof(SndBank, ducks) == 328);
+		static_assert(offsetof(SndBank, musicSetCount) == 336);
+		static_assert(offsetof(SndBank, musicSets) == 344);
 
 		struct SndBankResident
 		{

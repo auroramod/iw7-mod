@@ -42,6 +42,24 @@ namespace game
 		return sv_cmd_args->argv[sv_cmd_args->nesting][index];
 	}
 
+	const char* G_GAME_MODE_STRINGS[] =
+	{
+		"none",
+		"sp",
+		"mp",
+		"cp",
+	};
+
+	const char* Com_GameMode_GetActiveGameModeStr()
+	{
+		return G_GAME_MODE_STRINGS[game::Com_GameMode_GetActiveGameMode()];
+	}
+
+	const char* Com_GameMode_GetGameModeStr(GameModeType gameMode)
+	{
+		return G_GAME_MODE_STRINGS[gameMode];
+	}
+
 	bool CL_IsGameClientActive(const int localClientNum)
 	{
 		if (game::clientUIActives[localClientNum].frontEndSceneState[0])
