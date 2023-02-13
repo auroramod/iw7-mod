@@ -58,5 +58,7 @@ namespace game
 }
 
 uintptr_t operator"" _b(const uintptr_t ptr);
+size_t reverse_b(const size_t ptr);
+size_t reverse_b(const void* ptr);
 
 #include "symbols.hpp"

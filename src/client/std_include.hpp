@@ -49,6 +49,8 @@
 #include <atlbase.h>
 #include <iphlpapi.h>
 #include <wincrypt.h>
+#include <shellscalingapi.h>
+
 
 // min and max is required by gdi, therefore NOMINMAX won't work
 #ifdef max
@@ -76,6 +78,7 @@
 #include <optional>
 #include <unordered_set>
 #include <variant>
+#include <random>
 
 #include <gsl/gsl>
 #include <udis86.h>

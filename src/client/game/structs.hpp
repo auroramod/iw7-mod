@@ -10,6 +10,232 @@ namespace game
 	typedef vec_t vec3_t[3];
 	typedef vec_t vec4_t[4];
 
+	struct scr_entref_t
+	{
+		unsigned short entnum;
+		unsigned short classnum;
+	};
+
+	enum CodPlayMode
+	{
+		CODPLAYMODE_NONE = 0x0,
+		CODPLAYMODE_SP = 0x1,
+		CODPLAYMODE_CORE = 0x2,
+		CODPLAYMODE_SURVIVAL = 0x5,
+		CODPLAYMODE_ZOMBIES = 0x6,
+	};
+
+	enum VariableType
+	{
+		VAR_UNDEFINED = 0x0,
+		VAR_BEGIN_REF = 0x1,
+		VAR_POINTER = 0x1,
+		VAR_STRING = 0x2,
+		VAR_ISTRING = 0x3,
+		VAR_VECTOR = 0x4,
+		VAR_END_REF = 0x5,
+		VAR_FLOAT = 0x5,
+		VAR_INTEGER = 0x6,
+		VAR_CODEPOS = 0x7,
+		VAR_PRECODEPOS = 0x8,
+		VAR_FUNCTION = 0x9,
+		VAR_BUILTIN_FUNCTION = 0xA,
+		VAR_BUILTIN_METHOD = 0xB,
+		VAR_STACK = 0xC,
+		VAR_ANIMATION = 0xD,
+		VAR_PRE_ANIMATION = 0xE,
+		VAR_THREAD = 0xF,
+		VAR_NOTIFY_THREAD = 0x10,
+		VAR_TIME_THREAD = 0x11,
+		VAR_CHILD_THREAD = 0x12,
+		VAR_OBJECT = 0x13,
+		VAR_DEAD_ENTITY = 0x14,
+		VAR_ENTITY = 0x15,
+		VAR_ARRAY = 0x16,
+		VAR_DEAD_THREAD = 0x17,
+		VAR_COUNT = 0x18,
+		VAR_FREE = 0x18,
+		VAR_THREAD_LIST = 0x19,
+		VAR_ENDON_LIST = 0x1A,
+		VAR_TOTAL_COUNT = 0x1B,
+	};
+
+	struct VariableStackBuffer
+	{
+		const char* pos;
+		unsigned __int16 size;
+		unsigned __int16 bufLen;
+		unsigned __int16 localId;
+		char time;
+		char buf[1];
+	};
+
+	union VariableUnion
+	{
+		int intValue;
+		unsigned int uintValue;
+		float floatValue;
+		unsigned int stringValue;
+		const float* vectorValue;
+		const char* codePosValue;
+		unsigned int pointerValue;
+		VariableStackBuffer* stackValue;
+		unsigned int entityOffset;
+	};
+
+	struct VariableValue
+	{
+		VariableUnion u;
+		int type;
+	};
+
+	struct ObjectVariableChildren
+	{
+		unsigned __int16 firstChild;
+		unsigned __int16 lastChild;
+	};
+
+	struct ObjectVariableValue_u_f
+	{
+		unsigned __int16 prev;
+		unsigned __int16 next;
+	};
+
+	union ObjectVariableValue_u_o_u
+	{
+		unsigned __int16 size;
+		unsigned __int16 entnum;
+		unsigned __int16 nextEntId;
+		unsigned __int16 self;
+	};
+
+	struct	ObjectVariableValue_u_o
+	{
+		unsigned __int16 refCount;
+		ObjectVariableValue_u_o_u u;
+	};
+
+	union ObjectVariableValue_w
+	{
+		unsigned int type;
+		unsigned int classnum;
+		unsigned int notifyName;
+		unsigned int waitTime;
+		unsigned int parentLocalId;
+	};
+
+	struct ChildVariableValue_u_f
+	{
+		unsigned __int16 prev;
+		unsigned __int16 next;
+	};
+
+	union ChildVariableValue_u
+	{
+		ChildVariableValue_u_f f;
+		VariableUnion u;
+	};
+
+	struct ChildBucketMatchKeys_keys
+	{
+		unsigned __int16 name_hi;
+		unsigned __int16 parentId;
+	};
+
+	union ChildBucketMatchKeys
+	{
+		ChildBucketMatchKeys_keys keys;
+		unsigned int match;
+	};
+
+	struct	ChildVariableValue
+	{
+		ChildVariableValue_u u;
+		unsigned __int16 next;
+		char type;
+		char name_lo;
+		ChildBucketMatchKeys k;
+		unsigned __int16 nextSibling;
+		unsigned __int16 prevSibling;
+	};
+
+	union ObjectVariableValue_u
+	{
+		ObjectVariableValue_u_f f;
+		ObjectVariableValue_u_o o;
+	};
+
+	struct ObjectVariableValue
+	{
+		ObjectVariableValue_u u;
+		ObjectVariableValue_w w;
+	};
+
+	struct scrVarGlob_t
+	{
+		ObjectVariableValue objectVariableValue[40960];
+		ObjectVariableChildren objectVariableChildren[40960];
+		unsigned __int16 childVariableBucket[65536];
+		ChildVariableValue childVariableValue[384000];
+	};
+
+	struct function_stack_t
+	{
+		const char* pos;
+		unsigned int localId;
+		unsigned int localVarCount;
+		VariableValue* top;
+		VariableValue* startTop;
+	};
+
+	struct function_frame_t
+	{
+		function_stack_t fs;
+		int topType;
+	};
+
+	struct scrVmPub_t
+	{
+		unsigned int* localVars;
+		VariableValue* maxstack;
+		int function_count;
+		function_frame_t* function_frame;
+		VariableValue* top;
+		unsigned int inparamcount;
+		unsigned int outparamcount;
+		function_frame_t function_frame_start[32];
+		VariableValue stack[2048];
+	};
+
+	struct ui_info
+	{
+		char __pad0[16];
+		float cursor_x;
+		float cursor_y;
+		int cursor_time;
+		int ingame_cursor_visible;
+	};
+
+	enum PMem_Source
+	{
+		PMEM_SOURCE_EXTERNAL = 0x0,
+		PMEM_SOURCE_DATABASE = 0x1,
+		PMEM_SOURCE_DEFAULT_LOW = 0x2,
+		PMEM_SOURCE_DEFAULT_HIGH = 0x3,
+		PMEM_SOURCE_MOVIE = 0x4,
+		PMEM_SOURCE_SCRIPT = 0x5,
+	};
+
+	struct physical_memory
+	{
+		char __pad0[0x10];
+		char* buf;
+		char __pad1[0x8];
+		int unk1;
+		size_t size;
+		char __pad2[0x500];
+	};
+
 	enum scr_string_t : std::int32_t
 	{
 	};
@@ -2102,7 +2328,7 @@ namespace game
 			int compressedLen;
 			int len;
 			int bytecodeLen;
-			const char* buffer;
+			char* buffer;
 			char* bytecode;
 		}; static_assert(sizeof(ScriptFile) == 0x28);
 
@@ -3070,4 +3296,427 @@ namespace game
 #pragma pack(pop)
 	}
 	using namespace demonware;
+
+	namespace hks
+	{
+		struct lua_State;
+		struct HashTable;
+		struct cclosure;
+
+		struct GenericChunkHeader
+		{
+			unsigned __int64 m_flags;
+		};
+
+		struct ChunkHeader : GenericChunkHeader
+		{
+			ChunkHeader* m_next;
+		};
+
+		struct UserData : ChunkHeader
+		{
+			unsigned __int64 m_envAndSizeOffsetHighBits;
+			unsigned __int64 m_metaAndSizeOffsetLowBits;
+			char m_data[8];
+		};
+
+		struct InternString
+		{
+			unsigned __int64 m_flags;
+			unsigned __int64 m_lengthbits;
+			unsigned int m_hash;
+			char m_data[30];
+		};
+
+		union HksValue
+		{
+			cclosure* cClosure;
+			void* closure;
+			UserData* userData;
+			HashTable* table;
+			void* tstruct;
+			InternString* str;
+			void* thread;
+			void* ptr;
+			float number;
+			long long i64;
+			unsigned long long ui64;
+			unsigned int native;
+			bool boolean;
+		};
+
+		enum HksObjectType
+		{
+			TANY = 0xFFFFFFFE,
+			TNONE = 0xFFFFFFFF,
+			TNIL = 0x0,
+			TBOOLEAN = 0x1,
+			TLIGHTUSERDATA = 0x2,
+			TNUMBER = 0x3,
+			TSTRING = 0x4,
+			TTABLE = 0x5,
+			TFUNCTION = 0x6,  // idk
+			TUSERDATA = 0x7,
+			TTHREAD = 0x8,
+			TIFUNCTION = 0x9, // Lua function
+			TCFUNCTION = 0xA, // C function
+			TUI64 = 0xB,
+			TSTRUCT = 0xC,
+			NUM_TYPE_OBJECTS = 0xE,
+		};
+
+		struct HksObject
+		{
+			HksObjectType t;
+			HksValue v;
+		};
+
+		const struct hksInstruction
+		{
+			unsigned int code;
+		};
+
+		struct ActivationRecord
+		{
+			HksObject* m_base;
+			const hksInstruction* m_returnAddress;
+			__int16 m_tailCallDepth;
+			__int16 m_numVarargs;
+			int m_numExpectedReturns;
+		};
+
+		struct CallStack
+		{
+			ActivationRecord* m_records;
+			ActivationRecord* m_lastrecord;
+			ActivationRecord* m_current;
+			const hksInstruction* m_current_lua_pc;
+			const hksInstruction* m_hook_return_addr;
+			int m_hook_level;
+		};
+
+		struct ApiStack
+		{
+			HksObject* top;
+			HksObject* base;
+			HksObject* alloc_top;
+			HksObject* bottom;
+		};
+
+		struct UpValue : ChunkHeader
+		{
+			HksObject m_storage;
+			HksObject* loc;
+			UpValue* m_next;
+		};
+
+		struct CallSite
+		{
+			_SETJMP_FLOAT128 m_jumpBuffer[16];
+			CallSite* m_prev;
+		};
+
+		enum Status
+		{
+			NEW = 0x1,
+			RUNNING = 0x2,
+			YIELDED = 0x3,
+			DEAD_ERROR = 0x4,
+		};
+
+		enum HksError
+		{
+			HKS_NO_ERROR = 0x0,
+			HKS_ERRSYNTAX = 0xFFFFFFFC,
+			HKS_ERRFILE = 0xFFFFFFFB,
+			HKS_ERRRUN = 0xFFFFFF9C,
+			HKS_ERRMEM = 0xFFFFFF38,
+			HKS_ERRERR = 0xFFFFFED4,
+			HKS_THROWING_ERROR = 0xFFFFFE0C,
+			HKS_GC_YIELD = 0x1,
+		};
+
+		struct lua_Debug
+		{
+			int event;
+			const char* name;
+			const char* namewhat;
+			const char* what;
+			const char* source;
+			int currentline;
+			int nups;
+			int nparams;
+			int ishksfunc;
+			int linedefined;
+			int lastlinedefined;
+			char short_src[512];
+			int callstack_level;
+			int is_tail_call;
+		};
+
+		using lua_function = int(__fastcall*)(lua_State*);
+
+		struct luaL_Reg
+		{
+			const char* name;
+			lua_function function;
+		};
+
+		struct Node
+		{
+			HksObject m_key;
+			HksObject m_value;
+		};
+
+		struct Metatable
+		{
+		};
+
+		struct HashTable : ChunkHeader
+		{
+			Metatable* m_meta;
+			unsigned int m_version;
+			unsigned int m_mask;
+			Node* m_hashPart;
+			HksObject* m_arrayPart;
+			unsigned int m_arraySize;
+			Node* m_freeNode;
+		};
+
+		struct cclosure : ChunkHeader
+		{
+			lua_function m_function;
+			HashTable* m_env;
+			__int16 m_numUpvalues;
+			__int16 m_flags;
+			InternString* m_name;
+			HksObject m_upvalues[1];
+		};
+
+		enum HksCompilerSettings_BytecodeSharingFormat
+		{
+			BYTECODE_DEFAULT = 0x0,
+			BYTECODE_INPLACE = 0x1,
+			BYTECODE_REFERENCED = 0x2,
+		};
+
+		enum HksCompilerSettings_IntLiteralOptions
+		{
+			INT_LITERALS_NONE = 0x0,
+			INT_LITERALS_LUD = 0x1,
+			INT_LITERALS_32BIT = 0x1,
+			INT_LITERALS_UI64 = 0x2,
+			INT_LITERALS_64BIT = 0x2,
+			INT_LITERALS_ALL = 0x3,
+		};
+
+		struct HksCompilerSettings
+		{
+			int m_emitStructCode;
+			const char** m_stripNames;
+			int m_emitGlobalMemoization;
+			int _m_isHksGlobalMemoTestingMode;
+			HksCompilerSettings_BytecodeSharingFormat m_bytecodeSharingFormat;
+			HksCompilerSettings_IntLiteralOptions m_enableIntLiterals;
+			int(__fastcall* m_debugMap)(const char*, int);
+		};
+
+		enum HksBytecodeSharingMode
+		{
+			HKS_BYTECODE_SHARING_OFF = 0x0,
+			HKS_BYTECODE_SHARING_ON = 0x1,
+			HKS_BYTECODE_SHARING_SECURE = 0x2,
+		};
+
+		struct HksGcWeights
+		{
+			int m_removeString;
+			int m_finalizeUserdataNoMM;
+			int m_finalizeUserdataGcMM;
+			int m_cleanCoroutine;
+			int m_removeWeak;
+			int m_markObject;
+			int m_traverseString;
+			int m_traverseUserdata;
+			int m_traverseCoroutine;
+			int m_traverseWeakTable;
+			int m_freeChunk;
+			int m_sweepTraverse;
+		};
+
+		struct GarbageCollector_Stack
+		{
+			void* m_storage;
+			unsigned int m_numEntries;
+			unsigned int m_numAllocated;
+		};
+
+		struct ProtoList
+		{
+			void** m_protoList;
+			unsigned __int16 m_protoSize;
+			unsigned __int16 m_protoAllocSize;
+		};
+
+		struct GarbageCollector
+		{
+			int m_target;
+			int m_stepsLeft;
+			int m_stepLimit;
+			HksGcWeights m_costs;
+			int m_unit;
+			_SETJMP_FLOAT128(*m_jumpPoint)[16];
+			lua_State* m_mainState;
+			lua_State* m_finalizerState;
+			void* m_memory;
+			int m_phase;
+			GarbageCollector_Stack m_resumeStack;
+			GarbageCollector_Stack m_greyStack;
+			GarbageCollector_Stack m_remarkStack;
+			GarbageCollector_Stack m_weakStack;
+			int m_finalizing;
+			HksObject m_safeTableValue;
+			lua_State* m_startOfStateStackList;
+			lua_State* m_endOfStateStackList;
+			lua_State* m_currentState;
+			HksObject m_safeValue;
+			void* m_compiler;
+			void* m_bytecodeReader;
+			void* m_bytecodeWriter;
+			int m_pauseMultiplier;
+			int m_stepMultiplier;
+			bool m_stopped;
+			int(__fastcall* m_gcPolicy)(lua_State*);
+			unsigned __int64 m_pauseTriggerMemoryUsage;
+			int m_stepTriggerCountdown;
+			unsigned int m_stringTableIndex;
+			unsigned int m_stringTableSize;
+			UserData* m_lastBlackUD;
+			UserData* m_activeUD;
+		};
+
+		enum MemoryManager_ChunkColor
+		{
+			RED = 0x0,
+			BLACK = 0x1,
+		};
+
+		struct ChunkList
+		{
+			ChunkHeader m_prevToStart;
+		};
+
+		enum Hks_DeleteCheckingMode
+		{
+			HKS_DELETE_CHECKING_OFF = 0x0,
+			HKS_DELETE_CHECKING_ACCURATE = 0x1,
+			HKS_DELETE_CHECKING_SAFE = 0x2,
+		};
+
+		struct MemoryManager
+		{
+			void* (__fastcall* m_allocator)(void*, void*, unsigned __int64, unsigned __int64);
+			void* m_allocatorUd;
+			MemoryManager_ChunkColor m_chunkColor;
+			unsigned __int64 m_used;
+			unsigned __int64 m_highwatermark;
+			ChunkList m_allocationList;
+			ChunkList m_sweepList;
+			ChunkHeader* m_lastKeptChunk;
+			lua_State* m_state;
+			ChunkList m_deletedList;
+			int m_deleteMode;
+			Hks_DeleteCheckingMode m_deleteCheckingMode;
+		};
+
+		struct StaticStringCache
+		{
+			HksObject m_objects[41];
+		};
+
+		enum HksBytecodeEndianness
+		{
+			HKS_BYTECODE_DEFAULT_ENDIAN = 0x0,
+			HKS_BYTECODE_BIG_ENDIAN = 0x1,
+			HKS_BYTECODE_LITTLE_ENDIAN = 0x2,
+		};
+
+		struct RuntimeProfileData_Stats
+		{
+			unsigned __int64 hksTime;
+			unsigned __int64 callbackTime;
+			unsigned __int64 gcTime;
+			unsigned __int64 cFinalizerTime;
+			unsigned __int64 compilerTime;
+			unsigned int hkssTimeSamples;
+			unsigned int callbackTimeSamples;
+			unsigned int gcTimeSamples;
+			unsigned int compilerTimeSamples;
+			unsigned int num_newuserdata;
+			unsigned int num_tablerehash;
+			unsigned int num_pushstring;
+			unsigned int num_pushcfunction;
+			unsigned int num_newtables;
+		};
+
+		struct RuntimeProfileData
+		{
+			__int64 stackDepth;
+			__int64 callbackDepth;
+			unsigned __int64 lastTimer;
+			RuntimeProfileData_Stats frameStats;
+			unsigned __int64 gcStartTime;
+			unsigned __int64 finalizerStartTime;
+			unsigned __int64 compilerStartTime;
+			unsigned __int64 compilerStartGCTime;
+			unsigned __int64 compilerStartGCFinalizerTime;
+			unsigned __int64 compilerCallbackStartTime;
+			__int64 compilerDepth;
+			void* outFile;
+			lua_State* rootState;
+		};
+
+		struct HksGlobal
+		{
+			MemoryManager m_memory;
+			GarbageCollector m_collector;
+			StringTable m_stringTable;
+			HksBytecodeSharingMode m_bytecodeSharingMode;
+			unsigned int m_tableVersionInitializer;
+			HksObject m_registry;
+			ProtoList m_protoList;
+			HashTable* m_structProtoByName;
+			ChunkList m_userDataList;
+			lua_State* m_root;
+			StaticStringCache m_staticStringCache;
+			void* m_debugger;
+			void* m_profiler;
+			RuntimeProfileData m_runProfilerData;
+			HksCompilerSettings m_compilerSettings;
+			int(__fastcall* m_panicFunction)(lua_State*);
+			void* m_luaplusObjectList;
+			int m_heapAssertionFrequency;
+			int m_heapAssertionCount;
+			void (*m_logFunction)(lua_State*, const char*, ...);
+			HksBytecodeEndianness m_bytecodeDumpEndianness;
+		};
+
+		struct lua_State : ChunkHeader
+		{
+			HksGlobal* m_global;
+			CallStack m_callStack;
+			ApiStack m_apistack;
+			UpValue* pending;
+			HksObject globals;
+			HksObject m_cEnv;
+			CallSite* m_callsites;
+			int m_numberOfCCalls;
+			void* m_context;
+			InternString* m_name;
+			lua_State* m_nextState;
+			lua_State* m_nextStateStack;
+			Status m_status;
+			HksError m_error;
+		};
+	}
 }
