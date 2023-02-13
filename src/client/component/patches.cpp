@@ -1,6 +1,6 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
-
+#include "version.h"
 #include "game/game.hpp"
 #include "game/dvars.hpp"
 
@@ -250,6 +250,24 @@ namespace patches
 
 			// some [data validation] anti tamper thing that kills performance
 			dvars::override::register_int("dvl", 0, 0, 0, game::DVAR_FLAG_READ);
+
+			// block changing name in-game
+			utils::hook::set<uint8_t>(0xC4DF90_b, 0xC3);
+
+			// disable using codpoints in store
+			dvars::override::register_bool("killswitch_cod_points", true, game::DVAR_FLAG_READ);
+
+			// patch "Server is different version" to show the server client version
+			utils::hook::inject(0xC4FA5D_b, VERSION);
+
+			// allow servers to check for new packages more often
+			dvars::override::register_int("sv_network_fps", 1000, 20, 1000, game::DVAR_FLAG_SAVED);
+
+			// Massively increate timeouts
+			dvars::override::register_int("cl_timeout", 90, 90, 1800, game::DVAR_FLAG_NONE); // Seems unused
+			dvars::override::register_int("sv_timeout", 90, 90, 1800, game::DVAR_FLAG_NONE); // 30 - 0 - 1800
+			dvars::override::register_int("cl_connectTimeout", 120, 120, 1800, game::DVAR_FLAG_NONE); // Seems unused
+			dvars::override::register_int("sv_connectTimeout", 120, 120, 1800, game::DVAR_FLAG_NONE); // 60 - 0 - 1800
 		}
 	};
 }

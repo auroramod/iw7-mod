@@ -160,6 +160,7 @@ namespace game
 
 	WEAK symbol<void(int)> SND_StopSounds{ 0xCA06E0 };
 	WEAK symbol<void(const char*)> SND_SetMusicState{ 0xC9E110 };
+	WEAK symbol<void(unsigned int localClientNum, const char** args)> UI_RunMenuScript{ 0xCC9710 };
 
 	/***************************************************************
 	 * Variables

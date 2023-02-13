@@ -1,13 +1,14 @@
 #include <std_include.hpp>
 #include "../steam.hpp"
-
+#include "component/steam_proxy.hpp"
 //#include <game/game.hpp>
 
 namespace steam
 {
 	const char* friends::GetPersonaName()
 	{
-		return "1337";
+		//return "1337";
+		return steam_proxy::get_player_name();
 	}
 
 	unsigned long long friends::SetPersonaName(const char* pchPersonaName)
@@ -72,7 +73,7 @@ namespace steam
 
 	const char* friends::GetClanName(steam_id steamIDClan)
 	{
-		return "3arc";
+		return "IW";
 	}
 
 	const char* friends::GetClanTag(steam_id steamIDClan)

@@ -82,6 +82,25 @@ namespace dedicated
 			// R_LoadGraphicsAssets
 			utils::hook::invoke<void>(0xE06220_b);
 		}
+
+		void sys_error_stub(const char* msg, ...)
+		{
+			char buffer[2048]{};
+
+			va_list ap;
+			va_start(ap, msg);
+
+			vsnprintf_s(buffer, _TRUNCATE, msg, ap);
+
+			va_end(ap);
+
+			scheduler::once([]
+			{
+				command::execute("map_rotate");
+			}, scheduler::main, 3s);
+
+			game::Com_Error(game::ERR_DROP, "%s", buffer);
+		}
 	}
 
 	void initialize()
@@ -121,6 +140,9 @@ namespace dedicated
 			dvars::override::register_bool("r_loadForRenderer", false, game::DVAR_FLAG_READ);
 
 			dvars::override::register_bool("intro", false, game::DVAR_FLAG_READ);
+
+			// Stop crashing from sys_errors
+			utils::hook::jump(0xD34180_b, sys_error_stub, true);
 
 			// Is party dedicated
 			utils::hook::jump(0x5DFC10_b, party_is_server_dedicated_stub);
