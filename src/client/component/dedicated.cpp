@@ -104,7 +104,6 @@ namespace dedicated
 
 			game::Com_Error(game::ERR_DROP, "%s", buffer);
 		}
-	}
 
 		void initialize()
 		{
