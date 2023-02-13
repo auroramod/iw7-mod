@@ -136,25 +136,27 @@ namespace exception
 			return EXCEPTION_CONTINUE_EXECUTION;
 		}
 
-		LPTOP_LEVEL_EXCEPTION_FILTER WINAPI set_unhandled_exception_filter_stub(LPTOP_LEVEL_EXCEPTION_FILTER)
+		void WINAPI set_unhandled_exception_filter_stub(LPTOP_LEVEL_EXCEPTION_FILTER)
 		{
 			// Don't register anything here...
-			return &exception_filter;
 		}
 	}
 
 	class component final : public component_interface
 	{
 	public:
-		void post_load() override
+		component()
 		{
 			SetUnhandledExceptionFilter(exception_filter);
-			utils::hook::jump(SetUnhandledExceptionFilter, set_unhandled_exception_filter_stub, true);
 		}
 
-		void post_unpack() override
+		void post_load() override
 		{
+			const utils::nt::library ntdll("ntdll.dll");
+			auto* set_filter = ntdll.get_proc<void(*)(LPTOP_LEVEL_EXCEPTION_FILTER)>("RtlSetUnhandledExceptionFilter");
 
+			set_filter(exception_filter);
+			utils::hook::jump(set_filter, set_unhandled_exception_filter_stub);
 		}
 	};
 }
