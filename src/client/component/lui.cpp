@@ -13,26 +13,6 @@
 
 namespace lui
 {
-	namespace
-	{
-		uint64_t event_count{};
-		uint64_t obituary_count{};
-
-		bool begin_game_message_event_stub(int a1, const char* name, void* a3)
-		{
-			if (event_count > 30)
-			{
-				return false;
-			}
-			else
-			{
-				event_count++;
-			}
-
-			return utils::hook::invoke<bool>(0x5FEFD0_b, a1, name, a3);
-		}
-	}
-
 	void print_debug_lui(const char* msg, ...)
 	{
 		if (!dvars::lui_debug || !dvars::lui_debug->current.enabled)
@@ -61,16 +41,6 @@ namespace lui
 			{
 				return;
 			}
-
-			utils::hook::call(0x60031B_b, begin_game_message_event_stub);
-
-			scheduler::loop([]()
-				{
-				if (event_count > 0)
-				{
-					event_count--;
-				}
-			}, scheduler::pipeline::lui, 50ms);
 
 			dvars::lui_debug = game::Dvar_RegisterBool("lui_debug", false, game::DvarFlags::DVAR_FLAG_SAVED,
 				"Print LUI DebugPrint to console. (DEV)");

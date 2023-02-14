@@ -162,6 +162,65 @@ namespace game
 	WEAK symbol<void(const char*)> SND_SetMusicState{ 0xC9E110 };
 	WEAK symbol<void(unsigned int localClientNum, const char** args)> UI_RunMenuScript{ 0xCC9710 };
 
+	WEAK symbol<void()> LUI_EnterCriticalSection{ 0x600080 };
+	WEAK symbol<void()> LUI_LeaveCriticalSection{ 0x602280 };
+
+
+	//WEAK symbol<const char* ()> SEH_GetCurrentLanguageCode{ 0x585090 };
+	WEAK symbol<const char* ()> SEH_GetCurrentLanguageName{ 0xCBB140 };
+
+
+	WEAK symbol<unsigned int(unsigned int id)> AllocThread{ 0xC04580 };
+	WEAK symbol<ObjectVariableValue* (unsigned int* id)> AllocVariable{ 0xC04650 };
+	WEAK symbol<void(unsigned int id, scr_string_t stringValue,
+		unsigned int paramcount)> Scr_NotifyId{ 0xC0C2B0 };
+	WEAK symbol<const float* (const float* v)> Scr_AllocVector{ 0xC06960 };
+	WEAK symbol<void()> Scr_ClearOutParams{ 0xC0ABC0 };
+	WEAK symbol<int(unsigned int classnum, int entnum, int offset)> Scr_SetObjectField{ 0x40B6E0 };
+	WEAK symbol<unsigned int(const char* filename)> Scr_LoadScript{ 0xBFD900 };
+	WEAK symbol<unsigned int(const char* filename, unsigned int handle)> Scr_GetFunctionHandle{ 0xBFD780 };
+	WEAK symbol<unsigned int(int handle, int num_param)> Scr_ExecThread{ 0xC0ACD0 };
+	WEAK symbol<void(VariableValue* result, unsigned int classnum,
+		int entnum, int offset)> GetEntityFieldValue{ 0xC09CC0 };
+	WEAK symbol<unsigned int(unsigned int, unsigned int)> GetVariable{ 0xC05A90 };
+	WEAK symbol<void(unsigned int parentId, unsigned int index)> RemoveVariableValue{ 0xC05E90 };
+	WEAK symbol<unsigned int(unsigned int parentId, unsigned int unsignedValue)> GetNewArrayVariable{ 0xC054E0 };
+	WEAK symbol<unsigned int(unsigned int parentId, unsigned int unsignedValue)> GetNewVariable{ 0xC05660 };
+	WEAK symbol<int(XAssetType type, const char* name)> DB_XAssetExists{ 0xA7C3A0 };
+	WEAK symbol<int(const RawFile* rawfile, char* buf, int size)> DB_GetRawBuffer{ 0xA77AB0 };
+	WEAK symbol<char* (const size_t size)> Hunk_AllocateTempMemoryHigh{ 0xBFDC30 };
+	WEAK symbol<void(int index, const char* string)> SV_SetConfigstring{ 0xC11CD0 };
+	WEAK symbol<unsigned int(const char* str)> SL_GetCanonicalString{ 0xBFD340 };
+	WEAK symbol<const char* (scr_string_t stringValue)> SL_ConvertToString{ 0xC03300 };
+	WEAK symbol<const char* (const char*)> UI_GetMapDisplayName{ 0xCC6270 };
+	WEAK symbol<const char* (const char*)> UI_GetGameTypeDisplayName{ 0xCC61C0 };
+	WEAK symbol<void(unsigned int id)> AddRefToObject{ 0xC04350 };
+	WEAK symbol<void(unsigned int id)> RemoveRefToObject{ 0xC05CA0 };
+	WEAK symbol<void(int type, VariableUnion u)> AddRefToValue{ 0xC04360 };
+	WEAK symbol<void(int type, VariableUnion u)> RemoveRefToValue{ 0xC05DB0 };
+	WEAK symbol<unsigned int(unsigned int parentId, unsigned int name)> FindVariable{ 0xC05100 };
+	WEAK symbol<scr_string_t(const char* str, unsigned int user)> SL_GetString{ 0xC037E0 };
+	WEAK symbol<int(jmp_buf* Buf)> _setjmp{ 0x14231B0 };
+	WEAK symbol<unsigned int(unsigned int localId, const char* pos,
+		unsigned int paramcount)> VM_Execute{ 0xC0CDB0 };
+	WEAK symbol<scr_entref_t(unsigned int entId)> Scr_GetEntityIdRef{ 0xC09050 };
+	WEAK symbol<unsigned int(int classnum, unsigned int entnum)> Scr_GetEntityId{ 0xC08FA0 };
+	WEAK symbol<void()> Scr_ErrorInternal{ 0xC0AC30 };
+	WEAK symbol<unsigned int(int entnum, unsigned int classnum)> FindEntityId{ 0xC05000 };
+	WEAK symbol<int(const RawFile* rawfile)> DB_GetRawFileLen{ 0xF20AF0 };
+	WEAK symbol<char* (const size_t size, unsigned int alignment, PMem_Source source)> PMem_AllocFromSource_NoDebug{ 0xCF0BB0 };
+	WEAK symbol<void(const char* fmt, ...)> G_LogPrintf{ 0x61C430 };
+	WEAK symbol<void(unsigned int weapon, bool isAlternate,
+		char* output, unsigned int maxStringLen)> BG_GetWeaponNameComplete{ 0x733D50 };
+
+	WEAK symbol<void(int arg, char* buffer, int bufferLength)> SV_Cmd_ArgvBuffer{ 0xB7DC60 };
+	WEAK symbol<char* (int start)> ConcatArgs{ 0xB101F0 };
+
+
+	//todo
+	/*WEAK symbol<void(char* buf, const size_t size, unsigned int alignment,
+		unsigned int type, PMem_Source source)> PMem_PopFromSource_NoDebug{ 0x5A5700 };*/
+
 	/***************************************************************
 	 * Variables
 	 **************************************************************/
@@ -193,4 +252,36 @@ namespace game
 	WEAK symbol<SOCKET> query_socket{ 0x779FDC8 };
 
 	WEAK symbol<DWORD> threadIds{ 0x602BAB0 };
+
+	WEAK symbol<scrVarGlob_t> scr_VarGlob{ 0x6691180 };
+	WEAK symbol<scrVmPub_t> scr_VmPub{ 0x6B183B0 };
+	WEAK symbol<unsigned int> levelEntityId{ 0x665A120 };
+	WEAK symbol<int> g_script_error_level{ 0x6B16298 };
+	WEAK symbol<jmp_buf> g_script_error{ 0x6B162A0 };
+	WEAK symbol<physical_memory> g_scriptmem{ 0x7685FC0 };
+	WEAK symbol<function_stack_t> scr_function_stack{ 0x6B22908 };
+	WEAK symbol<unsigned int> gameEntityId{ 0x665A124 };
+	WEAK symbol<int> level_time{ 0x3C986D8 };
+
+	namespace hks
+	{
+		WEAK symbol<lua_State*> lua_state{ 0x4FC35F0 };
+		WEAK symbol<void(lua_State* s, const char* str, unsigned int l)> hksi_lua_pushlstring{ 0x309E0 };
+		WEAK symbol<HksObject* (HksObject* result, lua_State* s, const HksObject* table, const HksObject* key)> hks_obj_getfield{ 0x11E14D0 };
+		WEAK symbol<HksObject* (HksObject* result, lua_State* s, const HksObject* table, const HksObject* key)> hks_obj_gettable{ 0x11E19B0 };
+		WEAK symbol<void(lua_State* s, const HksObject* tbl, const HksObject* key, const HksObject* val)> hks_obj_settable{ 0x11E26F0 };
+		WEAK symbol<void(lua_State* s, int nargs, int nresults, const unsigned int* pc)> vm_call_internal{ 0x120CCE0 };
+		WEAK symbol<HashTable* (lua_State* s, unsigned int arraySize, unsigned int hashSize)> Hashtable_Create{ 0x11D0590 };
+		WEAK symbol<cclosure* (lua_State* s, lua_function function, int num_upvalues,
+			int internal_, int profilerTreatClosureAsFunc)> cclosure_Create{ 0x11D07B0 };
+		WEAK symbol<int(lua_State* s, int t)> hksi_luaL_ref{ 0x11EAE10 };
+		WEAK symbol<int(lua_State* s, const HksCompilerSettings* options, const char* buff,
+			unsigned __int64 sz, const char* name)> hksi_hksL_loadbuffer{ 0x11E2F50 };
+		WEAK symbol<int(lua_State* s, const char* what, lua_Debug* ar)> hksi_lua_getinfo{ 0x11E48C0 };
+		WEAK symbol<int(lua_State* s, int level, lua_Debug* ar)> hksi_lua_getstack{ 0x11E4AA0 };
+		WEAK symbol<void(lua_State* s, const char* fmt, ...)> hksi_luaL_error{ 0x11EA860 };
+		WEAK symbol<void(lua_State* s, int what, int data)> hksi_lua_gc{ 0x11EAF00 };
+		WEAK symbol<void(lua_State* s, int t, int ref)> hksi_luaL_unref{ 0x11E4460 };
+		WEAK symbol<const char*> s_compilerTypeName{ 0x1BDEEF0 };
+	}
 }
