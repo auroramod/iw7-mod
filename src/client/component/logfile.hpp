@@ -20,6 +20,4 @@ namespace logfile
 
 	void enable_vm_execute_hook();
 	void disable_vm_execute_hook();
-
-	bool client_command_stub(const int client_num);
 }
