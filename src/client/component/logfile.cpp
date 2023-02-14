@@ -28,14 +28,8 @@ namespace logfile
 		utils::hook::detour scr_player_killed_hook;
 		utils::hook::detour scr_player_damage_hook;
 
-		utils::hook::detour client_command_hook;
-
-		utils::hook::detour g_log_printf_hook;
-
 		std::vector<sol::protected_function> player_killed_callbacks;
 		std::vector<sol::protected_function> player_damage_callbacks;
-
-		std::vector<scripting::function> say_callbacks;
 
 		game::dvar_t* logfile;
 		game::dvar_t* g_log;
@@ -220,7 +214,7 @@ namespace logfile
 
 			a.pushad64();
 
-			a.mov(rcx, r14);
+			a.mov(rcx, rsi);
 			a.call_aligned(execute_vm_hook);
 
 			a.cmp(al, 0);
@@ -231,9 +225,9 @@ namespace logfile
 
 			a.bind(end);
 
-			a.movzx(r15d, byte_ptr(r14));
-			a.inc(r14);
-			a.mov(dword_ptr(rbp, 0xA4), r15d);
+			a.movzx(r15d, byte_ptr(rsi));
+			a.inc(rsi);
+			a.mov(dword_ptr(rbp, 0x94), r15d);
 
 			a.jmp(0xC0D0B2_b);
 
@@ -241,33 +235,8 @@ namespace logfile
 
 			a.popad64();
 			a.mov(rax, qword_ptr(reinterpret_cast<int64_t>(&target_function)));
-			a.mov(r14, rax);
+			a.mov(rsi, rax);
 			a.jmp(end);
-		}
-
-		void g_log_printf_stub(const char* fmt, ...)
-		{
-			if (!logfile->current.enabled)
-			{
-				return;
-			}
-
-			char va_buffer[0x400] = {0};
-
-			va_list ap;
-			va_start(ap, fmt);
-			vsprintf_s(va_buffer, fmt, ap);
-			va_end(ap);
-
-			const auto file = g_log->current.string;
-			const auto time = *game::level_time / 1000;
-
-			utils::io::write_file(file, utils::string::va("%3i:%i%i %s",
-				time / 60,
-				time % 60 / 10,
-				time % 60 % 10,
-				va_buffer
-			), true);
 		}
 	}
 
@@ -297,56 +266,6 @@ namespace logfile
 	{
 		hook_enabled = false;
 	}
-
-	bool client_command_stub(const int client_num)
-	{
-		auto self = &game::g_entities[client_num];
-		char cmd[1024] = {0};
-
-		game::SV_Cmd_ArgvBuffer(0, cmd, 1024);
-
-		auto hidden = false;
-		if (cmd == "say"s || cmd == "say_team"s)
-		{
-			std::string message(game::ConcatArgs(1));
-			message.erase(0, 1);
-
-			for (const auto& callback : say_callbacks)
-			{
-				const auto entity_id = game::Scr_GetEntityId(client_num, 0);
-				const auto result = callback(entity_id, {message, cmd == "say_team"s});
-
-				if (result.is<int>() && !hidden)
-				{
-					hidden = result.as<int>() == 0;
-				}
-			}
-
-			scheduler::once([cmd, message, self, hidden]()
-			{
-				const scripting::entity level{*game::levelEntityId};
-				const scripting::entity player{game::Scr_GetEntityId(self->s.number, 0)};
-
-				notify(level, cmd, {player, message, hidden});
-				notify(player, cmd, {message, hidden});
-
-				game::G_LogPrintf("%s;%s;%i;%s;%s\n",
-					cmd,
-					player.call("getguid").as<const char*>(),
-					player.call("getentitynumber").as<int>(),
-					player.get("name").as<const char*>(),
-					message.data());
-			}, scheduler::pipeline::server);
-
-			if (hidden)
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
-
 	void set_lua_hook(const char* pos, const sol::protected_function& callback)
 	{
 		gsc_hook_t hook;
@@ -382,30 +301,6 @@ namespace logfile
 
 			scr_player_damage_hook.create(0xB5E9E0_b, scr_player_damage_stub);
 			scr_player_killed_hook.create(0xB5EB40_b, scr_player_killed_stub);
-
-			// Reimplement game log
-			scheduler::once([]()
-			{
-				logfile = game::Dvar_RegisterBool("logfile", true, game::DVAR_FLAG_NONE, "Enable game logging");
-				g_log = game::Dvar_RegisterString("g_log", "h1-mod\\logs\\games_mp.log", game::DVAR_FLAG_NONE, "Log file path");
-			}, scheduler::pipeline::main);
-
-			g_log_printf_hook.create(game::G_LogPrintf, g_log_printf_stub);
-
-			gsc::function::add("onplayersay", [](const gsc::function_args& args)
-			{
-				const auto function = args[0].as<scripting::function>();
-				say_callbacks.push_back(function);
-				return scripting::script_value{};
-			});
-
-			scripting::on_shutdown([](bool, bool post_shutdown)
-			{
-				if (!post_shutdown)
-				{
-					say_callbacks.clear();
-				}
-			});
 		}
 	};
 }

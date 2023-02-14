@@ -16,6 +16,7 @@
 #include "game/scripting/lua/engine.hpp"
 
 #include <utils/hook.hpp>
+#include "gsc/script_loading.hpp"
 
 namespace scripting
 {
@@ -146,7 +147,7 @@ namespace scripting
 			process_script_hook.invoke<void>(filename);
 		}
 
-		/*void add_function_sort(unsigned int id, const char* pos)
+		void add_function_sort(unsigned int id, const char* pos)
 		{
 			std::string filename = current_file;
 			if (current_file_id)
@@ -167,7 +168,7 @@ namespace scripting
 			const auto name = scripting::get_token(id);
 			auto& itr = script_function_table_sort[filename];
 			itr.insert(itr.end() - 1, {name, pos});
-		}*/
+		}
 
 		void add_function(const std::string& file, unsigned int id, const char* pos)
 		{

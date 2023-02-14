@@ -248,15 +248,15 @@ namespace ui_scripting
 
 		void start()
 		{
-			console::info("[LUA] Starting LUI\n");
-
 			globals = {};
-			console::info("[LUA] Getting Globals\n");
 			const auto lua = get_globals();
+
+			//todo - FIX
+
 			lua["EnableGlobals"]();
-			console::info("[LUA] Setting up Functions\n");
+
 			setup_functions();
-			console::info("[LUA] Finished Functions\n");
+
 			lua["print"] = [](const variadic_args& va)
 			{
 				std::string buffer{};
@@ -286,7 +286,6 @@ namespace ui_scripting
 
 			for (const auto& path : filesystem::get_search_paths_rev())
 			{
-				console::info("[LUA] Looking for path: %s\n", path.data());
 				load_scripts(path + "/ui_scripts/");
 				load_scripts(path + "/ui_scripts/mp/");				
 			}
@@ -455,7 +454,7 @@ namespace ui_scripting
 
 			command::add("lui_restart", []
 			{
-				utils::hook::invoke<void>(0x613DD0_b); //unsure
+				utils::hook::invoke<void>(0x613DD0_b);
 			});
 		}
 	};
