@@ -246,14 +246,26 @@ namespace ui_scripting
 			server_list_table["getservercount"] = server_list::get_server_count;*/
 		}
 
+		void enable_globals()
+		{
+			const auto lua = get_globals();
+			const std::string code =
+				"local g = getmetatable(_G)\n"
+				"if not g then\n"
+				"g = {}\n"
+				"setmetatable(_G, g)\n"
+				"end\n"
+				"g.__newindex = nil\n";
+
+			lua["loadstring"](code)[0]();
+		}
+
 		void start()
 		{
 			globals = {};
 			const auto lua = get_globals();
 
-			//todo - FIX
-
-			lua["EnableGlobals"]();
+			enable_globals();
 
 			setup_functions();
 

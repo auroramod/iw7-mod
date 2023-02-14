@@ -1,8 +1,8 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
 
-//#include "component/gsc/script_extension.hpp"
-//#include "component/gsc/script_loading.hpp"
+#include "component/gsc/script_extension.hpp"
+#include "component/gsc/script_loading.hpp"
 #include "component/scheduler.hpp"
 #include "component/scripting.hpp"
 
@@ -177,7 +177,7 @@ namespace scripting
 			script_function_table_rev[pos] = {file, name};
 		}
 
-		/*void scr_set_thread_position_stub(unsigned int thread_name, const char* code_pos)
+		void scr_set_thread_position_stub(unsigned int thread_name, const char* code_pos)
 		{
 			add_function_sort(thread_name, code_pos);
 
@@ -192,7 +192,7 @@ namespace scripting
 			}
 
 			scr_set_thread_position_hook.invoke<void>(thread_name, code_pos);
-		}*/
+		}
 
 		unsigned int sl_get_canonical_string_stub(const char* str)
 		{
@@ -236,7 +236,7 @@ namespace scripting
 
 			scr_add_class_field_hook.create(0xC061F0_b, scr_add_class_field_stub);
 
-			//scr_set_thread_position_hook.create(0xBFD190_b, scr_set_thread_position_stub);
+			scr_set_thread_position_hook.create(0xBFD190_b, scr_set_thread_position_stub);
 			process_script_hook.create(0xC09D20_b, process_script_stub);
 			sl_get_canonical_string_hook.create(game::SL_GetCanonicalString, sl_get_canonical_string_stub);
 
