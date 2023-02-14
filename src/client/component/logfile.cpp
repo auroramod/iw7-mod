@@ -299,8 +299,8 @@ namespace logfile
 		{
 			utils::hook::jump(0xC0D0A4_b, utils::hook::assemble(vm_execute_stub), true);
 
-			scr_player_damage_hook.create(0xB5E9E0_b, scr_player_damage_stub);
-			scr_player_killed_hook.create(0xB5EB40_b, scr_player_killed_stub);
+			/*scr_player_damage_hook.create(0xB5E9E0_b, scr_player_damage_stub);
+			scr_player_killed_hook.create(0xB5EB40_b, scr_player_killed_stub);*/
 		}
 	};
 }
