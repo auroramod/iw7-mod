@@ -119,7 +119,6 @@ int main()
 
 	{
 		component_loader::sort();
-		component_loader::clean();
 
 		auto premature_shutdown = true;
 		const auto _ = gsl::finally([&premature_shutdown]()

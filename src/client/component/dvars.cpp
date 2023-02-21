@@ -390,9 +390,9 @@ namespace dvars
 			dvar_register_variant_hook.create(0xCEBDD0_b, dvar_register_variant);
 		}
 
-		int priority() override
+		component_priority priority() override
 		{
-			return COMPONENT_MAX_PRIORITY - 1;
+			return component_priority::dvars;
 		}
 	};
 }

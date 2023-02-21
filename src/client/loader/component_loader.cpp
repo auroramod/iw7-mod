@@ -92,23 +92,6 @@ void component_loader::pre_destroy()
 	}
 }
 
-void component_loader::clean()
-{
-	auto& components = get_components();
-	for (auto i = components.begin(); i != components.end();)
-	{
-		if (!(*i)->is_supported())
-		{
-			(*i)->pre_destroy();
-			i = components.erase(i);
-		}
-		else
-		{
-			++i;
-		}
-	}
-}
-
 void component_loader::sort()
 {
 	auto& components = get_components();

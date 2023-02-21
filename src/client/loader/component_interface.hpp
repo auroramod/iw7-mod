@@ -1,11 +1,17 @@
 #pragma once
 
+enum class component_priority
+{
+	min = 0,
+	dvars,
+	steam_proxy,
+	arxan,
+};
+
 class component_interface
 {
 public:
-	virtual ~component_interface()
-	{
-	}
+	virtual ~component_interface() = default;
 
 	virtual void post_start()
 	{
@@ -28,13 +34,8 @@ public:
 		return nullptr;
 	}
 
-	virtual bool is_supported()
+	virtual component_priority priority()
 	{
-		return true;
-	}
-
-	virtual int priority()
-	{
-		return 0;
+		return component_priority::min;
 	}
 };

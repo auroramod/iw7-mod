@@ -1,8 +1,6 @@
 #pragma once
 #include "component_interface.hpp"
 
-#define COMPONENT_MAX_PRIORITY 999
-
 class component_loader final
 {
 public:
@@ -57,7 +55,6 @@ public:
 	static bool post_load();
 	static void post_unpack();
 	static void pre_destroy();
-	static void clean();
 	static void sort();
 
 	static void* load_import(const std::string& library, const std::string& function);

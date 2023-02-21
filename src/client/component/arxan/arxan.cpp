@@ -361,9 +361,9 @@ namespace arxan
 			search_and_patch_integrity_checks();
 		}
 
-		int priority() override
+		component_priority priority() override
 		{
-			return COMPONENT_MAX_PRIORITY;
+			return component_priority::arxan;
 		}
 	};
 }
