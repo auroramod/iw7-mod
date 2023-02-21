@@ -3,11 +3,19 @@
 
 #include "game/game.hpp"
 
-#include "game_module.hpp"
-#include "scheduler.hpp"
+#include "component/game_module.hpp"
+#include "component/scheduler.hpp"
 
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
+
+#include "integrity.hpp"
+
+#define PRECOMPUTED_INTEGRITY_CHECKS
+
+#define ProcessDebugPort 7
+#define ProcessDebugObjectHandle 30
+#define ProcessDebugFlags 31
 
 namespace arxan
 {
@@ -15,10 +23,6 @@ namespace arxan
 	{
 		utils::hook::detour nt_close_hook;
 		utils::hook::detour nt_query_information_process_hook;
-
-#define ProcessDebugPort 7
-#define ProcessDebugObjectHandle 30 // WinXP source says 31?
-#define ProcessDebugFlags 31 // WinXP source says 32?
 
 		HANDLE process_id_to_handle(const DWORD pid)
 		{
@@ -29,8 +33,7 @@ namespace arxan
 			const PVOID info,
 			const ULONG info_length, const PULONG ret_length)
 		{
-			auto* orig = static_cast<decltype(NtQueryInformationProcess)*>(nt_query_information_process_hook.
-				get_original());
+			auto* orig = static_cast<decltype(NtQueryInformationProcess)*>(nt_query_information_process_hook.get_original());
 			const auto status = orig(handle, info_class, info, info_length, ret_length);
 
 			if (NT_SUCCESS(status))
@@ -176,6 +179,7 @@ namespace arxan
 		uint32_t adjust_integrity_checksum(const uint64_t return_address, uint8_t* stack_frame,
 			const uint32_t current_checksum)
 		{
+			[[maybe_unused]]const auto handler_address = return_address - 5;
 			const auto* context = search_handler_context(stack_frame, current_checksum);
 
 			if (!context)
@@ -189,8 +193,7 @@ namespace arxan
 
 			if (current_checksum != correct_checksum)
 			{
-#ifdef _DEBUG
-				const auto handler_address = return_address - 5;
+#ifdef DEV_BUILD
 				OutputDebugStringA(utils::string::va("Adjusting checksum (%llX): %X -> %X", handler_address,
 					current_checksum, correct_checksum));
 #endif
@@ -296,29 +299,42 @@ namespace arxan
 			utils::hook::call(game_address, stub);
 		}
 
+#ifdef PRECOMPUTED_INTEGRITY_CHECKS
+		void search_and_patch_integrity_checks_precomputed()
+		{
+			for (const auto i : intact_integrity_check_blocks)
+			{
+				patch_intact_basic_block_integrity_check(reinterpret_cast<void*>(i));
+			}
+
+			for (const auto i : split_integrity_check_blocks)
+			{
+				patch_split_basic_block_integrity_check(reinterpret_cast<void*>(i));
+			}
+		}
+#endif
+
 		void search_and_patch_integrity_checks()
 		{
+#ifdef PRECOMPUTED_INTEGRITY_CHECKS
+			search_and_patch_integrity_checks_precomputed();
+#else
 			// There seem to be 670 results.
 			// Searching them is quite slow.
 			// Maybe precomputing that might be better?
 			const auto intact_results = "89 04 8A 83 45 ? FF"_sig;
 			const auto split_results = "89 04 8A E9"_sig;
 
-			int results = 0;
-
 			for (auto* i : intact_results)
 			{
 				patch_intact_basic_block_integrity_check(i);
-				results++;
 			}
 
 			for (auto* i : split_results)
 			{
 				patch_split_basic_block_integrity_check(i);
-				results++;
 			}
-
-			OutputDebugStringA(utils::string::va("integrity check amount: %d\n", results));
+#endif
 		}
 	}
 
