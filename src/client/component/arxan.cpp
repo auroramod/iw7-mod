@@ -176,7 +176,6 @@ namespace arxan
 		uint32_t adjust_integrity_checksum(const uint64_t return_address, uint8_t* stack_frame,
 			const uint32_t current_checksum)
 		{
-			const auto handler_address = return_address - 5;
 			const auto* context = search_handler_context(stack_frame, current_checksum);
 
 			if (!context)
@@ -191,6 +190,7 @@ namespace arxan
 			if (current_checksum != correct_checksum)
 			{
 #ifdef _DEBUG
+				const auto handler_address = return_address - 5;
 				OutputDebugStringA(utils::string::va("Adjusting checksum (%llX): %X -> %X", handler_address,
 					current_checksum, correct_checksum));
 #endif
