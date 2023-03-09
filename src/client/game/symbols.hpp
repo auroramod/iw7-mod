@@ -59,6 +59,15 @@ namespace game
 	WEAK symbol<bool(const char* zoneName)> DB_IsLocalized{ 0x3BC500 };
 	WEAK symbol<char* (const char* filename, char* buf, int size)> DB_ReadRawFile{ 0xA79E30 };
 
+	namespace DDL
+	{
+		WEAK symbol<const char*(const DDLState* state, int enumValue)> DDL_Lookup_GetEnumString{ 0x30430 };
+	}
+
+	WEAK symbol<bool(const DDLState* state)> DDL_StateIsLeaf{ 0x2E3C0 };
+	WEAK symbol<DDLType(const DDLState* state)> DDL_GetType{ 0x2E5A0 };
+	WEAK symbol<DDLValue(const DDLState* state, const DDLContext* ddlContext)> DDL_GetValue{ 0x2F5E0 };
+
 	WEAK symbol<dvar_t* (const char* name, bool value,
 		unsigned int flags, const char* description)> Dvar_RegisterBool{ 0xCEB380 };
 	WEAK symbol<dvar_t* (const char* name, int value, int min, int max,
@@ -145,6 +154,9 @@ namespace game
 	WEAK symbol<int()> Scr_GetInt{ 0xC0B950 };
 
 	WEAK symbol<ScreenPlacement* ()> ScrPlace_GetViewPlacement{ 0x9E4090 };
+
+	WEAK symbol<const char* (const StringTable* table, const int comparisonColumn, const char* value, const int valueColumn)> StringTable_Lookup{ 0xCE7950 };
+	WEAK symbol<const char* (const StringTable* table, const int row, const int column)> StringTable_GetColumnValueForRow{ 0xCE78E0 };
 
 	WEAK symbol<void(const char* string)> SV_Cmd_TokenizeString{ 0xB7DD00 };
 	WEAK symbol<void()> SV_Cmd_EndTokenizedString{ 0xB7DCC0 };

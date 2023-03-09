@@ -25,6 +25,9 @@ namespace dvars
 
 	game::dvar_t* cg_draw2D = nullptr;
 
+	game::dvar_t* cg_unlockall_items = nullptr;
+	game::dvar_t* cg_unlockall_loot = nullptr;
+
 	game::dvar_t* r_fullbright = nullptr;
 
 	game::dvar_t* bg_bounces = nullptr;

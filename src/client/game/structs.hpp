@@ -437,6 +437,77 @@ namespace game
 		THREAD_CONTEXT_RECIPE = 20,
 	};
 
+	enum StatsGroup
+	{
+		STATSGROUP_RANKED = 0x0,
+		STATSGROUP_COOP = 0x1,
+		STATSGROUP_COMMON = 0x2,
+		STATSGROUP_RANKEDLOADOUTS = 0x3,
+		STATSGROUP_PRIVATELOADOUTS = 0x4,
+		//STATSGROUP_NONGAME = 0x5,
+		STATSGROUP_COUNT = 0x5,
+		STATSGROUP_IGNORE = 0x6,
+		STATSGROUP_FIRST = 0x0,
+	};
+
+	namespace ddl
+	{
+		enum DDLType
+		{
+			DDL_INVALID_TYPE = 0xFFFFFFFF,
+			DDL_BYTE_TYPE = 0x0,
+			DDL_SHORT_TYPE = 0x1,
+			DDL_UINT_TYPE = 0x2,
+			DDL_INT_TYPE = 0x3,
+			DDL_UINT64_TYPE = 0x4,
+			DDL_FLOAT_TYPE = 0x5,
+			DDL_FIXEDPOINT_TYPE = 0x6,
+			DDL_STRING_TYPE = 0x7,
+			DDL_STRUCT_TYPE = 0x8,
+			DDL_ENUM_TYPE = 0x9,
+		};
+
+		union DDLValue
+		{
+			int intValue;
+			unsigned int uintValue;
+			unsigned __int64 uint64Value;
+			float floatValue;
+			float fixedPointValue;
+			const char* stringPtr;
+		};
+
+		struct DDLMember
+		{
+			const char* name;
+			int index;
+			int bitSize;
+			int limitSize;
+			int offset;
+			int type;
+			int externalIndex;
+			unsigned int rangeLimit;
+			bool isArray;
+			int arraySize;
+			int enumIndex;
+		};
+
+		struct DDLState
+		{
+			bool isValid;
+			int offset;
+			int arrayIndex;
+			DDLMember* member;
+			//const DDLDef* ddlDef;
+		};
+
+		struct DDLContext
+		{
+
+		};
+	}
+	using namespace ddl;
+
 	namespace entity
 	{
 		enum connstate_t : std::uint32_t

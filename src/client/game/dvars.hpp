@@ -21,6 +21,9 @@ namespace dvars
 
 	extern game::dvar_t* cg_draw2D;
 
+	extern game::dvar_t* cg_unlockall_items;
+	extern game::dvar_t* cg_unlockall_loot;
+
 	extern game::dvar_t* r_fullbright;
 
 	extern game::dvar_t* bg_bounces;
