@@ -2,8 +2,6 @@
 
 #include "structs.hpp"
 
-#define SERVER_CD_KEY "IW7MOD-CD-Key"
-
 namespace game
 {
 	extern uint64_t base_address;
@@ -60,6 +58,9 @@ namespace game
 	void SV_CmdsMP_RequestMapRestart(bool loadScripts, bool migrate);
 }
 
-uintptr_t operator"" _b(const uintptr_t ptr);
+inline uintptr_t operator"" _b(const uintptr_t ptr)
+{
+	return game::base_address + ptr;
+}
 
 #include "symbols.hpp"

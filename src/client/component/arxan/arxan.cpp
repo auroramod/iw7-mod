@@ -317,6 +317,7 @@ namespace arxan
 		void search_and_patch_integrity_checks()
 		{
 #ifdef PRECOMPUTED_INTEGRITY_CHECKS
+			assert(game::base_address == 0x140000000);
 			search_and_patch_integrity_checks_precomputed();
 #else
 			// There seem to be 670 results.

@@ -28,7 +28,7 @@ namespace thread_names
 				{game::THREAD_CONTEXT_SERVER, "Server"},
 				{game::THREAD_CONTEXT_CINEMATIC, "Cinematic"},
 				{game::THREAD_CONTEXT_WINDOW, "Window"},
-				{game::THREAD_CONTEXT_WINDOW, "Input"},
+				{game::THREAD_CONTEXT_INPUT, "Input"},
 				{game::THREAD_CONTEXT_DATABASE, "Database"},
 				{game::THREAD_CONTEXT_SOUND_STREAM, "Sound Stream"},
 				{game::THREAD_CONTEXT_SOUND, "Snd stream packet callback"},
