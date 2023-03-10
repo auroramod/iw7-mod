@@ -219,14 +219,17 @@ namespace stats
 			return is_unlocked2_hook.invoke<bool>(a1, a2, unlock_table, value);
 		}
 
-		int item_quantity(__int64 a1, unsigned int a2, int a3)
+		int item_quantity(__int64 a1, int a2, int id)
 		{
-			if (dvars::cg_unlockall_loot && dvars::cg_unlockall_loot->current.enabled)
+			auto result = item_quantity_hook.invoke<int>(a1, a2, id);
+
+			// 30000 crashes
+			if (id != 30000 && dvars::cg_unlockall_loot && dvars::cg_unlockall_loot->current.enabled)
 			{
 				return 1;
 			}
-			
-			return item_quantity_hook.invoke<int>(a1, a2, a3);
+
+			return result;
 		}
 
 		void com_ddl_print_state(const game::DDLState* state, const game::DDLContext* context)
