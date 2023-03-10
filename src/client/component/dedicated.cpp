@@ -20,6 +20,15 @@ namespace dedicated
 {
 	namespace
 	{
+		utils::hook::detour com_quit_f_hook;
+
+		void kill_server()
+		{
+			game::SV_MainMP_KillLocalServer();
+
+			com_quit_f_hook.invoke<void>();
+		}
+
 		std::vector<std::string>& get_startup_command_queue()
 		{
 			static std::vector<std::string> startup_command_queue;
@@ -361,6 +370,12 @@ namespace dedicated
 
 				console::set_title(utils::string::va("%s on %s", cleaned_hostname.data(), mapname->current.string));
 			}, scheduler::pipeline::main, 1s);
+
+			scheduler::once([]()
+			{
+				command::add("killserver", kill_server);
+				com_quit_f_hook.create(game::Com_Quit_f, kill_server);
+			}, scheduler::server);
 		}
 	};
 }
