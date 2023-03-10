@@ -20,6 +20,7 @@ namespace patches
 		utils::hook::detour cg_set_client_dvar_from_server_hook;
 		utils::hook::detour live_get_map_index_hook;
 		utils::hook::detour content_do_we_have_content_pack_hook;
+		utils::hook::detour init_network_dvars_hook;
 
 		std::string get_login_username()
 		{
@@ -206,6 +207,11 @@ namespace patches
 
 			return game::DB_ReadRawFile(filename, buf, size);
 		}
+
+		void init_network_dvars_stub(game::dvar_t* dvar)
+		{
+			//init_network_dvars_hook.invoke<void>(dvar);
+		}
 	}
 
 	class component final : public component_interface
@@ -248,8 +254,26 @@ namespace patches
 			// don't reset our fov
 			utils::hook::set<uint8_t>(0x8A6160_b, 0xC3);
 
+			// don't register every replicated dvar as a network dvar
+			init_network_dvars_hook.create(0xB7A920_b, init_network_dvars_stub);
+
 			// some [data validation] anti tamper thing that kills performance
 			dvars::override::register_int("dvl", 0, 0, 0, game::DVAR_FLAG_READ);
+
+			// killswitches
+			dvars::override::register_bool("killswitch_store", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_matchID", true, game::DVAR_FLAG_READ);
+
+			dvars::override::register_bool("killswitch_announcers", false, game::DVAR_FLAG_READ);
+
+			// igs
+			dvars::override::register_int("igs_announcer", 0x1F, 0, 0x7FFFFFFF, game::DVAR_FLAG_READ); // show all announcer packs
+
+			// disable cod account
+			dvars::override::register_bool("enable_cod_account", false, game::DVAR_FLAG_READ);
+
+			// block changing name in-game
+			utils::hook::set<uint8_t>(0xC4DF90_b, 0xC3);
 		}
 	};
 }
