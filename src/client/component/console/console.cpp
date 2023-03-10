@@ -3,6 +3,8 @@
 
 #include "game/game.hpp"
 
+#include "component/rcon.hpp"
+
 #include <utils/flags.hpp>
 
 #include "wincon.hpp"
@@ -105,6 +107,11 @@ namespace console
 
 	void dispatch_message(const int type, const std::string& message)
 	{
+		if (rcon::message_redirect(message))
+		{
+			return;
+		}
+
 		if (console::is_enabled())
 		{
 			if (wincon::is_enabled())

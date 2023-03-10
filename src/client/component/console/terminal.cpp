@@ -6,7 +6,7 @@
 
 #include "game/game.hpp"
 
-#include "component/command.hpp"
+#include "component/rcon.hpp"
 
 #include "version.h"
 
@@ -311,6 +311,11 @@ namespace terminal
 
 	int dispatch_message(const int type, const std::string& message)
 	{
+		if (rcon::message_redirect(message))
+		{
+			return 0;
+		}
+
 		std::lock_guard _0(print_mutex);
 
 		clear_output();
@@ -386,7 +391,7 @@ namespace terminal
 
 						if (msg.message == WM_QUIT)
 						{
-							command::execute("quit", false);
+							game::Cbuf_AddCall(0, game::Com_Quit_f);
 							break;
 						}
 

@@ -283,9 +283,10 @@ namespace party
 	int get_client_count()
 	{
 		auto count = 0;
+		const auto* svs_clients = *game::svs_clients;
 		for (unsigned int i = 0; i < *game::svs_numclients; ++i)
 		{
-			if (game::svs_clients[i].header.state >= 1)
+			if (svs_clients[i].header.state >= 1)
 			{
 				++count;
 			}
@@ -297,9 +298,10 @@ namespace party
 	int get_bot_count()
 	{
 		auto count = 0;
+		const auto* svs_clients = *game::svs_clients;
 		for (unsigned int i = 0; i < *game::svs_numclients; ++i)
 		{
-			if (game::svs_clients[i].header.state >= 1 &&
+			if (svs_clients[i].header.state >= 1 &&
 				game::SV_BotIsBot(i))
 			{
 				++count;

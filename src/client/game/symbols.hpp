@@ -95,12 +95,15 @@ namespace game
 	WEAK symbol<const char* (const dvar_t* dvar)> Dvar_DisplayableLatchedValue{ 0xCEA1D0 };
 	WEAK symbol<void(char* buffer, int index)> Dvar_GetCombinedString{ 0xBB1F30 };
 	WEAK symbol<const char* (dvar_t* dvar, DvarValue value)> Dvar_ValueToString{ 0xCEED00 };
+	WEAK symbol<void(dvar_t* dvar, DvarSetSource source)> Dvar_Reset{ 0xCEC490 };
 	WEAK symbol<unsigned int(const char* name)> Dvar_GenerateChecksum{ 0xCEA520 };
 	WEAK symbol<void(dvar_t* dvar, int value)> Dvar_SetInt{ 0xCED3D0 };
 
 	WEAK symbol<__int64(const char* qpath, char** buffer)> FS_ReadFile{ 0xCDE200 };
 	WEAK symbol<void(char* buffer)> FS_FreeFile{ 0xCDE1F0 };
 	WEAK symbol<void(int h, const char* fmt, ...)> FS_Printf{ 0xCDD1C0 };
+
+	WEAK symbol<int(int clientNum)> G_MainMP_GetClientScore{ 0xB20550 };
 
 	WEAK symbol<char* (char* string)> I_CleanStr{ 0xCFACC0 };
 
@@ -165,7 +168,11 @@ namespace game
 	WEAK symbol<void()> SV_CmdsMP_CheckLoadGame{ 0xC4C9E0 };
 	WEAK symbol<void()> SV_CmdsSP_MapRestart_f{ 0xC12B30 };
 	WEAK symbol<void()> SV_CmdsSP_FastRestart_f{ 0xC12AF0 };
+	WEAK symbol<int (int clientNum)> SV_ClientMP_GetClientPing{ 0xC507D0 };
+	WEAK symbol<char* (int entNum)> SV_GameMP_GetGuid{ 0XC12410 };
+	WEAK symbol<void()> SV_MainMP_KillLocalServer{ 0xC58DF0 };
 	WEAK symbol<void(int clientNum, svscmd_type type, const char* text)> SV_GameSendServerCommand{ 0xC54780 };
+	WEAK symbol<void(client_t* drop, const char* reason, bool tellThem)> SV_DropClient{ 0xC4FBA0 };
 	WEAK symbol<bool()> SV_Loaded{ 0xC114C0 };
 	WEAK symbol<bool(const char* name)> SV_MapExists{ 0xCDB620 };
 	WEAK symbol<bool(int clientNum)> SV_BotIsBot{ 0xC3BC90 };
@@ -193,9 +200,11 @@ namespace game
 	WEAK symbol<gentity_s> g_entities{ 0x3D22610 };
 
 	WEAK symbol<unsigned int> svs_numclients{ 0x6B229E0 };
-	WEAK symbol<client_t> svs_clients{ 0x6B22950 };
+	WEAK symbol<client_t*> svs_clients{ 0x6B22950 };
 
 	WEAK symbol<clientUIActive_t> clientUIActives{ 0x2246C30 };
+
+	WEAK symbol<connection_data*> cl_con_data{ 0x1FE58B8 };
 
 	WEAK symbol<int> sv_map_restart{ 0x6B2C9D4 };
 	WEAK symbol<int> sv_loadScripts{ 0x6B2C9D8 };

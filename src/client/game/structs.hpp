@@ -508,6 +508,13 @@ namespace game
 	}
 	using namespace ddl;
 
+	// made up
+	struct connection_data
+	{
+		char __pad0[131112];
+		netadr_s address;
+	};
+
 	namespace entity
 	{
 		enum connstate_t : std::uint32_t
@@ -572,24 +579,40 @@ namespace game
 		static_assert(offsetof(gentity_s, client) == 368);
 		static_assert(offsetof(gentity_s, flags) == 456);
 
+		enum SvClientConnectionState
+		{
+			CS_FREE = 0x0,
+			CS_ZOMBIE = 0x1,
+			CS_RECONNECTING = 0x2,
+			CS_CONNECTED = 0x3,
+			CS_CLIENTLOADING = 0x4,
+			CS_ACTIVE = 0x5,
+		};
+
 		struct clientHeader_t
 		{
-			char __pad0[8];
+			void* unk; // 0
 			int state; // 8
 		}; // sizeof = ?
 
 		struct client_t
 		{
 			clientHeader_t header; // 0
-			char __pad0[124];
+			char __pad0[120];
 			gentity_s* gentity; // 136
-			char __pad1[1044];
+			char __pad1[20];
+			char userinfo[1024];
 			char name[32]; // 1188
-			char __pad2[714196];
+			char __pad2[648396];
+			netadr_s remoteAddress; // 649616
+			char __pad3[65780];
 		}; static_assert(sizeof(client_t) == 715416);
-
+		
+		static_assert(offsetof(client_t, header.state) == 8);
 		static_assert(offsetof(client_t, gentity) == 136);
+		static_assert(offsetof(client_t, userinfo) == 164);
 		static_assert(offsetof(client_t, name) == 1188);
+		static_assert(offsetof(client_t, remoteAddress) == 649616);
 	}
 	using namespace entity;
 
