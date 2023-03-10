@@ -264,10 +264,12 @@ namespace patches
 			dvars::override::register_bool("killswitch_store", true, game::DVAR_FLAG_READ);
 			dvars::override::register_bool("killswitch_matchID", true, game::DVAR_FLAG_READ);
 
-			dvars::override::register_bool("killswitch_announcers", false, game::DVAR_FLAG_READ);
-
-			// igs
-			dvars::override::register_int("igs_announcer", 0x1F, 0, 0x7FFFFFFF, game::DVAR_FLAG_READ); // show all announcer packs
+			// announcer packs
+			if (!game::environment::is_dedi())
+			{
+				dvars::override::register_bool("killswitch_announcers", false, game::DVAR_FLAG_READ);
+				dvars::override::register_int("igs_announcer", 0x1F, 0, 0x7FFFFFFF, game::DVAR_FLAG_READ); // show all announcer packs
+			}
 
 			// disable cod account
 			dvars::override::register_bool("enable_cod_account", false, game::DVAR_FLAG_READ);
