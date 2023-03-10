@@ -3,6 +3,8 @@
 #include "loader/component_loader.hpp"
 #include "game/game.hpp"
 
+#include "component/console/console.hpp"
+
 #include <utils/string.hpp>
 #include <utils/io.hpp>
 
@@ -106,6 +108,7 @@ void limit_parallel_dll_loading()
 int main()
 {
 	ShowWindow(GetConsoleWindow(), SW_HIDE);
+	console::init();
 
 	FARPROC entry_point;
 	enable_dpi_awareness();

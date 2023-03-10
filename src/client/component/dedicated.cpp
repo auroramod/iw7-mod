@@ -6,7 +6,7 @@
 
 #include "dvars.hpp"
 #include "command.hpp"
-#include "console.hpp"
+#include "console/console.hpp"
 #include "scheduler.hpp"
 
 #include <utils/json.hpp>

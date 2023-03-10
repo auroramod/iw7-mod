@@ -5,7 +5,7 @@
 #include "game/game.hpp"
 #include "game/dvars.hpp"
 
-#include "console.hpp"
+#include "console/console.hpp"
 #include "game_console.hpp"
 #include "scheduler.hpp"
 #include "dvars.hpp"

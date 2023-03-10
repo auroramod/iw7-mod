@@ -2,7 +2,7 @@
 #include "loader/component_loader.hpp"
 #include "game_console.hpp"
 #include "command.hpp"
-#include "console.hpp"
+#include "console/console.hpp"
 #include "scheduler.hpp"
 
 #include "game/game.hpp"
@@ -471,7 +471,7 @@ namespace game_console
 		const auto lines = utils::string::split(data, '\n');
 		for (const auto& line : lines)
 		{
-			print_internal(type == console::con_type_info ? line : "^"s.append(std::to_string(type)).append(line));
+			print_internal(type == console::print_type_info ? line : "^"s.append(std::to_string(type)).append(line));
 		}
 	}
 

@@ -6,7 +6,7 @@
 #include "steam/steam.hpp"
 
 #include "command.hpp"
-#include "console.hpp"
+#include "console/console.hpp"
 
 #include <utils/hook.hpp>
 #include <utils/string.hpp>

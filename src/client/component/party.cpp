@@ -8,7 +8,7 @@
 #include "game/game.hpp"
 
 #include "command.hpp"
-#include "console.hpp"
+#include "console/console.hpp"
 #include "network.hpp"
 #include "scheduler.hpp"
 

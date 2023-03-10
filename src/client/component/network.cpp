@@ -5,7 +5,7 @@
 
 #include "game/game.hpp"
 
-#include "console.hpp"
+#include "console/console.hpp"
 #include "dvars.hpp"
 
 #include <utils/hook.hpp>
