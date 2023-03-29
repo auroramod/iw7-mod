@@ -98,6 +98,7 @@ namespace game
 	WEAK symbol<void(dvar_t* dvar, DvarSetSource source)> Dvar_Reset{ 0xCEC490 };
 	WEAK symbol<unsigned int(const char* name)> Dvar_GenerateChecksum{ 0xCEA520 };
 	WEAK symbol<void(dvar_t* dvar, int value)> Dvar_SetInt{ 0xCED3D0 };
+	WEAK symbol<void(bool cheatOverride)> Dvar_OverrideCheatProtection{ 0XCEB250 };
 
 	WEAK symbol<__int64(const char* qpath, char** buffer)> FS_ReadFile{ 0xCDE200 };
 	WEAK symbol<void(char* buffer)> FS_FreeFile{ 0xCDE1F0 };
@@ -196,6 +197,8 @@ namespace game
 
 	WEAK symbol<int> dvarCount{ 0x7595E54 };
 	WEAK symbol<dvar_t*> dvarPool{ 0x7595E60 };
+
+	WEAK symbol<char> isCheatOverride{ 0x1BBEF28 };
 
 	WEAK symbol<gentity_s> g_entities{ 0x3D22610 };
 

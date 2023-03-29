@@ -208,6 +208,13 @@ namespace patches
 			return game::DB_ReadRawFile(filename, buf, size);
 		}
 
+		void cbuf_execute_buffer_internal_stub(int local_client_num, int controller_index, char* buffer, [[maybe_unused]]void* callback)
+		{
+			game::Dvar_OverrideCheatProtection(0);
+			game::Cbuf_ExecuteBufferInternal(local_client_num, controller_index, buffer, game::Cmd_ExecuteSingleCommand);
+			game::Dvar_OverrideCheatProtection(1);
+		}
+
 		void init_network_dvars_stub(game::dvar_t* dvar)
 		{
 			//init_network_dvars_hook.invoke<void>(dvar);
@@ -250,6 +257,8 @@ namespace patches
 
 			// Allow executing custom cfg files with the "exec" command
 			utils::hook::call(0xB7CEF9_b, db_read_raw_file_stub);
+			// Add cheat override to exec
+			utils::hook::call(0xB7CF11_b, cbuf_execute_buffer_internal_stub);
 
 			// don't reset our fov
 			utils::hook::set<uint8_t>(0x8A6160_b, 0xC3);

@@ -25,7 +25,7 @@ namespace dvar_cheats
 			}
 
 			// if sv_cheats was enabled and it changes to disabled, we need to reset all cheat dvars
-			else if (dvar->current.enabled && !value->enabled)
+			/*else if (dvar->current.enabled && !value->enabled)
 			{
 				for (auto i = 0; i < *game::dvarCount; ++i)
 				{
@@ -35,7 +35,7 @@ namespace dvar_cheats
 						game::Dvar_Reset(var, game::DvarSetSource::DVAR_SOURCE_INTERNAL);
 					}
 				}
-			}
+			}*/ // resets the r_hudOutline dvars, which are cheat dvars for some reason.
 		}
 	}
 
@@ -61,20 +61,20 @@ namespace dvar_cheats
 		if (source == game::DvarSetSource::DVAR_SOURCE_EXTERNAL)
 		{
 			const auto cl_ingame = game::CL_IsGameClientActive(0);
-			const auto sv_running = game::Dvar_FindVar("sv_running");
+			const auto sv_running = game::SV_Loaded();
 
-			if ((dvar->flags & game::DvarFlags::DVAR_FLAG_REPLICATED) && (cl_ingame) && (sv_running && !sv_running->current.enabled))
+			if ((dvar->flags & game::DvarFlags::DVAR_FLAG_REPLICATED) && cl_ingame && !sv_running)
 			{
 				console::error("%s can only be changed by the server\n", dvars::dvar_get_name(dvar).data());
 				return false;
 			}
 
 			const auto sv_cheats = game::Dvar_FindVar("sv_cheats");
-			if ((dvar->flags & game::DvarFlags::DVAR_FLAG_CHEAT) && (sv_cheats && !sv_cheats->current.enabled))
+			if ((dvar->flags & game::DvarFlags::DVAR_FLAG_CHEAT) && ((sv_cheats && !sv_cheats->current.enabled) && *game::isCheatOverride))
 			{
-#ifdef DEBUG
+//#ifdef DEBUG
 				console::error("%s is cheat protected\n", dvars::dvar_get_name(dvar).data());
-#endif
+//#endif
 				return false;
 			}
 		}
