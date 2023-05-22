@@ -27,12 +27,6 @@ namespace steam_proxy
 			nosteam,
 			error,
 		};
-
-		bool is_disabled()
-		{
-			static const auto disabled = utils::flags::has_flag("nosteam");
-			return disabled;
-		}
 	}
 
 	class component final : public component_interface
@@ -89,6 +83,11 @@ namespace steam_proxy
 					this->steam_client_module_.invoke<bool>("Steam_BReleaseSteamPipe", this->steam_pipe_);
 				}
 			}
+		}
+
+		component_priority priority() override
+		{
+			return component_priority::steam_proxy;
 		}
 
 		const utils::nt::library& get_overlay_module() const
@@ -168,11 +167,6 @@ namespace steam_proxy
 			{
 				//app_id = 480; // Spacewar
 				return ownership_state::unowned;
-			}
-			
-			if (is_disabled())
-			{
-					return ownership_state::success;
 			}
 
 			this->client_utils_.invoke<void>("SetAppIDForCurrentPipe", app_id, false);
