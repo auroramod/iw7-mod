@@ -6,6 +6,8 @@
 
 #include "loader/component_loader.hpp"
 
+#include "../component/steam_proxy.hpp"
+
 namespace steam
 {
 	uint64_t callbacks::call_id_ = 0;
@@ -120,6 +122,9 @@ namespace steam
 		::utils::nt::library::load(steam_path / "vstdlib_s64.dll");
 		::utils::nt::library::load(steam_path / "gameoverlayrenderer64.dll");
 		::utils::nt::library::load(steam_path / "steamclient64.dll");
+
+		steam_proxy::initialize();
+
 		return true;
 	}
 
