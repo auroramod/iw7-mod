@@ -283,6 +283,22 @@ namespace patches
 			// disable cod account
 			dvars::override::register_bool("enable_cod_account", false, game::DVAR_FLAG_READ);
 
+			// enable boss battles
+			dvars::override::register_bool("online_zombie_boss_battle", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("online_zombie_boss_zmb", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("online_zombie_boss_rave", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("online_zombie_boss_disco", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("online_zombie_boss_town", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("online_zombie_boss_final", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("online_zombie_boss_dc", true, game::DVAR_FLAG_READ);
+
+			// uncheat protect gamepad-related dvars
+			dvars::override::register_float("gpad_button_deadzone", 0.13f, 0, 1, game::DVAR_FLAG_SAVED);
+			dvars::override::register_float("gpad_stick_deadzone_min", 0.2f, 0, 1, game::DVAR_FLAG_SAVED);
+			dvars::override::register_float("gpad_stick_deadzone_max", 0.01f, 0, 1, game::DVAR_FLAG_SAVED);
+			dvars::override::register_float("gpad_stick_pressed", 0.4f, 0, 1, game::DVAR_FLAG_SAVED);
+			dvars::override::register_float("gpad_stick_pressed_hysteresis", 0.1f, 0, 1, game::DVAR_FLAG_SAVED);
+
 			// block changing name in-game
 			utils::hook::set<uint8_t>(0xC4DF90_b, 0xC3);
 		}
