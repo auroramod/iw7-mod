@@ -75,6 +75,8 @@ namespace gsc
 
 		bool read_raw_script_file(const std::string& name, std::string* data)
 		{
+			console::debug("[read_raw_script_file] %s\n", name.data());
+
 			if (filesystem::read_file(name, data))
 			{
 				return true;
@@ -116,6 +118,8 @@ namespace gsc
 			{
 				return nullptr;
 			}
+
+			console::debug("working with %s\n", real_name.data());
 
 			// filter out "GSC rawfiles" that were used for development usage and are not meant for us.
 			// each "GSC rawfile" has a ScriptFile counterpart to be used instead
@@ -275,9 +279,9 @@ namespace gsc
 			return game::DB_IsXAssetDefault(type, name);
 		}
 
-		void load_scripts_stub(void* a1, void* a2)
+		void load_scripts_stub()
 		{
-			utils::hook::invoke<void>(0xB50670_b, a1, a2);
+			utils::hook::invoke<void>(0xB50670_b);
 
 			if (!game::Com_FrontEndScene_IsActive())
 			{

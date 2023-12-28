@@ -1,6 +1,7 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
 
+#include "component/gsc/script_extension.hpp"
 #include "component/gsc/script_loading.hpp"
 #include "component/scheduler.hpp"
 #include "component/scripting.hpp"
@@ -218,4 +219,4 @@ namespace scripting
 	};
 }
 
-REGISTER_COMPONENT(scripting::component)
+//REGISTER_COMPONENT(scripting::component)

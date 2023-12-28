@@ -180,3 +180,18 @@ namespace game
 		}
 	}
 }
+
+size_t operator"" _b(const size_t ptr)
+{
+	return game::base_address + ptr;
+}
+
+size_t reverse_b(const size_t ptr)
+{
+	return ptr - game::base_address;
+}
+
+size_t reverse_b(const void* ptr)
+{
+	return reverse_b(reinterpret_cast<size_t>(ptr));
+}

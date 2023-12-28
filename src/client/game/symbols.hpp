@@ -22,8 +22,6 @@ namespace game
 
 	WEAK symbol<void(errorParm code, const char* message, ...)> Com_Error{ 0xB8D830 };
 
-	WEAK symbol<bool()> Com_FrontEnd_IsInFrontEnd{ 0x5AE6C0 };
-
 	WEAK symbol<void()> Com_Quit_f{ 0xBADC90 };
 
 	WEAK symbol<bool()> Com_FrontEnd_IsInFrontEnd{ 0x5AE6C0 };
@@ -120,6 +118,7 @@ namespace game
 	WEAK symbol<void(char* buffer)> FS_FreeFile{ 0xCDE1F0 };
 	WEAK symbol<void(int h, const char* fmt, ...)> FS_Printf{ 0xCDD1C0 };
 
+	WEAK symbol<unsigned int(unsigned int)> GetObjectType{ 0xC059E0 };
 	WEAK symbol<unsigned int(unsigned int, unsigned int)> GetVariable{ 0xC05A90 };
 	WEAK symbol<unsigned int(unsigned int parentId, unsigned int unsignedValue)> GetNewVariable{ 0xC05660 };
 	WEAK symbol<unsigned int(unsigned int parentId, unsigned int unsignedValue)> GetNewArrayVariable{ 0xC054E0 };
@@ -191,10 +190,12 @@ namespace game
 		unsigned int paramcount)> Scr_NotifyId{ 0xC0C2B0 };
 	WEAK symbol<const float* (const float* v)> Scr_AllocVector{ 0xC06960 };
 	WEAK symbol<void(int)> Scr_AddInt{ 0xC0A580 };
+	WEAK symbol<bool(VariableValue* value)> Scr_CastString{ 0xC06AE0 };
 	WEAK symbol<void()> Scr_ClearOutParams{ 0xC0ABC0 };
 	WEAK symbol<scr_entref_t(unsigned int entId)> Scr_GetEntityIdRef{ 0xC09050 };
 	WEAK symbol<int(unsigned int classnum, int entnum, int offset)> Scr_SetObjectField{ 0x40B6E0 };
 	WEAK symbol<int()> Scr_GetInt{ 0xC0B950 };
+	WEAK symbol<void()> Scr_ErrorInternal{ 0xC0AC30 };
 
 	WEAK symbol<ScreenPlacement* ()> ScrPlace_GetViewPlacement{ 0x9E4090 };
 
@@ -275,7 +276,9 @@ namespace game
 	WEAK game::symbol<unsigned __int64> pmem_size{ 0x7686A28 };
 	WEAK game::symbol<unsigned char*> pmem_buffer{ 0x7686A20 };
 
+	/*
 	WEAK game::symbol<PhysicalMemory> g_mem{ 0xD5F26E0, 0xC92E1E0 };
 	WEAK game::symbol<PhysicalMemory> g_scriptmem{ 0xD5F3140, 0xC92EC40 };
 	WEAK game::symbol<PhysicalMemory> g_physmem{ 0xD5F3BA0, 0xC92F6A0 };
+	*/
 }

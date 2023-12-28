@@ -3,6 +3,7 @@
 
 #include <utils/string.hpp>
 
+#include "component/gsc/script_extension.hpp"
 #include "component/gsc/script_loading.hpp"
 
 namespace scripting

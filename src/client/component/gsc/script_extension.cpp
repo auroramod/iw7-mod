@@ -8,6 +8,7 @@
 #include "component/dvars.hpp"
 #include "component/scripting.hpp"
 
+#include "script_error.hpp"
 #include "script_extension.hpp"
 #include "script_loading.hpp"
 
@@ -15,8 +16,8 @@
 
 namespace gsc
 {
-	std::uint16_t function_id_start = 0x30A;
-	std::uint16_t method_id_start = 0x8586;
+	std::uint16_t function_id_start = 0x326;
+	std::uint16_t method_id_start = 0x85DB;
 
 	builtin_function func_table[0x1000];
 	builtin_method meth_table[0x1000];
@@ -192,25 +193,23 @@ namespace gsc
 
 		void vm_error_stub(int mark_pos)
 		{
-#ifdef FALSE // TODO
-			const bool dev_script = developer_script ? developer_script->current.enabled : false;
-#else
-			const bool dev_script = true;
-#endif
+			//const bool dev_script = developer_script ? developer_script->current.enabled : false;
+			bool dev_script = true;
+
 			if (!dev_script && !force_error_print)
 			{
-				utils::hook::invoke<void>(SELECT_VALUE(0x415C90_b, 0x59DDA0_b), mark_pos);
+				utils::hook::invoke<void>(0x510C80_b, mark_pos);
 				return;
 			}
 
 			console::warn("*********** script runtime error *************\n");
 
-			const auto opcode_id = *reinterpret_cast<std::uint8_t*>(SELECT_VALUE(0xC4015E8_b, 0xB7B8968_b));
+			const auto opcode_id = *reinterpret_cast<std::uint8_t*>(0x6B22940_b);
 			const std::string error_str = gsc_error_msg.has_value()
 				? utils::string::va(": %s", gsc_error_msg.value().data())
 				: "";
 
-			if ((opcode_id >= 0x1A && opcode_id <= 0x20) || (opcode_id >= 0xA9 && opcode_id <= 0xAF))
+			if ((opcode_id >= 0x1A && opcode_id <= 0x20) || (opcode_id >= 0xA8 && opcode_id <= 0xAE))
 			{
 				builtin_call_error(error_str);
 			}
@@ -232,7 +231,7 @@ namespace gsc
 
 			print_callstack();
 			console::warn("**********************************************\n");
-			utils::hook::invoke<void*>(SELECT_VALUE(0x415C90_b, 0x59DDA0_b), mark_pos);
+			utils::hook::invoke<void>(0x510C80_b, mark_pos);
 		}
 
 		void print(const function_args& args)
@@ -328,28 +327,36 @@ namespace gsc
 	public:
 		void post_unpack() override
 		{
-#ifdef FALSE // TODO
-			developer_script = dvars::register_bool("developer_script", false, 0, "Enable developer script comments");
-#endif
+			//developer_script = dvars::register_bool("developer_script", false, 0, "Enable developer script comments");
 
+			/*
 			utils::hook::set<uint32_t>(0xBFD16C_b, 0x1000); // change builtin func count
 
 			utils::hook::set<uint32_t>(0xBFD172_b + 4,
 				static_cast<uint32_t>(reverse_b((&func_table))));
 
 			// TODO
-			utils::hook::set<uint32_t>(SELECT_VALUE(0x3CB718_b, 0x512778_b) + 4,
+			utils::hook::set<uint32_t>(0xC0E5CE_b + 3,
 				static_cast<uint32_t>(reverse_b((&func_table))));
-			utils::hook::inject(SELECT_VALUE(0x3BDC28_b, 0x504C58_b) + 3, &func_table);
-			utils::hook::set<uint32_t>(SELECT_VALUE(0x3BDC1E_b, 0x504C4E_b), sizeof(func_table));
+			utils::hook::inject(0xBFD5A1_b + 3, &func_table);
+			utils::hook::set<uint32_t>(0xBFD595_b + 2, sizeof(func_table));
 
-			utils::hook::set<uint32_t>(SELECT_VALUE(0x3BD882_b, 0x504862_b) + 4,
+			utils::hook::set<uint32_t>(0xBFD182_b + 4,
 				static_cast<uint32_t>(reverse_b((&meth_table))));
-			utils::hook::set<uint32_t>(SELECT_VALUE(0x3CBA3B_b, 0x512A9B_b) + 4,
+			utils::hook::set<uint32_t>(0xC0E8F2_b + 4, // could be wrong..
 				static_cast<uint32_t>(reverse_b(&meth_table)));
-			utils::hook::inject(SELECT_VALUE(0x3BDC36_b, 0x504C66_b) + 3, &meth_table);
-			utils::hook::set<uint32_t>(SELECT_VALUE(0x3BDC3F_b, 0x504C6F_b), sizeof(meth_table));
+			utils::hook::inject(0xBFD5AF_b + 3, &meth_table);
+			utils::hook::set<uint32_t>(0xBFD5B6_b + 2, sizeof(meth_table));
+			*/
 
+			/*
+				
+				TODO: needs replaced with assembly instead
+				in H1, there was a nullsub (assert?) between the builtin_function and then calling the builtin_function. on IW7, there is no nullsub
+				and it just calls this directly like function_table[id - 1] instead of builtin_function() (builtin_function being function_table[id-1], just variable)
+			
+			*/
+			/*
 			utils::hook::nop(SELECT_VALUE(0x3CB723_b, 0x512783_b), 8);
 			utils::hook::call(SELECT_VALUE(0x3CB723_b, 0x512783_b), vm_call_builtin_function_stub);
 
@@ -357,9 +364,11 @@ namespace gsc
 			utils::hook::nop(SELECT_VALUE(0x3CBA46_b, 0x512AA6_b), 6);
 			utils::hook::nop(SELECT_VALUE(0x3CBA4E_b, 0x512AAE_b), 2);
 			utils::hook::call(SELECT_VALUE(0x3CBA46_b, 0x512AA6_b), vm_call_builtin_method_stub);
+			*/
 
-			utils::hook::call(SELECT_VALUE(0x3CC9F3_b, 0x513A53_b), vm_error_stub); // LargeLocalResetToMark
+			utils::hook::call(0xC0F8C1_b, vm_error_stub); // LargeLocalResetToMark
 
+			/*
 			if (game::environment::is_dedi())
 			{
 				function::add("isusingmatchrulesdata", [](const function_args& args)
@@ -369,7 +378,6 @@ namespace gsc
 				});
 			}
 
-			/*
 			function::add("print", [](const function_args& args)
 			{
 				print(args);
@@ -468,4 +476,4 @@ namespace gsc
 	};
 }
 
-REGISTER_COMPONENT(gsc::extension)
+//REGISTER_COMPONENT(gsc::extension)

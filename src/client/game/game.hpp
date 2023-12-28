@@ -58,9 +58,8 @@ namespace game
 	void SV_CmdsMP_RequestMapRestart(bool loadScripts, bool migrate);
 }
 
-inline uintptr_t operator"" _b(const uintptr_t ptr)
-{
-	return game::base_address + ptr;
-}
+size_t operator"" _b(const size_t ptr);
+size_t reverse_b(const size_t ptr);
+size_t reverse_b(const void* ptr);
 
 #include "symbols.hpp"

@@ -1,5 +1,5 @@
 #include <std_include.hpp>
-/*
+
 #include "loader/component_loader.hpp"
 #include "game/game.hpp"
 
@@ -326,29 +326,24 @@ namespace gsc
 	public:
 		void post_unpack() override
 		{
-			scr_emit_function_hook.create(SELECT_VALUE(0x3BD680_b, 0x504660_b), &scr_emit_function_stub);
+			scr_emit_function_hook.create(0xBFCF90_b, &scr_emit_function_stub);
 
-			utils::hook::call(SELECT_VALUE(0x3BD626_b, 0x504606_b), compile_error_stub); // CompileError (LinkFile)
-			utils::hook::call(SELECT_VALUE(0x3BD672_b, 0x504652_b), compile_error_stub); // ^
-			utils::hook::call(SELECT_VALUE(0x3BD75A_b, 0x50473A_b), find_variable_stub); // Scr_EmitFunction
+			utils::hook::call(0xBFCF3A_b, compile_error_stub); // CompileError (LinkFile)
+			utils::hook::call(0xBFCF86_b, compile_error_stub); // ^
+			utils::hook::call(0xBFD06F_b, find_variable_stub); // Scr_EmitFunction
 
 			// Restore basic error messages for commonly used scr functions
-			utils::hook::jump(SELECT_VALUE(0x3C89F0_b, 0x50F9E0_b), scr_get_object);
-			utils::hook::jump(SELECT_VALUE(0x3C84C0_b, 0x50F560_b), scr_get_const_string);
-			utils::hook::jump(SELECT_VALUE(0x3C8280_b, 0x50F320_b), scr_get_const_istring);
-			utils::hook::jump(SELECT_VALUE(0x2D6950_b, 0x452EF0_b), scr_validate_localized_string_ref);
-			utils::hook::jump(SELECT_VALUE(0x3C8F30_b, 0x50FF20_b), scr_get_vector);
-			utils::hook::jump(SELECT_VALUE(0x3C8930_b, 0x50F920_b), scr_get_int);
-			utils::hook::jump(SELECT_VALUE(0x3C87D0_b, 0x50F870_b), scr_get_float);
+			utils::hook::jump(0xC0BA10_b, scr_get_object);
+			utils::hook::jump(0xC0B4C0_b, scr_get_const_string);
+			utils::hook::jump(0xC0B270_b, scr_get_const_istring); // might be wrong address
+			utils::hook::jump(0xB52210_b, scr_validate_localized_string_ref);
+			utils::hook::jump(0xC0BF40_b, scr_get_vector);
+			utils::hook::jump(0xC0B950_b, scr_get_int);
+			utils::hook::jump(0xC0B7E0_b, scr_get_float);
 
-			utils::hook::jump(SELECT_VALUE(0x3C8C10_b, 0x50FC00_b), scr_get_pointer_type);
-			utils::hook::jump(SELECT_VALUE(0x3C8DE0_b, 0x50FDD0_b), scr_get_type);
-			utils::hook::jump(SELECT_VALUE(0x3C8E50_b, 0x50FE40_b), scr_get_type_name);
-
-			if (!game::environment::is_sp())
-			{
-				safe_func<0xBA7A0>(); // fix vlobby cac crash
-			}
+			utils::hook::jump(0xC0BC00_b, scr_get_pointer_type);
+			utils::hook::jump(0xC0BDE0_b, scr_get_type);
+			utils::hook::jump(0xC0BE50_b, scr_get_type_name);
 		}
 
 		void pre_destroy() override
@@ -359,4 +354,3 @@ namespace gsc
 }
 
 REGISTER_COMPONENT(gsc::error)
-*/
