@@ -41,9 +41,9 @@ namespace gsc
 		{
 			if (script_memory.buf == nullptr)
 			{
-				game::PMem_BeginAlloc("custom_gsc_script", game::PMEM_STACK_GAME);
-				script_memory.buf = game::PMem_AllocFromSource_NoDebug(script_memory.size, 4, game::PMEM_SOURCE_EXTERNAL); // PMEM_SOURCE_SCRIPT, defined as 0 on IW7??
-				game::PMem_EndAlloc("custom_gsc_script", game::PMEM_STACK_GAME);
+				game::PMem_BeginAlloc("custom_gsc_script", 1);
+				script_memory.buf = game::PMem_AllocFromSource_NoDebug(script_memory.size, 4, 0, 1); // 3rd paramter unused because of 4th
+				game::PMem_EndAlloc("custom_gsc_script", 1);
 				script_memory.pos = script_memory.buf;
 			}
 
@@ -59,7 +59,7 @@ namespace gsc
 
 		void free_script_memory()
 		{
-			game::PMem_Free("custom_gsc_script", game::PMEM_STACK_GAME);
+			game::PMem_Free("custom_gsc_script", 1);
 			script_memory.buf = nullptr;
 			script_memory.pos = nullptr;
 		}
@@ -75,8 +75,6 @@ namespace gsc
 
 		bool read_raw_script_file(const std::string& name, std::string* data)
 		{
-			console::debug("[read_raw_script_file] %s\n", name.data());
-
 			if (filesystem::read_file(name, data))
 			{
 				return true;
@@ -118,8 +116,6 @@ namespace gsc
 			{
 				return nullptr;
 			}
-
-			console::debug("working with %s\n", real_name.data());
 
 			// filter out "GSC rawfiles" that were used for development usage and are not meant for us.
 			// each "GSC rawfile" has a ScriptFile counterpart to be used instead
@@ -229,8 +225,14 @@ namespace gsc
 				return;
 			}
 
-			const auto main_handle = game::Scr_GetFunctionHandle(name.data(), gsc_ctx->token_id("main"));
-			const auto init_handle = game::Scr_GetFunctionHandle(name.data(), gsc_ctx->token_id("init"));
+			console::debug("load_script: getting handles for '%s'\n", name.data());
+
+			const auto main_token = gsc_ctx->token_id("main");
+			const auto init_token = gsc_ctx->token_id("init");
+			const auto main_handle = game::Scr_GetFunctionHandle(name.data(), main_token);
+			const auto init_handle = game::Scr_GetFunctionHandle(name.data(), init_token);
+
+			console::debug("main token: %u (%u), init token: %u (%u)\n", main_token, main_handle, init_token, init_handle);
 
 			if (main_handle)
 			{
@@ -265,6 +267,8 @@ namespace gsc
 				const auto relative = path.lexically_relative(root_dir).generic_string();
 				const auto base_name = relative.substr(0, relative.size() - 4);
 
+				console::debug("load_script called on %s\n", base_name.data());
+
 				load_script(base_name);
 			}
 		}
@@ -281,8 +285,6 @@ namespace gsc
 
 		void load_scripts_stub()
 		{
-			utils::hook::invoke<void>(0xB50670_b);
-
 			if (!game::Com_FrontEndScene_IsActive())
 			{
 				for (const auto& path : filesystem::get_search_paths())
@@ -290,6 +292,8 @@ namespace gsc
 					load_scripts(path, "scripts/");
 				}
 			}
+
+			utils::hook::invoke<void>(0xB50670_b);
 		}
 
 		void db_get_raw_buffer_stub(const game::RawFile* rawfile, char* buf, const int size)
@@ -350,9 +354,10 @@ namespace gsc
 		{
 			for (auto& function_handle : main_handles)
 			{
-				printf("Executing '%s::main'\n", function_handle.first.data());
+				console::info("Executing '%s::main'\n", function_handle.first.data());
 				game::RemoveRefToObject(game::Scr_ExecThread(function_handle.second, 0));
 			}
+
 			g_load_structs_hook.invoke<void>();
 		}
 
@@ -361,7 +366,7 @@ namespace gsc
 		{
 			for (auto& function_handle : init_handles)
 			{
-				printf("Executing '%s::init'\n", function_handle.first.data());
+				console::info("Executing '%s::init'\n", function_handle.first.data());
 				game::RemoveRefToObject(game::Scr_ExecThread(function_handle.second, 0));
 			}
 			scr_load_level_hook.invoke<void>();
@@ -412,13 +417,15 @@ namespace gsc
 			utils::hook::call(0xB5CB70_b, load_scripts_stub);
 
 			// execute main handle after G_LoadStructs (now called G_Spawn_LoadStructs)
-			g_load_structs_hook.create(0x409FB0_b, g_load_structs_stub);
+			//g_load_structs_hook.create(0x409FB0_b, g_load_structs_stub);
 
 			// execute init handle
 			scr_load_level_hook.create(0xB51B40_b, scr_load_level_stub);
 
+			/*
 			// clear memory (G_MainMP_ShutdownGameMemory)
 			g_shutdown_game_hook.create(0xC56C80_b, g_shutdown_game_stub);
+			*/
 		}
 
 		void pre_destroy() override

@@ -178,10 +178,10 @@ namespace game
 	WEAK symbol<int(int length, void const* data, const netadr_s* to)> Sys_SendPacket{ 0xD57DE0 };
 	WEAK symbol<int(netadr_s* net_from, msg_t* net_message)> Sys_GetPacket{ 0xD57D50 };
 
-	WEAK symbol<void(const char* name, PMem_Stack stackIndex)> PMem_BeginAlloc{ 0xCF0E10 };
-	WEAK symbol<void(const char* name, PMem_Stack stackIndex)> PMem_EndAlloc{ 0xCF1070 };
-	WEAK symbol<char* (const size_t size, unsigned int alignment, PMem_Source source)> PMem_AllocFromSource_NoDebug{ 0xCF0BB0 };
-	WEAK symbol<void(const char* name, PMem_Stack stackIndex)> PMem_Free{ 0xCF10D0 };
+	WEAK symbol<void(const char* name, int allocDir)> PMem_BeginAlloc{ 0xCF0E10 };
+	WEAK symbol<void(const char* name, int allocDir)> PMem_EndAlloc{ 0xCF1070 };
+	WEAK symbol<char* (const size_t size, unsigned int alignment, int type, int source)> PMem_AllocFromSource_NoDebug{ 0xCF0A90 };
+	WEAK symbol<void(const char* name, int allocDir)> PMem_Free{ 0xCF10D0 };
 
 	WEAK symbol<unsigned int(unsigned int localId, const char* pos,
 		unsigned int paramcount)> VM_Execute{ 0xC0CDB0 };

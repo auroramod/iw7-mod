@@ -335,7 +335,7 @@ namespace gsc
 			// Restore basic error messages for commonly used scr functions
 			utils::hook::jump(0xC0BA10_b, scr_get_object);
 			utils::hook::jump(0xC0B4C0_b, scr_get_const_string);
-			utils::hook::jump(0xC0B270_b, scr_get_const_istring); // might be wrong address
+			utils::hook::jump(0xC0B270_b, scr_get_const_istring);
 			utils::hook::jump(0xB52210_b, scr_validate_localized_string_ref);
 			utils::hook::jump(0xC0BF40_b, scr_get_vector);
 			utils::hook::jump(0xC0B950_b, scr_get_int);

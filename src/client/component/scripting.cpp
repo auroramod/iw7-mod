@@ -219,4 +219,4 @@ namespace scripting
 	};
 }
 
-//REGISTER_COMPONENT(scripting::component)
+REGISTER_COMPONENT(scripting::component)
