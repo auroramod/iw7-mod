@@ -31,3 +31,6 @@
 [submodule "deps/rapidjson"]
 	path = deps/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
+[submodule "deps/gsc-tool"]
+	path = deps/gsc-tool
+	url = https://github.com/xensik/gsc-tool.git
