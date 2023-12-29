@@ -276,9 +276,6 @@ namespace game
 	WEAK game::symbol<unsigned __int64> pmem_size{ 0x7686A28 };
 	WEAK game::symbol<unsigned char*> pmem_buffer{ 0x7686A20 };
 
-	/*
-	WEAK game::symbol<PhysicalMemory> g_mem{ 0xD5F26E0, 0xC92E1E0 };
-	WEAK game::symbol<PhysicalMemory> g_scriptmem{ 0xD5F3140, 0xC92EC40 };
-	WEAK game::symbol<PhysicalMemory> g_physmem{ 0xD5F3BA0, 0xC92F6A0 };
-	*/
+	WEAK game::symbol<PhysicalMemory> g_mem{ 0x7685560 };
+	WEAK game::symbol<PhysicalMemory> g_scriptmem{ 0x7685FC0 };
 }

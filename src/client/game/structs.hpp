@@ -3267,16 +3267,78 @@ namespace game
 	enum PMem_Source
 	{
 		PMEM_SOURCE_EXTERNAL = 0x0,
-		PMEM_SOURCE_DATABASE = 0x1,
-		PMEM_SOURCE_DEFAULT_LOW = 0x2,
-		PMEM_SOURCE_DEFAULT_HIGH = 0x3,
-		PMEM_SOURCE_MOVIE = 0x4,
-		PMEM_SOURCE_SCRIPT = 0x5,
-		PMEM_SOURCE_UNK5 = 0x5,
-		PMEM_SOURCE_UNK6 = 0x6,
-		PMEM_SOURCE_UNK7 = 0x7,
-		PMEM_SOURCE_UNK8 = 0x8,
-		PMEM_SOURCE_CUSTOMIZATION = 0x9,
+		PMEM_SOURCE_SCRIPT = 0x1,
+	};
+
+	enum PMem_Direction : __int32
+	{
+		PHYS_ALLOC_LOW = 0x0,
+		PHYS_ALLOC_HIGH = 0x1,
+		PHYS_ALLOC_COUNT = 0x2,
+	};
+
+	enum Mem_PageID
+	{
+	};
+
+	struct Mem_PageRange
+	{
+		Mem_PageID firstPageID;
+		Mem_PageID lastPageID;
+	};
+
+	struct PhysicalMemoryAllocation
+	{
+		const char* name;
+		char* prev_buffer;
+		char* next_buffer;
+		unsigned __int64 pos;
+		Mem_PageRange pageRange;
+	};
+
+	struct PhysicalMemoryPrim
+	{
+		const char* name;
+		unsigned int allocListCount;
+		char __pad0[4];
+		unsigned __int8* buf;
+		unsigned __int64 unk_pos;
+		int unk1;
+		char __pad2[4];
+		unsigned __int64 pos;
+		PhysicalMemoryAllocation allocList[32];
+	};
+
+	struct PhysicalMemory
+	{
+		PhysicalMemoryPrim prim[2];
+	};
+
+	struct XBlock
+	{
+		char* alloc;
+		unsigned __int64 size;
+	};
+
+	struct XZoneMemory
+	{
+		XBlock blocks[10];
+		char __pad0[200]; // unk size
+	};
+
+	enum XFileBlock
+	{
+		XFILE_BLOCK_TEMP_ADDITIONAL = 0x0,
+		XFILE_BLOCK_TEMP = 0x1,
+		XFILE_BLOCK_TEMP_PRELOAD = 0x2,
+		XFILE_BLOCK_CALLBACK = 0x3,
+		XFILE_BLOCK_RUNTIME = 0x4,
+		XFILE_BLOCK_RUNTIME_VIDEO = 0x5,
+		XFILE_BLOCK_CACHED_VIDEO = 0x6,
+		XFILE_BLOCK_PHYSICAL = 0x7,
+		XFILE_BLOCK_VIRTUAL = 0x8,
+		XFILE_BLOCK_SCRIPT = 0x9,
+		MAX_XFILE_COUNT = 0xA,
 	};
 
 	enum VariableType

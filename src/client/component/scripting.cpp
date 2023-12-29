@@ -27,7 +27,6 @@ namespace scripting
 	utils::concurrency::container<shared_table_t> shared_table;
 
 	std::string current_file;
-	unsigned int current_file_id{};
 
 	namespace
 	{
@@ -44,11 +43,8 @@ namespace scripting
 
 		utils::hook::detour sl_get_canonical_string_hook;
 
-		utils::hook::detour db_find_xasset_header_hook;
-
-		const char* current_script_file_name;
-
-		game::dvar_t* g_dump_scripts;
+		std::string current_script_file;
+		unsigned int current_file_id{};
 
 		std::vector<std::function<void(bool, bool)>> shutdown_callbacks;
 
@@ -115,13 +111,12 @@ namespace scripting
 
 		void process_script_stub(const char* filename)
 		{
-			current_script_file_name = filename;
+			current_script_file = filename;
 			
 			const auto file_id = atoi(filename);
 			if (file_id)
 			{
 				current_file_id = static_cast<std::uint16_t>(file_id);
-				current_file = scripting::get_token(current_file_id);
 			}
 			else
 			{
@@ -135,10 +130,14 @@ namespace scripting
 		void add_function_sort(unsigned int id, const char* pos)
 		{
 			std::string filename = current_file;
+			if (current_file_id)
+			{
+				filename = scripting::get_token(current_file_id);
+			}
 
 			if (!script_function_table_sort.contains(filename))
 			{
-				const auto script = gsc::find_script(game::ASSET_TYPE_SCRIPTFILE, current_script_file_name, false);
+				const auto script = gsc::find_script(game::ASSET_TYPE_SCRIPTFILE, current_script_file.data(), false);
 				if (script)
 				{
 					const auto end = &script->bytecode[script->bytecodeLen];
@@ -162,7 +161,15 @@ namespace scripting
 		{
 			add_function_sort(thread_name, code_pos);
 
-			add_function(current_file, thread_name, code_pos);
+			if (current_file_id)
+			{
+				const auto name = get_token(current_file_id);
+				add_function(name, thread_name, code_pos);
+			}
+			else
+			{
+				add_function(current_file, thread_name, code_pos);
+			}
 
 			scr_set_thread_position_hook.invoke<void>(thread_name, code_pos);
 		}
@@ -212,9 +219,6 @@ namespace scripting
 			scr_set_thread_position_hook.create(0xBFD190_b, scr_set_thread_position_stub);
 			process_script_hook.create(0xC09D20_b, process_script_stub);
 			sl_get_canonical_string_hook.create(game::SL_GetCanonicalString, sl_get_canonical_string_stub);
-
-			// clear memory (SV_GameMP_ShutdownGameVM)
-			g_shutdown_game_hook.create(0xB21CC0_b, g_shutdown_game_stub);
 		}
 	};
 }

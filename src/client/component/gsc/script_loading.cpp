@@ -28,22 +28,23 @@ namespace gsc
 		std::unordered_map<std::string, std::uint32_t> init_handles;
 
 		utils::memory::allocator scriptfile_allocator;
-		std::unordered_map<const char*, game::ScriptFile*> loaded_scripts;
+		std::unordered_map<std::string, game::ScriptFile*> loaded_scripts;
+
+		char* script_mem_buf = nullptr;
+		std::uint64_t script_mem_buf_size = 0;
 
 		struct
 		{
 			char* buf = nullptr;
 			char* pos = nullptr;
-			const unsigned int size = 0x100000i64;
+			const std::uint64_t size = 0x100000i64;
 		} script_memory;
 
 		char* allocate_buffer(size_t size)
 		{
 			if (script_memory.buf == nullptr)
 			{
-				game::PMem_BeginAlloc("custom_gsc_script", 1);
-				script_memory.buf = game::PMem_AllocFromSource_NoDebug(script_memory.size, 4, 0, 1); // 3rd paramter unused because of 4th
-				game::PMem_EndAlloc("custom_gsc_script", 1);
+				script_memory.buf = script_mem_buf;
 				script_memory.pos = script_memory.buf;
 			}
 
@@ -59,9 +60,12 @@ namespace gsc
 
 		void free_script_memory()
 		{
-			game::PMem_Free("custom_gsc_script", 1);
-			script_memory.buf = nullptr;
-			script_memory.pos = nullptr;
+			if (script_memory.buf != nullptr)
+			{
+				memset(script_memory.buf, 0, reinterpret_cast<size_t>(script_memory.pos) - reinterpret_cast<size_t>(script_memory.buf));
+				script_memory.buf = nullptr;
+				script_memory.pos = nullptr;
+			}
 		}
 
 		void clear()
@@ -106,7 +110,7 @@ namespace gsc
 				return itr->second;
 			}
 
-			if (game::Com_FrontEndScene_IsActive())
+			if (game::Com_FrontEnd_IsInFrontEnd())
 			{
 				return nullptr;
 			}
@@ -117,8 +121,10 @@ namespace gsc
 				return nullptr;
 			}
 
+			// TODO: check if needed in IW7
 			// filter out "GSC rawfiles" that were used for development usage and are not meant for us.
 			// each "GSC rawfile" has a ScriptFile counterpart to be used instead
+			/*
 			if (game::DB_XAssetExists(game::ASSET_TYPE_SCRIPTFILE, file_name) &&
 				!game::DB_IsXAssetDefault(game::ASSET_TYPE_SCRIPTFILE, file_name))
 			{
@@ -129,6 +135,7 @@ namespace gsc
 					return game::DB_FindXAssetHeader(game::ASSET_TYPE_SCRIPTFILE, file_name, false).scriptfile;
 				}
 			}
+			*/
 
 			console::debug("Loading custom gsc '%s.gsc'", real_name.data());
 
@@ -225,14 +232,8 @@ namespace gsc
 				return;
 			}
 
-			console::debug("load_script: getting handles for '%s'\n", name.data());
-
-			const auto main_token = gsc_ctx->token_id("main");
-			const auto init_token = gsc_ctx->token_id("init");
-			const auto main_handle = game::Scr_GetFunctionHandle(name.data(), main_token);
-			const auto init_handle = game::Scr_GetFunctionHandle(name.data(), init_token);
-
-			console::debug("main token: %u (%u), init token: %u (%u)\n", main_token, main_handle, init_token, init_handle);
+			const auto main_handle = game::Scr_GetFunctionHandle(name.data(), gsc_ctx->token_id("main"));
+			const auto init_handle = game::Scr_GetFunctionHandle(name.data(), gsc_ctx->token_id("init"));
 
 			if (main_handle)
 			{
@@ -267,8 +268,6 @@ namespace gsc
 				const auto relative = path.lexically_relative(root_dir).generic_string();
 				const auto base_name = relative.substr(0, relative.size() - 4);
 
-				console::debug("load_script called on %s\n", base_name.data());
-
 				load_script(base_name);
 			}
 		}
@@ -285,11 +284,12 @@ namespace gsc
 
 		void load_scripts_stub()
 		{
-			if (!game::Com_FrontEndScene_IsActive())
+			if (!game::Com_FrontEnd_IsInFrontEnd())
 			{
 				for (const auto& path : filesystem::get_search_paths())
 				{
-					load_scripts(path, "scripts/");
+					load_scripts(path, "userscripts/");
+					load_scripts(path, "userscripts/"s + game::Com_GameMode_GetActiveGameModeStr() + "/");
 				}
 			}
 
@@ -354,7 +354,7 @@ namespace gsc
 		{
 			for (auto& function_handle : main_handles)
 			{
-				console::info("Executing '%s::main'\n", function_handle.first.data());
+				console::debug("Executing '%s::main'\n", function_handle.first.data());
 				game::RemoveRefToObject(game::Scr_ExecThread(function_handle.second, 0));
 			}
 
@@ -366,17 +366,46 @@ namespace gsc
 		{
 			for (auto& function_handle : init_handles)
 			{
-				console::info("Executing '%s::init'\n", function_handle.first.data());
+				console::debug("Executing '%s::init'\n", function_handle.first.data());
 				game::RemoveRefToObject(game::Scr_ExecThread(function_handle.second, 0));
 			}
 			scr_load_level_hook.invoke<void>();
 		}
 
 		utils::hook::detour g_shutdown_game_hook;
-		void g_shutdown_game_stub(bool full_clear)
+		void g_shutdown_game_stub(int full_clear, int a2)
 		{
-			clear();
-			g_shutdown_game_hook.invoke<void>(full_clear);
+			if (full_clear && a2)
+			{
+				clear();
+			}
+			g_shutdown_game_hook.invoke<void>(full_clear, a2);
+		}
+
+		// donetsk developers will paste this in days
+		utils::hook::detour db_alloc_x_zone_memory_internal_hook;
+		void db_alloc_x_zone_memory_internal_stub(unsigned __int64* blockSize, const char* filename, game::XZoneMemory* zoneMem, unsigned int type)
+		{
+			bool patch = false; // ugly fix for script memory allocation
+			if (!_stricmp(filename, "code_post_gfx") && type == 2)
+			{
+				patch = true;
+				console::debug("patching memory for '%s'\n", filename);
+			}
+
+			if (patch)
+			{
+				blockSize[game::XFILE_BLOCK_SCRIPT] += script_memory.size;
+			}
+
+			db_alloc_x_zone_memory_internal_hook.invoke<void>(blockSize, filename, zoneMem, type);
+
+			if (patch)
+			{
+				blockSize[game::XFILE_BLOCK_SCRIPT] -= script_memory.size;
+				script_mem_buf = zoneMem->blocks[game::XFILE_BLOCK_SCRIPT].alloc + blockSize[game::XFILE_BLOCK_SCRIPT];
+				script_mem_buf_size = script_memory.size;
+			}
 		}
 	}
 
@@ -403,6 +432,9 @@ namespace gsc
 	public:
 		void post_unpack() override
 		{
+			// Allocate script memory (PMem doesn't work)
+			db_alloc_x_zone_memory_internal_hook.create(0xA75450_b, db_alloc_x_zone_memory_internal_stub);
+
 			// Load our scripts with an uncompressed stack
 			utils::hook::call(0xC09DA7_b, db_get_raw_buffer_stub);
 
@@ -422,10 +454,8 @@ namespace gsc
 			// execute init handle
 			scr_load_level_hook.create(0xB51B40_b, scr_load_level_stub);
 
-			/*
-			// clear memory (G_MainMP_ShutdownGameMemory)
-			g_shutdown_game_hook.create(0xC56C80_b, g_shutdown_game_stub);
-			*/
+			// clear memory (SV_GameMP_ShutdownGameVM)
+			g_shutdown_game_hook.create(0xBB36D86_b, g_shutdown_game_stub);
 		}
 
 		void pre_destroy() override
