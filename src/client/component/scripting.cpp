@@ -24,17 +24,11 @@ namespace scripting
 	std::unordered_map<std::string, std::vector<std::pair<std::string, const char*>>> script_function_table_sort;
 	std::unordered_map<const char*, std::pair<std::string, std::string>> script_function_table_rev;
 
-	utils::concurrency::container<shared_table_t> shared_table;
-
 	std::string current_file;
 
 	namespace
 	{
 		utils::hook::detour vm_notify_hook;
-		utils::hook::detour vm_execute_hook;
-		utils::hook::detour g_load_structs_hook;
-		utils::hook::detour scr_load_level_hook;
-		utils::hook::detour g_shutdown_game_hook;
 
 		utils::hook::detour scr_add_class_field_hook;
 
@@ -53,7 +47,7 @@ namespace scripting
 		void vm_notify_stub(const unsigned int notify_list_owner_id, const game::scr_string_t string_value,
 			game::VariableValue* top)
 		{
-			if (!game::Com_FrontEndScene_IsActive())
+			if (!game::Com_FrontEnd_IsInFrontEnd())
 			{
 				const auto* string = game::SL_ConvertToString(string_value);
 				if (string)
@@ -70,31 +64,6 @@ namespace scripting
 			}
 
 			vm_notify_hook.invoke<void>(notify_list_owner_id, string_value, top);
-		}
-
-		void g_shutdown_game_stub(const int free_scripts)
-		{
-			if (free_scripts)
-			{
-				script_function_table_sort.clear();
-				script_function_table.clear();
-				script_function_table_rev.clear();
-				canonical_string_table.clear();
-			}
-
-			for (const auto& callback : shutdown_callbacks)
-			{
-				callback(free_scripts, false);
-			}
-
-			scripting::notify(*game::levelEntityId, "shutdownGame_called", {1});
-
-			g_shutdown_game_hook.invoke<void>();
-
-			for (const auto& callback : shutdown_callbacks)
-			{
-				callback(free_scripts, true);
-			}
 		}
 
 		void scr_add_class_field_stub(unsigned int classnum, game::scr_string_t name, unsigned int canonical_string, unsigned int offset)
@@ -180,6 +149,91 @@ namespace scripting
 			canonical_string_table[result] = str;
 			return result;
 		}
+
+		void shutdown_game_pre(const int free_scripts)
+		{
+			if (free_scripts)
+			{
+				script_function_table_sort.clear();
+				script_function_table.clear();
+				script_function_table_rev.clear();
+				canonical_string_table.clear();
+			}
+
+			for (const auto& callback : shutdown_callbacks)
+			{
+				callback(free_scripts, false);
+			}
+
+			scripting::notify(*game::levelEntityId, "shutdownGame_called", { 1 });
+		}
+
+		void shutdown_game_post(const int free_scripts)
+		{
+			for (const auto& callback : shutdown_callbacks)
+			{
+				callback(free_scripts, true);
+			}
+		}
+
+		namespace mp
+		{
+			utils::hook::detour sv_initgame_vm_hook;
+			utils::hook::detour sv_shutdowngame_vm_hook;
+
+			void sv_initgame_vm_stub(game::sv::SvServerInitSettings* init_settings)
+			{
+				if (!game::Com_FrontEnd_IsInFrontEnd())
+				{
+					console::info("------- Game Initialization -------\n");
+					console::info("gamename: %s\n", "Call of Duty Infinite Warfare");
+					console::info("gamedate: %s\n", __DATE__);
+
+					//G_LogPrintf("------------------------------------------------------------\n");
+					//G_LogPrintf("InitGame: %s\n", serverinfo);
+				}
+
+				sv_initgame_vm_hook.invoke<void>(init_settings);
+
+				if (!game::Com_FrontEnd_IsInFrontEnd())
+				{
+					console::info("-----------------------------------\n");
+				}
+			}
+
+			void sv_shutdowngame_vm_stub(int full_clear, int a2)
+			{
+				if (!game::Com_FrontEnd_IsInFrontEnd())
+				{
+					console::info("==== ShutdownGame (%d) ====\n", full_clear);
+
+					//G_LogPrintf("ShutdownGame:\n");
+					//G_LogPrintf("------------------------------------------------------------\n");
+				}
+
+				shutdown_game_pre(full_clear);
+				sv_shutdowngame_vm_hook.invoke<void>(full_clear, a2);
+				shutdown_game_post(full_clear);
+			}
+		}
+
+		namespace sp
+		{
+			utils::hook::detour sv_initgame_vm_hook;
+			utils::hook::detour sv_shutdowngame_vm_hook;
+
+			void sv_initgame_vm_stub(int random_seed, int restart, int* savegame, void** save, int load_scripts)
+			{
+				sv_initgame_vm_hook.invoke<void>(random_seed, restart, savegame, save, load_scripts);
+			}
+
+			void sv_shutdowngame_vm_stub(int full_clear, int a2)
+			{
+				shutdown_game_pre(full_clear);
+				sv_shutdowngame_vm_hook.invoke<void>(full_clear, a2);
+				shutdown_game_post(full_clear);
+			}
+		}
 	}
 
 	std::string get_token(unsigned int id)
@@ -219,6 +273,11 @@ namespace scripting
 			scr_set_thread_position_hook.create(0xBFD190_b, scr_set_thread_position_stub);
 			process_script_hook.create(0xC09D20_b, process_script_stub);
 			sl_get_canonical_string_hook.create(game::SL_GetCanonicalString, sl_get_canonical_string_stub);
+
+			mp::sv_initgame_vm_hook.create(0xBA3428D_b, mp::sv_initgame_vm_stub);
+			sp::sv_initgame_vm_hook.create(0xBED4A96_b, sp::sv_initgame_vm_stub);
+			mp::sv_shutdowngame_vm_hook.create(0xBB36D86_b, mp::sv_shutdowngame_vm_stub);
+			sp::sv_shutdowngame_vm_hook.create(0x12159B6_b, sp::sv_shutdowngame_vm_stub);
 		}
 	};
 }

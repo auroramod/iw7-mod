@@ -10,6 +10,7 @@
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
 #include <utils/concurrency.hpp>
+#include <utils/io.hpp>
 
 //#define XFILE_DEBUG
 
@@ -56,6 +57,28 @@ namespace fastfiles
 			return db_load_x_zone_hook.invoke<void>(parent_name, zone_flags, is_base_map, failure_mode);
 		}
 
+		game::dvar_t* g_dump_scripts;
+		void dump_gsc_script(const std::string& name, game::XAssetHeader header)
+		{
+			if (!g_dump_scripts->current.enabled)
+			{
+				return;
+			}
+
+			std::string buffer;
+			buffer.append(header.scriptfile->name, strlen(header.scriptfile->name) + 1);
+			buffer.append(reinterpret_cast<char*>(&header.scriptfile->compressedLen), 4);
+			buffer.append(reinterpret_cast<char*>(&header.scriptfile->len), 4);
+			buffer.append(reinterpret_cast<char*>(&header.scriptfile->bytecodeLen), 4);
+			buffer.append(header.scriptfile->buffer, header.scriptfile->compressedLen);
+			buffer.append(header.scriptfile->bytecode, header.scriptfile->bytecodeLen);
+
+			const auto out_name = utils::string::va("gsc_dump/%s.gscbin", name.data());
+			utils::io::write_file(out_name, buffer);
+
+			console::info("Dumped %s\n", out_name);
+		}
+
 		game::XAssetHeader db_find_xasset_header_stub(game::XAssetType type, const char* name, const int allow_create_default)
 		{
 			auto result = db_find_xasset_header_hook.invoke<game::XAssetHeader>(type, name, allow_create_default);
@@ -64,6 +87,10 @@ namespace fastfiles
 				console::error("Error: Could not find %s \"%s\"\n",
 					game::g_assetNames[static_cast<unsigned int>(type)],
 					name);
+			}
+			if (type == game::ASSET_TYPE_SCRIPTFILE && result.scriptfile)
+			{
+				dump_gsc_script(name, result);
 			}
 			return result;
 		}
@@ -97,6 +124,8 @@ namespace fastfiles
 #endif
 
 			db_find_xasset_header_hook.create(game::DB_FindXAssetHeader, db_find_xasset_header_stub);
+
+			g_dump_scripts = game::Dvar_RegisterBool("g_dumpScripts", false, game::DVAR_FLAG_NONE, "Dump GSC scripts");
 
 			command::add("listassetpool", [](const command::params& params)
 			{

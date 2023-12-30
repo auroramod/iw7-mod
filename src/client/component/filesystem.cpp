@@ -25,21 +25,44 @@ namespace filesystem
 			return search_paths;
 		}
 
+		void fs_display_path()
+		{
+			console::info("Current language: %s\n", game::SEH_GetLanguageName(*reinterpret_cast<int*>(0x74C6420_b)));
+			console::info("Current search paths:\n");
+
+			if (game::fs_searchpaths.get())
+			{
+				for (auto i = game::fs_searchpaths.get()->next; i; i = i->next)
+				{
+					console::info("%s/%s\n", i->dir->path, i->dir->gamedir);
+				}
+			}
+
+			for (auto path : filesystem::get_search_paths())
+			{
+				console::info("%s\n", path.data());
+			}
+		}
+
 		void fs_startup_stub(const char* name)
 		{
-			console::info("[FS] Startup\n");
+			console::info("----- FS_Startup -----\n");
 
 			initialized = true;
 
 			filesystem::register_path(L".");
 			filesystem::register_path(L"iw7-mod");
-			filesystem::register_path(L"devraw");
 			filesystem::register_path(L"devraw_shared");
+			filesystem::register_path(L"devraw");
 			filesystem::register_path(L"raw_shared");
 			filesystem::register_path(L"raw");
+			filesystem::register_path(L"main_shared");
 			filesystem::register_path(L"main");
 
 			fs_startup_hook.invoke<void>(name);
+
+			fs_display_path();
+			console::info("----------------------\n");
 		}
 
 		std::vector<std::filesystem::path> get_paths(const std::filesystem::path& path)
@@ -143,7 +166,7 @@ namespace filesystem
 		{
 			if (can_insert_path(path_))
 			{
-				console::info("[FS] Registering path '%s'\n", path_.generic_string().data());
+				console::debug("[FS] Registering path '%s'\n", path_.generic_string().data());
 				get_search_paths_internal().push_front(path_);
 			}
 		}

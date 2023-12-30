@@ -129,6 +129,9 @@ namespace game
 		int entnum, int offset)> GetEntityFieldValue{ 0xC09CC0 };
 
 	WEAK symbol<int(int clientNum)> G_MainMP_GetClientScore{ 0xB20550 };
+	WEAK symbol<void* (void*, const char* name)> G_GetWeaponForName { 0x733D40 };
+	WEAK symbol<int (void*, const void* weapon, int dualWield, int startInAltMode, int usedBefore)> G_GivePlayerWeapon{ 0x733D40 };
+	WEAK symbol<int(void*, const void* weapon, const bool isAlternate, int hadWeapon)> G_InitializeAmmo{ 0x733D40 };
 
 	WEAK symbol<char* (char* string)> I_CleanStr{ 0xCFACC0 };
 
@@ -171,12 +174,17 @@ namespace game
 #define R_AddCmdDrawTextWithCursor(TXT, MC, F, UNK, X, Y, XS, YS, R, C, S, CP, CC) \
 	IW7_AddBaseDrawTextCmd(TXT, MC, F, game::R_GetFontHeight(F), X, Y, XS, YS, R, C, CP, CC, game::R_DrawSomething(S), 0, 0, 0, 0)
 
+	WEAK symbol<char* ()> Sys_Cwd{ 0xCFE5A0 };
+	
 	WEAK symbol<int()> Sys_Milliseconds{ 0xD58110 };
 
 	WEAK symbol<HANDLE(Sys_Folder folder, const char* baseFilename)> Sys_CreateFile{ 0xCFDF50 };
 
 	WEAK symbol<int(int length, void const* data, const netadr_s* to)> Sys_SendPacket{ 0xD57DE0 };
 	WEAK symbol<int(netadr_s* net_from, msg_t* net_message)> Sys_GetPacket{ 0xD57D50 };
+
+	WEAK symbol<char* ()> SEH_GetCurrentLanguageName{ 0xCBB090 };
+	WEAK symbol<char* (int code)> SEH_GetLanguageName{ 0xCBB140 };
 
 	WEAK symbol<void(const char* name, int allocDir)> PMem_BeginAlloc{ 0xCF0E10 };
 	WEAK symbol<void(const char* name, int allocDir)> PMem_EndAlloc{ 0xCF1070 };
@@ -221,6 +229,7 @@ namespace game
 	WEAK symbol<bool()> SV_Loaded{ 0xC114C0 };
 	WEAK symbol<bool(const char* name)> SV_MapExists{ 0xCDB620 };
 	WEAK symbol<bool(int clientNum)> SV_BotIsBot{ 0xC3BC90 };
+	WEAK symbol<void* (int num)> SV_GetPlayerstateForClientNum{ 0xC123A0 };
 
 	WEAK symbol<void(int)> SND_StopSounds{ 0xCA06E0 };
 	WEAK symbol<void(const char*)> SND_SetMusicState{ 0xC9E110 };
@@ -273,9 +282,8 @@ namespace game
 	WEAK symbol<scrVmPub_t> scr_VmPub{ 0x6B183B0 };
 	WEAK symbol<function_stack_t> scr_function_stack{ 0x6B22908 };
 
-	WEAK game::symbol<unsigned __int64> pmem_size{ 0x7686A28 };
-	WEAK game::symbol<unsigned char*> pmem_buffer{ 0x7686A20 };
+	WEAK symbol<PhysicalMemory> g_mem{ 0x7685560 };
+	WEAK symbol<PhysicalMemory> g_scriptmem{ 0x7685FC0 };
 
-	WEAK game::symbol<PhysicalMemory> g_mem{ 0x7685560 };
-	WEAK game::symbol<PhysicalMemory> g_scriptmem{ 0x7685FC0 };
+	WEAK symbol<searchpath_s> fs_searchpaths{ 0x756DEE0 };
 }

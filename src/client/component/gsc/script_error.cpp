@@ -279,26 +279,6 @@ namespace gsc
 			scr_error(va("Parameter %u does not exist", index + 1));
 			return nullptr;
 		}
-
-		template <size_t rva>
-		void safe_func()
-		{
-			static utils::hook::detour hook;
-			static const auto stub = []()
-			{
-				__try
-				{
-					hook.invoke<void>();
-				}
-				__except (EXCEPTION_EXECUTE_HANDLER)
-				{
-					game::Scr_ErrorInternal();
-				}
-			};
-
-			const auto ptr = rva + 0_b;
-			hook.create(reinterpret_cast<void*>(ptr), stub);
-		}
 	}
 
 	std::optional<std::pair<std::string, std::string>> find_function(const char* pos)
@@ -341,11 +321,6 @@ namespace gsc
 			utils::hook::jump(0xC0BC00_b, scr_get_pointer_type);
 			utils::hook::jump(0xC0BDE0_b, scr_get_type);
 			utils::hook::jump(0xC0BE50_b, scr_get_type_name);
-		}
-
-		void pre_destroy() override
-		{
-			scr_emit_function_hook.clear();
 		}
 	};
 }

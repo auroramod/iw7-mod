@@ -6,6 +6,8 @@
 #include "component/filesystem.hpp"
 #include "component/scripting.hpp"
 
+#include "script_extension.hpp"
+
 #include "game/game.hpp"
 
 #include "script_loading.hpp"
@@ -121,21 +123,18 @@ namespace gsc
 				return nullptr;
 			}
 
-			// TODO: check if needed in IW7
 			// filter out "GSC rawfiles" that were used for development usage and are not meant for us.
 			// each "GSC rawfile" has a ScriptFile counterpart to be used instead
-			/*
 			if (game::DB_XAssetExists(game::ASSET_TYPE_SCRIPTFILE, file_name) &&
 				!game::DB_IsXAssetDefault(game::ASSET_TYPE_SCRIPTFILE, file_name))
 			{
-				if ((real_name.starts_with("maps/createfx") || real_name.starts_with("maps/createart") || real_name.starts_with("maps/mp"))
-					&& (real_name.ends_with("_fx") || real_name.ends_with("_fog") || real_name.ends_with("_hdr")))
+				if (real_name.starts_with(utils::string::va("scripts/%s/maps/", game::Com_GameMode_GetActiveGameModeStr()))
+					&& real_name.ends_with("_fx"))
 				{
 					console::debug("Refusing to compile rawfile '%s'\n", real_name.data());
 					return game::DB_FindXAssetHeader(game::ASSET_TYPE_SCRIPTFILE, file_name, false).scriptfile;
 				}
 			}
-			*/
 
 			console::debug("Loading custom gsc '%s.gsc'", real_name.data());
 
@@ -150,7 +149,7 @@ namespace gsc
 				const auto assembly_ptr = compiler.compile(real_name, data);
 				const auto output_script = assembler.assemble(*assembly_ptr);
 
-				const auto bytecode = output_script.first; // formerly named "script"
+				const auto bytecode = output_script.first;
 				const auto stack = output_script.second;
 
 				const auto script_file_ptr = static_cast<game::ScriptFile*>(scriptfile_allocator.allocate(sizeof(game::ScriptFile)));
@@ -272,17 +271,7 @@ namespace gsc
 			}
 		}
 
-		int db_is_x_asset_default(game::XAssetType type, const char* name)
-		{
-			if (loaded_scripts.contains(name))
-			{
-				return 0;
-			}
-
-			return game::DB_IsXAssetDefault(type, name);
-		}
-
-		void load_scripts_stub()
+		void load_scripts()
 		{
 			if (!game::Com_FrontEnd_IsInFrontEnd())
 			{
@@ -293,27 +282,13 @@ namespace gsc
 					load_scripts(path, "custom_scripts/"s + game::Com_GameMode_GetActiveGameModeStr() + "/");
 				}
 			}
-
-			utils::hook::invoke<void>(0xB50670_b);
 		}
 
-		void db_get_raw_buffer_stub(const game::RawFile* rawfile, char* buf, const int size)
+		void init_compiler()
 		{
-			if (rawfile->len > 0 && rawfile->compressedLen == 0)
-			{
-				std::memset(buf, 0, size);
-				std::memcpy(buf, rawfile->buffer, std::min(rawfile->len, size));
-				return;
-			}
-
-			game::DB_GetRawBuffer(rawfile, buf, size);
-		}
-
-		void scr_begin_load_scripts_stub(bool a1)
-		{
-			const bool dev_script = true;
+			const bool dev_script = developer_script ? developer_script->current.enabled : false;
 			const auto comp_mode = dev_script ?
-				xsk::gsc::build::dev:
+				xsk::gsc::build::dev :
 				xsk::gsc::build::prod;
 
 			gsc_ctx->init(comp_mode, [](const std::string& include_name)
@@ -336,18 +311,27 @@ namespace gsc
 				std::vector<std::uint8_t> script_data;
 				script_data.assign(file_buffer.begin(), file_buffer.end());
 
-				return {{}, script_data};
+				return { {}, script_data };
 			});
-
-			scr_begin_load_scripts_hook.invoke<void>(a1);
 		}
 
-		void scr_end_load_scripts_stub()
+		void scr_begin_load_scripts_stub(bool a1)
+		{
+			// start the compiler
+			init_compiler();
+
+			scr_begin_load_scripts_hook.invoke<void>(a1);
+
+			 // load scripts
+			load_scripts();
+		}
+
+		void scr_end_load_scripts_stub(const char* a1)
 		{
 			// cleanup the compiler
 			gsc_ctx->cleanup();
 
-			scr_end_load_scripts_hook.invoke<void>();
+			scr_end_load_scripts_hook.invoke<void>(a1);
 		}
 
 		utils::hook::detour g_load_structs_hook;
@@ -370,17 +354,30 @@ namespace gsc
 				console::debug("Executing '%s::init'\n", function_handle.first.data());
 				game::RemoveRefToObject(game::Scr_ExecThread(function_handle.second, 0));
 			}
+
 			scr_load_level_hook.invoke<void>();
 		}
 
-		utils::hook::detour g_shutdown_game_hook;
-		void g_shutdown_game_stub(int full_clear, int a2)
+		int db_is_x_asset_default(game::XAssetType type, const char* name)
 		{
-			if (full_clear && a2)
+			if (loaded_scripts.contains(name))
 			{
-				clear();
+				return 0;
 			}
-			g_shutdown_game_hook.invoke<void>(full_clear, a2);
+
+			return game::DB_IsXAssetDefault(type, name);
+		}
+
+		void db_get_raw_buffer_stub(const game::RawFile* rawfile, char* buf, const int size)
+		{
+			if (rawfile->len > 0 && rawfile->compressedLen == 0)
+			{
+				std::memset(buf, 0, size);
+				std::memcpy(buf, rawfile->buffer, std::min(rawfile->len, size));
+				return;
+			}
+
+			game::DB_GetRawBuffer(rawfile, buf, size);
 		}
 
 		// donetsk developers will paste this in days
@@ -436,9 +433,15 @@ namespace gsc
 			// Allocate script memory (PMem doesn't work)
 			db_alloc_x_zone_memory_internal_hook.create(0xA75450_b, db_alloc_x_zone_memory_internal_stub);
 
+			// Increase allocated script memory
+			utils::hook::set<uint32_t>(0xA75B5C_b + 1, 0x480000 + static_cast<std::uint32_t>(script_memory.size));
+			utils::hook::set<uint32_t>(0xA75BAA_b + 4, 0x480 + (static_cast<std::uint32_t>(script_memory.size) >> 12));
+			utils::hook::set<uint32_t>(0xA75BBE_b + 6, 0x480 + (static_cast<std::uint32_t>(script_memory.size) >> 12));
+
 			// Load our scripts with an uncompressed stack
 			utils::hook::call(0xC09DA7_b, db_get_raw_buffer_stub);
 
+			// Compiler start and cleanup, also loads scripts
 			scr_begin_load_scripts_hook.create(0xBFD500_b, scr_begin_load_scripts_stub);
 			scr_end_load_scripts_hook.create(0xBFD630_b, scr_end_load_scripts_stub);
 
@@ -446,23 +449,19 @@ namespace gsc
 			utils::hook::call(0xC09D37_b, find_script);
 			utils::hook::call(0xC09D47_b, db_is_x_asset_default);
 
-			// GScr_LoadScripts: initial loading of scripts
-			utils::hook::call(0xB5CB70_b, load_scripts_stub);
-
-			// execute main handle after G_LoadStructs (now called G_Spawn_LoadStructs)
-			//g_load_structs_hook.create(0x409FB0_b, g_load_structs_stub);
+			// execute main handle
+			g_load_structs_hook.create(0x409FB0_b, g_load_structs_stub);
 
 			// execute init handle
 			scr_load_level_hook.create(0xB51B40_b, scr_load_level_stub);
 
-			// clear memory (SV_GameMP_ShutdownGameVM)
-			g_shutdown_game_hook.create(0xBB36D86_b, g_shutdown_game_stub);
-		}
-
-		void pre_destroy() override
-		{
-			scr_begin_load_scripts_hook.clear();
-			scr_end_load_scripts_hook.clear();
+			scripting::on_shutdown([](bool free_scripts, bool post_shutdown)
+			{
+				if (free_scripts && post_shutdown)
+				{
+					clear();
+				}
+			});
 		}
 	};
 }

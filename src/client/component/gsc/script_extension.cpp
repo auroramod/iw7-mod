@@ -193,8 +193,7 @@ namespace gsc
 
 		void vm_error_stub(int mark_pos)
 		{
-			//const bool dev_script = developer_script ? developer_script->current.enabled : false;
-			bool dev_script = true;
+			const bool dev_script = developer_script ? developer_script->current.enabled : false;
 
 			if (!dev_script && !force_error_print)
 			{
@@ -327,7 +326,7 @@ namespace gsc
 	public:
 		void post_unpack() override
 		{
-			//developer_script = dvars::register_bool("developer_script", false, 0, "Enable developer script comments");
+			developer_script = game::Dvar_RegisterBool("developer_script", true, 0, "Enable developer script comments"); // enable by default for now
 
 			/*
 			utils::hook::set<uint32_t>(0xBFD16C_b, 0x1000); // change builtin func count
@@ -476,4 +475,4 @@ namespace gsc
 	};
 }
 
-//REGISTER_COMPONENT(gsc::extension)
+REGISTER_COMPONENT(gsc::extension)

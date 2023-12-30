@@ -7,6 +7,8 @@
 
 #include <utils/hook.hpp>
 
+#include "version.h"
+
 namespace logger
 {
 	namespace
@@ -77,6 +79,17 @@ namespace logger
 			vsnprintf(buffer, buffer_length, msg, va);
 			console::warn(buffer);
 		}
+
+		void com_init_stub()
+		{
+			console::info("%s %s build %s %s\n", "IW7", VERSION, "win64", __DATE__);
+
+			console::info("--- Common Initialization ---\n");
+			utils::hook::invoke<void>(0xB8EF90_b);
+			console::info("--- Common Initialization Complete ---\n");
+
+			console::info("Working directory: %s\n", game::Sys_Cwd());
+		}
 	}
 
 	class component final : public component_interface
@@ -92,6 +105,8 @@ namespace logger
 
 			// Com_Printf
 			utils::hook::jump(0x343080_b, print_info);
+
+			utils::hook::call(0xD4D8D8_b, com_init_stub);
 
 			if (!game::environment::is_dedi())
 			{

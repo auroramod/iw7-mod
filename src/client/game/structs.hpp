@@ -3246,6 +3246,22 @@ namespace game
 		ERR_MAPLOADERRORSUMMARY = 7,
 	};
 
+	struct directory_t
+	{
+		char path[256];
+		char gamedir[256];
+	};
+
+	struct searchpath_s
+	{
+		searchpath_s* next;
+		directory_t* dir;
+		int bLocalized;
+		int playersFolder;
+		int language;
+		int pad;
+	};
+
 	struct scr_entref_t
 	{
 		unsigned short entnum;
