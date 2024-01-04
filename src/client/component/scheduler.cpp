@@ -89,6 +89,7 @@ namespace scheduler
 		utils::hook::detour r_end_frame_hook;
 		utils::hook::detour g_run_frame_hook;
 		utils::hook::detour main_frame_hook;
+		utils::hook::detour hks_frame_hook;
 
 		void execute(const pipeline type)
 		{
@@ -116,6 +117,16 @@ namespace scheduler
 			});
 
 			return main_frame_hook.invoke<void*>();
+		}
+
+		void hks_frame_stub()
+		{
+			const auto state = *game::hks::lua_state;
+			if (state)
+			{
+				execute(pipeline::lui);
+			}
+			hks_frame_hook.invoke<bool>();
 		}
 	}
 

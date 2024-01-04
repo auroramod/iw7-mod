@@ -16,6 +16,7 @@
 #include <utils/info_string.hpp>
 #include <utils/hook.hpp>
 #include <utils/cryptography.hpp>
+#include "server_list.hpp"
 
 namespace party
 {
@@ -333,6 +334,11 @@ namespace party
 		game::Com_SetLocalizedErrorMessage(error.data(), "MENU_NOTICE");
 	}
 
+	void reset_connect_state()
+	{
+		connect_state = {};
+	}
+
 	class component final : public component_interface
 	{
 	public:
@@ -484,7 +490,7 @@ namespace party
 			network::on("infoResponse", [](const game::netadr_s& target, const std::string_view& data)
 			{
 				const utils::info_string info{ data };
-				//server_list::handle_info_response(target, info);
+				server_list::handle_info_response(target, info);
 
 				if (connect_state.host != target)
 				{

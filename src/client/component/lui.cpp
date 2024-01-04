@@ -111,6 +111,13 @@ namespace lui
 				game::LUI_CoD_Shutdown();
 				game::LUI_CoD_Init(game::Com_FrontEnd_IsInFrontEnd(), false);
 			});
+
+			command::add("runMenuScript", [](const command::params& params) 
+			{
+				const auto args_str = params.join(1);
+				const auto* args = args_str.data();
+				game::UI_RunMenuScript(0, &args);
+			});
 		}
 	};
 }

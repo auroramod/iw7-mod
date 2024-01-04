@@ -1,20 +1,19 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
 
-#include "component/gsc/script_extension.hpp"
-#include "component/gsc/script_loading.hpp"
 #include "component/scheduler.hpp"
 #include "component/scripting.hpp"
 
 #include "component/console/console.hpp"
-
 #include "game/game.hpp"
 
 #include "game/scripting/event.hpp"
 #include "game/scripting/execution.hpp"
 #include "game/scripting/functions.hpp"
+#include "game/scripting/lua/engine.hpp"
 
 #include <utils/hook.hpp>
+#include "gsc/script_loading.hpp"
 
 namespace scripting
 {
@@ -24,11 +23,17 @@ namespace scripting
 	std::unordered_map<std::string, std::vector<std::pair<std::string, const char*>>> script_function_table_sort;
 	std::unordered_map<const char*, std::pair<std::string, std::string>> script_function_table_rev;
 
+	utils::concurrency::container<shared_table_t> shared_table;
+
 	std::string current_file;
 
 	namespace
 	{
 		utils::hook::detour vm_notify_hook;
+		utils::hook::detour vm_execute_hook;
+		utils::hook::detour g_load_structs_hook;
+		utils::hook::detour scr_load_level_hook;
+		utils::hook::detour g_shutdown_game_hook;
 
 		utils::hook::detour scr_add_class_field_hook;
 
@@ -37,8 +42,12 @@ namespace scripting
 
 		utils::hook::detour sl_get_canonical_string_hook;
 
+		utils::hook::detour db_find_xasset_header_hook;
+
 		std::string current_script_file;
 		unsigned int current_file_id{};
+
+		game::dvar_t* g_dump_scripts;
 
 		std::vector<std::function<void(bool, bool)>> shutdown_callbacks;
 
@@ -47,23 +56,48 @@ namespace scripting
 		void vm_notify_stub(const unsigned int notify_list_owner_id, const game::scr_string_t string_value,
 			game::VariableValue* top)
 		{
-			if (!game::Com_FrontEnd_IsInFrontEnd())
+			const auto* string = game::SL_ConvertToString(string_value);
+			if (string)
 			{
-				const auto* string = game::SL_ConvertToString(string_value);
-				if (string)
-				{
-					event e{};
-					e.name = string;
-					e.entity = notify_list_owner_id;
+				event e;
+				e.name = string;
+				e.entity = notify_list_owner_id;
 
-					for (auto* value = top; value->type != game::VAR_PRECODEPOS; --value)
-					{
-						e.arguments.emplace_back(*value);
-					}
+				for (auto* value = top; value->type != game::VAR_PRECODEPOS; --value)
+				{
+					e.arguments.emplace_back(*value);
 				}
+
+				lua::engine::notify(e);
 			}
 
 			vm_notify_hook.invoke<void>(notify_list_owner_id, string_value, top);
+		}
+
+		void g_shutdown_game_stub(const int free_scripts)
+		{
+			if (free_scripts)
+			{
+				script_function_table_sort.clear();
+				script_function_table.clear();
+				script_function_table_rev.clear();
+				canonical_string_table.clear();
+			}
+
+			for (const auto& callback : shutdown_callbacks)
+			{
+				callback(free_scripts, false);
+			}
+
+			scripting::notify(*game::levelEntityId, "shutdownGame_called", { 1 });
+			lua::engine::stop();
+
+			g_shutdown_game_hook.invoke<void>(free_scripts);
+
+			for (const auto& callback : shutdown_callbacks)
+			{
+				callback(free_scripts, true);
+			}
 		}
 
 		void scr_add_class_field_stub(unsigned int classnum, game::scr_string_t name, unsigned int canonical_string, unsigned int offset)
@@ -81,7 +115,7 @@ namespace scripting
 		void process_script_stub(const char* filename)
 		{
 			current_script_file = filename;
-			
+
 			const auto file_id = atoi(filename);
 			if (file_id)
 			{
@@ -116,14 +150,14 @@ namespace scripting
 
 			const auto name = scripting::get_token(id);
 			auto& itr = script_function_table_sort[filename];
-			itr.insert(itr.end() - 1, {name, pos});
+			itr.insert(itr.end() - 1, { name, pos });
 		}
 
 		void add_function(const std::string& file, unsigned int id, const char* pos)
 		{
 			const auto name = get_token(id);
 			script_function_table[file][name] = pos;
-			script_function_table_rev[pos] = {file, name};
+			script_function_table_rev[pos] = { file, name };
 		}
 
 		void scr_set_thread_position_stub(unsigned int thread_name, const char* code_pos)
@@ -149,91 +183,6 @@ namespace scripting
 			canonical_string_table[result] = str;
 			return result;
 		}
-
-		void shutdown_game_pre(const int free_scripts)
-		{
-			if (free_scripts)
-			{
-				script_function_table_sort.clear();
-				script_function_table.clear();
-				script_function_table_rev.clear();
-				canonical_string_table.clear();
-			}
-
-			for (const auto& callback : shutdown_callbacks)
-			{
-				callback(free_scripts, false);
-			}
-
-			scripting::notify(*game::levelEntityId, "shutdownGame_called", { 1 });
-		}
-
-		void shutdown_game_post(const int free_scripts)
-		{
-			for (const auto& callback : shutdown_callbacks)
-			{
-				callback(free_scripts, true);
-			}
-		}
-
-		namespace mp
-		{
-			utils::hook::detour sv_initgame_vm_hook;
-			utils::hook::detour sv_shutdowngame_vm_hook;
-
-			void sv_initgame_vm_stub(game::sv::SvServerInitSettings* init_settings)
-			{
-				if (!game::Com_FrontEnd_IsInFrontEnd())
-				{
-					console::info("------- Game Initialization -------\n");
-					console::info("gamename: %s\n", "Call of Duty Infinite Warfare");
-					console::info("gamedate: %s\n", __DATE__);
-
-					//G_LogPrintf("------------------------------------------------------------\n");
-					//G_LogPrintf("InitGame: %s\n", serverinfo);
-				}
-
-				sv_initgame_vm_hook.invoke<void>(init_settings);
-
-				if (!game::Com_FrontEnd_IsInFrontEnd())
-				{
-					console::info("-----------------------------------\n");
-				}
-			}
-
-			void sv_shutdowngame_vm_stub(int full_clear, int a2)
-			{
-				if (!game::Com_FrontEnd_IsInFrontEnd())
-				{
-					console::info("==== ShutdownGame (%d) ====\n", full_clear);
-
-					//G_LogPrintf("ShutdownGame:\n");
-					//G_LogPrintf("------------------------------------------------------------\n");
-				}
-
-				shutdown_game_pre(full_clear);
-				sv_shutdowngame_vm_hook.invoke<void>(full_clear, a2);
-				shutdown_game_post(full_clear);
-			}
-		}
-
-		namespace sp
-		{
-			utils::hook::detour sv_initgame_vm_hook;
-			utils::hook::detour sv_shutdowngame_vm_hook;
-
-			void sv_initgame_vm_stub(int random_seed, int restart, int* savegame, void** save, int load_scripts)
-			{
-				sv_initgame_vm_hook.invoke<void>(random_seed, restart, savegame, save, load_scripts);
-			}
-
-			void sv_shutdowngame_vm_stub(int full_clear, int a2)
-			{
-				shutdown_game_pre(full_clear);
-				sv_shutdowngame_vm_hook.invoke<void>(full_clear, a2);
-				shutdown_game_post(full_clear);
-			}
-		}
 	}
 
 	std::string get_token(unsigned int id)
@@ -258,7 +207,7 @@ namespace scripting
 			return {};
 		}
 
-		return {canonical_string_table[id]};
+		return { canonical_string_table[id] };
 	}
 
 	class component final : public component_interface
@@ -274,10 +223,12 @@ namespace scripting
 			process_script_hook.create(0xC09D20_b, process_script_stub);
 			sl_get_canonical_string_hook.create(game::SL_GetCanonicalString, sl_get_canonical_string_stub);
 
-			mp::sv_initgame_vm_hook.create(0xBA3428D_b, mp::sv_initgame_vm_stub);
-			sp::sv_initgame_vm_hook.create(0xBED4A96_b, sp::sv_initgame_vm_stub);
-			mp::sv_shutdowngame_vm_hook.create(0xBB36D86_b, mp::sv_shutdowngame_vm_stub);
-			sp::sv_shutdowngame_vm_hook.create(0x12159B6_b, sp::sv_shutdowngame_vm_stub);
+			g_shutdown_game_hook.create(0xB21CC0_b, g_shutdown_game_stub);
+
+			scheduler::loop([]
+			{
+				lua::engine::run_frame();
+			}, scheduler::pipeline::server);
 		}
 	};
 }
