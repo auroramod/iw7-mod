@@ -186,7 +186,7 @@ namespace scripting
 				if (!game::Com_FrontEnd_IsInFrontEnd())
 				{
 					console::info("------- Game Initialization -------\n");
-					console::info("gamename: %s\n", "Call of Duty Infinite Warfare");
+					console::info("gamename: %s\n", "IW7");
 					console::info("gamedate: %s\n", __DATE__);
 
 					//G_LogPrintf("------------------------------------------------------------\n");
