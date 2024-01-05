@@ -89,7 +89,7 @@ namespace gsc
 			}
 		}
 
-		void vm_call_builtin_function_stub(builtin_function func)
+		void vm_call_builtin_function_internal(builtin_function func)
 		{
 			const auto function_id = get_function_id();
 			const auto custom = functions.contains(static_cast<std::uint16_t>(function_id));
@@ -106,6 +106,16 @@ namespace gsc
 			}
 
 			func();
+		}
+
+		void vm_call_builtin_function_stub(utils::hook::assembler& a)
+		{
+			a.pushad64();
+			a.mov(rbx, qword_ptr(rdx, rax, 3));
+			a.call_aligned(vm_call_builtin_function_internal); // call with builtin_function
+			a.popad64();
+
+			a.jmp(0xC0E8F9_b);
 		}
 
 		void execute_custom_method(const std::uint16_t id)
@@ -329,17 +339,29 @@ namespace gsc
 			developer_script = game::Dvar_RegisterBool("developer_script", true, 0, "Enable developer script comments"); // enable by default for now
 
 			/*
-			utils::hook::set<uint32_t>(0xBFD16C_b, 0x1000); // change builtin func count
+			utils::hook::set<uint32_t>(0xBFD16B_b + 1, 0x1000); // change builtin func count
 
 			utils::hook::set<uint32_t>(0xBFD172_b + 4,
 				static_cast<uint32_t>(reverse_b((&func_table))));
-
-			// TODO
+			*/
+			/*
 			utils::hook::set<uint32_t>(0xC0E5CE_b + 3,
 				static_cast<uint32_t>(reverse_b((&func_table))));
+			*/
+			utils::hook::nop(0xC0E5CE_b, 12);
+			utils::hook::jump(0xC0E5CE_b, utils::hook::assemble(vm_call_builtin_function_stub), true);
+
 			utils::hook::inject(0xBFD5A1_b + 3, &func_table);
 			utils::hook::set<uint32_t>(0xBFD595_b + 2, sizeof(func_table));
 
+			function::add("test", [](const function_args& args)
+			{
+				// return 0 so the game doesn't override the cfg
+				console::debug(args[0].as<const char*>());
+				return scripting::script_value{};
+			});
+
+			/*
 			utils::hook::set<uint32_t>(0xBFD182_b + 4,
 				static_cast<uint32_t>(reverse_b((&meth_table))));
 			utils::hook::set<uint32_t>(0xC0E8F2_b + 4, // could be wrong..
@@ -349,16 +371,6 @@ namespace gsc
 			*/
 
 			/*
-				
-				TODO: needs replaced with assembly instead
-				in H1, there was a nullsub (assert?) between the builtin_function and then calling the builtin_function. on IW7, there is no nullsub
-				and it just calls this directly like function_table[id - 1] instead of builtin_function() (builtin_function being function_table[id-1], just variable)
-			
-			*/
-			/*
-			utils::hook::nop(SELECT_VALUE(0x3CB723_b, 0x512783_b), 8);
-			utils::hook::call(SELECT_VALUE(0x3CB723_b, 0x512783_b), vm_call_builtin_function_stub);
-
 			utils::hook::call(SELECT_VALUE(0x3CBA12_b, 0x512A72_b), get_entity_id_stub);
 			utils::hook::nop(SELECT_VALUE(0x3CBA46_b, 0x512AA6_b), 6);
 			utils::hook::nop(SELECT_VALUE(0x3CBA4E_b, 0x512AAE_b), 2);
