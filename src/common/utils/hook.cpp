@@ -541,7 +541,12 @@ namespace utils::hook
 		asm_function(a);
 
 		void* result = nullptr;
-		runtime.add(&result, &code);
+		auto err_result = runtime.add(&result, &code);
+
+		if (err_result != asmjit::ErrorCode::kErrorOk)
+		{
+			printf("ASMJIT ERROR: %s\n", asmjit::DebugUtils::errorAsString(err_result));
+		}
 
 		return result;
 	}
