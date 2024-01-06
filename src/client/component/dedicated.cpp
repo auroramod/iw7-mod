@@ -8,6 +8,7 @@
 #include "command.hpp"
 #include "console/console.hpp"
 #include "scheduler.hpp"
+#include "filesystem.hpp"
 
 #include <utils/json.hpp>
 
@@ -121,7 +122,7 @@ namespace dedicated
 		nlohmann::json get_snd_alias_length_data(const char* mapname, const std::string& game_mode = "")
 		{
 			const auto path = "sounddata/"s + game_mode + "/"s + mapname + ".json"s;
-			const auto buffer = utils::io::read_file(path);
+			const auto buffer = filesystem::read_file(path);
 			if (!buffer.empty())
 			{
 				try
@@ -153,6 +154,7 @@ namespace dedicated
 			}
 			else
 			{
+				//console::error("[SND]: failed to find sound length soundalias \"%s\"\n", alias);
 				return 0;
 			}
 		}
