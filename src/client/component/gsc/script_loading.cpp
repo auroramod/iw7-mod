@@ -129,7 +129,7 @@ namespace gsc
 				!game::DB_IsXAssetDefault(game::ASSET_TYPE_SCRIPTFILE, file_name))
 			{
 				if (real_name.starts_with(utils::string::va("scripts/%s/maps/", game::Com_GameMode_GetActiveGameModeStr()))
-					&& real_name.ends_with("_fx"))
+					&& (real_name.ends_with("_fx") || real_name.ends_with("_sound")))
 				{
 					console::debug("Refusing to compile rawfile '%s'\n", real_name.data());
 					return game::DB_FindXAssetHeader(game::ASSET_TYPE_SCRIPTFILE, file_name, false).scriptfile;
