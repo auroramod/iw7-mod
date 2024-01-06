@@ -94,8 +94,7 @@ namespace gsc
 
 		void vm_call_builtin_function_internal(int specific_function_id)
 		{
-			const auto function_id = get_function_id();
-			printf("test %d : %d\n", function_id, specific_function_id);
+			const auto function_id = specific_function_id;
 			const auto custom = functions.contains(static_cast<std::uint16_t>(function_id));
 			if (custom)
 			{
@@ -106,11 +105,10 @@ namespace gsc
 			builtin_function func = func_table[function_id];
 			if (func == nullptr)
 			{
-				printf(utils::string::va("builtin function \"%s\" doesn't exist", gsc_ctx->func_name(function_id).data()), true);
+				printf(utils::string::va("builtin function \"%s\" doesn't exist", gsc_ctx->func_name(function_id).data()), true);  // scr_error crashes
 				return;
 			}
 
-			printf("test\n");
 			func();
 		}
 
@@ -119,10 +117,11 @@ namespace gsc
 			return utils::hook::assemble([](utils::hook::assembler& a)
 			{
 				a.pushad64();
-				a.push(rdx);
-				a.mov(rdx, rax); // TODO: pass builtin_function or id, but is this the right ID???
+				a.push(rcx);
+				a.mov(rcx, rcx); // function id is already in rcx
+				a.dec(rcx); // -1
 				a.call_aligned(vm_call_builtin_function_internal); // call with builtin_function
-				a.pop(rdx);
+				a.pop(rcx);
 				a.popad64();
 
 				a.jmp(0xC0E8F9_b);
@@ -160,7 +159,7 @@ namespace gsc
 
 			if (meth == nullptr)
 			{
-				scr_error(utils::string::va("builtin method \"%s\" doesn't exist", gsc_ctx->meth_name(method_id).data()), true);
+				printf(utils::string::va("builtin method \"%s\" doesn't exist", gsc_ctx->meth_name(method_id).data()), true); // scr_error crashes
 				return;
 			}
 
@@ -367,6 +366,7 @@ namespace gsc
 			function::add("test", [](const function_args& args)
 			{
 				// return 0 so the game doesn't override the cfg
+				printf("test\n");
 				console::debug(args[0].as<const char*>());
 				return scripting::script_value{};
 			});
@@ -496,4 +496,4 @@ namespace gsc
 	};
 }
 
-//REGISTER_COMPONENT(gsc::extension)
+REGISTER_COMPONENT(gsc::extension)
