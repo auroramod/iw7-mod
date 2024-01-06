@@ -19,8 +19,11 @@ namespace gsc
 	std::uint16_t function_id_start = 0x326;
 	std::uint16_t method_id_start = 0x85DB;
 
-	builtin_function func_table[0x1000];
-	builtin_method meth_table[0x1000];
+	constexpr size_t func_table_count = 0x1000;
+	constexpr size_t meth_table_count = 0x1000;
+
+	builtin_function func_table[func_table_count]{};
+	builtin_method meth_table[meth_table_count]{};
 
 	const game::dvar_t* developer_script = nullptr;
 
@@ -92,6 +95,7 @@ namespace gsc
 		void vm_call_builtin_function_internal(int specific_function_id)
 		{
 			const auto function_id = get_function_id();
+			printf("test %d : %d\n", function_id, specific_function_id);
 			const auto custom = functions.contains(static_cast<std::uint16_t>(function_id));
 			if (custom)
 			{
@@ -99,29 +103,30 @@ namespace gsc
 				return;
 			}
 
-			builtin_function func = func_table[specific_function_id];
+			builtin_function func = func_table[function_id];
 			if (func == nullptr)
 			{
-				scr_error(utils::string::va("builtin function \"%s\" doesn't exist", gsc_ctx->func_name(function_id).data()), true);
+				printf(utils::string::va("builtin function \"%s\" doesn't exist", gsc_ctx->func_name(function_id).data()), true);
 				return;
 			}
 
+			printf("test\n");
 			func();
 		}
 
-		void vm_call_builtin_function_stub(utils::hook::assembler& a)
+		void* vm_call_builtin_function_stub()
 		{
-			a.mov(rax, qword_ptr(0x6B22918_b)); // 7
-			a.mov(qword_ptr(0x6B183D0_b), rax); // 7
-			a.lea(eax, dword_ptr(rcx, -1)); // 3
-			a.mov(qword_ptr(0x6B22908_b), rsi); // 7
+			return utils::hook::assemble([](utils::hook::assembler& a)
+			{
+				a.pushad64();
+				a.push(rdx);
+				a.mov(rdx, rax); // TODO: pass builtin_function or id, but is this the right ID???
+				a.call_aligned(vm_call_builtin_function_internal); // call with builtin_function
+				a.pop(rdx);
+				a.popad64();
 
-			a.pushad64();
-			a.mov(rcx, rax); // TODO: pass builtin_function or id, but is this the right ID???
-			a.call_aligned(vm_call_builtin_function_internal); // call with builtin_function
-			a.popad64();
-
-			a.jmp(0xC0E8F9_b);
+				a.jmp(0xC0E8F9_b);
+			});
 		}
 
 		void execute_custom_method(const std::uint16_t id)
@@ -344,18 +349,17 @@ namespace gsc
 		{
 			developer_script = game::Dvar_RegisterBool("developer_script", true, 0, "Enable developer script comments"); // enable by default for now
 
-			/*
-			utils::hook::set<uint32_t>(0xBFD16B_b + 1, 0x1000); // change builtin func count
+			utils::hook::set<uint32_t>(0xBFD16B_b + 1, func_table_count); // change builtin func count
 
 			utils::hook::set<uint32_t>(0xBFD172_b + 4,
 				static_cast<uint32_t>(reverse_b((&func_table))));
-			*/
+			
 			/*
 			utils::hook::set<uint32_t>(0xC0E5CE_b + 3,
 				static_cast<uint32_t>(reverse_b((&func_table))));
 			*/
-			utils::hook::nop(0xC0E5BD_b, 24); // nop everything from the lea instruction to the jmp
-			utils::hook::far_jump<0x140000000>(0xC0E5BD_b, utils::hook::assemble(vm_call_builtin_function_stub));
+			utils::hook::nop(0xC0E5CE_b, 12); // nop everything from the lea instruction to the jmp
+			utils::hook::jump(0xC0E5CE_b, vm_call_builtin_function_stub(), true);
 
 			utils::hook::inject(0xBFD5A1_b + 3, &func_table);
 			utils::hook::set<uint32_t>(0xBFD595_b + 2, sizeof(func_table));
@@ -367,14 +371,13 @@ namespace gsc
 				return scripting::script_value{};
 			});
 
-			/*
-			utils::hook::set<uint32_t>(0xBFD182_b + 4,
-				static_cast<uint32_t>(reverse_b((&meth_table))));
-			utils::hook::set<uint32_t>(0xC0E8F2_b + 4, // could be wrong..
-				static_cast<uint32_t>(reverse_b(&meth_table)));
-			utils::hook::inject(0xBFD5AF_b + 3, &meth_table);
-			utils::hook::set<uint32_t>(0xBFD5B6_b + 2, sizeof(meth_table));
-			*/
+			
+			//utils::hook::set<uint32_t>(0xBFD182_b + 4,
+			//	static_cast<uint32_t>(reverse_b((&meth_table))));
+			//utils::hook::set<uint32_t>(0xC0E8F2_b + 3, // could be wrong..
+			//	static_cast<uint32_t>(reverse_b(&meth_table)));
+			//utils::hook::inject(0xBFD5AF_b + 3, &meth_table);
+			//utils::hook::set<uint32_t>(0xBFD5B6_b + 2, sizeof(meth_table));
 
 			/*
 			utils::hook::call(SELECT_VALUE(0x3CBA12_b, 0x512A72_b), get_entity_id_stub);
@@ -493,4 +496,4 @@ namespace gsc
 	};
 }
 
-REGISTER_COMPONENT(gsc::extension)
+//REGISTER_COMPONENT(gsc::extension)
