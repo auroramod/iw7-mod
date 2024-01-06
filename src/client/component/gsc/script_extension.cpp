@@ -89,7 +89,7 @@ namespace gsc
 			}
 		}
 
-		void vm_call_builtin_function_internal(builtin_function func)
+		void vm_call_builtin_function_internal(int specific_function_id)
 		{
 			const auto function_id = get_function_id();
 			const auto custom = functions.contains(static_cast<std::uint16_t>(function_id));
@@ -99,6 +99,7 @@ namespace gsc
 				return;
 			}
 
+			builtin_function func = func_table[specific_function_id];
 			if (func == nullptr)
 			{
 				scr_error(utils::string::va("builtin function \"%s\" doesn't exist", gsc_ctx->func_name(function_id).data()), true);
@@ -110,8 +111,13 @@ namespace gsc
 
 		void vm_call_builtin_function_stub(utils::hook::assembler& a)
 		{
+			a.mov(rax, qword_ptr(0x6B22918_b)); // 7
+			a.mov(qword_ptr(0x6B183D0_b), rax); // 7
+			a.lea(eax, dword_ptr(rcx, -1)); // 3
+			a.mov(qword_ptr(0x6B22908_b), rsi); // 7
+
 			a.pushad64();
-			a.mov(rbx, qword_ptr(rdx, rax, 3));
+			a.mov(rcx, rax); // TODO: pass builtin_function or id, but is this the right ID???
 			a.call_aligned(vm_call_builtin_function_internal); // call with builtin_function
 			a.popad64();
 
@@ -348,8 +354,8 @@ namespace gsc
 			utils::hook::set<uint32_t>(0xC0E5CE_b + 3,
 				static_cast<uint32_t>(reverse_b((&func_table))));
 			*/
-			utils::hook::nop(0xC0E5CE_b, 12);
-			utils::hook::jump(0xC0E5CE_b, utils::hook::assemble(vm_call_builtin_function_stub), true);
+			utils::hook::nop(0xC0E5BD_b, 24); // nop everything from the lea instruction to the jmp
+			utils::hook::far_jump<0x140000000>(0xC0E5BD_b, utils::hook::assemble(vm_call_builtin_function_stub));
 
 			utils::hook::inject(0xBFD5A1_b + 3, &func_table);
 			utils::hook::set<uint32_t>(0xBFD595_b + 2, sizeof(func_table));
