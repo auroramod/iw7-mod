@@ -92,20 +92,20 @@ namespace gsc
 			}
 		}
 
-		void vm_call_builtin_function_internal(int specific_function_id)
+		void vm_call_builtin_function_internal(int function_id)
 		{
-			const auto function_id = specific_function_id;
-			const auto custom = functions.contains(static_cast<std::uint16_t>(function_id));
+			const auto custom_function_id = static_cast<std::uint16_t>(function_id); // cast for gsc-tool & our custom func map
+			const auto custom = functions.contains(custom_function_id);
 			if (custom)
 			{
-				execute_custom_function(function_id);
+				execute_custom_function(custom_function_id);
 				return;
 			}
 
-			builtin_function func = func_table[function_id];
+			builtin_function func = func_table[function_id - 1]; // game does this for the stock func table
 			if (func == nullptr)
 			{
-				printf(utils::string::va("builtin function \"%s\" doesn't exist", gsc_ctx->func_name(function_id).data()), true);  // scr_error crashes
+				console::error(utils::string::va("builtin function \"%s\" doesn't exist", gsc_ctx->func_name(custom_function_id).data())); // scr_error crashes
 				return;
 			}
 
@@ -119,8 +119,7 @@ namespace gsc
 				a.pushad64();
 				a.push(rcx);
 				a.mov(rcx, rcx); // function id is already in rcx
-				a.dec(rcx); // -1
-				a.call_aligned(vm_call_builtin_function_internal); // call with builtin_function
+				a.call_aligned(vm_call_builtin_function_internal);
 				a.pop(rcx);
 				a.popad64();
 
@@ -159,7 +158,7 @@ namespace gsc
 
 			if (meth == nullptr)
 			{
-				printf(utils::string::va("builtin method \"%s\" doesn't exist", gsc_ctx->meth_name(method_id).data()), true); // scr_error crashes
+				console::error(utils::string::va("builtin method \"%s\" doesn't exist", gsc_ctx->meth_name(method_id).data()), true); // scr_error crashes
 				return;
 			}
 
@@ -292,7 +291,7 @@ namespace gsc
 			else
 			{
 				const auto id = ++function_id_start;
-				gsc_ctx->func_add(name, static_cast<std::uint16_t>(id));
+				gsc_ctx->func_add(name, id);
 				functions[id] = function;
 			}
 		}
@@ -349,28 +348,18 @@ namespace gsc
 			developer_script = game::Dvar_RegisterBool("developer_script", true, 0, "Enable developer script comments"); // enable by default for now
 
 			utils::hook::set<uint32_t>(0xBFD16B_b + 1, func_table_count); // change builtin func count
-
-			utils::hook::set<uint32_t>(0xBFD172_b + 4,
-				static_cast<uint32_t>(reverse_b((&func_table))));
-			
-			/*
-			utils::hook::set<uint32_t>(0xC0E5CE_b + 3,
-				static_cast<uint32_t>(reverse_b((&func_table))));
-			*/
-			utils::hook::nop(0xC0E5CE_b, 12); // nop everything from the lea instruction to the jmp
+			utils::hook::set<uint32_t>(0xBFD172_b + 4, static_cast<uint32_t>(reverse_b((&func_table))));
+			utils::hook::nop(0xC0E5CE_b, 12); // nop the call & jmp at the end of call_builtin
 			utils::hook::jump(0xC0E5CE_b, vm_call_builtin_function_stub(), true);
 
 			utils::hook::inject(0xBFD5A1_b + 3, &func_table);
 			utils::hook::set<uint32_t>(0xBFD595_b + 2, sizeof(func_table));
 
-			function::add("test", [](const function_args& args)
+			function::add("print", [](const function_args& args)
 			{
-				// return 0 so the game doesn't override the cfg
-				printf("test\n");
-				console::debug(args[0].as<const char*>());
+				console::info(args[0].as<std::string>().data());
 				return scripting::script_value{};
 			});
-
 			
 			//utils::hook::set<uint32_t>(0xBFD182_b + 4,
 			//	static_cast<uint32_t>(reverse_b((&meth_table))));
