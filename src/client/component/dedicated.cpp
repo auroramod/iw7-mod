@@ -112,8 +112,6 @@ namespace dedicated
 				}
 			};
 
-			command::execute("onlinegame 1", true);
-			command::execute("xblive_privatematch 1", true);
 			initialize_gamemode();
 		}
 
