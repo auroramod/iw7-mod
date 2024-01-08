@@ -171,6 +171,8 @@ namespace gsc
 
 				loaded_scripts[file_name] = script_file_ptr;
 
+				console::debug("Loaded custom gsc '%s.gsc'", real_name.data());
+
 				return script_file_ptr;
 			}
 			catch (const std::exception& e)

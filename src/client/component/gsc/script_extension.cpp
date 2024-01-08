@@ -35,6 +35,9 @@ namespace gsc
 		bool force_error_print = false;
 		std::optional<std::string> gsc_error_msg;
 
+		std::unordered_map<const char*, const char*> vm_execute_hooks;
+		const char* target_function = nullptr;
+
 		function_args get_arguments()
 		{
 			std::vector<scripting::script_value> args;
@@ -275,6 +278,48 @@ namespace gsc
 		{
 			return args[0].type_name();
 		}
+
+		bool get_replaced_pos(const char* pos)
+		{
+			if (vm_execute_hooks.contains(pos))
+			{
+				target_function = vm_execute_hooks[pos];
+				return true;
+			}
+			return false;
+		}
+
+		void vm_execute_stub(utils::hook::assembler& a)
+		{
+			const auto replace = a.newLabel();
+			const auto end = a.newLabel();
+
+			a.pushad64();
+
+			a.mov(rcx, rsi);
+			a.call_aligned(get_replaced_pos);
+
+			a.cmp(al, 0);
+			a.jne(replace);
+
+			a.popad64();
+			a.jmp(end);
+
+			a.bind(end);
+
+			a.movzx(r15d, byte_ptr(rsi));
+			a.inc(rsi);
+			a.mov(dword_ptr(rbp, 0x94), r15d);
+
+			a.jmp(0xC0D0B2_b);
+
+			a.bind(replace);
+
+			a.popad64();
+			a.mov(rax, qword_ptr(reinterpret_cast<int64_t>(&target_function)));
+			a.mov(rsi, rax);
+			a.jmp(end);
+		}
 	}
 
 	void scr_error(const char* error, const bool force_print)
@@ -373,6 +418,8 @@ namespace gsc
 
 			utils::hook::call(0xC0F8C1_b, vm_error_stub); // LargeLocalResetToMark
 
+			utils::hook::jump(0xC0D0A4_b, utils::hook::assemble(vm_execute_stub), true);
+
 			/*
 			if (game::environment::is_dedi())
 			{
@@ -432,7 +479,6 @@ namespace gsc
 				return scripting::function{scripting::script_function_table[filename][function]};
 			});
 
-			/*
 			function::add("replacefunc", [](const function_args& args)
 			{
 				const auto what = args[0].get_raw();
@@ -443,11 +489,10 @@ namespace gsc
 					throw std::runtime_error("replacefunc: parameter 1 must be a function");
 				}
 
-				logfile::set_gsc_hook(what.u.codePosValue, with.u.codePosValue);
+				vm_execute_hooks[what.u.codePosValue] = with.u.codePosValue;
 
 				return scripting::script_value{};
 			});
-			*/
 
 			function::add("toupper", [](const function_args& args)
 			{
