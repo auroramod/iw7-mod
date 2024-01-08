@@ -19,85 +19,8 @@
 
 namespace arxan
 {
-	namespace
+	namespace integrity
 	{
-		utils::hook::detour nt_close_hook;
-		utils::hook::detour nt_query_information_process_hook;
-
-		HANDLE process_id_to_handle(const DWORD pid)
-		{
-			return reinterpret_cast<HANDLE>(static_cast<DWORD64>(pid));
-		}
-
-		NTSTATUS WINAPI nt_query_information_process_stub(const HANDLE handle, const PROCESSINFOCLASS info_class,
-			const PVOID info,
-			const ULONG info_length, const PULONG ret_length)
-		{
-			auto* orig = static_cast<decltype(NtQueryInformationProcess)*>(nt_query_information_process_hook.get_original());
-			const auto status = orig(handle, info_class, info, info_length, ret_length);
-
-			if (NT_SUCCESS(status))
-			{
-				if (info_class == ProcessBasicInformation)
-				{
-					static DWORD explorer_pid = 0;
-					if (!explorer_pid)
-					{
-						auto* const shell_window = GetShellWindow();
-						GetWindowThreadProcessId(shell_window, &explorer_pid);
-					}
-
-					// InheritedFromUniqueProcessId
-					static_cast<PPROCESS_BASIC_INFORMATION>(info)->Reserved3 = PVOID(DWORD64(explorer_pid));
-				}
-				else if (info_class == ProcessDebugObjectHandle)
-				{
-					*static_cast<HANDLE*>(info) = nullptr;
-
-					return 0xC0000353;
-				}
-				else if (info_class == ProcessDebugPort)
-				{
-					*static_cast<HANDLE*>(info) = nullptr;
-				}
-				else if (info_class == ProcessDebugFlags)
-				{
-					*static_cast<ULONG*>(info) = 1;
-				}
-			}
-
-			return status;
-		}
-
-		NTSTATUS NTAPI nt_close_stub(const HANDLE handle)
-		{
-			char info[16];
-			if (NtQueryObject(handle, OBJECT_INFORMATION_CLASS(4), &info, 2, nullptr) >= 0 && size_t(handle) != 0x12345)
-			{
-				auto* orig = static_cast<decltype(NtClose)*>(nt_close_hook.get_original());
-				return orig(handle);
-			}
-
-			return STATUS_INVALID_HANDLE;
-		}
-
-		void hide_being_debugged()
-		{
-			auto* const peb = PPEB(__readgsqword(0x60));
-			peb->BeingDebugged = false;
-			*reinterpret_cast<PDWORD>(LPSTR(peb) + 0xBC) &= ~0x70;
-		}
-
-		LONG WINAPI exception_filter(const LPEXCEPTION_POINTERS info)
-		{
-			if (info->ExceptionRecord->ExceptionCode == STATUS_INVALID_HANDLE)
-			{
-				return EXCEPTION_CONTINUE_EXECUTION;
-			}
-
-			return EXCEPTION_CONTINUE_SEARCH;
-		}
-
 		const std::vector<std::pair<uint8_t*, size_t>>& get_text_sections()
 		{
 			static const std::vector<std::pair<uint8_t*, size_t>> text = []
@@ -179,7 +102,7 @@ namespace arxan
 		uint32_t adjust_integrity_checksum(const uint64_t return_address, uint8_t* stack_frame,
 			const uint32_t current_checksum)
 		{
-			[[maybe_unused]]const auto handler_address = return_address - 5;
+			[[maybe_unused]] const auto handler_address = return_address - 5;
 			const auto* context = search_handler_context(stack_frame, current_checksum);
 
 			if (!context)
@@ -338,14 +261,316 @@ namespace arxan
 #endif
 		}
 	}
+	using namespace integrity;
+
+	namespace anti_debug
+	{
+		utils::hook::detour nt_close_hook;
+		utils::hook::detour nt_query_information_process_hook;
+
+		NTSTATUS WINAPI nt_query_information_process_stub(const HANDLE handle, const PROCESSINFOCLASS info_class,
+			const PVOID info,
+			const ULONG info_length, const PULONG ret_length)
+		{
+			auto* orig = static_cast<decltype(NtQueryInformationProcess)*>(nt_query_information_process_hook.get_original());
+			auto status = orig(handle, info_class, info, info_length, ret_length);
+
+			if (NT_SUCCESS(status))
+			{
+				if (info_class == ProcessBasicInformation)
+				{
+					static DWORD explorer_pid = 0;
+					if (!explorer_pid)
+					{
+						auto* const shell_window = GetShellWindow();
+						GetWindowThreadProcessId(shell_window, &explorer_pid);
+					}
+
+					// InheritedFromUniqueProcessId
+					static_cast<PPROCESS_BASIC_INFORMATION>(info)->Reserved3 = PVOID(DWORD64(explorer_pid));
+
+				}
+				else if (info_class == ProcessDebugObjectHandle)
+				{
+					*static_cast<HANDLE*>(info) = nullptr;
+					return static_cast<LONG>(0xC0000353);
+				}
+				else if (info_class == ProcessDebugPort)
+				{
+					*static_cast<HANDLE*>(info) = nullptr;
+				}
+				else if (info_class == ProcessDebugFlags)
+				{
+					*static_cast<ULONG*>(info) = 1;
+				}
+			}
+
+			return status;
+		}
+
+		NTSTATUS NTAPI nt_close_stub(const HANDLE handle)
+		{
+			char info[16];
+			if (NtQueryObject(handle, OBJECT_INFORMATION_CLASS(4), &info, 2, nullptr) >= 0 && size_t(handle) != 0x12345)
+			{
+				auto* orig = static_cast<decltype(NtClose)*>(nt_close_hook.get_original());
+				return orig(handle);
+			}
+
+			return STATUS_INVALID_HANDLE;
+		}
+
+		void hide_being_debugged()
+		{
+			auto* const peb = PPEB(__readgsqword(0x60));
+			peb->BeingDebugged = false;
+			*reinterpret_cast<PDWORD>(LPSTR(peb) + 0xBC) &= ~0x70; // NtGlobalFlag
+		}
+
+		void remove_hardware_breakpoints()
+		{
+			CONTEXT context;
+			ZeroMemory(&context, sizeof(context));
+			context.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+
+			auto* const thread = GetCurrentThread();
+			GetThreadContext(thread, &context);
+
+			context.Dr0 = 0;
+			context.Dr1 = 0;
+			context.Dr2 = 0;
+			context.Dr3 = 0;
+			context.Dr6 = 0;
+			context.Dr7 = 0;
+
+			SetThreadContext(thread, &context);
+		}
+
+		LONG WINAPI exception_filter(const LPEXCEPTION_POINTERS info)
+		{
+			if (info->ExceptionRecord->ExceptionCode == STATUS_INVALID_HANDLE)
+			{
+				return EXCEPTION_CONTINUE_EXECUTION;
+			}
+
+			return EXCEPTION_CONTINUE_SEARCH;
+		}
+
+		BOOL WINAPI set_thread_context_stub(const HANDLE thread, CONTEXT* context)
+		{
+			if (context->ContextFlags == CONTEXT_DEBUG_REGISTERS)
+			{
+				return TRUE;
+			}
+
+			return SetThreadContext(thread, context);
+		}
+
+		enum dbg_funcs_e
+		{
+			DbgBreakPoint,
+			DbgUserBreakPoint,
+			DbgUiConnectToDbg,
+			DbgUiContinue,
+			DbgUiConvertStateChangeStructure,
+			DbgUiDebugActiveProcess,
+			DbgUiGetThreadDebugObject,
+			DbgUiIssueRemoteBreakin,
+			DbgUiRemoteBreakin,
+			DbgUiSetThreadDebugObject,
+			DbgUiStopDebugging,
+			DbgUiWaitStateChange,
+			DbgPrintReturnControlC,
+			DbgPrompt,
+			DBG_FUNCS_COUNT,
+		};
+		const char* dbg_funcs_names[] =
+		{
+			"DbgBreakPoint",
+			"DbgUserBreakPoint",
+			"DbgUiConnectToDbg",
+			"DbgUiContinue",
+			"DbgUiConvertStateChangeStructure",
+			"DbgUiDebugActiveProcess",
+			"DbgUiGetThreadDebugObject",
+			"DbgUiIssueRemoteBreakin",
+			"DbgUiRemoteBreakin",
+			"DbgUiSetThreadDebugObject",
+			"DbgUiStopDebugging",
+			"DbgUiWaitStateChange",
+			"DbgPrintReturnControlC",
+			"DbgPrompt",
+		};
+		struct dbg_func_bytes_s
+		{
+			std::uint8_t buffer[15];
+		};
+		dbg_func_bytes_s dbg_func_bytes[DBG_FUNCS_COUNT];
+		void* dbg_func_procs[DBG_FUNCS_COUNT]{};
+
+		void store_debug_functions()
+		{
+			const utils::nt::library ntdll("ntdll.dll");
+
+			for (auto i = 0; i < DBG_FUNCS_COUNT; i++)
+			{
+				dbg_func_procs[i] = ntdll.get_proc<void*>(dbg_funcs_names[i]);
+				memcpy(dbg_func_bytes[i].buffer, dbg_func_procs[i], sizeof(dbg_func_bytes[i].buffer));
+			}
+		}
+
+		void restore_debug_functions()
+		{
+			for (auto i = 0; i < DBG_FUNCS_COUNT; i++)
+			{
+				utils::hook::copy(dbg_func_procs[i], dbg_func_bytes[i].buffer, sizeof(dbg_func_bytes[i].buffer));
+			}
+		}
+
+		namespace breakpoints
+		{
+			std::unordered_map<PVOID, void*> handle_handler;
+
+			_CONTEXT fake_context{};
+			void fake_breakpoint_trigger(void* address)
+			{
+				_EXCEPTION_POINTERS fake_info{};
+				_EXCEPTION_RECORD fake_record{};
+				fake_info.ExceptionRecord = &fake_record;
+				fake_info.ContextRecord = &fake_context;
+
+				fake_record.ExceptionAddress = reinterpret_cast<void*>(reinterpret_cast<std::uint64_t>(address) + 3);
+				fake_record.ExceptionCode = EXCEPTION_BREAKPOINT;
+
+				for (auto handler : handle_handler)
+				{
+					if (handler.second)
+					{
+						auto result = utils::hook::invoke<LONG>(handler.second, &fake_info);
+						if (result)
+						{
+							memset(&fake_context, 0, sizeof(CONTEXT));
+							//printf("Executed fake breakpoint\n");
+							break;
+						}
+					}
+				}
+			}
+
+			void patch_int2d_trap(void* address)
+			{
+				const auto game_address = reinterpret_cast<std::uint64_t>(address);
+
+				const auto jump_target = utils::hook::extract<void*>(reinterpret_cast<void*>(game_address + 3));
+
+				const auto stub = utils::hook::assemble([address, jump_target](utils::hook::assembler& a)
+				{
+					a.push(rcx);
+					a.mov(rcx, &fake_context);
+					a.call_aligned(RtlCaptureContext);
+					a.pop(rcx);
+
+					a.pushad64();
+					a.mov(rcx, address);
+					a.call_aligned(fake_breakpoint_trigger);
+					a.popad64();
+
+					a.jmp(jump_target);
+				});
+
+				utils::hook::nop(game_address, 7);
+				utils::hook::jump(game_address, stub, false);
+			}
+
+			void patch()
+			{
+				static bool once = false;
+				if (once)
+				{
+					return;
+				}
+				once = true;
+
+				memset(&fake_context, 0, sizeof(CONTEXT));
+
+				const auto int2d_results = utils::hook::signature("CD 2D E9 ? ? ? ?", game_module::get_game_module()).process();
+				for (auto* i : int2d_results)
+				{
+					patch_int2d_trap(i);
+				}
+
+				// the game seems to have int3 debugbreaks too but none seem to get triggered with int2d patch?
+			}
+
+			LONG NTAPI toplevel_handler_stub(EXCEPTION_POINTERS* info)
+			{
+				// maybe figure out order? only 1 handler seems to be active at once anyway
+				for (auto handler : handle_handler)
+				{
+					if (handler.second)
+					{
+						auto result = utils::hook::invoke<LONG>(handler.second, info);
+						if (result)
+						{
+							return result;
+						}
+					}
+				}
+
+				return NULL;
+			}
+
+			PVOID WINAPI add_vectored_exception_handler_stub(ULONG first, PVECTORED_EXCEPTION_HANDLER handler)
+			{
+				if (first == 1 && handler != exception_filter)
+				{
+					first = 0;
+				}
+
+				breakpoints::patch();
+
+				auto handle = AddVectoredExceptionHandler(first, toplevel_handler_stub);
+				handle_handler[handle] = handler;
+
+				return handle;
+			}
+
+			ULONG WINAPI remove_vectored_exception_handler_stub(PVOID handle)
+			{
+				handle_handler[handle] = nullptr;
+				return RemoveVectoredExceptionHandler(handle);
+			}
+		}
+	}
+	using namespace anti_debug;
 
 	class component final : public component_interface
 	{
 	public:
+		void* load_import(const std::string& library, const std::string& function) override
+		{
+			if (function == "SetThreadContext")
+			{
+				return set_thread_context_stub;
+			}
+			else if (function == "AddVectoredExceptionHandler")
+			{
+				return breakpoints::add_vectored_exception_handler_stub;
+			}
+			else if (function == "RemoveVectoredExceptionHandler")
+			{
+				return breakpoints::remove_vectored_exception_handler_stub;
+			}
+
+			return nullptr;
+		}
+
 		void post_load() override
 		{
+			remove_hardware_breakpoints();
 			hide_being_debugged();
 			scheduler::loop(hide_being_debugged, scheduler::pipeline::async);
+			store_debug_functions();
 
 			const utils::nt::library ntdll("ntdll.dll");
 			nt_close_hook.create(ntdll.get_proc<void*>("NtClose"), nt_close_stub);
@@ -355,11 +580,14 @@ namespace arxan
 			nt_query_information_process_hook.move();
 
 			AddVectoredExceptionHandler(1, exception_filter);
+			SetUnhandledExceptionFilter(exception_filter);
 		}
 
 		void post_unpack() override
 		{
+			remove_hardware_breakpoints();
 			search_and_patch_integrity_checks();
+			restore_debug_functions();
 		}
 
 		component_priority priority() override
