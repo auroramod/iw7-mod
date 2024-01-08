@@ -97,7 +97,7 @@ namespace gsc
 			builtin_function func = func_table[function_id - 1]; // game does this for the stock func table
 			if (func == nullptr)
 			{
-				console::error(utils::string::va("builtin function \"%s\" doesn't exist", gsc_ctx->func_name(custom_function_id).data())); // scr_error crashes
+				scr_error(utils::string::va("builtin function \"%s\" doesn't exist", gsc_ctx->func_name(custom_function_id).data()), true);
 				return;
 			}
 
@@ -148,7 +148,7 @@ namespace gsc
 			builtin_method meth = meth_table[function_id - 0x8000];
 			if (meth == nullptr)
 			{
-				console::error(utils::string::va("builtin method \"%s\" doesn't exist", gsc_ctx->meth_name(custom_function_id).data())); // scr_error crashes
+				scr_error(utils::string::va("builtin method \"%s\" doesn't exist", gsc_ctx->meth_name(custom_function_id).data()), true);
 				return;
 			}
 
@@ -232,7 +232,8 @@ namespace gsc
 				? utils::string::va(": %s", gsc_error_msg.value().data())
 				: "";
 
-			if ((opcode_id >= 0x1A && opcode_id <= 0x20) || (opcode_id >= 0xA8 && opcode_id <= 0xAE))
+			if ((opcode_id >= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltin0) && opcode_id <= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltin))
+				|| (opcode_id >= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltinMethod0) && opcode_id <= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltinMethod)))
 			{
 				builtin_call_error(error_str);
 			}
@@ -281,7 +282,11 @@ namespace gsc
 		force_error_print = force_print;
 		gsc_error_msg = error;
 
-		game::Scr_ErrorInternal();
+		// TODO: check why Scr_ErrorInternal crashes the game
+		// is the longjmp actually happening? we're crashing at 0x140C0AC76 at a random 0xCC???
+		//game::Scr_ErrorInternal();
+
+		console::error("%s\n", error); // remove once we can actually get errors working
 	}
 
 	namespace function
