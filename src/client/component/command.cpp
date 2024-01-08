@@ -4,6 +4,7 @@
 
 #include "game/game.hpp"
 #include "game/dvars.hpp"
+#include "game/scripting/execution.hpp"
 
 #include "console/console.hpp"
 #include "game_console.hpp"
@@ -194,34 +195,105 @@ namespace command
 			return 0;
 		}
 
-		void client_println(int client_num, const std::string& text)
+		void cmd_give(const int client_num, const std::vector<std::string>& params)
 		{
-			if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+			if (params.size() < 2)
 			{
-				game::CG_Utils_GameMessage(client_num, text.data(), 0); // why is nothing printed?
+				game::shared::client_println(client_num, "You did not specify a weapon name");
+				return;
 			}
-			else
+
+			try
 			{
-				game::SV_GameSendServerCommand(client_num, game::SV_CMD_RELIABLE,
-					utils::string::va("f \"%s\"", text.data()));
+				const auto& arg = params[1];
+				const auto player = scripting::entity({ static_cast<uint16_t>(client_num), 0 });
+
+				if (arg == "ammo")
+				{
+					const auto weapon = player.call("getcurrentweapon").as<std::string>();
+					player.call("givemaxammo", { weapon });
+				}
+				else if (arg == "allammo")
+				{
+					const auto weapons = player.call("getweaponslistall").as<scripting::array>();
+					for (auto i = 0; i < weapons.size(); i++)
+					{
+						player.call("givemaxammo", { weapons[i] });
+					}
+				}
+				else if (arg == "health")
+				{
+					if (params.size() > 2)
+					{
+						const auto amount = atoi(params[2].data());
+						const auto health = player.get("health").as<int>();
+						player.set("health", { health + amount });
+					}
+					else
+					{
+						const auto amount = atoi(game::Dvar_FindVar("scr_player_maxhealth")->current.string);
+						player.set("health", { amount });
+					}
+				}
+				else if (arg == "all")
+				{
+					const auto type = game::XAssetType::ASSET_TYPE_WEAPON;
+					game::DB_EnumXAssets(type, [&player, type](const game::XAssetHeader header)
+					{
+						const auto asset = game::XAsset{ type, header };
+						const auto asset_name = game::DB_GetXAssetName(&asset);
+
+						player.call("giveweapon", { asset_name });
+					});
+				}
+				else
+				{
+					player.call("giveweapon", { arg });
+				}
+			}
+			catch (...)
+			{
 			}
 		}
 
-		bool cheats_ok(int client_num)
+		void cmd_drop_weapon(int client_num)
 		{
-			if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+			try
 			{
-				return true;
+				const auto player = scripting::entity({ static_cast<uint16_t>(client_num), 0 });
+				const auto weapon = player.call("getcurrentweapon");
+				player.call("dropitem", { weapon });
+			}
+			catch (...)
+			{
+			}
+		}
+
+		void cmd_take(int client_num, const std::vector<std::string>& params)
+		{
+			if (params.size() < 2)
+			{
+				game::shared::client_println(client_num, "You did not specify a weapon name");
+				return;
 			}
 
-			const auto sv_cheats = game::Dvar_FindVar("sv_cheats");
-			if (!sv_cheats || !sv_cheats->current.enabled)
-			{
-				client_println(client_num, "GAME_CHEATSNOTENABLED");
-				return false;
-			}
+			const auto& weapon = params[1];
 
-			return true;
+			try
+			{
+				const auto player = scripting::entity({ static_cast<uint16_t>(client_num), 0 });
+				if (weapon == "all"s)
+				{
+					player.call("takeallweapons");
+				}
+				else
+				{
+					player.call("takeweapon", { weapon });
+				}
+			}
+			catch (...)
+			{
+			}
 		}
 	}
 
@@ -416,13 +488,13 @@ namespace command
 
 			add_sv("god", [](const int client_num, const params_sv&)
 			{
-				if (!cheats_ok(client_num))
+				if (!game::shared::cheats_ok(client_num, true))
 				{
 					return;
 				}
 
 				game::g_entities[client_num].flags ^= 1;
-				client_println(client_num,
+				game::shared::client_println(client_num,
 					game::g_entities[client_num].flags & 1
 					? "GAME_GODMODE_ON"
 					: "GAME_GODMODE_OFF");
@@ -430,13 +502,13 @@ namespace command
 
 			add_sv("demigod", [](const int client_num, const params_sv&)
 			{
-				if (!cheats_ok(client_num))
+				if (!game::shared::cheats_ok(client_num, true))
 				{
 					return;
 				}
 
 				game::g_entities[client_num].flags ^= 2;
-				client_println(client_num,
+				game::shared::client_println(client_num,
 					game::g_entities[client_num].flags & 2
 					? "GAME_DEMI_GODMODE_ON"
 					: "GAME_DEMI_GODMODE_OFF");
@@ -444,13 +516,13 @@ namespace command
 
 			add_sv("notarget", [](const int client_num, const params_sv&)
 			{
-				if (!cheats_ok(client_num))
+				if (!game::shared::cheats_ok(client_num, true))
 				{
 					return;
 				}
 
 				game::g_entities[client_num].flags ^= 4;
-				client_println(client_num,
+				game::shared::client_println(client_num,
 					game::g_entities[client_num].flags & 4
 					? "GAME_NOTARGETON"
 					: "GAME_NOTARGETOFF");
@@ -458,13 +530,13 @@ namespace command
 
 			add_sv("noclip", [](const int client_num, const params_sv&)
 			{
-				if (!cheats_ok(client_num))
+				if (!game::shared::cheats_ok(client_num, true))
 				{
 					return;
 				}
 
 				game::g_entities[client_num].client->flags ^= 1;
-				client_println(client_num,
+				game::shared::client_println(client_num,
 					game::g_entities[client_num].client->flags & 1
 					? "GAME_NOCLIPON"
 					: "GAME_NOCLIPOFF");
@@ -472,16 +544,46 @@ namespace command
 
 			add_sv("ufo", [](const int client_num, const params_sv&)
 			{
-				if (!cheats_ok(client_num))
+				if (!game::shared::cheats_ok(client_num, true))
 				{
 					return;
 				}
 
 				game::g_entities[client_num].client->flags ^= 2;
-				client_println(client_num,
+				game::shared::client_println(client_num,
 					game::g_entities[client_num].client->flags & 2
 					? "GAME_UFOON"
 					: "GAME_UFOOFF");
+			});
+
+			add_sv("give", [](const int client_num, const params_sv& params)
+			{
+				if (!game::shared::cheats_ok(client_num, true))
+				{
+					return;
+				}
+
+				cmd_give(client_num, params.get_all());
+			});
+
+			add_sv("dropweapon", [](const int client_num, const params_sv& params)
+			{
+				if (!game::shared::cheats_ok(client_num, true))
+				{
+					return;
+				}
+
+				cmd_drop_weapon(client_num);
+			});
+
+			add_sv("take", [](const int client_num, const params_sv& params)
+			{
+				if (!game::shared::cheats_ok(client_num, true))
+				{
+					return;
+				}
+
+				cmd_take(client_num, params.get_all());
 			});
 		}
 	};

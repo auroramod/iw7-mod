@@ -69,8 +69,7 @@ namespace dvar_cheats
 				return false;
 			}
 
-			const auto sv_cheats = game::Dvar_FindVar("sv_cheats");
-			if ((dvar->flags & game::DvarFlags::DVAR_FLAG_CHEAT) && ((sv_cheats && !sv_cheats->current.enabled) && *game::isCheatOverride))
+			if ((dvar->flags & game::DvarFlags::DVAR_FLAG_CHEAT) && (!game::shared::cheats_ok() && *game::isCheatOverride))
 			{
 //#ifdef DEBUG
 				console::error("%s is cheat protected\n", dvars::dvar_get_name(dvar).data());

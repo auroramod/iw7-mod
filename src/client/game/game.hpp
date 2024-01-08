@@ -40,6 +40,12 @@ namespace game
 		bool is_dedi();
 	}
 
+	namespace shared
+	{
+		void client_println(int client_num, const std::string& text);
+		bool cheats_ok(int client_num = 0, bool print = false);
+	}
+
 	int Cmd_Argc();
 	const char* Cmd_Argv(int index);
 

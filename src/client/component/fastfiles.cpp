@@ -34,6 +34,7 @@ namespace fastfiles
 		utils::hook::detour db_init_load_x_file_hook;
 		utils::hook::detour db_load_x_zone_hook;
 		utils::hook::detour db_find_xasset_header_hook;
+		utils::hook::detour db_add_xasset_hook;
 
 		void db_try_load_x_file_internal_stub(const char* zone_name, const unsigned int zone_flags,
 			const bool is_base_map, const bool was_paused, const int failure_mode)
@@ -88,10 +89,20 @@ namespace fastfiles
 					game::g_assetNames[static_cast<unsigned int>(type)],
 					name);
 			}
-			if (type == game::ASSET_TYPE_SCRIPTFILE && result.scriptfile)
+			
+			return result;
+		}
+
+		game::XAssetHeader db_add_xasset_stub(game::XAssetType type, game::XAssetHeader* header_ptr)
+		{
+			auto header = *header_ptr;
+			
+			if (type == game::ASSET_TYPE_SCRIPTFILE && header.scriptfile)
 			{
-				dump_gsc_script(name, result);
+				dump_gsc_script(header.scriptfile->name ? header.scriptfile->name : "__unnamed__", header);
 			}
+
+			auto result = db_add_xasset_hook.invoke<game::XAssetHeader>(type, header_ptr);
 			return result;
 		}
 	}
@@ -124,6 +135,7 @@ namespace fastfiles
 #endif
 
 			db_find_xasset_header_hook.create(game::DB_FindXAssetHeader, db_find_xasset_header_stub);
+			db_add_xasset_hook.create(0xA76520_b, db_add_xasset_stub);
 
 			g_dump_scripts = game::Dvar_RegisterBool("g_dumpScripts", false, game::DVAR_FLAG_NONE, "Dump GSC scripts");
 
