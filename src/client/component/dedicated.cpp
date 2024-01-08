@@ -233,8 +233,6 @@ namespace dedicated
 			utils::hook::nop(0x34296F_b, 2); // ^
 			utils::hook::set<uint8_t>(0xE08360_b, 0xC3); // don't shutdown renderer
 
-			utils::hook::set<uint8_t>(0xC5A200_b, 0xC3); // disable host migration
-
 			// SOUND patches
 			//utils::hook::nop(0xC93213_b, 5); // snd stream thread
 			//utils::hook::set<uint8_t>(0xC93206_b, 0); // snd_active

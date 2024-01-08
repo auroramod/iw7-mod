@@ -15,12 +15,17 @@ namespace ranked
 	public:
 		void post_unpack() override
 		{
-			dvars::override::register_bool("xblive_privatematch", false, game::DVAR_FLAG_REPLICATED);
+			// This must be registered as 'true' to avoid crash when starting a private match
+			dvars::override::register_bool("xblive_privatematch", true, game::DVAR_FLAG_REPLICATED);
 
-			if (game::environment::is_dedi())
+			if (game::environment::is_dedi() && !utils::flags::has_flag("unranked"))
 			{
-				dvars::override::register_bool("xblive_privatematch", false, game::DVAR_FLAG_REPLICATED | game::DVAR_FLAG_WRITE);
+				dvars::override::register_bool("xblive_privatematch", false, game::DVAR_FLAG_REPLICATED | game::DVAR_FLAG_WRITE); // DVAR_FLAG_REPLICATED needed?
+
 				game::Dvar_RegisterBool("onlinegame", true, game::DVAR_FLAG_READ, "Current game is an online game with stats, custom classes, unlocks");
+
+				// Fix sessionteam always returning none (SV_ClientMP_HasAssignedTeam_Internal)
+				utils::hook::set(0xC50BC0_b, 0xC300B0);
 			}
 		}
 
