@@ -104,19 +104,16 @@ namespace gsc
 			func();
 		}
 
-		void* vm_call_builtin_function_stub()
+		void vm_call_builtin_function_stub(utils::hook::assembler& a)
 		{
-			return utils::hook::assemble([](utils::hook::assembler& a)
-			{
-				a.pushad64();
-				a.push(rcx);
-				a.mov(rcx, rcx); // function id is already in rcx
-				a.call_aligned(vm_call_builtin_function_internal);
-				a.pop(rcx);
-				a.popad64();
+			a.pushad64();
+			a.push(rcx);
+			a.mov(rcx, rcx); // function id is already in rcx
+			a.call_aligned(vm_call_builtin_function_internal);
+			a.pop(rcx);
+			a.popad64();
 
-				a.jmp(0xC0E8F9_b);
-			});
+			a.jmp(0xC0E8F9_b);
 		}
 
 		void execute_custom_method(const std::uint16_t id, game::scr_entref_t ent_ref)
@@ -158,23 +155,19 @@ namespace gsc
 			meth(ent_ref);
 		}
 
-		void* vm_call_builtin_method_stub()
+		void vm_call_builtin_method_stub(utils::hook::assembler& a)
 		{
-			return utils::hook::assemble([](utils::hook::assembler& a)
-			{
-				a.pushad64();
-				a.push(ecx);
-				a.push(rdx);
-				a.mov(ecx, ebx); // ent ref is stored in ebx 
-				a.mov(rdx, rdi); // function id is stored in rdi
-				a.call_aligned(vm_call_builtin_method_internal);
-				a.pop(ecx);
-				a.pop(rdx);
-				a.popad64();
+			a.pushad64();
+			a.push(rdx);
+			a.push(ecx);
+			a.mov(rdx, rdi); // function id is stored in rdi
+			a.mov(ecx, ebx); // ent ref is stored in ebx
+			a.call_aligned(vm_call_builtin_method_internal);
+			a.pop(rdx);
+			a.pop(ecx);
+			a.popad64();
 
-				a.mov(rax, qword_ptr(0x6B183C8_b));
-				a.jmp(0xC0E900_b);
-			});
+			a.jmp(0xC0E8F9_b);
 		}
 
 		void builtin_call_error(const std::string& error)
@@ -363,17 +356,15 @@ namespace gsc
 
 			utils::hook::set<uint32_t>(0xBFD172_b + 4, static_cast<uint32_t>(reverse_b((&func_table))));
 			utils::hook::nop(0xC0E5CE_b, 12); // nop the call & jmp at the end of call_builtin
-			utils::hook::jump(0xC0E5CE_b, vm_call_builtin_function_stub(), true);
+			utils::hook::jump(0xC0E5CE_b, utils::hook::assemble(vm_call_builtin_function_stub), true);
 			utils::hook::inject(0xBFD5A1_b + 3, &func_table);
 			utils::hook::set<uint32_t>(0xBFD595_b + 2, sizeof(func_table));
-			
-			/*
+
 			utils::hook::set<uint32_t>(0xBFD182_b + 4, static_cast<uint32_t>(reverse_b((&meth_table))));
-			utils::hook::nop(0xC0E8F2_b, 14); // nop the call & mov at the end of call_builtin_method
-			utils::hook::jump(0xC0E8F2_b, vm_call_builtin_method_stub(), true);
+			utils::hook::nop(0xC0E8EB_b, 14); // nop the lea & call at the end of call_builtin_method
+			utils::hook::jump(0xC0E8EB_b, utils::hook::assemble(vm_call_builtin_method_stub), true);
 			utils::hook::inject(0xBFD5AF_b + 3, &meth_table);
 			utils::hook::set<uint32_t>(0xBFD5B6_b + 2, sizeof(meth_table));
-			*/
 
 			utils::hook::call(0xC0F8C1_b, vm_error_stub); // LargeLocalResetToMark
 
@@ -495,4 +486,4 @@ namespace gsc
 	};
 }
 
-//REGISTER_COMPONENT(gsc::extension)
+REGISTER_COMPONENT(gsc::extension)
