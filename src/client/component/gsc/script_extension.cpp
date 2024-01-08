@@ -16,8 +16,8 @@
 
 namespace gsc
 {
-	std::uint16_t function_id_start = 0x326;
-	std::uint16_t method_id_start = 0x85DB;
+	std::uint16_t function_id_start = 806;
+	std::uint16_t method_id_start = 1483 + 0x8000;
 
 	constexpr size_t func_table_count = 0x1000;
 	constexpr size_t meth_table_count = 0x1000;
@@ -68,6 +68,9 @@ namespace gsc
 				reinterpret_cast<size_t>(pos - 2));
 		}
 
+		void nullstub_func() {}
+		void nullstub_meth(game::scr_entref_t) {}
+
 		void execute_custom_function(const std::uint16_t id)
 		{
 			try
@@ -87,8 +90,9 @@ namespace gsc
 			}
 		}
 
-		void vm_call_builtin_function_internal(int function_id)
+		void vm_call_builtin_function_internal()
 		{
+			const std::uint16_t function_id = get_function_id();
 			const auto custom_function_id = static_cast<std::uint16_t>(function_id); // cast for gsc-tool & our custom func map
 			const auto custom = functions.contains(custom_function_id);
 			if (custom)
@@ -100,23 +104,11 @@ namespace gsc
 			builtin_function func = func_table[function_id - 1]; // game does this for the stock func table
 			if (func == nullptr)
 			{
-				scr_error(utils::string::va("builtin function \"%s\" doesn't exist", gsc_ctx->func_name(custom_function_id).data()), true);
+				scr_error(utils::string::va("builtin function \"%s\" doesn't exist", gsc_ctx->func_name(function_id).data()), true);
 				return;
 			}
 
 			func();
-		}
-
-		void vm_call_builtin_function_stub(utils::hook::assembler& a)
-		{
-			a.pushad64();
-			a.push(rcx);
-			a.mov(rcx, rcx); // function id is already in rcx
-			a.call_aligned(vm_call_builtin_function_internal);
-			a.pop(rcx);
-			a.popad64();
-
-			a.jmp(0xC0E8F9_b);
 		}
 
 		void execute_custom_method(const std::uint16_t id, game::scr_entref_t ent_ref)
@@ -138,46 +130,11 @@ namespace gsc
 			}
 		}
 
-		void vm_call_builtin_method_internal(game::scr_entref_t ent_ref, int function_id)
-		{
-			const auto custom_function_id = static_cast<std::uint16_t>(function_id); // cast for gsc-tool & our custom method map
-			const auto custom = methods.contains(custom_function_id);
-			if (custom)
-			{
-				execute_custom_method(custom_function_id, ent_ref);
-				return;
-			}
-
-			builtin_method meth = meth_table[function_id - 0x8000];
-			if (meth == nullptr)
-			{
-				scr_error(utils::string::va("builtin method \"%s\" doesn't exist", gsc_ctx->meth_name(custom_function_id).data()), true);
-				return;
-			}
-
-			meth(ent_ref);
-		}
-
-		void vm_call_builtin_method_stub(utils::hook::assembler& a)
-		{
-			a.pushad64();
-			a.push(rdx);
-			a.push(ecx);
-			a.mov(rdx, rdi); // function id is stored in rdi
-			a.mov(ecx, ebx); // ent ref is stored in ebx
-			a.call_aligned(vm_call_builtin_method_internal);
-			a.pop(rdx);
-			a.pop(ecx);
-			a.popad64();
-
-			a.jmp(0xC0E8F9_b);
-		}
-
 		void builtin_call_error(const std::string& error)
 		{
 			const auto function_id = get_function_id();
 
-			if (function_id > 0x1000)
+			if (function_id > func_table_count)
 			{
 				console::warn("in call to builtin method \"%s\"%s", gsc_ctx->meth_name(function_id).data(), error.data());
 			}
@@ -218,13 +175,12 @@ namespace gsc
 			}
 		}
 
-		void vm_error_stub(int mark_pos)
+		void vm_error_internal()
 		{
 			const bool dev_script = developer_script ? developer_script->current.enabled : false;
 
 			if (!dev_script && !force_error_print)
 			{
-				utils::hook::invoke<void>(0x510C80_b, mark_pos);
 				return;
 			}
 
@@ -258,6 +214,17 @@ namespace gsc
 
 			print_callstack();
 			console::warn("**********************************************\n");
+		}
+
+		void vm_error_stub(__int64 mark_pos)
+		{
+			vm_error_internal();
+
+			if (!game::CL_IsGameClientActive(0))
+			{
+				//return game::Com_Error(game::errorParm::ERR_SCRIPT_DROP, gsc_error_msg.has_value() ? gsc_error_msg.value().data() : "Fatal script error");
+			}
+
 			utils::hook::invoke<void>(0x510C80_b, mark_pos);
 		}
 
@@ -327,11 +294,7 @@ namespace gsc
 		force_error_print = force_print;
 		gsc_error_msg = error;
 
-		// TODO: check why Scr_ErrorInternal crashes the game
-		// is the longjmp actually happening? we're crashing at 0x140C0AC76 at a random 0xCC???
-		//game::Scr_ErrorInternal();
-
-		console::error("%s\n", error); // remove once we can actually get errors working
+		game::Scr_ErrorInternal();
 	}
 
 	namespace function
@@ -395,6 +358,41 @@ namespace gsc
 		return {this->values_[index], index};
 	}
 
+	void vm_call_builtin_method_internal(game::scr_entref_t ent_ref, int function_id)
+	{
+		const auto custom_function_id = static_cast<std::uint16_t>(function_id); // cast for gsc-tool & our custom method map
+		const auto custom = methods.contains(custom_function_id);
+		if (custom)
+		{
+			execute_custom_method(custom_function_id, ent_ref);
+			return;
+		}
+
+		builtin_method meth = meth_table[function_id - 0x8000];
+		if (meth == nullptr)
+		{
+			scr_error(utils::string::va("builtin method \"%s\" doesn't exist", gsc_ctx->meth_name(custom_function_id).data()), true);
+			return;
+		}
+
+		meth(ent_ref);
+	}
+
+	void vm_call_builtin_method_stub(utils::hook::assembler& a)
+	{
+		a.pushad64();
+		a.push(rdx);
+		a.push(ecx);
+		a.mov(rdx, rdi); // function id is stored in rdi
+		a.mov(ecx, ebx); // ent ref is stored in ebx
+		a.call_aligned(vm_call_builtin_method_internal);
+		a.pop(rdx);
+		a.pop(ecx);
+		a.popad64();
+
+		a.jmp(0xC0E8F9_b);
+	}
+
 	class extension final : public component_interface
 	{
 	public:
@@ -403,18 +401,17 @@ namespace gsc
 			developer_script = game::Dvar_RegisterBool("developer_script", true, 0, "Enable developer script comments"); // enable by default for now
 
 			utils::hook::set<uint32_t>(0xBFD16B_b + 1, func_table_count); // change builtin func count
-
 			utils::hook::set<uint32_t>(0xBFD172_b + 4, static_cast<uint32_t>(reverse_b((&func_table))));
-			utils::hook::nop(0xC0E5CE_b, 12); // nop the call & jmp at the end of call_builtin
-			utils::hook::jump(0xC0E5CE_b, utils::hook::assemble(vm_call_builtin_function_stub), true);
 			utils::hook::inject(0xBFD5A1_b + 3, &func_table);
 			utils::hook::set<uint32_t>(0xBFD595_b + 2, sizeof(func_table));
+			utils::hook::nop(0xC0E5CE_b, 7);
+			utils::hook::call(0xC0E5CE_b, vm_call_builtin_function_internal);
 
 			utils::hook::set<uint32_t>(0xBFD182_b + 4, static_cast<uint32_t>(reverse_b((&meth_table))));
-			utils::hook::nop(0xC0E8EB_b, 14); // nop the lea & call at the end of call_builtin_method
-			utils::hook::jump(0xC0E8EB_b, utils::hook::assemble(vm_call_builtin_method_stub), true);
 			utils::hook::inject(0xBFD5AF_b + 3, &meth_table);
 			utils::hook::set<uint32_t>(0xBFD5B6_b + 2, sizeof(meth_table));
+			utils::hook::nop(0xC0E8EB_b, 14); // nop the lea & call at the end of call_builtin_method
+			utils::hook::jump(0xC0E8EB_b, utils::hook::assemble(vm_call_builtin_method_stub), true);
 
 			utils::hook::call(0xC0F8C1_b, vm_error_stub); // LargeLocalResetToMark
 

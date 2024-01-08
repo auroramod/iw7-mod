@@ -337,7 +337,7 @@ namespace gsc
 		}
 
 		utils::hook::detour g_load_structs_hook;
-		void g_load_structs_stub()
+		void g_load_structs_stub(float a1)
 		{
 			for (auto& function_handle : main_handles)
 			{
@@ -345,7 +345,7 @@ namespace gsc
 				game::RemoveRefToObject(game::Scr_ExecThread(function_handle.second, 0));
 			}
 
-			g_load_structs_hook.invoke<void>();
+			g_load_structs_hook.invoke<void>(a1);
 		}
 
 		utils::hook::detour scr_load_level_hook;
