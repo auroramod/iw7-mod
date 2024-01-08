@@ -10,8 +10,10 @@
 #include <utils/string.hpp>
 
 #include "integrity.hpp"
+#include "breakpoints.hpp"
 
 #define PRECOMPUTED_INTEGRITY_CHECKS
+#define PRECOMPUTED_BREAKPOINTS
 
 #define ProcessDebugPort 7
 #define ProcessDebugObjectHandle 30
@@ -450,7 +452,6 @@ namespace arxan
 						if (result)
 						{
 							memset(&fake_context, 0, sizeof(CONTEXT));
-							//printf("Executed fake breakpoint\n");
 							break;
 						}
 					}
@@ -482,7 +483,17 @@ namespace arxan
 				utils::hook::jump(game_address, stub, false);
 			}
 
-			void patch()
+#ifdef PRECOMPUTED_BREAKPOINTS
+			void patch_breakpoints_precomputed()
+			{
+				for (const auto i : int2d_breakpoint_addresses)
+				{
+					patch_int2d_trap(reinterpret_cast<void*>(i));
+				}
+			}
+#endif
+
+			void patch_breakpoints()
 			{
 				static bool once = false;
 				if (once)
@@ -493,6 +504,10 @@ namespace arxan
 
 				memset(&fake_context, 0, sizeof(CONTEXT));
 
+#ifdef PRECOMPUTED_BREAKPOINTS
+				assert(game::base_address == 0x140000000);
+				patch_breakpoints_precomputed();
+#else
 				const auto int2d_results = utils::hook::signature("CD 2D E9 ? ? ? ?", game_module::get_game_module()).process();
 				for (auto* i : int2d_results)
 				{
@@ -500,6 +515,7 @@ namespace arxan
 				}
 
 				// the game seems to have int3 debugbreaks too but none seem to get triggered with int2d patch?
+#endif
 			}
 
 			LONG NTAPI toplevel_handler_stub(EXCEPTION_POINTERS* info)
@@ -527,7 +543,7 @@ namespace arxan
 					first = 0;
 				}
 
-				breakpoints::patch();
+				breakpoints::patch_breakpoints();
 
 				auto handle = AddVectoredExceptionHandler(first, toplevel_handler_stub);
 				handle_handler[handle] = handler;
