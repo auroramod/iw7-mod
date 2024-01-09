@@ -279,20 +279,7 @@ namespace arxan
 
 			if (NT_SUCCESS(status))
 			{
-				if (info_class == ProcessBasicInformation)
-				{
-					static DWORD explorer_pid = 0;
-					if (!explorer_pid)
-					{
-						auto* const shell_window = GetShellWindow();
-						GetWindowThreadProcessId(shell_window, &explorer_pid);
-					}
-
-					// InheritedFromUniqueProcessId
-					static_cast<PPROCESS_BASIC_INFORMATION>(info)->Reserved3 = PVOID(DWORD64(explorer_pid));
-
-				}
-				else if (info_class == ProcessDebugObjectHandle)
+				if (info_class == ProcessDebugObjectHandle)
 				{
 					*static_cast<HANDLE*>(info) = nullptr;
 					return static_cast<LONG>(0xC0000353);
@@ -433,13 +420,12 @@ namespace arxan
 		{
 			std::unordered_map<PVOID, void*> handle_handler;
 
-			_CONTEXT fake_context{};
-			void fake_breakpoint_trigger(void* address)
+			void fake_breakpoint_trigger(void* address, _CONTEXT* fake_context)
 			{
 				_EXCEPTION_POINTERS fake_info{};
 				_EXCEPTION_RECORD fake_record{};
 				fake_info.ExceptionRecord = &fake_record;
-				fake_info.ContextRecord = &fake_context;
+				fake_info.ContextRecord = fake_context;
 
 				fake_record.ExceptionAddress = reinterpret_cast<void*>(reinterpret_cast<std::uint64_t>(address) + 3);
 				fake_record.ExceptionCode = EXCEPTION_BREAKPOINT;
@@ -451,7 +437,7 @@ namespace arxan
 						auto result = utils::hook::invoke<LONG>(handler.second, &fake_info);
 						if (result)
 						{
-							memset(&fake_context, 0, sizeof(CONTEXT));
+							memset(fake_context, 0, sizeof(_CONTEXT));
 							break;
 						}
 					}
@@ -464,15 +450,17 @@ namespace arxan
 
 				const auto jump_target = utils::hook::extract<void*>(reinterpret_cast<void*>(game_address + 3));
 
-				const auto stub = utils::hook::assemble([address, jump_target](utils::hook::assembler& a)
+				_CONTEXT* fake_context = new _CONTEXT{};
+				const auto stub = utils::hook::assemble([address, fake_context, jump_target](utils::hook::assembler& a)
 				{
 					a.push(rcx);
-					a.mov(rcx, &fake_context);
+					a.mov(rcx, fake_context);
 					a.call_aligned(RtlCaptureContext);
 					a.pop(rcx);
 
 					a.pushad64();
 					a.mov(rcx, address);
+					a.mov(rdx, fake_context);
 					a.call_aligned(fake_breakpoint_trigger);
 					a.popad64();
 
@@ -501,8 +489,6 @@ namespace arxan
 					return;
 				}
 				once = true;
-
-				memset(&fake_context, 0, sizeof(CONTEXT));
 
 #ifdef PRECOMPUTED_BREAKPOINTS
 				assert(game::base_address == 0x140000000);
