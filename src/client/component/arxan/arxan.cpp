@@ -451,7 +451,7 @@ namespace arxan
 				const auto jump_target = utils::hook::extract<void*>(reinterpret_cast<void*>(game_address + 3));
 
 				_CONTEXT* fake_context = new _CONTEXT{};
-				const auto stub = utils::hook::assemble([address, fake_context, jump_target](utils::hook::assembler& a)
+				const auto stub = utils::hook::assemble([address, jump_target, fake_context](utils::hook::assembler& a)
 				{
 					a.push(rcx);
 					a.mov(rcx, fake_context);
@@ -504,24 +504,6 @@ namespace arxan
 #endif
 			}
 
-			LONG NTAPI toplevel_handler_stub(EXCEPTION_POINTERS* info)
-			{
-				// maybe figure out order? only 1 handler seems to be active at once anyway
-				for (auto handler : handle_handler)
-				{
-					if (handler.second)
-					{
-						auto result = utils::hook::invoke<LONG>(handler.second, info);
-						if (result)
-						{
-							return result;
-						}
-					}
-				}
-
-				return NULL;
-			}
-
 			PVOID WINAPI add_vectored_exception_handler_stub(ULONG first, PVECTORED_EXCEPTION_HANDLER handler)
 			{
 				if (first == 1 && handler != exception_filter)
@@ -531,7 +513,7 @@ namespace arxan
 
 				breakpoints::patch_breakpoints();
 
-				auto handle = AddVectoredExceptionHandler(first, toplevel_handler_stub);
+				auto handle = AddVectoredExceptionHandler(first, handler);
 				handle_handler[handle] = handler;
 
 				return handle;
@@ -582,7 +564,6 @@ namespace arxan
 			nt_query_information_process_hook.move();
 
 			AddVectoredExceptionHandler(1, exception_filter);
-			SetUnhandledExceptionFilter(exception_filter);
 		}
 
 		void post_unpack() override
