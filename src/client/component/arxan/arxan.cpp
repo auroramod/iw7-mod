@@ -245,9 +245,6 @@ namespace arxan
 			assert(game::base_address == 0x140000000);
 			search_and_patch_integrity_checks_precomputed();
 #else
-			// There seem to be 670 results.
-			// Searching them is quite slow.
-			// Maybe precomputing that might be better?
 			const auto intact_results = "89 04 8A 83 45 ? FF"_sig;
 			const auto split_results = "89 04 8A E9"_sig;
 
@@ -499,18 +496,11 @@ namespace arxan
 				{
 					patch_int2d_trap(i);
 				}
-
-				// the game seems to have int3 debugbreaks too but none seem to get triggered with int2d patch?
 #endif
 			}
 
 			PVOID WINAPI add_vectored_exception_handler_stub(ULONG first, PVECTORED_EXCEPTION_HANDLER handler)
 			{
-				if (first == 1 && handler != exception_filter)
-				{
-					first = 0;
-				}
-
 				breakpoints::patch_breakpoints();
 
 				auto handle = AddVectoredExceptionHandler(first, handler);
