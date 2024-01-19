@@ -12,6 +12,8 @@
 #include <utils/concurrency.hpp>
 #include <utils/io.hpp>
 
+#include <zlib.h>
+
 //#define XFILE_DEBUG
 
 namespace fastfiles
@@ -107,6 +109,155 @@ namespace fastfiles
 		}
 	}
 
+	namespace zone_loading
+	{
+		utils::hook::detour db_is_patch_hook;
+		utils::hook::detour db_read_stream_file_hook;
+		utils::hook::detour db_auth_load_inflate_hook;
+		utils::hook::detour db_auth_load_inflate_init_hook;
+		utils::hook::detour db_auth_load_inflate_end_hook;
+		utils::hook::detour db_patch_mem_fix_stream_alignment_hook;
+
+		game::db_z_stream_s db_zlib_stream;
+		char db_zlib_memory[0x20000];
+
+		bool is_reading_stream_file;
+
+		bool check_missing_content_func(const char* zone_name)
+		{
+			const char* lang_code = game::SEH_GetCurrentLanguageCode();
+			char buffer[0x100]{ 0 };
+			sprintf_s(buffer, "%s_", lang_code);
+
+			if (!strncmp(zone_name, buffer, strlen(buffer)))
+			{
+				printf("Tried to load missing language zone: %s\n", zone_name);
+				return true;
+			}
+
+			return false;
+		}
+
+		bool db_is_patch_stub(const char* name)
+		{
+			if (db_is_patch_hook.invoke<bool>(name)) return true;
+			if (check_missing_content_func(name)) return true;
+			return false;
+		}
+
+		void skip_extra_zones_stub(utils::hook::assembler& a)
+		{
+			const auto skip = a.newLabel();
+			const auto original = a.newLabel();
+
+			//a.pushad64();
+			a.test(edi, game::DB_ZONE_CUSTOM); // allocFlags
+			a.jnz(skip);
+
+			a.bind(original);
+			//a.popad64();
+			a.call(0x3BC450_b); // strnicmp_ffotd
+			a.mov(r12d, edi);
+			a.mov(rdx, 0x1467970_b); // "patch_"
+			a.jmp(0x3BA9C0_b);
+
+			a.bind(skip);
+			//a.popad64();
+			a.mov(r12d, game::DB_ZONE_CUSTOM);
+			a.not_(r12d);
+			a.and_(edi, r12d);
+			a.jmp(0x3BAC06_b);
+		}
+		
+		void db_read_stream_file_stub(int a1, int a2)
+		{
+			if (!game::Sys_IsDatabaseThread()) // sanity check
+			{
+				__debugbreak();
+			}
+
+			is_reading_stream_file = true;
+			db_read_stream_file_hook.invoke<void>(a1, a2);
+			is_reading_stream_file = false;
+		}
+
+		template <class T1, class T2>
+		void stream_copy(T1 dest, T2 src)
+		{
+			dest->next_in = static_cast<decltype(dest->next_in)>(src->next_in);
+			dest->avail_in = static_cast<decltype(dest->avail_in)>(src->avail_in);
+			dest->total_in = static_cast<decltype(dest->total_in)>(src->total_in);
+			dest->next_out = static_cast<decltype(dest->next_out)>(src->next_out);
+			dest->avail_out = static_cast<decltype(dest->avail_out)>(src->avail_out);
+			dest->total_out = static_cast<decltype(dest->total_out)>(src->total_out);
+		}
+
+		bool is_custom_zone_read;
+
+		__int64 db_auth_load_inflate_stub(game::DB_ReadStream* stream)
+		{
+			if (!is_custom_zone_read) return db_auth_load_inflate_hook.invoke<__int64>(stream);
+
+			__int64 result{};
+
+			stream_copy(&db_zlib_stream, stream);
+			if (db_zlib_stream.avail_in)
+			{
+				result = game::db_inflate(&db_zlib_stream, Z_SYNC_FLUSH);
+				if (result == 1 && !db_zlib_stream.avail_out) result = 0;
+			}
+			stream_copy(stream, &db_zlib_stream);
+
+			return result;
+		}
+
+		void db_auth_load_inflate_init_stub(game::DB_ReadStream* stream, int isSecure, const char* filename)
+		{
+			is_custom_zone_read = false;
+
+			db_auth_load_inflate_init_hook.invoke<void>(stream, isSecure, filename);
+
+			if (stream->avail_in >= 4 &&
+				(stream->next_in[1] == 'I' && stream->next_in[2] == 'W' && stream->next_in[3] == 'C'))
+			{
+				return;
+			}
+
+			if (is_reading_stream_file || game::g_load->file->isSecure) return;
+
+			is_custom_zone_read = true;
+
+			memset(&db_zlib_stream, 0, sizeof(game::db_z_stream_s));
+			stream_copy(&db_zlib_stream, stream);
+
+			game::DB_Zip_InitThreadMemory(&db_zlib_stream, &db_zlib_memory, 0x20000);
+			game::db_inflateInit_(&db_zlib_stream, "1.1.4", 88);
+
+			stream_copy(stream, &db_zlib_stream);
+		}
+
+		void db_auth_load_inflate_end_stub()
+		{
+			db_auth_load_inflate_end_hook.invoke<void>();
+
+			if (!is_custom_zone_read) return;
+
+			game::db_inflateEnd(&db_zlib_stream);
+			game::DB_Zip_ShutdownThreadMemory(&db_zlib_stream);
+
+			is_custom_zone_read = false;
+		}
+
+		unsigned __int64 db_patch_mem_fix_stream_alignment_stub(int alignment) // probably unneeded
+		{
+			if (!is_custom_zone_read) return db_patch_mem_fix_stream_alignment_hook.invoke<unsigned __int64>(alignment);
+
+			*game::g_streamPos = (~alignment & (alignment + *game::g_streamPos));
+			return *game::g_streamPos;
+		}
+	}
+	using namespace zone_loading;
+
 	bool exists(const std::string& zone)
 	{
 		const auto is_localized = game::DB_IsLocalized(zone.data());
@@ -138,6 +289,44 @@ namespace fastfiles
 			db_add_xasset_hook.create(0xA76520_b, db_add_xasset_stub);
 
 			g_dump_scripts = game::Dvar_RegisterBool("g_dumpScripts", false, game::DVAR_FLAG_NONE, "Dump GSC scripts");
+
+			// Don't fatal on certain missing zones
+			db_is_patch_hook.create(0x3BC580_b, db_is_patch_stub);
+			// Don't load extra zones with loadzone
+			utils::hook::nop(0x3BA9B1_b, 15);
+			utils::hook::jump(0x3BA9B1_b, utils::hook::assemble(skip_extra_zones_stub), true);
+
+			// Allow loading of unsigned fastfiles
+			utils::hook::set<uint8_t>(0x9E8CAE_b, 0xEB); // DB_InflateInit
+			db_read_stream_file_hook.create(0x0A7F370_b, db_read_stream_file_stub);
+			db_auth_load_inflate_hook.create(0x9E6AE0_b, db_auth_load_inflate_stub);
+			db_auth_load_inflate_init_hook.create(0x9E6970_b, db_auth_load_inflate_init_stub);
+			db_auth_load_inflate_end_hook.create(0x9E8CF0_b, db_auth_load_inflate_end_stub);
+			db_patch_mem_fix_stream_alignment_hook.create(0x0A0A80_b, db_patch_mem_fix_stream_alignment_stub);
+
+			command::add("loadzone", [](const command::params& params)
+			{
+				if (params.size() < 2)
+				{
+					console::info("usage: loadzone <zone>\n");
+					return;
+				}
+
+				const char* name = params.get(1);
+
+				if (!fastfiles::exists(name))
+				{
+					console::warn("loadzone: zone %s could not be found!\n", name);
+					return;
+				}
+
+				game::XZoneInfo info{};
+				info.name = name;
+				info.allocFlags = game::DB_ZONE_GAME;
+				info.allocFlags |= game::DB_ZONE_CUSTOM; // skip extra zones with this flag
+
+				game::DB_LoadXAssets(&info, 1, game::DBSyncMode::DB_LOAD_ASYNC);
+			});
 
 			command::add("listassetpool", [](const command::params& params)
 			{

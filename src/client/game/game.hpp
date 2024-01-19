@@ -2,6 +2,8 @@
 
 #include "structs.hpp"
 
+#define PROTOCOL 1
+
 namespace game
 {
 	extern uint64_t base_address;
