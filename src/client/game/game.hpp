@@ -2,6 +2,8 @@
 
 #include "structs.hpp"
 
+#define PROTOCOL 1
+
 namespace game
 {
 	extern uint64_t base_address;
@@ -40,6 +42,12 @@ namespace game
 		bool is_dedi();
 	}
 
+	namespace shared
+	{
+		void client_println(int client_num, const std::string& text);
+		bool cheats_ok(int client_num = 0, bool print = false);
+	}
+
 	int Cmd_Argc();
 	const char* Cmd_Argv(int index);
 
@@ -58,9 +66,8 @@ namespace game
 	void SV_CmdsMP_RequestMapRestart(bool loadScripts, bool migrate);
 }
 
-inline uintptr_t operator"" _b(const uintptr_t ptr)
-{
-	return game::base_address + ptr;
-}
+size_t operator"" _b(const size_t ptr);
+size_t reverse_b(const size_t ptr);
+size_t reverse_b(const void* ptr);
 
 #include "symbols.hpp"

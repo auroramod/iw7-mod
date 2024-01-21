@@ -198,10 +198,16 @@ namespace patches
 
 		char* db_read_raw_file_stub(const char* filename, char* buf, const int size)
 		{
-			const auto file = game::filesystem::file(filename);
-			if (file.exists())
+			std::string file_name = filename;
+			if (file_name.find(".cfg") == std::string::npos)
 			{
-				snprintf(buf, size, "%s\n", file.get_buffer().data());
+				file_name.append(".cfg");
+			}
+
+			std::string buffer{};
+			if (filesystem::read_file(file_name, &buffer))
+			{
+				snprintf(buf, size, "%s\n", buffer.data());
 				return buf;
 			}
 
@@ -301,6 +307,9 @@ namespace patches
 
 			// block changing name in-game
 			utils::hook::set<uint8_t>(0xC4DF90_b, 0xC3);
+
+			// disable host migration
+			utils::hook::set<uint8_t>(0xC5A200_b, 0xC3);
 		}
 	};
 }

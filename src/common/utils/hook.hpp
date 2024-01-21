@@ -1,10 +1,13 @@
 #pragma once
 #include "signature.hpp"
+#include "memory.hpp"
 
 #include <asmjit/core/jitruntime.h>
 #include <asmjit/x86/x86assembler.h>
 
 using namespace asmjit::x86;
+
+Mem seg_ptr(const SReg& segment, const uint64_t off);
 
 namespace utils::hook
 {
@@ -125,6 +128,8 @@ namespace utils::hook
 
 		void move();
 
+		void* get_place() const;
+
 		template <typename T>
 		T* get() const
 		{
@@ -147,7 +152,8 @@ namespace utils::hook
 		void un_move();
 	};
 
-	std::optional<std::pair<void*, void*>> iat(const nt::library& library, const std::string& target_library, const std::string& process, void* stub);
+	std::optional<std::pair<void*, void*>> iat(const nt::library& library, const std::string& target_library,
+		const std::string& process, void* stub);
 
 	void nop(void* place, size_t length);
 	void nop(size_t place, size_t length);
@@ -159,6 +165,7 @@ namespace utils::hook
 	void copy_string(size_t place, const char* str);
 
 	bool is_relatively_far(const void* pointer, const void* data, int offset = 5);
+	bool is_relatively_far(size_t pointer, size_t data, int offset = 5);
 
 	void call(void* pointer, void* data);
 	void call(size_t pointer, void* data);
@@ -172,6 +179,7 @@ namespace utils::hook
 
 	void inject(void* pointer, const void* data);
 	void inject(size_t pointer, const void* data);
+	void inject(size_t pointer, size_t data);
 
 	std::vector<uint8_t> move_hook(void* pointer);
 	std::vector<uint8_t> move_hook(size_t pointer);
@@ -210,5 +218,51 @@ namespace utils::hook
 		return static_cast<T(*)(Args ...)>(func)(args...);
 	}
 
-	std::vector<uint8_t> query_original_data(const void* data, size_t length);
+	template <size_t Base>
+	void* allocate_far_jump()
+	{
+		constexpr auto alloc_size = 0x1000;
+		constexpr auto far_jmp_size = 0xC;
+
+		const auto alloc_jump_table = []
+		{
+			return reinterpret_cast<char*>(
+				memory::allocate_near(Base, alloc_size, PAGE_EXECUTE_READWRITE));
+		};
+
+		static auto jump_table = alloc_jump_table();
+		static auto current_pos = jump_table;
+
+		if (current_pos + far_jmp_size >= jump_table + alloc_size)
+		{
+			jump_table = alloc_jump_table();
+			current_pos = jump_table;
+		}
+
+		const auto ptr = current_pos;
+		current_pos += far_jmp_size;
+		return ptr;
+	}
+
+	template <size_t Base, typename T>
+	void* create_far_jump(const T dest)
+	{
+		static std::unordered_map<void*, void*> allocated_jumps;
+		if (const auto iter = allocated_jumps.find(reinterpret_cast<void*>(dest)); iter != allocated_jumps.end())
+		{
+			return iter->second;
+		}
+
+		const auto pos = allocate_far_jump<Base>();
+		jump(pos, dest, true);
+		allocated_jumps.insert(std::make_pair(dest, pos));
+		return pos;
+	}
+
+	template <size_t Base, typename T>
+	void far_jump(const size_t address, const T dest)
+	{
+		const auto pos = create_far_jump<Base>(dest);
+		jump(address, pos, false);
+	}
 }

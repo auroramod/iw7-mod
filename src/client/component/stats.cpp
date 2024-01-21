@@ -256,7 +256,7 @@ namespace stats
 					console::info("%s\n", value.stringPtr);
 					break;
 				case game::DDL_ENUM_TYPE:
-					console::info("%s\n", game::DDL::DDL_Lookup_GetEnumString(state, value.intValue));
+					console::info("%s\n", game::DDL_Lookup_GetEnumString(state, value.intValue));
 					break;
 				default:
 					console::info("Unknown type (%d).\n", type);

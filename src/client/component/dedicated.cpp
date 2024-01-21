@@ -8,6 +8,7 @@
 #include "command.hpp"
 #include "console/console.hpp"
 #include "scheduler.hpp"
+#include "filesystem.hpp"
 
 #include <utils/json.hpp>
 
@@ -111,8 +112,6 @@ namespace dedicated
 				}
 			};
 
-			command::execute("onlinegame 1", true);
-			command::execute("xblive_privatematch 1", true);
 			initialize_gamemode();
 		}
 
@@ -121,7 +120,7 @@ namespace dedicated
 		nlohmann::json get_snd_alias_length_data(const char* mapname, const std::string& game_mode = "")
 		{
 			const auto path = "sounddata/"s + game_mode + "/"s + mapname + ".json"s;
-			const auto buffer = utils::io::read_file(path);
+			const auto buffer = filesystem::read_file(path);
 			if (!buffer.empty())
 			{
 				try
@@ -153,6 +152,7 @@ namespace dedicated
 			}
 			else
 			{
+				//console::error("[SND]: failed to find sound length soundalias \"%s\"\n", alias);
 				return 0;
 			}
 		}
@@ -232,8 +232,6 @@ namespace dedicated
 			utils::hook::nop(0x3429A7_b, 2); // properly shut down dedicated servers
 			utils::hook::nop(0x34296F_b, 2); // ^
 			utils::hook::set<uint8_t>(0xE08360_b, 0xC3); // don't shutdown renderer
-
-			utils::hook::set<uint8_t>(0xC5A200_b, 0xC3); // disable host migration
 
 			// SOUND patches
 			//utils::hook::nop(0xC93213_b, 5); // snd stream thread

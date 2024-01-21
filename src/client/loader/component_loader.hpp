@@ -25,11 +25,25 @@ public:
 
 		installer(const std::string& component_name)
 		{
+			auto last = component_name.find("::component");
+			if (last == std::string::npos)
+			{
+				last = component_name.find("::error");
+			}
+			if (last == std::string::npos)
+			{
+				last = component_name.find("::extension");
+			}
+			if (last == std::string::npos)
+			{
+				last = component_name.find("::loading");
+			}
+
 			register_component(
 				std::make_unique<T>(),
 				std::string(
 					component_name.begin(),
-					component_name.begin() + component_name.find("::component")
+					component_name.begin() + last
 				)
 			);
 		}
