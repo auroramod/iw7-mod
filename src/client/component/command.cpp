@@ -472,20 +472,6 @@ namespace command
 				game::Com_GameMode_SetDesiredGameMode(game::GAME_MODE_CP);
 			});
 
-			add("director_cut", [](const params& params)
-			{
-				if (params.size() == 2)
-				{
-					const auto value = static_cast<int>(atoi(params.get(1)));
-					utils::hook::set<int>(0x5ECB830_b, value);
-				}
-				else
-				{
-					const auto command = params.get(0);
-					console::error("Incorrect number of arguments for \"%s\".\n", command);
-				}
-			});
-
 			add_sv("god", [](const int client_num, const params_sv&)
 			{
 				if (!game::shared::cheats_ok(client_num, true))
