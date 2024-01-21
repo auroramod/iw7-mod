@@ -15,7 +15,7 @@ namespace logger
 	{
 		void sys_print_stub(const char* msg)
 		{
-			console::info(msg);
+			console::info("%s\n", msg);
 		}
 
 		void print_info(const char* msg, ...)
@@ -29,7 +29,7 @@ namespace logger
 
 			va_end(ap);
 
-			console::info(buffer);
+			console::info("%s\n", buffer);
 		}
 
 		void print_warn(const char* msg, ...)
@@ -43,7 +43,7 @@ namespace logger
 
 			va_end(ap);
 
-			console::warn(buffer);
+			console::warn("%s\n", buffer);
 		}
 
 		void print_error(const char* msg, ...)
@@ -57,7 +57,7 @@ namespace logger
 
 			va_end(ap);
 
-			console::error(buffer);
+			console::error("%s\n", buffer);
 		}
 
 		void print_debug(const char* msg, ...)
@@ -71,26 +71,24 @@ namespace logger
 
 			va_end(ap);
 
-			console::debug(buffer);
+			console::debug("%s\n", buffer);
 		}
 
 		void r_warn_once_per_frame_vsnprintf_stub(char* buffer, size_t buffer_length, char* msg, va_list va)
 		{
 			vsnprintf(buffer, buffer_length, msg, va);
-			console::warn(buffer);
+			console::warn("%s\n", buffer);
 		}
 
 		void com_init_pre()
 		{
 			console::info("%s %s build %s %s\n", "IW7", VERSION, "win64", __DATE__);
-
 			console::info("--- Common Initialization ---\n");
 		}
 
 		void com_init_post()
 		{
 			console::info("--- Common Initialization Complete ---\n");
-
 			console::info("Working directory: %s\n", game::Sys_Cwd());
 		}
 
