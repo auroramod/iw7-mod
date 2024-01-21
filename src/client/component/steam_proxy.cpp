@@ -42,7 +42,7 @@ namespace steam_proxy
 
 		bool is_disabled()
 		{
-			static const auto disabled = utils::flags::has_flag("nosteam");
+			static const auto disabled = utils::flags::has_flag("nosteam"); // fixes issues for offline Steam play
 			return disabled;
 		}
 
@@ -192,7 +192,7 @@ namespace steam_proxy
 
 		void post_unpack() override
 		{
-			if (game::environment::is_dedi() || is_disabled() || !FindWindowA(0, "Steam"))
+			if (game::environment::is_dedi() || is_disabled())
 			{
 				return;
 			}
@@ -200,7 +200,7 @@ namespace steam_proxy
 #ifndef DEV_BUILD
 			try
 			{
-				const auto res = start_mod("\xF0\x9F\x8E\xAE" "IW7-Mod", steam::SteamUtils()->GetAppID());
+				const auto res = start_mod("\xF0\x9F\x8C\xA0" "IW7-Mod", steam::SteamUtils()->GetAppID());
 
 				switch (res)
 				{
