@@ -115,8 +115,8 @@ namespace steam
 
 	bool SteamAPI_Init()
 	{
-		const std::filesystem::path steam_path = SteamAPI_GetSteamInstallPath();
-		if (steam_path.empty()) return false;
+		const std::filesystem::path steam_path = steam::SteamAPI_GetSteamInstallPath();
+		if (steam_path.empty()) return true; // h1-mod has this as true, is this right?
 
 		::utils::nt::library::load(steam_path / "tier0_s64.dll");
 		::utils::nt::library::load(steam_path / "vstdlib_s64.dll");
@@ -165,17 +165,23 @@ namespace steam
 			return install_path.data();
 		}
 
+		char path[MAX_PATH] = {0};
+		DWORD length = sizeof(path);
+
+		std::string path_str;
+		if (::utils::io::read_file("steam_path.txt", &path_str)) // steam_path.txt in root for directory
+		{
+			install_path = path_str;
+			return install_path.data();
+		}
+
+		// check if Steam contains information in registry for the install path
 		HKEY reg_key;
 		if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "Software\\WOW6432Node\\Valve\\Steam", 0, KEY_QUERY_VALUE,
-		                  &reg_key) ==
-			ERROR_SUCCESS)
+		                  &reg_key) == ERROR_SUCCESS)
 		{
-			char path[MAX_PATH] = {0};
-			DWORD length = sizeof(path);
-			RegQueryValueExA(reg_key, "InstallPath", nullptr, nullptr, reinterpret_cast<BYTE*>(path),
-			                 &length);
+			RegQueryValueExA(reg_key, "InstallPath", nullptr, nullptr, reinterpret_cast<BYTE*>(path), &length);
 			RegCloseKey(reg_key);
-
 			install_path = path;
 		}
 

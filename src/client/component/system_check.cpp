@@ -4,8 +4,9 @@
 
 #include "game/game.hpp"
 
-#include <utils/io.hpp>
 #include <utils/cryptography.hpp>
+#include <utils/io.hpp>
+#include <utils/nt.hpp>
 
 namespace system_check
 {
@@ -66,9 +67,12 @@ namespace system_check
 		void verify_binary_version()
 		{
 			const auto value = *reinterpret_cast<DWORD*>(0x1337_b);
-			if (value != 0xB43C9275)
+			if (!utils::nt::is_wine())
 			{
-				throw std::runtime_error("Unsupported Call of Duty: Infinite Warfare version");
+				if (value != 0xB43C9275)
+				{
+					throw std::runtime_error("Unsupported Call of Duty: Infinite Warfare version");
+				}
 			}
 		}
 	}

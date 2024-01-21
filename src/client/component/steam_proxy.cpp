@@ -40,6 +40,12 @@ namespace steam_proxy
 			error,
 		};
 
+		bool is_disabled()
+		{
+			static const auto disabled = utils::flags::has_flag("nosteam");
+			return disabled;
+		}
+
 		void* load_client_engine()
 		{
 			if (!steam_client_module_) return nullptr;
@@ -175,13 +181,18 @@ namespace steam_proxy
 	public:
 		void post_load() override
 		{
+			if (game::environment::is_dedi() || is_disabled() || !FindWindowA(0, "Steam"))
+			{
+				return;
+			}
+
 			load_client();
 			perform_cleanup_if_needed();
 		}
 
 		void post_unpack() override
 		{
-			if (game::environment::is_dedi())
+			if (game::environment::is_dedi() || is_disabled() || !FindWindowA(0, "Steam"))
 			{
 				return;
 			}

@@ -13,13 +13,18 @@ namespace splash
 	public:
 		void post_start() override
 		{
+			if (utils::nt::is_wine())
+			{
+				return;
+			}
+
 			const utils::nt::library self;
 			image_ = LoadImageA(self, MAKEINTRESOURCE(IMAGE_SPLASH), IMAGE_BITMAP, 0, 0, LR_DEFAULTCOLOR);
 		}
 
 		void post_load() override
 		{
-			if (game::environment::is_dedi())
+			if (utils::nt::is_wine() || game::environment::is_dedi())
 			{
 				return;
 			}
@@ -31,12 +36,20 @@ namespace splash
 		{
 			// Disable native splash screen
 			utils::hook::set<uint8_t>(0xD58240_b, 0xC3);
-			utils::hook::jump(0xD584F0_b, destroy_stub, true);
-			utils::hook::jump(0xD58530_b, destroy_stub, true);
+			if (!utils::nt::is_wine())
+			{
+				utils::hook::jump(0xD584F0_b, destroy_stub, true);
+				utils::hook::jump(0xD58530_b, destroy_stub, true);
+			}
 		}
 
 		void pre_destroy() override
 		{
+			if (utils::nt::is_wine() || game::environment::is_dedi())
+			{
+				return;
+			}
+
 			this->destroy();
 
 			MSG msg;

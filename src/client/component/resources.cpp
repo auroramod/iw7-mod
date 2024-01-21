@@ -32,20 +32,34 @@ namespace resources
 	public:
 		~component()
 		{
+			if (utils::nt::is_wine())
+			{
+				return;
+			}
+
 			if (icon) DestroyIcon(icon);
 			if (splash) DeleteObject(splash);
 		}
 
 		void post_start() override
 		{
-			const utils::nt::library self;
+			if (utils::nt::is_wine())
+			{
+				return;
+			}
 
+			const utils::nt::library self;
 			icon = LoadIconA(self.get_handle(), MAKEINTRESOURCEA(ID_ICON));
 			splash = LoadImageA(self.get_handle(), MAKEINTRESOURCEA(IMAGE_SPLASH), 0, 0, 0, LR_COPYFROMRESOURCE);
 		}
 
 		void* load_import(const std::string& library, const std::string& function) override
 		{
+			if (utils::nt::is_wine())
+			{
+				return nullptr;
+			}
+
 			if (library == "USER32.dll")
 			{
 				if (function == "LoadIconA")
