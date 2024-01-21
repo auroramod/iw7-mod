@@ -85,7 +85,8 @@ namespace profile_infos
 
 		void clean_cached_profile_infos()
 		{
-			if (!game::is_server_running())
+			static const auto sv_running = game::Dvar_FindVar("sv_running");
+			if (sv_running == nullptr || !sv_running->current.enabled)
 			{
 				return;
 			}
@@ -236,7 +237,7 @@ namespace profile_infos
 		data.append(reinterpret_cast<const char*>(&info.version), sizeof(info.version));
 		data.append(info.ddl);
 
-		utils::io::write_file("boiii_players/user/profile_info", data);
+		utils::io::write_file("players2/user/profile_info", data);
 	}
 
 	class component final : public component_interface
