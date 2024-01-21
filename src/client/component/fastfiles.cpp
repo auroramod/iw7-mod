@@ -203,7 +203,7 @@ namespace fastfiles
 			utils::hook::set<uint8_t>(0x9E8CAE_b, 0xEB); // DB_InflateInit
 
 			// Skip signature validation
-			utils::hook::set(0x1409E6390, 0xC301B0); // signature
+			utils::hook::set(0x9E6390_b, 0xC301B0); // signature
 
 			command::add("loadzone", [](const command::params& params)
 			{
