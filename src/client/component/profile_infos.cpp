@@ -11,7 +11,7 @@
 #include "../steam/steam.hpp"
 #include <utils/io.hpp>
 
-#include "game/utils.hpp"
+//#include "game/utils.hpp"
 #include "game/fragment_handler.hpp"
 
 namespace profile_infos
@@ -20,6 +20,59 @@ namespace profile_infos
 	{
 		using profile_map = std::unordered_map<uint64_t, profile_info>;
 		utils::concurrency::container<profile_map, std::recursive_mutex> profile_mapping{};
+
+		int get_max_client_count()
+		{
+			static const auto com_maxclients = game::Dvar_FindVar("com_maxclients");
+			if (com_maxclients)
+			{
+				return com_maxclients->current.integer;
+			}
+			return 0;
+		}
+
+		template <typename T>
+		static void foreach_client(T* client_states, const std::function<void(game::client_t&, size_t index)>& callback)
+		{
+			if (!client_states || !callback)
+			{
+				return;
+			}
+
+			for (size_t i = 0; i < get_max_client_count(); ++i)
+			{
+				callback(client_states[i], i);
+			}
+		}
+
+		void foreach_client(const std::function<void(game::client_t&, size_t index)>& callback)
+		{
+			foreach_client(*game::svs_clients, callback);
+			/*
+			if (game::environment::is_dedi())
+			{
+				foreach_client(*game::svs_clients, callback);
+			}
+			else
+			{
+				foreach_client(*game::svs_clients_cl, callback);
+			}
+			*/
+		}
+
+		void foreach_connected_client(const std::function<void(game::client_t&, size_t index)>& callback)
+		{
+			const auto clients = *game::svs_clients;
+			auto& client = clients[0];
+
+			foreach_client([&](game::client_t& client, const size_t index)
+			{
+				if (client.header.state != 0x0) // CS_FREE
+				{
+					callback(client, index);
+				}
+			});
+		}
 
 		std::optional<profile_info> load_profile_info()
 		{
@@ -64,20 +117,20 @@ namespace profile_infos
 
 			const std::string data = buffer.move_buffer();
 
-			game::foreach_connected_client([&](const game::client_s& client)
+			foreach_connected_client([&](const game::client_t& client)
 			{
-				send_profile_info(client.address, data);
+				send_profile_info(client.remoteAddress, data);
 			});
 		}
 
 		std::unordered_set<uint64_t> get_connected_client_xuids()
 		{
 			std::unordered_set<uint64_t> connected_clients{};
-			connected_clients.reserve(game::get_max_client_count());
+			connected_clients.reserve(get_max_client_count());
 
-			game::foreach_connected_client([&](const game::client_s& client)
+			foreach_connected_client([&](const game::client_t& client)
 			{
-				connected_clients.emplace(client.xuid);
+				connected_clients.emplace(client.xuid); // TODO
 			});
 
 			return connected_clients;
