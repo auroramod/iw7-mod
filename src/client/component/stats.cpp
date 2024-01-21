@@ -4,8 +4,9 @@
 #include "game/game.hpp"
 #include "game/dvars.hpp"
 
-#include "console/console.hpp"
 #include "command.hpp"
+#include "console/console.hpp"
+#include "dvars.hpp"
 #include "scheduler.hpp"
 
 #include <utils/hook.hpp>
@@ -195,31 +196,31 @@ namespace stats
 
 	namespace
 	{
-		utils::hook::detour is_unlocked1_hook;
-		utils::hook::detour is_unlocked2_hook;
+		utils::hook::detour is_item_unlocked_hook;
+		utils::hook::detour is_item_unlocked_hook2;
 		utils::hook::detour item_quantity_hook;
 
-		bool is_unlocked1(__int64 a1, int a2, const char* unlock_table, unsigned __int8* value)
+		bool is_item_unlocked_stub(__int64 a1, int a2, const char* unlock_table, unsigned __int8* value)
 		{
 			if (dvars::cg_unlockall_items && dvars::cg_unlockall_items->current.enabled)
 			{
 				return true;
 			}
 
-			return is_unlocked1_hook.invoke<bool>(a1, a2, unlock_table, value);
+			return is_item_unlocked_hook.invoke<bool>(a1, a2, unlock_table, value);
 		}
 
-		bool is_unlocked2(__int64 a1, int a2, const char* unlock_table, unsigned __int8* value)
+		bool is_item_unlocked_stub2(__int64 a1, int a2, const char* unlock_table, unsigned __int8* value)
 		{
 			if (dvars::cg_unlockall_items && dvars::cg_unlockall_items->current.enabled)
 			{
 				return true;
 			}
 
-			return is_unlocked2_hook.invoke<bool>(a1, a2, unlock_table, value);
+			return is_item_unlocked_hook2.invoke<bool>(a1, a2, unlock_table, value);
 		}
 
-		int item_quantity(__int64 a1, int a2, int id)
+		int item_quantity_stub(__int64 a1, int a2, int id)
 		{
 			auto result = item_quantity_hook.invoke<int>(a1, a2, id);
 
@@ -285,16 +286,17 @@ namespace stats
 			// register dvars
 			scheduler::once([]()
 			{
-				dvars::cg_unlockall_items = game::Dvar_RegisterBool("cg_unlockall_items", false, game::DVAR_FLAG_SAVED, "Unlocks all items.");
-				dvars::cg_unlockall_loot = game::Dvar_RegisterBool("cg_unlockall_loot", false, game::DVAR_FLAG_SAVED, "Unlocks all loot.");
+				dvars::cg_unlockall_items = game::Dvar_RegisterBool("cg_unlockall_items", false, game::DVAR_FLAG_SAVED, "Whether items should be locked based on the player's stats or always unlocked.");
+				game::Dvar_RegisterBool("cg_unlockall_classes", false, game::DVAR_FLAG_SAVED, "Whether classes should be locked based on the player's stats or always unlocked."); // TODO: need LUI scripting
+				dvars::cg_unlockall_loot = game::Dvar_RegisterBool("cg_unlockall_loot", false, game::DVAR_FLAG_SAVED, "Whether loot should be locked based on the player's stats or always unlocked.");
 			}, scheduler::main);
 
 			// unlockables
-			is_unlocked1_hook.create(0x34E020_b, is_unlocked1);
-			is_unlocked2_hook.create(0x34CF40_b, is_unlocked2);
+			is_item_unlocked_hook.create(0x34E020_b, is_item_unlocked_stub);
+			is_item_unlocked_hook2.create(0x34CF40_b, is_item_unlocked_stub2);
 
 			// loot
-			item_quantity_hook.create(0x51DBE0_b, item_quantity);
+			item_quantity_hook.create(0x51DBE0_b, item_quantity_stub);
 
 			// GetPlayerData print
 			utils::hook::jump(0xB84F00_b, com_ddl_print_state); // Com_DDL_PrintState
