@@ -15,7 +15,7 @@ namespace logger
 	{
 		void sys_print_stub(const char* msg)
 		{
-			console::info("%s\n", msg);
+			console::info("%s", msg);
 		}
 
 		void print_info(const char* msg, ...)
@@ -29,7 +29,7 @@ namespace logger
 
 			va_end(ap);
 
-			console::info("%s\n", buffer);
+			console::info("%s", buffer);
 		}
 
 		void print_warn(const char* msg, ...)
@@ -43,7 +43,7 @@ namespace logger
 
 			va_end(ap);
 
-			console::warn("%s\n", buffer);
+			console::warn("%s", buffer);
 		}
 
 		void print_error(const char* msg, ...)
@@ -57,7 +57,7 @@ namespace logger
 
 			va_end(ap);
 
-			console::error("%s\n", buffer);
+			console::error("%s", buffer);
 		}
 
 		void print_debug(const char* msg, ...)
@@ -71,13 +71,13 @@ namespace logger
 
 			va_end(ap);
 
-			console::debug("%s\n", buffer);
+			console::debug("%s", buffer);
 		}
 
 		void r_warn_once_per_frame_vsnprintf_stub(char* buffer, size_t buffer_length, char* msg, va_list va)
 		{
 			vsnprintf(buffer, buffer_length, msg, va);
-			console::warn("%s\n", buffer);
+			console::warn("%s", buffer);
 		}
 
 		void com_init_pre()

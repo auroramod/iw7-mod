@@ -116,7 +116,7 @@ namespace steam
 	bool SteamAPI_Init()
 	{
 		const std::filesystem::path steam_path = steam::SteamAPI_GetSteamInstallPath();
-		if (steam_path.empty()) return true; // h1-mod has this as true, is this right?
+		if (steam_path.empty()) return false;
 
 		::utils::nt::library::load(steam_path / "tier0_s64.dll");
 		::utils::nt::library::load(steam_path / "vstdlib_s64.dll");

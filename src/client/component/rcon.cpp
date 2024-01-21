@@ -148,7 +148,7 @@ namespace rcon
 				}
 
 				auto status_buffer = build_status_buffer();
-				console::info("%s\n", status_buffer.data());
+				console::info("%s", status_buffer.data());
 			});
 
 			if (!game::environment::is_dedi())
