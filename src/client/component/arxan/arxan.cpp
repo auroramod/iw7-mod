@@ -11,9 +11,11 @@
 
 #include "integrity.hpp"
 #include "breakpoints.hpp"
+#include "illegal_instructions.hpp"
 
 #define PRECOMPUTED_INTEGRITY_CHECKS
 #define PRECOMPUTED_BREAKPOINTS
+#define PRECOMPUTED_ILLEGAL_INSTRUCTIONS
 
 #define ProcessDebugPort 7
 #define ProcessDebugObjectHandle 30
@@ -413,11 +415,11 @@ namespace arxan
 			}
 		}
 
-		namespace breakpoints
+		namespace exceptions
 		{
 			std::unordered_map<PVOID, void*> handle_handler;
 
-			void fake_breakpoint_trigger(void* address, _CONTEXT* fake_context)
+			void fake_exception(void* address, _CONTEXT* fake_context, DWORD exception)
 			{
 				_EXCEPTION_POINTERS fake_info{};
 				_EXCEPTION_RECORD fake_record{};
@@ -425,7 +427,7 @@ namespace arxan
 				fake_info.ContextRecord = fake_context;
 
 				fake_record.ExceptionAddress = reinterpret_cast<void*>(reinterpret_cast<std::uint64_t>(address) + 3);
-				fake_record.ExceptionCode = EXCEPTION_BREAKPOINT;
+				fake_record.ExceptionCode = exception;
 
 				for (auto handler : handle_handler)
 				{
@@ -458,7 +460,8 @@ namespace arxan
 					a.pushad64();
 					a.mov(rcx, address);
 					a.mov(rdx, fake_context);
-					a.call_aligned(fake_breakpoint_trigger);
+					a.mov(r8, EXCEPTION_BREAKPOINT);
+					a.call_aligned(fake_exception);
 					a.popad64();
 
 					a.jmp(jump_target);
@@ -499,9 +502,122 @@ namespace arxan
 #endif
 			}
 
+			void patch_illegal_instruction_intact(void* address)
+			{
+				const auto game_address = reinterpret_cast<std::uint64_t>(address);
+
+				const auto jump_target = game_address + 6;
+
+				const auto a1 = *reinterpret_cast<std::uint8_t*>(game_address + 3);
+
+				_CONTEXT* fake_context = new _CONTEXT{};
+				const auto stub = utils::hook::assemble([address, jump_target, fake_context, a1](utils::hook::assembler& a)
+				{
+					a.lea(rax, ptr(rbp, a1));
+
+					a.push(rcx);
+					a.mov(rcx, fake_context);
+					a.call_aligned(RtlCaptureContext);
+					a.pop(rcx);
+
+					a.pushad64();
+					a.mov(rcx, address);
+					a.mov(rdx, fake_context);
+					a.mov(r8, EXCEPTION_ILLEGAL_INSTRUCTION);
+					a.call_aligned(fake_exception);
+					a.popad64();
+
+					a.jmp(jump_target);
+				});
+
+				utils::hook::nop(game_address, 6);
+				utils::hook::jump(game_address, stub, false);
+			}
+
+			void patch_illegal_instruction_split(void* address)
+			{
+				const auto game_address = reinterpret_cast<std::uint64_t>(address);
+
+				const auto jump_target = utils::hook::extract<void*>(reinterpret_cast<void*>(game_address + 5));
+
+				if (*reinterpret_cast<std::uint16_t*>(jump_target) != 0x0B0F) // illegal instruction
+				{
+					return; // false positive
+				}
+
+				const auto a1 = *reinterpret_cast<std::uint8_t*>(game_address + 3);
+
+				_CONTEXT* fake_context = new _CONTEXT{};
+				const auto stub = utils::hook::assemble([address, jump_target, fake_context, a1](utils::hook::assembler& a)
+				{
+					a.lea(rax, ptr(rbp, a1));
+
+					a.push(rcx);
+					a.mov(rcx, fake_context);
+					a.call_aligned(RtlCaptureContext);
+					a.pop(rcx);
+
+					a.pushad64();
+					a.mov(rcx, address);
+					a.mov(rdx, fake_context);
+					a.mov(r8, EXCEPTION_ILLEGAL_INSTRUCTION);
+					a.call_aligned(fake_exception);
+					a.popad64();
+
+					a.jmp(jump_target);
+				});
+
+				utils::hook::nop(game_address, 9);
+				utils::hook::nop(jump_target, 2);
+				utils::hook::jump(game_address, stub, false);
+			}
+
+#ifdef PRECOMPUTED_ILLEGAL_INSTRUCTIONS
+			void patch_illegal_instructions_precomputed()
+			{
+				for (const auto i : illegal_instructions_intact)
+				{
+					patch_illegal_instruction_intact(reinterpret_cast<void*>(i));
+				}
+
+				for (const auto i : illegal_instructions_split)
+				{
+					patch_illegal_instruction_split(reinterpret_cast<void*>(i));
+				}
+			}
+#endif
+
+			void patch_illegal_instructions()
+			{
+				static bool once = false;
+				if (once)
+				{
+					return;
+				}
+				once = true;
+
+#ifdef PRECOMPUTED_ILLEGAL_INSTRUCTIONS
+				assert(game::base_address == 0x140000000);
+				patch_illegal_instructions_precomputed();
+#else
+				const auto intact_results = utils::hook::signature("48 8D 45 ? 0F 0B", game_module::get_game_module()).process();
+				for (auto* i : intact_results)
+				{
+					patch_illegal_instruction_intact(i);
+				}
+
+				const auto split_results = utils::hook::signature("48 8D 45 ? E9 ? ? ?", game_module::get_game_module()).process();
+				for (auto* i : split_results)
+				{
+					patch_illegal_instruction_split(i);
+				}
+#endif
+			}
+
 			PVOID WINAPI add_vectored_exception_handler_stub(ULONG first, PVECTORED_EXCEPTION_HANDLER handler)
 			{
-				breakpoints::patch_breakpoints();
+				exceptions::patch_breakpoints();
+				exceptions::patch_illegal_instructions();
 
 				auto handle = AddVectoredExceptionHandler(first, handler);
 				handle_handler[handle] = handler;
@@ -529,11 +645,11 @@ namespace arxan
 			}
 			else if (function == "AddVectoredExceptionHandler")
 			{
-				return breakpoints::add_vectored_exception_handler_stub;
+				return exceptions::add_vectored_exception_handler_stub;
 			}
 			else if (function == "RemoveVectoredExceptionHandler")
 			{
-				return breakpoints::remove_vectored_exception_handler_stub;
+				return exceptions::remove_vectored_exception_handler_stub;
 			}
 
 			return nullptr;
