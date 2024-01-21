@@ -208,4 +208,57 @@ namespace demonware
 			buffer->read_blob(&this->data);
 		}
 	};
+
+	class bdContextUserStorageFileInfo final : public bdTaskResult
+	{
+	public:
+		std::uint32_t create_time;
+		std::uint32_t modifed_time;
+		bool priv;
+		std::uint64_t owner_id;
+		std::string account_type;
+		std::string filename;
+
+		void serialize(byte_buffer* buffer) override
+		{
+			buffer->write_uint32(this->create_time);
+			buffer->write_uint32(this->modifed_time);
+			buffer->write_bool(this->priv);
+			buffer->write_uint64(this->owner_id);
+			buffer->write_string(this->account_type);
+			buffer->write_string(this->filename);
+		}
+
+		void deserialize(byte_buffer* buffer) override
+		{
+			buffer->read_uint32(&this->create_time);
+			buffer->read_uint32(&this->modifed_time);
+			buffer->read_bool(&this->priv);
+			buffer->read_uint64(&this->owner_id);
+			buffer->read_string(&this->account_type);
+			buffer->read_string(&this->filename);
+		}
+	};
+
+	class bdPublicProfileInfo final : public bdTaskResult
+	{
+	public:
+		std::uint64_t m_entityID;
+		std::int32_t m_version;
+		std::string m_ddl;
+
+		void serialize(byte_buffer* buffer) override
+		{
+			buffer->write_uint64(this->m_entityID);
+			buffer->write_int32(this->m_version);
+			buffer->write_blob(this->m_ddl);
+		}
+
+		void deserialize(byte_buffer* buffer) override
+		{
+			buffer->read_uint64(&this->m_entityID);
+			buffer->read_int32(&this->m_version);
+			buffer->read_blob(&this->m_ddl);
+		}
+	};
 }

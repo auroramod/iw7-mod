@@ -1,6 +1,11 @@
 #pragma once
 #include <utils/string.hpp>
+
+#include <component/console/console.hpp>
+
 #include "servers/service_server.hpp"
+
+#define DW_DEBUG true
 
 namespace demonware
 {
@@ -52,14 +57,14 @@ namespace demonware
 			if (it != this->tasks_.end())
 			{
 #ifdef DW_DEBUG
-				printf("[DW] %s: executing task '%d'\n", name_.data(), this->task_id_);
+				console::debug("[DW] %s: executing task '%d'\n", name_.data(), this->task_id_);
 #endif
 
 				it->second(server, &buffer);
 			}
 			else
 			{
-				printf("[DW] %s: missing task '%d'\n", name_.data(), this->task_id_);
+				console::error("[DW] %s: missing task '%d'\n", name_.data(), this->task_id_);
 
 				// return no error
 				server->create_reply(this->task_id_)->send();
