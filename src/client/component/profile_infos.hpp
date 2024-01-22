@@ -5,6 +5,15 @@
 
 namespace profile_infos
 {
+	namespace xuid
+	{
+		using client_xuid_array = std::array<std::uint64_t, 18>;
+
+		std::uint64_t get_client_xuid(const std::uint32_t& player_id);
+
+		client_xuid_array get_xuids();
+	}
+
 	struct profile_info
 	{
 		std::string m_memberplayer_card{};

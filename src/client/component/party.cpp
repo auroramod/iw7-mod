@@ -196,22 +196,6 @@ namespace party
 
 			a.jmp(0xC563E2_b);
 		}
-
-		void handle_profile_info(utils::info_string* info)
-		{
-			const auto profile_info_data = profile_infos::get_profile_info().value_or(profile_infos::profile_info{});
-
-			utils::byte_buffer buffer{};
-			buffer.write(steam::SteamUser()->GetSteamID().bits);
-			profile_info_data.serialize(buffer);
-
-			const std::string data = buffer.move_buffer();
-
-			game::fragment_handler::fragment_data(data.data(), data.size(), [&](const utils::byte_buffer& buffer)
-			{
-				info->set("profileInfo", buffer.get_buffer());
-			});
-		}
 	}
 
 	void start_map(const std::string& mapname, bool dev)
@@ -489,8 +473,6 @@ namespace party
 				info.set("sv_running", utils::string::va("%i", get_dvar_bool("sv_running") && !game::Com_FrontEndScene_IsActive()));
 				info.set("dedicated", utils::string::va("%i", get_dvar_bool("dedicated")));
 
-				handle_profile_info(&info);
-
 				network::send(target, "infoResponse", info.build(), '\n');
 			});
 
@@ -561,13 +543,14 @@ namespace party
 				server_connection_state.motd = info.get("sv_motd");
 				server_connection_state.max_clients = std::stoi(sv_maxclients_str);
 
-				if (!profile_infos::get_profile_info().has_value())
+				const auto profile_info = profile_infos::get_profile_info();
+				if (!profile_info.has_value())
 				{
-					printf("profile_info has no value to send!?\n");
+					console::error("profile_info has no value to send, possible undefined behavior ahead\n");
 				}
 
-				const auto profile_info = profile_infos::get_profile_info().value_or(profile_infos::profile_info{});
-				profile_infos::send_profile_info(target, steam::SteamUser()->GetSteamID().bits, profile_info);
+				const auto profile_info_value = profile_info.value_or(profile_infos::profile_info{});
+				profile_infos::send_profile_info(target, steam::SteamUser()->GetSteamID().bits, profile_info_value);
 
 				connect_to_party(target, mapname, gametype, sv_maxclients);
 			});

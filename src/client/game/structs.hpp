@@ -609,7 +609,7 @@ namespace game
 			char __pad1[20];
 			char userinfo[1024];
 			char name[32]; // 1188
-			char __pad2[18200];
+			char __pad2[18200]; // 1220
 			int clientIndex; // 19420 // client->sess.cs.clientIndex
 			char __pad4[630192];
 			netadr_s remoteAddress; // 649616
