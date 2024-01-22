@@ -10,7 +10,6 @@
 #include "game/scripting/event.hpp"
 #include "game/scripting/execution.hpp"
 #include "game/scripting/functions.hpp"
-#include "game/scripting/lua/engine.hpp"
 
 #include <utils/hook.hpp>
 #include "gsc/script_loading.hpp"
@@ -67,8 +66,6 @@ namespace scripting
 				{
 					e.arguments.emplace_back(*value);
 				}
-
-				lua::engine::notify(e);
 			}
 
 			vm_notify_hook.invoke<void>(notify_list_owner_id, string_value, top);
@@ -90,7 +87,6 @@ namespace scripting
 			}
 
 			scripting::notify(*game::levelEntityId, "shutdownGame_called", { 1 });
-			lua::engine::stop();
 
 			g_shutdown_game_hook.invoke<void>(free_scripts);
 
@@ -309,11 +305,6 @@ namespace scripting
 			sl_get_canonical_string_hook.create(game::SL_GetCanonicalString, sl_get_canonical_string_stub);
 
 			g_shutdown_game_hook.create(0xB21CC0_b, g_shutdown_game_stub);
-
-			scheduler::loop([]
-			{
-				lua::engine::run_frame();
-			}, scheduler::pipeline::server);
 		}
 	};
 }

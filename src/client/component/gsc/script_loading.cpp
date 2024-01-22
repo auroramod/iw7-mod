@@ -11,8 +11,6 @@
 #include "game/game.hpp"
 #include "script_loading.hpp"
 
-#include <game/scripting/lua/engine.hpp>
-
 #include <utils/compression.hpp>
 #include <utils/hook.hpp>
 #include <utils/io.hpp>
@@ -345,10 +343,6 @@ namespace gsc
 				console::debug("Executing '%s::main'\n", function_handle.first.data());
 				game::RemoveRefToObject(game::Scr_ExecThread(function_handle.second, 0));
 			}
-			
-			console::info("[LUA] Starting LUA Engine\n");
-			scripting::lua::engine::start();
-			console::info("[LUA] Started LUA Engine\n");
 
 			g_load_structs_hook.invoke<void>(a1);
 		}

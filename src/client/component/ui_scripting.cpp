@@ -17,7 +17,7 @@
 #include "party.hpp"
 
 #include "game/ui_scripting/execution.hpp"
-#include "game/scripting/execution.hpp"
+//#include "game/scripting/execution.hpp"
 
 #include "ui_scripting.hpp"
 
