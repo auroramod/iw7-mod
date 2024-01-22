@@ -20,6 +20,19 @@ namespace demonware
 
 	void bdProfiles::getPublicInfos(service_server* server, byte_buffer* buffer) const
 	{
+		const auto server_lobby = game::SV_MainMP_GetServerLobby();
+		const auto* svs_clients = *game::svs_clients;
+		for (unsigned int i = 0; i < *game::svs_numclients; ++i)
+		{
+			if (svs_clients[i].header.state >= 1)
+			{
+				game::XUID xuid{};
+				xuid.m_id = game::Session_GetXuid(server_lobby, i);
+				printf("PlayercardCache_AddToDownload(%llX)\n", xuid.m_id);
+				game::PlayercardCache_AddToDownload(0, xuid);
+			}
+		}
+
 		std::vector<std::pair<std::uint64_t, profile_infos::profile_info>> profile_infos{};
 
 		std::uint64_t entity_id;

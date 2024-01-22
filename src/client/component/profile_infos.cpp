@@ -54,7 +54,7 @@ namespace profile_infos
 			{
 				if (svs_clients[i].header.state >= 1)
 				{
-					xuids.emplace(game::Session_GetXuid(server_session, svs_clients[i].clientIndex));
+					xuids.emplace(game::Session_GetXuid(server_session, i));
 				}
 			}
 
@@ -185,27 +185,27 @@ namespace profile_infos
 		const auto* svs_clients = *game::svs_clients;
 		for (unsigned int i = 0; i < *game::svs_numclients; ++i)
 		{
-			if (svs_clients[i].header.state >= 1 && !game::Party_IsHost(game::SV_MainMP_GetServerLobby(), svs_clients[i].clientIndex))
+			if (svs_clients[i].header.state >= 1 && !game::Party_IsHost(game::SV_MainMP_GetServerLobby(), i))
 			{
 				send_profile_info(svs_clients[i].remoteAddress, user_id, info);
 			}
 		}
 	}
 
-	void send_self_profile()
+	void send_self_profile(const game::netadr_s& addr)
 	{
 		const auto server_session = game::SV_MainMP_GetServerLobby();
 
 		const auto* svs_clients = *game::svs_clients;
 		for (unsigned int i = 0; i < *game::svs_numclients; ++i)
 		{
-			if (svs_clients[i].header.state >= 1 && game::Party_IsHost(game::SV_MainMP_GetServerLobby(), svs_clients[i].clientIndex))
+			if (svs_clients[i].header.state >= 1 && game::Party_IsHost(game::SV_MainMP_GetServerLobby(), i))
 			{
 				auto self = load_profile_info();
 				if (self.has_value())
 				{
 					printf("sending self...\n");
-					send_profile_info(svs_clients[i].remoteAddress, game::Session_GetXuid(server_session, svs_clients[i].clientIndex), self.value());
+					send_profile_info(addr, game::Session_GetXuid(server_session, i), self.value());
 				}
 			}
 		}
@@ -234,7 +234,7 @@ namespace profile_infos
 			send_profile_info_to_all_clients(user_id, info);
 
 			// send self too
-			send_self_profile();
+			send_self_profile(sender_addr);
 		}
 
 		profile_mapping.access([&](profile_map& profiles)
