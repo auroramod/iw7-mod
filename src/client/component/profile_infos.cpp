@@ -39,15 +39,7 @@ namespace profile_infos
 			}
 
 			profile_info info{};
-			constexpr auto version_size = sizeof(info.version);
-
-			if (data.size() < sizeof(version_size))
-			{
-				return {};
-			}
-
-			memcpy(&info.version, data.data(), version_size);
-			info.ddl.assign(data.begin() + version_size, data.end());
+			info.m_memberplayer_card = data;
 
 			return {std::move(info)};
 		}
@@ -65,14 +57,12 @@ namespace profile_infos
 
 	profile_info::profile_info(utils::byte_buffer& buffer)
 	{
-		this->version = buffer.read<int32_t>();
-		this->ddl = buffer.read_string();
+		this->m_memberplayer_card = buffer.read_string();
 	}
 
 	void profile_info::serialize(utils::byte_buffer& buffer) const
 	{
-		buffer.write(this->version);
-		buffer.write_string(this->ddl);
+		buffer.write_string(this->m_memberplayer_card);
 	}
 
 	void send_profile_info(const game::netadr_s& address, const std::uint64_t user_id, const profile_info& info)
@@ -147,11 +137,8 @@ namespace profile_infos
 	void update_profile_info(const profile_info& info)
 	{
 		std::string data{};
-		data.reserve(4 + info.ddl.size());
-
-		data.append(reinterpret_cast<const char*>(&info.version), sizeof(info.version));
-		data.append(info.ddl);
-
+		data.reserve(info.m_memberplayer_card.size());
+		data.append(info.m_memberplayer_card);
 		utils::io::write_file("players2/user/profile_info", data);
 	}
 

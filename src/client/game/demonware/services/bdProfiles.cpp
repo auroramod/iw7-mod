@@ -38,8 +38,7 @@ namespace demonware
 		{
 			auto result = new bdPublicProfileInfo;
 			result->m_entityID = info.first;
-			result->m_version = info.second.version;
-			result->m_ddl = std::move(info.second.ddl);
+			result->m_memberplayer_card = std::move(info.second.m_memberplayer_card);
 
 			reply->add(result);
 		}
@@ -50,12 +49,7 @@ namespace demonware
 	void bdProfiles::setPublicInfo(service_server* server, byte_buffer* buffer) const
 	{
 		profile_infos::profile_info info{};
-
-		const auto size = buffer->size();
-
-		buffer->read_int32(&info.version);
-		buffer->read_blob(&info.ddl);
-
+		buffer->read_blob(&info.m_memberplayer_card);
 		profile_infos::update_profile_info(info);
 
 		auto reply = server->create_reply(this->task_id());

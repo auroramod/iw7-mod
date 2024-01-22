@@ -7,8 +7,7 @@ namespace profile_infos
 {
 	struct profile_info
 	{
-		int32_t version{3};
-		std::string ddl{};
+		std::string m_memberplayer_card{};
 
 		profile_info() = default;
 		profile_info(utils::byte_buffer& buffer);

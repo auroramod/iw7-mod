@@ -244,21 +244,18 @@ namespace demonware
 	{
 	public:
 		std::uint64_t m_entityID;
-		std::int32_t m_version;
-		std::string m_ddl;
+		std::string m_memberplayer_card;
 
 		void serialize(byte_buffer* buffer) override
 		{
 			buffer->write_uint64(this->m_entityID);
-			buffer->write_int32(this->m_version);
-			buffer->write_blob(this->m_ddl);
+			buffer->write_blob(this->m_memberplayer_card);
 		}
 
 		void deserialize(byte_buffer* buffer) override
 		{
 			buffer->read_uint64(&this->m_entityID);
-			buffer->read_int32(&this->m_version);
-			buffer->read_blob(&this->m_ddl);
+			buffer->read_blob(&this->m_memberplayer_card);
 		}
 	};
 }
