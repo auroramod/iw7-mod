@@ -5,6 +5,11 @@ namespace game
 {
 	using namespace database;
 
+	struct XUID
+	{
+		std::uint64_t m_id;
+	};
+
 	enum GameModeType : std::uint32_t
 	{
 		GAME_MODE_NONE = 0x0,
@@ -382,7 +387,11 @@ namespace game
 	struct netadr_s
 	{
 		netadrtype_t type;
-		unsigned char ip[4];
+		union
+		{
+			unsigned char ip[4];
+			uint32_t addr;
+		};
 		unsigned __int16 port;
 		netsrc_t localNetID;
 		unsigned int addrHandleIndex;
@@ -600,18 +609,22 @@ namespace game
 			char __pad1[20];
 			char userinfo[1024];
 			char name[32]; // 1188
-			char __pad2[648396];
+			char __pad2[18200];
+			int clientIndex; // 19420 // client->sess.cs.clientIndex
+			char __pad4[630192];
 			netadr_s remoteAddress; // 649616
-			char __pad3[2460]; // 649636
+			char __pad5[2460]; // 649636
 			char playerGuid[21]; // 652096
-			char __pad4[63299]; // 652117
+			char __pad6[63299]; // 652117
 		}; static_assert(sizeof(client_t) == 715416);
 		
 		static_assert(offsetof(client_t, header.state) == 8);
 		static_assert(offsetof(client_t, gentity) == 136);
 		static_assert(offsetof(client_t, userinfo) == 164);
 		static_assert(offsetof(client_t, name) == 1188);
+		static_assert(offsetof(client_t, clientIndex) == 19420);
 		static_assert(offsetof(client_t, remoteAddress) == 649616);
+		static_assert(offsetof(client_t, playerGuid) == 652096);
 	}
 	using namespace entity;
 

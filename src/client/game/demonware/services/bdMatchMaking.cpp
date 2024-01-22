@@ -1,6 +1,8 @@
 #include <std_include.hpp>
 #include "../services.hpp"
 
+#include "steam/steam.hpp"
+
 namespace demonware
 {
 	bdMatchMaking::bdMatchMaking() : service(138, "bdMatchMaking")
@@ -24,8 +26,11 @@ namespace demonware
 
 	void bdMatchMaking::createSession(service_server* server, byte_buffer* /*buffer*/) const
 	{
-		// TODO:
+		auto id = new bdSessionID;
+		id->session_id = steam::SteamUser()->GetSteamID().bits;
+
 		auto reply = server->create_reply(this->task_id());
+		reply->add(id);
 		reply->send();
 	}
 
@@ -36,9 +41,14 @@ namespace demonware
 		reply->send();
 	}
 
-	void bdMatchMaking::deleteSession(service_server* server, byte_buffer* /*buffer*/) const
+	void bdMatchMaking::deleteSession(service_server* server, byte_buffer* buffer) const
 	{
-		// TODO:
+		bdSessionID id;
+		id.deserialize(buffer);
+
+		byte_buffer out_data;
+		id.serialize(&out_data);
+
 		auto reply = server->create_reply(this->task_id());
 		reply->send();
 	}
@@ -59,8 +69,12 @@ namespace demonware
 
 	void bdMatchMaking::getPerformanceValues(service_server* server, byte_buffer* /*buffer*/) const
 	{
-		// TODO:
+		auto result = new bdPerformanceValue;
+		result->user_id = steam::SteamUser()->GetSteamID().bits;
+		result->performance = 10;
+
 		auto reply = server->create_reply(this->task_id());
+		reply->add(result);
 		reply->send();
 	}
 

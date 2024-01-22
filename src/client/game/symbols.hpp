@@ -149,6 +149,7 @@ namespace game
 	WEAK symbol<void(int localClientNum)> LUI_CoD_CLoseAll{ 0x6135C0 };
 
 	WEAK symbol<unsigned int(int controllerIndex)> Live_SyncOnlineDataFlags{ 0xDC5CE0 };
+	WEAK symbol<std::uint64_t(int controllerIndex)> Live_GetXuid{ 0xD32A20 };
 
 	WEAK symbol<PartyData* ()> Lobby_GetPartyData{ 0x9C3E20 };
 
@@ -162,6 +163,9 @@ namespace game
 	WEAK symbol<int(netadr_s a, netadr_s b)> NET_CompareBaseAdr{ 0xBB4A00 };
 
 	WEAK symbol<PartyData* ()> Party_GetActiveParty{ 0x9CC010 };
+	WEAK symbol<bool(const PartyData* party, const int memberIndex)> Party_IsHost{ 0xD9B470 };
+
+	WEAK symbol<void(const unsigned int controllerIndex, XUID xuid)> PlayercardCache_AddToDownload{ 0xDB72E0 };
 
 	WEAK symbol<GfxFont* (const char* font, int size)> R_RegisterFont{ 0xDFC670 };
 	WEAK symbol<int(const char* text, int maxChars, GfxFont* font)> R_TextWidth{ 0xDFC770 };
@@ -177,6 +181,8 @@ namespace game
 	IW7_AddBaseDrawTextCmd(TXT, MC, F, game::R_GetFontHeight(F), X, Y, XS, YS, R, C,-1, 0, game::R_DrawSomething(S), 0, 0, 0, 0)
 #define R_AddCmdDrawTextWithCursor(TXT, MC, F, UNK, X, Y, XS, YS, R, C, S, CP, CC) \
 	IW7_AddBaseDrawTextCmd(TXT, MC, F, game::R_GetFontHeight(F), X, Y, XS, YS, R, C, CP, CC, game::R_DrawSomething(S), 0, 0, 0, 0)
+
+	WEAK symbol<std::uint64_t(const void* session, const int clientNum)> Session_GetXuid{ 0xC72AB0 };
 
 	WEAK symbol<char* ()> Sys_Cwd{ 0xCFE5A0 };
 	
@@ -231,6 +237,7 @@ namespace game
 	WEAK symbol<int (int clientNum)> SV_ClientMP_GetClientPing{ 0xC507D0 };
 	WEAK symbol<char* (int entNum)> SV_GameMP_GetGuid{ 0xC12410 };
 	WEAK symbol<void()> SV_MainMP_KillLocalServer{ 0xC58DF0 };
+	WEAK symbol<PartyData* ()> SV_MainMP_GetServerLobby{ 0xC58DA0 };
 	WEAK symbol<void(int clientNum, svscmd_type type, const char* text)> SV_GameSendServerCommand{ 0xC54780 };
 	WEAK symbol<void(client_t* drop, const char* reason, bool tellThem)> SV_DropClient{ 0xC4FBA0 };
 	WEAK symbol<bool()> SV_Loaded{ 0xC114C0 };

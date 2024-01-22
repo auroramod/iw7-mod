@@ -13,16 +13,7 @@
 #include "../steam/steam.hpp"
 #include <utils/io.hpp>
 
-//#include "game/fragment_handler.hpp"
-
-/*
-
-	const auto lobby = SV_MainMP_GetServerLobby();
-	Session_GetXuidEvenIfInactive(lobby, client_num);
-
-	our XUID = steam::SteamUser()->GetSteamID().bits
-
-*/
+#include "game/fragment_handler.hpp"
 
 namespace profile_infos
 {
@@ -31,30 +22,74 @@ namespace profile_infos
 		using profile_map = std::unordered_map<std::uint64_t, profile_info>;
 		utils::concurrency::container<profile_map, std::recursive_mutex> profile_mapping{};
 
-		profile_map server_profile_info_cache;
-
 		std::optional<profile_info> load_profile_info()
 		{
 			std::string data{};
 			if (!utils::io::read_file("players2/user/profile_info", &data))
 			{
+				printf("Failed to load profile_info!\n");
 				return {};
 			}
 
 			profile_info info{};
-			info.m_memberplayer_card = data;
+			info.m_memberplayer_card.assign(data);
 
 			return {std::move(info)};
 		}
 
-		int get_max_client_count()
+		std::unordered_set<std::uint64_t> get_connected_client_xuids()
 		{
-			static const auto com_maxclients = game::Dvar_FindVar("com_maxclients");
-			if (com_maxclients)
+			if (!game::SV_Loaded()) // is_host()
 			{
-				return com_maxclients->current.integer;
+				return {};
 			}
-			return 0;
+
+			std::unordered_set<std::uint64_t> xuids{};
+
+			const auto server_session = game::SV_MainMP_GetServerLobby();
+
+			const auto* svs_clients = *game::svs_clients;
+			for (unsigned int i = 0; i < *game::svs_numclients; ++i)
+			{
+				if (svs_clients[i].header.state >= 1)
+				{
+					xuids.emplace(game::Session_GetXuid(server_session, svs_clients[i].clientIndex));
+				}
+			}
+
+			return xuids;
+		}
+
+		auto last_clear = std::chrono::high_resolution_clock::now();
+		void clear_invalid_mappings()
+		{
+			const auto time = std::chrono::high_resolution_clock::now();
+			if (std::chrono::duration_cast<std::chrono::seconds>(time - last_clear).count() < 15) // add a grace period of 5 seconds since last clear
+			{
+				return;
+			}
+			last_clear = time;
+
+			profile_mapping.access([](profile_map& profiles)
+			{
+				const auto xuids = get_connected_client_xuids();
+
+				for (auto i = profiles.begin(); i != profiles.end();)
+				{
+					if (xuids.contains(i->first))
+					{
+						++i;
+					}
+					else
+					{
+						//#ifdef DEV_BUILD
+						printf("Erasing profile info: %llX\n", i->first);
+						//#endif
+
+						i = profiles.erase(i);
+					}
+				}
+			});
 		}
 	}
 
@@ -68,38 +103,24 @@ namespace profile_infos
 		buffer.write_string(this->m_memberplayer_card);
 	}
 
+	void send_profile_info(const game::netadr_s& address, const std::string& data)
+	{
+		//network::send(address, "profileInfo", buffer);
+		game::fragment_handler::fragment_data(data.data(), data.size(), [&address](const utils::byte_buffer& buffer)
+		{
+			network::send(address, "profileInfo", buffer.get_buffer());
+		});
+	}
+
 	void send_profile_info(const game::netadr_s& address, const std::uint64_t user_id, const profile_info& info)
 	{
 		utils::byte_buffer buffer{};
 		buffer.write(user_id);
 		info.serialize(buffer);
 
-		const std::string data = buffer.move_buffer();
+		const std::string data = buffer.get_buffer();
 
-		network::send(address, "add_profile_info_server", buffer.get_buffer());
-		/*
-		game::fragment_handler::fragment_data(data.data(), data.size(), [&address](const utils::byte_buffer& buffer)
-		{
-			network::send(address, "add_profile_info_server", buffer.get_buffer());
-		});
-		*/
-	}
-
-	void add_profile_info(const std::uint64_t user_id, const profile_info& info)
-	{
-		if (user_id == steam::SteamUser()->GetSteamID().bits)
-		{
-			return;
-		}
-
-#ifdef DEBUG
-		console::debug("Adding profile info: %llX\n", user_id);
-#endif
-
-		profile_mapping.access([&](profile_map& profiles)
-		{
-			profiles[user_id] = info;
-		});
+		send_profile_info(address, data);
 	}
 
 	std::optional<profile_info> get_profile_info()
@@ -148,34 +169,71 @@ namespace profile_infos
 		utils::io::write_file("players2/user/profile_info", data);
 	}
 
-	/*
-	bool handle_fragmented_packet(const game::netadr_s& address, const std::string_view& data, utils::byte_buffer* buffer_)
+	void send_all_profile_infos(const game::netadr_s& addr)
 	{
-		utils::byte_buffer buffer(data);
-
-		std::string final_packet{};
-		if (!game::fragment_handler::handle(address, buffer, final_packet))
+		profile_mapping.access([&](const profile_map& profiles)
 		{
-			console::error("failed to handle fragmented packet\n");
-			return false;
+			for (const auto& entry : profiles)
+			{
+				send_profile_info(addr, entry.first, entry.second);
+			}
+		});
+	}
+
+	void send_profile_info_to_all_clients(const std::uint64_t user_id, const profile_info& info)
+	{
+		const auto* svs_clients = *game::svs_clients;
+		for (unsigned int i = 0; i < *game::svs_numclients; ++i)
+		{
+			if (svs_clients[i].header.state >= 1 && !game::Party_IsHost(game::SV_MainMP_GetServerLobby(), svs_clients[i].clientIndex))
+			{
+				send_profile_info(svs_clients[i].remoteAddress, user_id, info);
+			}
+		}
+	}
+
+	void add_profile_info(const std::uint64_t user_id, const profile_info& info, const game::netadr_s& sender_addr)
+	{
+		if (user_id == steam::SteamUser()->GetSteamID().bits)
+		{
+			return;
 		}
 
-		*buffer_ = utils::byte_buffer(final_packet);
-		return true;
-	}
-	*/
+#ifdef DEBUG
+		console::debug("Adding profile info: %llX\n", user_id);
+#endif
 
-	void handle_profile_info_data(const game::netadr_s& address, const std::string_view& data)
-	{
-		utils::byte_buffer buffer(data);
-		//if (!handle_fragmented_packet(address, data, &buffer))
-		//{
-		//	return;
-		//}
+		if (game::SV_Loaded()) // is_host()
+		{
+			printf("clear_invalid_mappings()...\n");
 
-		const auto user_id = buffer.read<std::uint64_t>();
-		const profile_info info(buffer);
-		add_profile_info(user_id, info);
+			// clear disconnected players
+			//clear_invalid_mappings(); // clear BEFORE adding connecting user
+
+			printf("send_all_profile_infos()...\n");
+
+			// send all infos to the new player
+			send_all_profile_infos(sender_addr);
+
+			printf("send_profile_info_to_all_clients()...\n");
+
+			// send new player info to all clients
+			send_profile_info_to_all_clients(user_id, info);
+		}
+
+		printf("pcache_refresh()...\n");
+
+		profile_mapping.access([&](profile_map& profiles)
+		{
+			profiles[user_id] = info;
+		});
+
+		game::XUID xuid{ user_id };
+		printf("adding xuid %llX to download list\n", xuid.m_id);
+		
+		game::PlayercardCache_AddToDownload(0, xuid);
+
+		command::execute("pcache_refresh", false);
 	}
 
 	class component final : public component_interface
@@ -183,111 +241,45 @@ namespace profile_infos
 	public:
 		void post_unpack() override
 		{
-			//scheduler::loop(clean_cached_profile_infos, scheduler::main, 5s);
-
 			command::add("pcache_refresh", []()
 			{
-				game::g_DWPlayercardCacheDownloadTaskStage[0x0] = game::PLAYERCARD_CACHE_TASK_STAGE_WAITING;
+				if (game::g_DWPlayercardCacheDownloadTaskStage[0x0] == game::PLAYERCARD_CACHE_TASK_STAGE_ALL_DONE)
+				{
+					game::g_DWPlayercardCacheDownloadTaskStage[0x0] = game::PLAYERCARD_CACHE_TASK_STAGE_WAITING;
+				}
 			});
 
-			// client -> server
-			network::on("add_profile_info_server", [](const game::netadr_s& client_addr, const std::string_view& data)
+			command::add("test", []()
 			{
-				static const auto sv_running = game::Dvar_FindVar("sv_running");
-				if (sv_running == nullptr || !sv_running->current.enabled)
-				{
-					console::error("add_profile_info_server recieved when sv_running is 0?\n");
-					return;
-				}
+				game::netadr_s target{};
+				target.type = game::NA_IP;
 
-				/*
-				if (!handle_fragmented_packet(client_addr, data, &buffer))
-				{
-					return;
-				}
-				*/
+				const auto profile_info = profile_infos::get_profile_info().value_or(profile_infos::profile_info{});
+				profile_infos::send_profile_info(target, steam::SteamUser()->GetSteamID().bits, profile_info);
+			});
 
-				// TODO: remove this, but we store our server profile in there if not in
-				static const auto my_xuid = steam::SteamUser()->GetSteamID().bits;
-				const auto my_profile_info = get_profile_info();
-				if (!server_profile_info_cache.contains(my_xuid) && my_profile_info.has_value())
-				{
-					server_profile_info_cache[my_xuid] = my_profile_info.value();
-				}
+			network::on("profileInfo", [](const game::netadr_s& client_addr, const std::string_view& data)
+			{
+				printf("profileInfo called...\n");
 
-				utils::byte_buffer buffer(data);
+				/*utils::byte_buffer buffer(data);
 				const auto user_id = buffer.read<std::uint64_t>();
 				const profile_info info(buffer);
-				server_profile_info_cache[user_id] = info; // store into cache for get requests
 
-				const auto clients = *game::svs_clients;
-				for (int index = 0; index < get_max_client_count(); ++index)
-				{
-					const auto client = clients[index];
-					if (client.remoteAddress.type != game::NA_BOT && client.remoteAddress.type != game::NA_LOOPBACK)
-					{
-						network::send(client.remoteAddress, "add_profile_info", buffer.get_buffer());
-					}
-				}
-			});
+				printf("adding profile info...\n");
 
-			// server -> client
-			network::on("add_profile_info", [](const game::netadr_s& server_addr, const std::string_view& data)
-			{
-				if (party::get_server_connection_state().host != server_addr) // only allow host address to add new profiles
-				{
-					return;
-				}
+				add_profile_info(user_id, info, client_addr);*/
 
-				console::debug("adding new client profile info...\n");
-				handle_profile_info_data(server_addr, data);
-				
-				// trigger refresh of PlayercardCache
-				console::debug("setting task stage PLAYERCARD_CACHE_TASK_STAGE_WAITING\n");
-				game::g_DWPlayercardCacheDownloadTaskStage[0x0] = game::PLAYERCARD_CACHE_TASK_STAGE_WAITING;
-			});
-
-			// client -> server
-			network::on("get_profile_infos_server", [](const game::netadr_s& client_addr, const std::string_view&)
-			{
-				utils::byte_buffer buffer{};
-				buffer.write(server_profile_info_cache.size());
-
-				for (const auto& [key, value] : server_profile_info_cache)
-				{
-					buffer.write(key);
-					value.serialize(buffer);
-				}
-
-				const std::string data = buffer.move_buffer();
-
-				network::send(client_addr, "get_profile_infos_response", buffer.get_buffer());
-				/*
-				game::fragment_handler::fragment_data(data.data(), data.size(), [&client_addr](const utils::byte_buffer& buffer)
-				{
-					network::send(client_addr, "get_profile_infos_response", buffer.get_buffer());
-				});
-				*/
-			});
-
-			// server -> client
-			network::on("get_profile_infos_response", [](const game::netadr_s& server_addr, const std::string_view& data)
-			{
 				utils::byte_buffer buffer(data);
-				/*
-				if (!handle_fragmented_packet(server_addr, data, &buffer))
-				{
-					return;
-				}
-				*/
 
-				const auto profile_infos_count = buffer.read<size_t>();
-				for (auto index = 0; index < profile_infos_count; ++index)
+				std::string final_packet{};
+				if (game::fragment_handler::handle(client_addr, buffer, final_packet))
 				{
-					const auto user_id = buffer.read<std::uint64_t>();
-					profile_info info{};
-					info.m_memberplayer_card = buffer.read<std::string>();
-					add_profile_info(user_id, info);
+					buffer = utils::byte_buffer(final_packet);
+					const auto user_id = buffer.read<uint64_t>();
+					const profile_info info(buffer);
+
+					add_profile_info(user_id, info, client_addr);
 				}
 			});
 		}
