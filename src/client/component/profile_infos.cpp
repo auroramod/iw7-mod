@@ -1,6 +1,7 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
 
+#include "dvars.hpp"
 #include "command.hpp"
 #include "console/console.hpp"
 #include "network.hpp"
@@ -233,7 +234,7 @@ namespace profile_infos
 		
 		game::PlayercardCache_AddToDownload(0, xuid);
 
-		command::execute("pcache_refresh", false);
+		command::execute("download_playercard", false);
 	}
 
 	class component final : public component_interface
@@ -241,34 +242,11 @@ namespace profile_infos
 	public:
 		void post_unpack() override
 		{
-			command::add("pcache_refresh", []()
-			{
-				if (game::g_DWPlayercardCacheDownloadTaskStage[0x0] == game::PLAYERCARD_CACHE_TASK_STAGE_ALL_DONE)
-				{
-					game::g_DWPlayercardCacheDownloadTaskStage[0x0] = game::PLAYERCARD_CACHE_TASK_STAGE_WAITING;
-				}
-			});
-
-			command::add("test", []()
-			{
-				game::netadr_s target{};
-				target.type = game::NA_IP;
-
-				const auto profile_info = profile_infos::get_profile_info().value_or(profile_infos::profile_info{});
-				profile_infos::send_profile_info(target, steam::SteamUser()->GetSteamID().bits, profile_info);
-			});
+			dvars::override::register_int("playercard_cache_validity_life", 5, 1, 60, 0x0);
 
 			network::on("profileInfo", [](const game::netadr_s& client_addr, const std::string_view& data)
 			{
 				printf("profileInfo called...\n");
-
-				/*utils::byte_buffer buffer(data);
-				const auto user_id = buffer.read<std::uint64_t>();
-				const profile_info info(buffer);
-
-				printf("adding profile info...\n");
-
-				add_profile_info(user_id, info, client_addr);*/
 
 				utils::byte_buffer buffer(data);
 
