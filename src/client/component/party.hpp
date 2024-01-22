@@ -13,9 +13,6 @@ namespace party
 		std::string base_url;
 	};
 
-	void set_xuid_client(game::client_t* client, const int index, const unsigned long long xuid);
-	unsigned long long get_xuid_from_guid(char* guid);
-
 	void info_response_error(const std::string& error);
 
 	void connect(const game::netadr_s& target);

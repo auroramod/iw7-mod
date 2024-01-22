@@ -195,7 +195,23 @@ namespace party
 			a.popad64();
 
 			a.jmp(0xC563E2_b);
-		};
+		}
+
+		void handle_profile_info(utils::info_string* info)
+		{
+			const auto profile_info_data = profile_infos::get_profile_info().value_or(profile_infos::profile_info{});
+
+			utils::byte_buffer buffer{};
+			buffer.write(steam::SteamUser()->GetSteamID().bits);
+			profile_info_data.serialize(buffer);
+
+			const std::string data = buffer.move_buffer();
+
+			game::fragment_handler::fragment_data(data.data(), data.size(), [&](const utils::byte_buffer& buffer)
+			{
+				info->set("profileInfo", buffer.get_buffer());
+			});
+		}
 	}
 
 	void start_map(const std::string& mapname, bool dev)
@@ -331,45 +347,6 @@ namespace party
 	connection_state get_server_connection_state()
 	{
 		return server_connection_state;
-	}
-
-	void set_xuid_client(game::client_t* client, const int index, const unsigned long long xuid)
-	{
-		const auto guid = game::SV_GameMP_GetGuid(index);
-		guid_to_xuid[guid] = xuid;
-	}
-
-	unsigned long long get_xuid_from_guid(char* guid)
-	{
-		if (guid_to_xuid.contains(guid))
-		{
-			const auto xuid = guid_to_xuid[guid];
-			console::debug("returning xuid '%d' for guid '%s'\n", xuid, guid);
-			return xuid;
-		}
-#pragma warning(push)
-#pragma warning(disable: 4245)
-		return -1;
-#pragma warning(pop)
-	}
-
-	namespace
-	{
-		void handle_profile_info(utils::info_string* info)
-		{
-			const auto profile_info_data = profile_infos::get_profile_info().value_or(profile_infos::profile_info{});
-
-			utils::byte_buffer buffer{};
-			buffer.write(steam::SteamUser()->GetSteamID().bits);
-			profile_info_data.serialize(buffer);
-
-			const std::string data = buffer.move_buffer();
-
-			game::fragment_handler::fragment_data(data.data(), data.size(), [&](const utils::byte_buffer& buffer)
-			{
-				info->set("profileInfo", buffer.get_buffer());
-			});
-		}
 	}
 
 	class component final : public component_interface

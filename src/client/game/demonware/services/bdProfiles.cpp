@@ -20,9 +20,9 @@ namespace demonware
 
 	void bdProfiles::getPublicInfos(service_server* server, byte_buffer* buffer) const
 	{
-		std::vector<std::pair<uint64_t, profile_infos::profile_info>> profile_infos{};
+		std::vector<std::pair<std::uint64_t, profile_infos::profile_info>> profile_infos{};
 
-		uint64_t entity_id;
+		std::uint64_t entity_id;
 		while (buffer->read_uint64(&entity_id))
 		{
 			auto profile = profile_infos::get_profile_info(entity_id);

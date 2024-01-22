@@ -18,7 +18,7 @@ namespace demonware
 		this->register_task(20, &bdStorage::listAllPublisherFiles);
 		this->register_task(21, &bdStorage::getPublisherFile);
 		this->register_task(24, &bdStorage::uploadAndValidateFiles);
-		//this->register_task(18, &bdStorage::uploadFiles); // used for saving emblems (at least)
+		this->register_task(18, &bdStorage::uploadFiles); // used for saving emblems (at least)
 		this->register_task(16, &bdStorage::getFiles);
 		this->register_task(12, &bdStorage::getFile);
 
