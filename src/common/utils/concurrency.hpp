@@ -39,6 +39,11 @@ namespace utils::concurrency
 		T& get_raw() { return object_; }
 		const T& get_raw() const { return object_; }
 
+		std::unique_lock<MutexType> accquire_lock()
+		{
+			return std::unique_lock<MutexType>{mutex_};
+		}
+
 	private:
 		mutable MutexType mutex_{};
 		T object_{};

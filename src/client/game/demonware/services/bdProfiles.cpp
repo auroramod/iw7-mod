@@ -22,37 +22,39 @@ namespace demonware
 	{
 		std::vector<std::pair<uint64_t, profile_infos::profile_info>> profile_infos{};
 
-		std::uint64_t entity_id;
-		buffer->read_uint64(&entity_id);
-
-		const auto result = new bdPublicProfileInfo;
-		result->m_entityID = entity_id;
-		result->m_version = 4; // not sure if this is right
-
-		const auto folder = bdStorage::get_user_file_path(std::format("profileInfo/profileInfo_{}", entity_id));
-		if (utils::io::read_file(folder, &result->m_ddl))
+		uint64_t entity_id;
+		while (buffer->read_uint64(&entity_id))
 		{
-			auto reply = server->create_reply(this->task_id());
+			auto profile = profile_infos::get_profile_info(entity_id);
+			if (profile)
+			{
+				profile_infos.emplace_back(entity_id, std::move(*profile));
+			}
+		}
+
+		auto reply = server->create_reply(this->task_id(), profile_infos.empty() ? game::BD_NO_PROFILE_INFO_EXISTS : game::BD_NO_ERROR);
+
+		for (auto& info : profile_infos)
+		{
+			auto result = new bdPublicProfileInfo;
+			result->m_entityID = info.first;
+			result->m_version = info.second.version;
+			result->m_ddl = std::move(info.second.ddl);
+
 			reply->add(result);
-			reply->send();
 		}
-		else
-		{
-			auto reply = server->create_reply(this->task_id(), game::BD_NO_PROFILE_INFO_EXISTS);
-			reply->send();
-		}
+
+		reply->send();
 	}
 
 	void bdProfiles::setPublicInfo(service_server* server, byte_buffer* buffer) const
 	{
-		std::int32_t version;
-		buffer->read_int32(&version);
+		profile_infos::profile_info info{};
 
-		std::string ddl;
-		buffer->read_blob(&ddl);
+		buffer->read_int32(&info.version);
+		buffer->read_blob(&info.ddl);
 
-		const auto folder = bdStorage::get_user_file_path(std::format("profileInfo/profileInfo_{}", steam::SteamUser()->GetSteamID().bits));
-		utils::io::write_file(folder, ddl);
+		profile_infos::update_profile_info(info);
 
 		auto reply = server->create_reply(this->task_id());
 		reply->send();

@@ -595,14 +595,16 @@ namespace game
 		struct client_t
 		{
 			clientHeader_t header; // 0
-			char __pad0[120];
+			char __pad0[120]; // 16
 			gentity_s* gentity; // 136
 			char __pad1[20];
 			char userinfo[1024];
 			char name[32]; // 1188
 			char __pad2[648396];
 			netadr_s remoteAddress; // 649616
-			char __pad3[65780];
+			char __pad3[2460]; // 649636
+			char playerGuid[21]; // 652096
+			char __pad4[63299]; // 652117
 		}; static_assert(sizeof(client_t) == 715416);
 		
 		static_assert(offsetof(client_t, header.state) == 8);

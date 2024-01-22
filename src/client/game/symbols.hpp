@@ -229,7 +229,7 @@ namespace game
 	WEAK symbol<void()> SV_CmdsSP_MapRestart_f{ 0xC12B30 };
 	WEAK symbol<void()> SV_CmdsSP_FastRestart_f{ 0xC12AF0 };
 	WEAK symbol<int (int clientNum)> SV_ClientMP_GetClientPing{ 0xC507D0 };
-	WEAK symbol<char* (int entNum)> SV_GameMP_GetGuid{ 0XC12410 };
+	WEAK symbol<char* (int entNum)> SV_GameMP_GetGuid{ 0xC12410 };
 	WEAK symbol<void()> SV_MainMP_KillLocalServer{ 0xC58DF0 };
 	WEAK symbol<void(int clientNum, svscmd_type type, const char* text)> SV_GameSendServerCommand{ 0xC54780 };
 	WEAK symbol<void(client_t* drop, const char* reason, bool tellThem)> SV_DropClient{ 0xC4FBA0 };

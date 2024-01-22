@@ -19,9 +19,11 @@ namespace profile_infos
 	void add_and_distribute_profile_info(const game::netadr_s& addr, uint64_t user_id, const profile_info& info);
 	void clear_profile_infos();
 
-	std::unique_lock<std::recursive_mutex> acquire_profile_lock();
+	std::unique_lock<std::recursive_mutex> accquire_profile_lock();
 
 	std::optional<profile_info> get_profile_info();
 	std::optional<profile_info> get_profile_info(uint64_t user_id);
 	void update_profile_info(const profile_info& info);
+
+	void foreach_connected_client(const std::function<void(game::client_t&, int index)>& callback);
 }

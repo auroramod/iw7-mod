@@ -6,10 +6,12 @@
 #include "steam/steam.hpp"
 
 #include "game/game.hpp"
+#include "game/fragment_handler.hpp"
 
 #include "command.hpp"
 #include "console/console.hpp"
 #include "network.hpp"
+#include "profile_infos.hpp"
 #include "scheduler.hpp"
 
 #include <utils/string.hpp>
@@ -21,14 +23,11 @@ namespace party
 {
 	namespace
 	{
-		struct
-		{
-			game::netadr_s host{};
-			std::string challenge{};
-			bool hostDefined{ false };
-		} connect_state;
+		connection_state server_connection_state{};
 
 		bool preloaded_map = false;
+
+		std::unordered_map<char*, unsigned long long> guid_to_xuid;
 
 		void perform_game_initialization()
 		{
@@ -37,6 +36,52 @@ namespace party
 			//command::execute("xstartprivateparty", true);
 			command::execute("xstartprivatematch", true);
 			command::execute("uploadstats", true);
+		}
+
+		void distribute_player_xuid(const game::netadr_s& target, const int player_index, const unsigned long long xuid)
+		{
+			if (player_index >= 18)
+			{
+				return;
+			}
+
+			utils::byte_buffer buffer{};
+			buffer.write(static_cast<uint32_t>(player_index));
+			buffer.write(xuid);
+
+			profile_infos::foreach_connected_client([&](const game::client_t& client, const int index)
+			{
+				if (client.remoteAddress.type != game::NA_BOT)
+				{
+					network::send(client.remoteAddress, "playerXuid", buffer.get_buffer());
+				}
+
+				if (index != player_index && target.type != game::NA_BOT)
+				{
+					utils::byte_buffer current_buffer{};
+					current_buffer.write(static_cast<uint32_t>(index));
+					current_buffer.write(get_xuid_from_guid(game::SV_GameMP_GetGuid(index)));
+
+					network::send(target, "playerXuid", current_buffer.get_buffer());
+				}
+			});
+		}
+
+		void handle_new_player(const game::netadr_s& target, const std::string& xuid_)
+		{
+			const auto xuid = strtoull(xuid_.data(), nullptr, 16);
+
+			int player_index = 18;
+			profile_infos::foreach_connected_client([&](game::client_t& client, const int index)
+			{
+				if (client.remoteAddress == target)
+				{
+					set_xuid_client(&client, index, xuid);
+					player_index = index;
+				}
+			});
+
+			distribute_player_xuid(target, player_index, xuid);
 		}
 
 		void connect_to_party(const game::netadr_s& target, const std::string& mapname, const std::string& gametype, int sv_maxclients)
@@ -313,24 +358,64 @@ namespace party
 
 	void connect(const game::netadr_s& target)
 	{
-		//command::execute("lui_open_popup popup_acceptinginvite", false);
+		command::execute("luiOpenPopup AcceptingInvite", false);
 
-		connect_state.host = target;
-		connect_state.challenge = utils::cryptography::random::get_challenge();
-		connect_state.hostDefined = true;
+		server_connection_state.host = target;
+		server_connection_state.challenge = utils::cryptography::random::get_challenge();
+		server_connection_state.hostDefined = true;
 
-		network::send(target, "getInfo", connect_state.challenge);
+		network::send(target, "getInfo", server_connection_state.challenge);
 	}
 
 	void info_response_error(const std::string& error)
 	{
 		console::error("%s\n", error.data());
-		//if (game::Menu_IsMenuOpenAndVisible(0, "popup_acceptinginvite"))
-		//{
-		//	command::execute("lui_close popup_acceptinginvite", false);
-		//}
-
+		command::execute("luiLeaveMenu AcceptingInvite", false);
 		game::Com_SetLocalizedErrorMessage(error.data(), "MENU_NOTICE");
+	}
+
+	connection_state get_server_connection_state()
+	{
+		return server_connection_state;
+	}
+
+	void set_xuid_client(game::client_t* client, const int index, const unsigned long long xuid)
+	{
+		const auto guid = game::SV_GameMP_GetGuid(index);
+		guid_to_xuid[guid] = xuid;
+	}
+
+	unsigned long long get_xuid_from_guid(char* guid)
+	{
+		if (guid_to_xuid.contains(guid))
+		{
+			const auto xuid = guid_to_xuid[guid];
+			console::debug("returning xuid '%d' for guid '%s'\n", xuid, guid);
+			return xuid;
+		}
+#pragma warning(push)
+#pragma warning(disable: 4245)
+		return -1;
+#pragma warning(pop)
+	}
+
+	namespace
+	{
+		void handle_profile_info(utils::info_string* info)
+		{
+			const auto profile_info_data = profile_infos::get_profile_info().value_or(profile_infos::profile_info{});
+
+			utils::byte_buffer buffer{};
+			buffer.write(steam::SteamUser()->GetSteamID().bits);
+			profile_info_data.serialize(buffer);
+
+			const std::string data = buffer.move_buffer();
+
+			game::fragment_handler::fragment_data(data.data(), data.size(), [&](const utils::byte_buffer& buffer)
+			{
+				info->set("profileInfo", buffer.get_buffer());
+			});
+		}
 	}
 
 	class component final : public component_interface
@@ -473,6 +558,8 @@ namespace party
 				info.set("sv_running", utils::string::va("%i", get_dvar_bool("sv_running") && !game::Com_FrontEndScene_IsActive()));
 				info.set("dedicated", utils::string::va("%i", get_dvar_bool("dedicated")));
 
+				handle_profile_info(&info);
+
 				network::send(target, "infoResponse", info.build(), '\n');
 			});
 
@@ -483,52 +570,52 @@ namespace party
 
 			network::on("infoResponse", [](const game::netadr_s& target, const std::string_view& data)
 			{
-				const utils::info_string info{ data };
+				const utils::info_string info = data;
 				//server_list::handle_info_response(target, info);
 
-				if (connect_state.host != target)
+				if (server_connection_state.host != target)
 				{
 					return;
 				}
 
-				if (info.get("challenge") != connect_state.challenge)
+				if (info.get("challenge") != server_connection_state.challenge)
 				{
-					info_response_error("Invalid challenge.");
+					info_response_error("Connection failed: Invalid challenge.");
 					return;
 				}
 
 				const auto gamename = info.get("gamename");
 				if (gamename != "IW7"s)
 				{
-					info_response_error("Invalid gamename.");
+					info_response_error("Connection failed: Invalid gamename.");
 					return;
 				}
 
 				const auto playmode = info.get("playmode");
 				if (game::GameModeType(std::atoi(playmode.data())) != game::Com_GameMode_GetActiveGameMode())
 				{
-					info_response_error("Invalid playmode.");
+					info_response_error("Connection failed: Invalid playmode.");
 					return;
 				}
 
 				const auto sv_running = info.get("sv_running");
 				if (!std::atoi(sv_running.data()))
 				{
-					info_response_error("Server not running.");
+					info_response_error("Connection failed: Server not running.");
 					return;
 				}
 
 				const auto mapname = info.get("mapname");
 				if (mapname.empty())
 				{
-					info_response_error("Invalid map.");
+					info_response_error("Connection failed: Invalid map.");
 					return;
 				}
 
 				const auto gametype = info.get("gametype");
 				if (gametype.empty())
 				{
-					info_response_error("Connection failed: Invalid gametype.");
+					info_response_error("Connection failed: Connection failed: Invalid gametype.");
 					return;
 				}
 
@@ -536,14 +623,26 @@ namespace party
 				const auto sv_maxclients = std::atoi(sv_maxclients_str.data());
 				if (!sv_maxclients)
 				{
-					info_response_error("Invalid sv_maxclients.");
+					info_response_error("Connection failed: Invalid sv_maxclients.");
 					return;
 				}
 
-				//party::sv_motd = info.get("sv_motd");
-				//party::sv_maxclients = std::stoi(info.get("sv_maxclients"));
+				server_connection_state.motd = info.get("sv_motd");
+				server_connection_state.max_clients = std::stoi(sv_maxclients_str);
+
+				const auto profile_info = info.get("profileInfo");
+				utils::byte_buffer buffer(profile_info);
+				std::string final_packet{};
+				if (game::fragment_handler::handle(target, buffer, final_packet))
+				{
+					buffer = utils::byte_buffer(final_packet);
+					const auto user_id = buffer.read<unsigned long long>();
+					const profile_infos::profile_info profile_info_(buffer);
+					profile_infos::add_and_distribute_profile_info(target, user_id, profile_info_);
+				}
 
 				connect_to_party(target, mapname, gametype, sv_maxclients);
+				handle_new_player(target, info.get("xuid"));
 			});
 		}
 	};

@@ -1,9 +1,10 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
 
-#include "profile_infos.hpp"
+#include "console/console.hpp"
 #include "network.hpp"
 #include "party.hpp"
+#include "profile_infos.hpp"
 #include "scheduler.hpp"
 
 #include <utils/concurrency.hpp>
@@ -11,14 +12,13 @@
 #include "../steam/steam.hpp"
 #include <utils/io.hpp>
 
-//#include "game/utils.hpp"
 #include "game/fragment_handler.hpp"
 
 namespace profile_infos
 {
 	namespace
 	{
-		using profile_map = std::unordered_map<uint64_t, profile_info>;
+		using profile_map = std::unordered_map<std::uint64_t, profile_info>;
 		utils::concurrency::container<profile_map, std::recursive_mutex> profile_mapping{};
 
 		int get_max_client_count()
@@ -32,46 +32,22 @@ namespace profile_infos
 		}
 
 		template <typename T>
-		static void foreach_client(T* client_states, const std::function<void(game::client_t&, size_t index)>& callback)
+		static void foreach_client(T* client_states, const std::function<void(game::client_t&, int index)>& callback)
 		{
 			if (!client_states || !callback)
 			{
 				return;
 			}
 
-			for (size_t i = 0; i < get_max_client_count(); ++i)
+			for (int i = 0; i < get_max_client_count(); ++i)
 			{
 				callback(client_states[i], i);
 			}
 		}
 
-		void foreach_client(const std::function<void(game::client_t&, size_t index)>& callback)
+		void foreach_client(const std::function<void(game::client_t&, int index)>& callback)
 		{
 			foreach_client(*game::svs_clients, callback);
-			/*
-			if (game::environment::is_dedi())
-			{
-				foreach_client(*game::svs_clients, callback);
-			}
-			else
-			{
-				foreach_client(*game::svs_clients_cl, callback);
-			}
-			*/
-		}
-
-		void foreach_connected_client(const std::function<void(game::client_t&, size_t index)>& callback)
-		{
-			const auto clients = *game::svs_clients;
-			auto& client = clients[0];
-
-			foreach_client([&](game::client_t& client, const size_t index)
-			{
-				if (client.header.state != 0x0) // CS_FREE
-				{
-					callback(client, index);
-				}
-			});
 		}
 
 		std::optional<profile_info> load_profile_info()
@@ -117,20 +93,21 @@ namespace profile_infos
 
 			const std::string data = buffer.move_buffer();
 
-			foreach_connected_client([&](const game::client_t& client)
+			foreach_connected_client([&](const game::client_t& client, const int)
 			{
 				send_profile_info(client.remoteAddress, data);
 			});
 		}
 
-		std::unordered_set<uint64_t> get_connected_client_xuids()
+		std::unordered_set<std::uint64_t> get_connected_client_xuids()
 		{
-			std::unordered_set<uint64_t> connected_clients{};
+			std::unordered_set<std::uint64_t> connected_clients{};
 			connected_clients.reserve(get_max_client_count());
 
-			foreach_connected_client([&](const game::client_t& client)
+			foreach_connected_client([&](const game::client_t&, const int index)
 			{
-				connected_clients.emplace(client.xuid); // TODO
+				const auto guid = game::SV_GameMP_GetGuid(index);
+				connected_clients.emplace(party::get_xuid_from_guid(guid)); // TODO
 			});
 
 			return connected_clients;
@@ -156,8 +133,8 @@ namespace profile_infos
 					}
 					else
 					{
-#ifdef DEV_BUILD
-						printf("Erasing profile info: %llX\n", i->first);
+#ifdef DEBUG
+						console::debug("Erasing profile info: %llX\n", i->first);
 #endif
 
 						i = profiles.erase(i);
@@ -186,8 +163,8 @@ namespace profile_infos
 			return;
 		}
 
-#ifdef DEV_BUILD
-		printf("Adding profile info: %llX\n", user_id);
+#ifdef DEBUG
+		console::debug("Adding profile info: %llX\n", user_id);
 #endif
 
 		profile_mapping.access([&](profile_map& profiles)
@@ -227,10 +204,10 @@ namespace profile_infos
 
 	void add_and_distribute_profile_info(const game::netadr_s& addr, const uint64_t user_id, const profile_info& info)
 	{
-		distribute_profile_infos_to_user(addr);
-
-		add_profile_info(user_id, info);
-		distribute_profile_info(user_id, info);
+		console::debug("add_and_distribute_profile_info\n");
+		distribute_profile_infos_to_user(addr); // send profiles stored in map & our profile to host
+		add_profile_info(user_id, info);		// add host's profile info
+		distribute_profile_info(user_id, info);	// send host's profile info to all clients
 	}
 
 	void clear_profile_infos()
@@ -241,9 +218,9 @@ namespace profile_infos
 		});
 	}
 
-	std::unique_lock<std::recursive_mutex> acquire_profile_lock()
+	std::unique_lock<std::recursive_mutex> accquire_profile_lock()
 	{
-		return profile_mapping.acquire_lock();
+		return profile_mapping.accquire_lock();
 	}
 
 	std::optional<profile_info> get_profile_info()
@@ -267,14 +244,14 @@ namespace profile_infos
 			{
 				result = profile_entry->second;
 
-#ifdef DEV_BUILD
-				printf("Requesting profile info: %llX - good\n", user_id);
+#ifdef DEBUG
+				console::debug("Requesting profile info: %llX - good\n", user_id);
 #endif
 			}
-#ifdef DEV_BUILD
+#ifdef DEBUG
 			else
 			{
-				printf("Requesting profile info: %llX - bad\n", user_id);
+				console::debug("Requesting profile info: %llX - bad\n", user_id);
 			}
 #endif
 
@@ -293,6 +270,17 @@ namespace profile_infos
 		utils::io::write_file("players2/user/profile_info", data);
 	}
 
+	void foreach_connected_client(const std::function<void(game::client_t&, int index)>& callback)
+	{
+		foreach_client([&](game::client_t& client, const int index)
+		{
+			if (client.header.state != 0x0) // CS_FREE
+			{
+				callback(client, index);
+			}
+		});
+	}
+
 	class component final : public component_interface
 	{
 	public:
@@ -302,9 +290,10 @@ namespace profile_infos
 
 			if (!game::environment::is_dedi())
 			{
-				network::on("profileInfo", [](const game::netadr_s& server, const network::data_view& data)
+				// server sends this to client, contains a fragmented packet for profile info
+				network::on("profileInfo", [](const game::netadr_s& server, const std::string_view& data)
 				{
-					if (!party::is_host(server))
+					if (party::get_server_connection_state().host != server) // only allow from servers
 					{
 						return;
 					}
@@ -317,7 +306,6 @@ namespace profile_infos
 						buffer = utils::byte_buffer(final_packet);
 						const auto user_id = buffer.read<uint64_t>();
 						const profile_info info(buffer);
-
 						add_profile_info(user_id, info);
 					}
 				});
