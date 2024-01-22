@@ -51,6 +51,8 @@ namespace demonware
 	{
 		profile_infos::profile_info info{};
 
+		const auto size = buffer->size();
+
 		buffer->read_int32(&info.version);
 		buffer->read_blob(&info.ddl);
 

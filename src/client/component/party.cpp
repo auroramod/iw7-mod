@@ -38,52 +38,6 @@ namespace party
 			command::execute("uploadstats", true);
 		}
 
-		void distribute_player_xuid(const game::netadr_s& target, const int player_index, const unsigned long long xuid)
-		{
-			if (player_index >= 18)
-			{
-				return;
-			}
-
-			utils::byte_buffer buffer{};
-			buffer.write(static_cast<uint32_t>(player_index));
-			buffer.write(xuid);
-
-			profile_infos::foreach_connected_client([&](const game::client_t& client, const int index)
-			{
-				if (client.remoteAddress.type != game::NA_BOT)
-				{
-					network::send(client.remoteAddress, "playerXuid", buffer.get_buffer());
-				}
-
-				if (index != player_index && target.type != game::NA_BOT)
-				{
-					utils::byte_buffer current_buffer{};
-					current_buffer.write(static_cast<uint32_t>(index));
-					current_buffer.write(get_xuid_from_guid(game::SV_GameMP_GetGuid(index)));
-
-					network::send(target, "playerXuid", current_buffer.get_buffer());
-				}
-			});
-		}
-
-		void handle_new_player(const game::netadr_s& target, const std::string& xuid_)
-		{
-			const auto xuid = strtoull(xuid_.data(), nullptr, 16);
-
-			int player_index = 18;
-			profile_infos::foreach_connected_client([&](game::client_t& client, const int index)
-			{
-				if (client.remoteAddress == target)
-				{
-					set_xuid_client(&client, index, xuid);
-					player_index = index;
-				}
-			});
-
-			distribute_player_xuid(target, player_index, xuid);
-		}
-
 		void connect_to_party(const game::netadr_s& target, const std::string& mapname, const std::string& gametype, int sv_maxclients)
 		{
 			if (game::Com_GameMode_GetActiveGameMode() != game::GAME_MODE_MP &&
@@ -630,19 +584,10 @@ namespace party
 				server_connection_state.motd = info.get("sv_motd");
 				server_connection_state.max_clients = std::stoi(sv_maxclients_str);
 
-				const auto profile_info = info.get("profileInfo");
-				utils::byte_buffer buffer(profile_info);
-				std::string final_packet{};
-				if (game::fragment_handler::handle(target, buffer, final_packet))
-				{
-					buffer = utils::byte_buffer(final_packet);
-					const auto user_id = buffer.read<unsigned long long>();
-					const profile_infos::profile_info profile_info_(buffer);
-					profile_infos::add_and_distribute_profile_info(target, user_id, profile_info_);
-				}
+				const auto profile_info = profile_infos::get_profile_info().value_or(profile_infos::profile_info{});
+				send_profile_info(target, steam::SteamUser()->GetSteamID().bits, profile_info);
 
 				connect_to_party(target, mapname, gametype, sv_maxclients);
-				handle_new_player(target, info.get("xuid"));
 			});
 		}
 	};
