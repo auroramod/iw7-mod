@@ -2,6 +2,8 @@
 
 #include "structs.hpp"
 
+#define PROTOCOL 1
+
 namespace game
 {
 	extern uint64_t base_address;
@@ -38,6 +40,12 @@ namespace game
 	namespace environment
 	{
 		bool is_dedi();
+	}
+
+	namespace shared
+	{
+		void client_println(int client_num, const std::string& text);
+		bool cheats_ok(int client_num = 0, bool print = false);
 	}
 
 	int Cmd_Argc();

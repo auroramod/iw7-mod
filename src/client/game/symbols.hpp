@@ -62,6 +62,14 @@ namespace game
 	WEAK symbol<void(const char* text_in)> Cmd_TokenizeString{ 0xB7D850 };
 	WEAK symbol<void()> Cmd_EndTokenizeString{ 0xB7CC90 };
 
+	WEAK symbol<__int64(void* stream, int flush)> db_inflate{ 0xE77380 };
+	WEAK symbol<__int64(void* stream, const char* version, int stream_size)> db_inflateInit_{ 0xE77980 };
+	WEAK symbol<__int64(void* stream)> db_inflateEnd{ 0xE777F0 };
+
+	WEAK symbol<void(void* stream, void* memory, int size)> DB_Zip_InitThreadMemory{ 0xE78290 };
+	WEAK symbol<void(void* stream)> DB_Zip_ShutdownThreadMemory{ 0xE782D0 };
+
+	WEAK symbol<void(XZoneInfo* zoneInfo, unsigned int zoneCount, char syncMode)> DB_LoadXAssets{ 0xA78630 };
 	WEAK symbol<int(XAssetType type, const char* name)> DB_XAssetExists{ 0xA7C3A0 };
 	WEAK symbol<int(const RawFile* rawfile, char* buf, int size)> DB_GetRawBuffer{ 0xA77AB0 };
 
@@ -73,11 +81,7 @@ namespace game
 	WEAK symbol<char* (const char* filename, char* buf, int size)> DB_ReadRawFile{ 0xA79E30 };
 	WEAK symbol<int(const RawFile* rawfile)> DB_GetRawFileLen{ 0xF20AF0 };
 
-	namespace DDL
-	{
-		WEAK symbol<const char*(const DDLState* state, int enumValue)> DDL_Lookup_GetEnumString{ 0x30430 };
-	}
-
+	WEAK symbol<const char* (const DDLState* state, int enumValue)> DDL_Lookup_GetEnumString{ 0x30430 };
 	WEAK symbol<bool(const DDLState* state)> DDL_StateIsLeaf{ 0x2E3C0 };
 	WEAK symbol<DDLType(const DDLState* state)> DDL_GetType{ 0x2E5A0 };
 	WEAK symbol<DDLValue(const DDLState* state, const DDLContext* ddlContext)> DDL_GetValue{ 0x2F5E0 };
@@ -185,6 +189,9 @@ namespace game
 	WEAK symbol<int(int length, void const* data, const netadr_s* to)> Sys_SendPacket{ 0xD57DE0 };
 	WEAK symbol<int(netadr_s* net_from, msg_t* net_message)> Sys_GetPacket{ 0xD57D50 };
 
+	WEAK symbol<bool()> Sys_IsDatabaseThread{ 0xBB7B30 };
+
+	WEAK symbol<const char* ()> SEH_GetCurrentLanguageCode{ 0xCBAF50 };
 	WEAK symbol<char* ()> SEH_GetCurrentLanguageName{ 0xCBB090 };
 	WEAK symbol<char* (int code)> SEH_GetLanguageName{ 0xCBB140 };
 
@@ -298,6 +305,14 @@ namespace game
 	WEAK symbol<PhysicalMemory> g_scriptmem{ 0x7685FC0 };
 
 	WEAK symbol<searchpath_s> fs_searchpaths{ 0x756DEE0 };
+
+	WEAK symbol<DB_LoadData> g_load{ 0x52A8010 };
+	WEAK symbol<int> g_authLoad_isSecure{ 0x529DD90 };
+	WEAK symbol<DB_ReadStream> db_stream{ 0x52A8050 };
+	WEAK symbol<db_z_stream_s> db_zip_stream{ 0x529DD30 };
+	WEAK symbol<char*> db_zip_memory{ 0x525B500 };
+
+	WEAK symbol<unsigned __int64> g_streamPos{ 0x5687E30 };
 	WEAK symbol<unsigned int> gameEntityId{ 0x665A124 };
 	WEAK symbol<int> level_time{ 0x3C986D8 };
 

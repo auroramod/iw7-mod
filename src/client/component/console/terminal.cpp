@@ -341,7 +341,8 @@ namespace terminal
 	public:
 		component()
 		{
-			ShowWindow(GetConsoleWindow(), SW_HIDE);
+			if(!game::environment::is_dedi())
+				ShowWindow(GetConsoleWindow(), SW_HIDE);
 		}
 
 		void post_unpack() override

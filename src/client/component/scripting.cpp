@@ -183,6 +183,91 @@ namespace scripting
 			canonical_string_table[result] = str;
 			return result;
 		}
+
+		void shutdown_game_pre(const int free_scripts)
+		{
+			if (free_scripts)
+			{
+				script_function_table_sort.clear();
+				script_function_table.clear();
+				script_function_table_rev.clear();
+				canonical_string_table.clear();
+			}
+
+			for (const auto& callback : shutdown_callbacks)
+			{
+				callback(free_scripts, false);
+			}
+
+			scripting::notify(*game::levelEntityId, "shutdownGame_called", { 1 });
+		}
+
+		void shutdown_game_post(const int free_scripts)
+		{
+			for (const auto& callback : shutdown_callbacks)
+			{
+				callback(free_scripts, true);
+			}
+		}
+
+		namespace mp
+		{
+			utils::hook::detour sv_initgame_vm_hook;
+			utils::hook::detour sv_shutdowngame_vm_hook;
+
+			void sv_initgame_vm_stub(game::sv::SvServerInitSettings* init_settings)
+			{
+				if (!game::Com_FrontEnd_IsInFrontEnd())
+				{
+					console::info("------- Game Initialization -------\n");
+					console::info("gamename: %s\n", "IW7");
+					console::info("gamedate: %s\n", __DATE__);
+
+					//G_LogPrintf("------------------------------------------------------------\n");
+					//G_LogPrintf("InitGame: %s\n", serverinfo);
+				}
+
+				sv_initgame_vm_hook.invoke<void>(init_settings);
+
+				if (!game::Com_FrontEnd_IsInFrontEnd())
+				{
+					console::info("-----------------------------------\n");
+				}
+			}
+
+			void sv_shutdowngame_vm_stub(int full_clear, int a2)
+			{
+				if (!game::Com_FrontEnd_IsInFrontEnd())
+				{
+					console::info("==== ShutdownGame (%d) ====\n", full_clear);
+
+					//G_LogPrintf("ShutdownGame:\n");
+					//G_LogPrintf("------------------------------------------------------------\n");
+				}
+
+				shutdown_game_pre(full_clear);
+				sv_shutdowngame_vm_hook.invoke<void>(full_clear, a2);
+				shutdown_game_post(full_clear);
+			}
+		}
+
+		namespace sp
+		{
+			utils::hook::detour sv_initgame_vm_hook;
+			utils::hook::detour sv_shutdowngame_vm_hook;
+
+			void sv_initgame_vm_stub(int random_seed, int restart, int* savegame, void** save, int load_scripts)
+			{
+				sv_initgame_vm_hook.invoke<void>(random_seed, restart, savegame, save, load_scripts);
+			}
+
+			void sv_shutdowngame_vm_stub(int full_clear, int a2)
+			{
+				shutdown_game_pre(full_clear);
+				sv_shutdowngame_vm_hook.invoke<void>(full_clear, a2);
+				shutdown_game_post(full_clear);
+			}
+		}
 	}
 
 	std::string get_token(unsigned int id)

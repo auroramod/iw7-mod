@@ -12,6 +12,8 @@
 #include <utils/concurrency.hpp>
 #include <utils/io.hpp>
 
+#include <zlib.h>
+
 //#define XFILE_DEBUG
 
 namespace fastfiles
@@ -34,6 +36,7 @@ namespace fastfiles
 		utils::hook::detour db_init_load_x_file_hook;
 		utils::hook::detour db_load_x_zone_hook;
 		utils::hook::detour db_find_xasset_header_hook;
+		utils::hook::detour db_add_xasset_hook;
 
 		void db_try_load_x_file_internal_stub(const char* zone_name, const unsigned int zone_flags,
 			const bool is_base_map, const bool was_paused, const int failure_mode)
@@ -88,13 +91,75 @@ namespace fastfiles
 					game::g_assetNames[static_cast<unsigned int>(type)],
 					name);
 			}
-			if (type == game::ASSET_TYPE_SCRIPTFILE && result.scriptfile)
+			
+			return result;
+		}
+
+		game::XAssetHeader db_add_xasset_stub(game::XAssetType type, game::XAssetHeader* header_ptr)
+		{
+			auto header = *header_ptr;
+			
+			if (type == game::ASSET_TYPE_SCRIPTFILE && header.scriptfile)
 			{
-				dump_gsc_script(name, result);
+				dump_gsc_script(header.scriptfile->name ? header.scriptfile->name : "__unnamed__", header);
 			}
+
+			auto result = db_add_xasset_hook.invoke<game::XAssetHeader>(type, header_ptr);
 			return result;
 		}
 	}
+
+	namespace zone_loading
+	{
+		utils::hook::detour db_is_patch_hook;
+
+		bool check_missing_content_func(const char* zone_name)
+		{
+			const char* lang_code = game::SEH_GetCurrentLanguageCode();
+			char buffer[0x100]{ 0 };
+			const auto len = sprintf_s(buffer, "%s_", lang_code);
+
+			if (!strncmp(zone_name, buffer, len))
+			{
+				printf("Tried to load missing language zone: %s\n", zone_name);
+				return true;
+			}
+
+			return false;
+		}
+
+		bool db_is_patch_stub(const char* name)
+		{
+			if (db_is_patch_hook.invoke<bool>(name)) return true;
+			if (check_missing_content_func(name)) return true;
+			return false;
+		}
+
+		void skip_extra_zones_stub(utils::hook::assembler& a)
+		{
+			const auto skip = a.newLabel();
+			const auto original = a.newLabel();
+
+			//a.pushad64();
+			a.test(edi, game::DB_ZONE_CUSTOM); // allocFlags
+			a.jnz(skip);
+
+			a.bind(original);
+			//a.popad64();
+			a.call(0x3BC450_b); // strnicmp_ffotd
+			a.mov(r12d, edi);
+			a.mov(rdx, 0x1467970_b); // "patch_"
+			a.jmp(0x3BA9C0_b);
+
+			a.bind(skip);
+			//a.popad64();
+			a.mov(r12d, game::DB_ZONE_CUSTOM);
+			a.not_(r12d);
+			a.and_(edi, r12d);
+			a.jmp(0x3BAC06_b);
+		}
+	}
+	using namespace zone_loading;
 
 	bool exists(const std::string& zone)
 	{
@@ -124,8 +189,45 @@ namespace fastfiles
 #endif
 
 			db_find_xasset_header_hook.create(game::DB_FindXAssetHeader, db_find_xasset_header_stub);
+			db_add_xasset_hook.create(0xA76520_b, db_add_xasset_stub);
 
 			g_dump_scripts = game::Dvar_RegisterBool("g_dumpScripts", false, game::DVAR_FLAG_NONE, "Dump GSC scripts");
+
+			// Don't fatal on certain missing zones
+			db_is_patch_hook.create(0x3BC580_b, db_is_patch_stub);
+			// Don't load extra zones with loadzone
+			utils::hook::nop(0x3BA9B1_b, 15);
+			utils::hook::jump(0x3BA9B1_b, utils::hook::assemble(skip_extra_zones_stub), true);
+
+			// Allow loading of unsigned fastfiles
+			utils::hook::set<uint8_t>(0x9E8CAE_b, 0xEB); // DB_InflateInit
+
+			// Skip signature validation
+			utils::hook::set(0x9E6390_b, 0xC301B0); // signature
+
+			command::add("loadzone", [](const command::params& params)
+			{
+				if (params.size() < 2)
+				{
+					console::info("usage: loadzone <zone>\n");
+					return;
+				}
+
+				const char* name = params.get(1);
+
+				if (!fastfiles::exists(name))
+				{
+					console::warn("loadzone: zone %s could not be found!\n", name);
+					return;
+				}
+
+				game::XZoneInfo info{};
+				info.name = name;
+				info.allocFlags = game::DB_ZONE_GAME;
+				info.allocFlags |= game::DB_ZONE_CUSTOM; // skip extra zones with this flag
+
+				game::DB_LoadXAssets(&info, 1, game::DBSyncMode::DB_LOAD_ASYNC);
+			});
 
 			command::add("listassetpool", [](const command::params& params)
 			{

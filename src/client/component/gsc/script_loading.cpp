@@ -130,7 +130,7 @@ namespace gsc
 				!game::DB_IsXAssetDefault(game::ASSET_TYPE_SCRIPTFILE, file_name))
 			{
 				if (real_name.starts_with(utils::string::va("scripts/%s/maps/", game::Com_GameMode_GetActiveGameModeStr()))
-					&& real_name.ends_with("_fx"))
+					&& (real_name.ends_with("_fx") || real_name.ends_with("_sound")))
 				{
 					console::debug("Refusing to compile rawfile '%s'\n", real_name.data());
 					return game::DB_FindXAssetHeader(game::ASSET_TYPE_SCRIPTFILE, file_name, false).scriptfile;
@@ -171,6 +171,8 @@ namespace gsc
 				script_file_ptr->compressedLen = 0;
 
 				loaded_scripts[file_name] = script_file_ptr;
+
+				console::debug("Loaded custom gsc '%s.gsc'", real_name.data());
 
 				return script_file_ptr;
 			}
@@ -336,7 +338,7 @@ namespace gsc
 		}
 
 		utils::hook::detour g_load_structs_hook;
-		void g_load_structs_stub()
+		void g_load_structs_stub(float a1)
 		{
 			for (auto& function_handle : main_handles)
 			{
@@ -348,7 +350,7 @@ namespace gsc
 			scripting::lua::engine::start();
 			console::info("[LUA] Started LUA Engine\n");
 
-			g_load_structs_hook.invoke<void>();
+			g_load_structs_hook.invoke<void>(a1);
 		}
 
 		utils::hook::detour scr_load_level_hook;

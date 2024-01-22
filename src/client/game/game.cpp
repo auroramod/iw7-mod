@@ -2,6 +2,7 @@
 #include "game.hpp"
 
 #include <utils/flags.hpp>
+#include <utils/string.hpp>
 
 namespace game
 {
@@ -19,6 +20,40 @@ namespace game
 		{
 			static const auto dedicated = utils::flags::has_flag("dedicated");
 			return dedicated;
+		}
+	}
+
+	namespace shared
+	{
+		void client_println(int client_num, const std::string& text)
+		{
+			if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+			{
+				game::CG_Utils_GameMessage(client_num, text.data(), 0); // why is nothing printed?
+			}
+			else
+			{
+				game::SV_GameSendServerCommand(client_num, game::SV_CMD_RELIABLE,
+					utils::string::va("f \"%s\"", text.data()));
+			}
+		}
+
+		bool cheats_ok(int client_num, bool print)
+		{
+			if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+			{
+				return true;
+			}
+
+			const auto sv_cheats = game::Dvar_FindVar("sv_cheats");
+			if (!sv_cheats || !sv_cheats->current.enabled)
+			{
+				if(print)
+					client_println(client_num, "GAME_CHEATSNOTENABLED");
+				return false;
+			}
+
+			return true;
 		}
 	}
 

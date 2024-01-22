@@ -107,7 +107,9 @@ void limit_parallel_dll_loading()
 
 int main()
 {
-	ShowWindow(GetConsoleWindow(), SW_HIDE);
+	if (!game::environment::is_dedi())
+		ShowWindow(GetConsoleWindow(), SW_HIDE);
+
 	console::init();
 
 	FARPROC entry_point;

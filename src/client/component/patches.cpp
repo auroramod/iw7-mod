@@ -307,6 +307,9 @@ namespace patches
 
 			// block changing name in-game
 			utils::hook::set<uint8_t>(0xC4DF90_b, 0xC3);
+
+			// disable host migration
+			utils::hook::set<uint8_t>(0xC5A200_b, 0xC3);
 		}
 	};
 }

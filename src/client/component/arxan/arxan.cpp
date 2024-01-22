@@ -10,8 +10,12 @@
 #include <utils/string.hpp>
 
 #include "integrity.hpp"
+#include "breakpoints.hpp"
+#include "illegal_instructions.hpp"
 
 #define PRECOMPUTED_INTEGRITY_CHECKS
+#define PRECOMPUTED_BREAKPOINTS
+#define PRECOMPUTED_ILLEGAL_INSTRUCTIONS
 
 #define ProcessDebugPort 7
 #define ProcessDebugObjectHandle 30
@@ -19,85 +23,8 @@
 
 namespace arxan
 {
-	namespace
+	namespace integrity
 	{
-		utils::hook::detour nt_close_hook;
-		utils::hook::detour nt_query_information_process_hook;
-
-		HANDLE process_id_to_handle(const DWORD pid)
-		{
-			return reinterpret_cast<HANDLE>(static_cast<DWORD64>(pid));
-		}
-
-		NTSTATUS WINAPI nt_query_information_process_stub(const HANDLE handle, const PROCESSINFOCLASS info_class,
-			const PVOID info,
-			const ULONG info_length, const PULONG ret_length)
-		{
-			auto* orig = static_cast<decltype(NtQueryInformationProcess)*>(nt_query_information_process_hook.get_original());
-			const auto status = orig(handle, info_class, info, info_length, ret_length);
-
-			if (NT_SUCCESS(status))
-			{
-				if (info_class == ProcessBasicInformation)
-				{
-					static DWORD explorer_pid = 0;
-					if (!explorer_pid)
-					{
-						auto* const shell_window = GetShellWindow();
-						GetWindowThreadProcessId(shell_window, &explorer_pid);
-					}
-
-					// InheritedFromUniqueProcessId
-					static_cast<PPROCESS_BASIC_INFORMATION>(info)->Reserved3 = PVOID(DWORD64(explorer_pid));
-				}
-				else if (info_class == ProcessDebugObjectHandle)
-				{
-					*static_cast<HANDLE*>(info) = nullptr;
-
-					return 0xC0000353;
-				}
-				else if (info_class == ProcessDebugPort)
-				{
-					*static_cast<HANDLE*>(info) = nullptr;
-				}
-				else if (info_class == ProcessDebugFlags)
-				{
-					*static_cast<ULONG*>(info) = 1;
-				}
-			}
-
-			return status;
-		}
-
-		NTSTATUS NTAPI nt_close_stub(const HANDLE handle)
-		{
-			char info[16];
-			if (NtQueryObject(handle, OBJECT_INFORMATION_CLASS(4), &info, 2, nullptr) >= 0 && size_t(handle) != 0x12345)
-			{
-				auto* orig = static_cast<decltype(NtClose)*>(nt_close_hook.get_original());
-				return orig(handle);
-			}
-
-			return STATUS_INVALID_HANDLE;
-		}
-
-		void hide_being_debugged()
-		{
-			auto* const peb = PPEB(__readgsqword(0x60));
-			peb->BeingDebugged = false;
-			*reinterpret_cast<PDWORD>(LPSTR(peb) + 0xBC) &= ~0x70;
-		}
-
-		LONG WINAPI exception_filter(const LPEXCEPTION_POINTERS info)
-		{
-			if (info->ExceptionRecord->ExceptionCode == STATUS_INVALID_HANDLE)
-			{
-				return EXCEPTION_CONTINUE_EXECUTION;
-			}
-
-			return EXCEPTION_CONTINUE_SEARCH;
-		}
-
 		const std::vector<std::pair<uint8_t*, size_t>>& get_text_sections()
 		{
 			static const std::vector<std::pair<uint8_t*, size_t>> text = []
@@ -179,7 +106,7 @@ namespace arxan
 		uint32_t adjust_integrity_checksum(const uint64_t return_address, uint8_t* stack_frame,
 			const uint32_t current_checksum)
 		{
-			[[maybe_unused]]const auto handler_address = return_address - 5;
+			[[maybe_unused]] const auto handler_address = return_address - 5;
 			const auto* context = search_handler_context(stack_frame, current_checksum);
 
 			if (!context)
@@ -320,9 +247,6 @@ namespace arxan
 			assert(game::base_address == 0x140000000);
 			search_and_patch_integrity_checks_precomputed();
 #else
-			// There seem to be 670 results.
-			// Searching them is quite slow.
-			// Maybe precomputing that might be better?
 			const auto intact_results = "89 04 8A 83 45 ? FF"_sig;
 			const auto split_results = "89 04 8A E9"_sig;
 
@@ -338,14 +262,405 @@ namespace arxan
 #endif
 		}
 	}
+	using namespace integrity;
+
+	namespace anti_debug
+	{
+		utils::hook::detour nt_close_hook;
+		utils::hook::detour nt_query_information_process_hook;
+
+		NTSTATUS WINAPI nt_query_information_process_stub(const HANDLE handle, const PROCESSINFOCLASS info_class,
+			const PVOID info,
+			const ULONG info_length, const PULONG ret_length)
+		{
+			auto* orig = static_cast<decltype(NtQueryInformationProcess)*>(nt_query_information_process_hook.get_original());
+			auto status = orig(handle, info_class, info, info_length, ret_length);
+
+			if (NT_SUCCESS(status))
+			{
+				if (info_class == ProcessDebugObjectHandle)
+				{
+					*static_cast<HANDLE*>(info) = nullptr;
+					return static_cast<LONG>(0xC0000353);
+				}
+				else if (info_class == ProcessDebugPort)
+				{
+					*static_cast<HANDLE*>(info) = nullptr;
+				}
+				else if (info_class == ProcessDebugFlags)
+				{
+					*static_cast<ULONG*>(info) = 1;
+				}
+			}
+
+			return status;
+		}
+
+		NTSTATUS NTAPI nt_close_stub(const HANDLE handle)
+		{
+			char info[16];
+			if (NtQueryObject(handle, OBJECT_INFORMATION_CLASS(4), &info, 2, nullptr) >= 0 && size_t(handle) != 0x12345)
+			{
+				auto* orig = static_cast<decltype(NtClose)*>(nt_close_hook.get_original());
+				return orig(handle);
+			}
+
+			return STATUS_INVALID_HANDLE;
+		}
+
+		void hide_being_debugged()
+		{
+			auto* const peb = PPEB(__readgsqword(0x60));
+			peb->BeingDebugged = false;
+			*reinterpret_cast<PDWORD>(LPSTR(peb) + 0xBC) &= ~0x70; // NtGlobalFlag
+		}
+
+		void remove_hardware_breakpoints()
+		{
+			CONTEXT context;
+			ZeroMemory(&context, sizeof(context));
+			context.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+
+			auto* const thread = GetCurrentThread();
+			GetThreadContext(thread, &context);
+
+			context.Dr0 = 0;
+			context.Dr1 = 0;
+			context.Dr2 = 0;
+			context.Dr3 = 0;
+			context.Dr6 = 0;
+			context.Dr7 = 0;
+
+			SetThreadContext(thread, &context);
+		}
+
+		LONG WINAPI exception_filter(const LPEXCEPTION_POINTERS info)
+		{
+			if (info->ExceptionRecord->ExceptionCode == STATUS_INVALID_HANDLE)
+			{
+				return EXCEPTION_CONTINUE_EXECUTION;
+			}
+
+			return EXCEPTION_CONTINUE_SEARCH;
+		}
+
+		BOOL WINAPI set_thread_context_stub(const HANDLE thread, CONTEXT* context)
+		{
+			if (context->ContextFlags == CONTEXT_DEBUG_REGISTERS)
+			{
+				return TRUE;
+			}
+
+			return SetThreadContext(thread, context);
+		}
+
+		enum dbg_funcs_e
+		{
+			DbgBreakPoint,
+			DbgUserBreakPoint,
+			DbgUiConnectToDbg,
+			DbgUiContinue,
+			DbgUiConvertStateChangeStructure,
+			DbgUiDebugActiveProcess,
+			DbgUiGetThreadDebugObject,
+			DbgUiIssueRemoteBreakin,
+			DbgUiRemoteBreakin,
+			DbgUiSetThreadDebugObject,
+			DbgUiStopDebugging,
+			DbgUiWaitStateChange,
+			DbgPrintReturnControlC,
+			DbgPrompt,
+			DBG_FUNCS_COUNT,
+		};
+		const char* dbg_funcs_names[] =
+		{
+			"DbgBreakPoint",
+			"DbgUserBreakPoint",
+			"DbgUiConnectToDbg",
+			"DbgUiContinue",
+			"DbgUiConvertStateChangeStructure",
+			"DbgUiDebugActiveProcess",
+			"DbgUiGetThreadDebugObject",
+			"DbgUiIssueRemoteBreakin",
+			"DbgUiRemoteBreakin",
+			"DbgUiSetThreadDebugObject",
+			"DbgUiStopDebugging",
+			"DbgUiWaitStateChange",
+			"DbgPrintReturnControlC",
+			"DbgPrompt",
+		};
+		struct dbg_func_bytes_s
+		{
+			std::uint8_t buffer[15];
+		};
+		dbg_func_bytes_s dbg_func_bytes[DBG_FUNCS_COUNT];
+		void* dbg_func_procs[DBG_FUNCS_COUNT]{};
+
+		void store_debug_functions()
+		{
+			const utils::nt::library ntdll("ntdll.dll");
+
+			for (auto i = 0; i < DBG_FUNCS_COUNT; i++)
+			{
+				dbg_func_procs[i] = ntdll.get_proc<void*>(dbg_funcs_names[i]);
+				memcpy(dbg_func_bytes[i].buffer, dbg_func_procs[i], sizeof(dbg_func_bytes[i].buffer));
+			}
+		}
+
+		void restore_debug_functions()
+		{
+			for (auto i = 0; i < DBG_FUNCS_COUNT; i++)
+			{
+				utils::hook::copy(dbg_func_procs[i], dbg_func_bytes[i].buffer, sizeof(dbg_func_bytes[i].buffer));
+			}
+		}
+
+		namespace exceptions
+		{
+			std::unordered_map<PVOID, void*> handle_handler;
+
+			void fake_exception(void* address, _CONTEXT* fake_context, DWORD exception)
+			{
+				_EXCEPTION_POINTERS fake_info{};
+				_EXCEPTION_RECORD fake_record{};
+				fake_info.ExceptionRecord = &fake_record;
+				fake_info.ContextRecord = fake_context;
+
+				fake_record.ExceptionAddress = reinterpret_cast<void*>(reinterpret_cast<std::uint64_t>(address) + 3);
+				fake_record.ExceptionCode = exception;
+
+				for (auto handler : handle_handler)
+				{
+					if (handler.second)
+					{
+						auto result = utils::hook::invoke<LONG>(handler.second, &fake_info);
+						if (result)
+						{
+							memset(fake_context, 0, sizeof(_CONTEXT));
+							break;
+						}
+					}
+				}
+			}
+
+			void patch_int2d_trap(void* address)
+			{
+				const auto game_address = reinterpret_cast<std::uint64_t>(address);
+
+				const auto jump_target = utils::hook::extract<void*>(reinterpret_cast<void*>(game_address + 3));
+
+				_CONTEXT* fake_context = new _CONTEXT{};
+				const auto stub = utils::hook::assemble([address, jump_target, fake_context](utils::hook::assembler& a)
+				{
+					a.push(rcx);
+					a.mov(rcx, fake_context);
+					a.call_aligned(RtlCaptureContext);
+					a.pop(rcx);
+
+					a.pushad64();
+					a.mov(rcx, address);
+					a.mov(rdx, fake_context);
+					a.mov(r8, EXCEPTION_BREAKPOINT);
+					a.call_aligned(fake_exception);
+					a.popad64();
+
+					a.jmp(jump_target);
+				});
+
+				utils::hook::nop(game_address, 7);
+				utils::hook::jump(game_address, stub, false);
+			}
+
+#ifdef PRECOMPUTED_BREAKPOINTS
+			void patch_breakpoints_precomputed()
+			{
+				for (const auto i : int2d_breakpoint_addresses)
+				{
+					patch_int2d_trap(reinterpret_cast<void*>(i));
+				}
+			}
+#endif
+
+			void patch_breakpoints()
+			{
+				static bool once = false;
+				if (once)
+				{
+					return;
+				}
+				once = true;
+
+#ifdef PRECOMPUTED_BREAKPOINTS
+				assert(game::base_address == 0x140000000);
+				patch_breakpoints_precomputed();
+#else
+				const auto int2d_results = utils::hook::signature("CD 2D E9 ? ? ? ?", game_module::get_game_module()).process();
+				for (auto* i : int2d_results)
+				{
+					patch_int2d_trap(i);
+				}
+#endif
+			}
+
+			void patch_illegal_instruction_intact(void* address)
+			{
+				const auto game_address = reinterpret_cast<std::uint64_t>(address);
+
+				const auto jump_target = game_address + 6;
+
+				const auto a1 = *reinterpret_cast<std::uint8_t*>(game_address + 3);
+
+				_CONTEXT* fake_context = new _CONTEXT{};
+				const auto stub = utils::hook::assemble([address, jump_target, fake_context, a1](utils::hook::assembler& a)
+				{
+					a.lea(rax, ptr(rbp, a1));
+
+					a.push(rcx);
+					a.mov(rcx, fake_context);
+					a.call_aligned(RtlCaptureContext);
+					a.pop(rcx);
+
+					a.pushad64();
+					a.mov(rcx, address);
+					a.mov(rdx, fake_context);
+					a.mov(r8, EXCEPTION_ILLEGAL_INSTRUCTION);
+					a.call_aligned(fake_exception);
+					a.popad64();
+
+					a.jmp(jump_target);
+				});
+
+				utils::hook::nop(game_address, 6);
+				utils::hook::jump(game_address, stub, false);
+			}
+
+			void patch_illegal_instruction_split(void* address)
+			{
+				const auto game_address = reinterpret_cast<std::uint64_t>(address);
+
+				const auto jump_target = utils::hook::extract<void*>(reinterpret_cast<void*>(game_address + 5));
+
+				if (*reinterpret_cast<std::uint16_t*>(jump_target) != 0x0B0F) // illegal instruction
+				{
+					return; // false positive
+				}
+
+				const auto a1 = *reinterpret_cast<std::uint8_t*>(game_address + 3);
+
+				_CONTEXT* fake_context = new _CONTEXT{};
+				const auto stub = utils::hook::assemble([address, jump_target, fake_context, a1](utils::hook::assembler& a)
+				{
+					a.lea(rax, ptr(rbp, a1));
+
+					a.push(rcx);
+					a.mov(rcx, fake_context);
+					a.call_aligned(RtlCaptureContext);
+					a.pop(rcx);
+
+					a.pushad64();
+					a.mov(rcx, address);
+					a.mov(rdx, fake_context);
+					a.mov(r8, EXCEPTION_ILLEGAL_INSTRUCTION);
+					a.call_aligned(fake_exception);
+					a.popad64();
+
+					a.jmp(jump_target);
+				});
+
+				utils::hook::nop(game_address, 9);
+				utils::hook::nop(jump_target, 2);
+				utils::hook::jump(game_address, stub, false);
+			}
+
+#ifdef PRECOMPUTED_ILLEGAL_INSTRUCTIONS
+			void patch_illegal_instructions_precomputed()
+			{
+				for (const auto i : illegal_instructions_intact)
+				{
+					patch_illegal_instruction_intact(reinterpret_cast<void*>(i));
+				}
+
+				for (const auto i : illegal_instructions_split)
+				{
+					patch_illegal_instruction_split(reinterpret_cast<void*>(i));
+				}
+			}
+#endif
+
+			void patch_illegal_instructions()
+			{
+				static bool once = false;
+				if (once)
+				{
+					return;
+				}
+				once = true;
+
+#ifdef PRECOMPUTED_ILLEGAL_INSTRUCTIONS
+				assert(game::base_address == 0x140000000);
+				patch_illegal_instructions_precomputed();
+#else
+				const auto intact_results = utils::hook::signature("48 8D 45 ? 0F 0B", game_module::get_game_module()).process();
+				for (auto* i : intact_results)
+				{
+					patch_illegal_instruction_intact(i);
+				}
+
+				const auto split_results = utils::hook::signature("48 8D 45 ? E9 ? ? ?", game_module::get_game_module()).process();
+				for (auto* i : split_results)
+				{
+					patch_illegal_instruction_split(i);
+				}
+#endif
+			}
+
+			PVOID WINAPI add_vectored_exception_handler_stub(ULONG first, PVECTORED_EXCEPTION_HANDLER handler)
+			{
+				exceptions::patch_breakpoints();
+				exceptions::patch_illegal_instructions();
+
+				auto handle = AddVectoredExceptionHandler(first, handler);
+				handle_handler[handle] = handler;
+
+				return handle;
+			}
+
+			ULONG WINAPI remove_vectored_exception_handler_stub(PVOID handle)
+			{
+				handle_handler[handle] = nullptr;
+				return RemoveVectoredExceptionHandler(handle);
+			}
+		}
+	}
+	using namespace anti_debug;
 
 	class component final : public component_interface
 	{
 	public:
+		void* load_import(const std::string& library, const std::string& function) override
+		{
+			if (function == "SetThreadContext")
+			{
+				return set_thread_context_stub;
+			}
+			else if (function == "AddVectoredExceptionHandler")
+			{
+				return exceptions::add_vectored_exception_handler_stub;
+			}
+			else if (function == "RemoveVectoredExceptionHandler")
+			{
+				return exceptions::remove_vectored_exception_handler_stub;
+			}
+
+			return nullptr;
+		}
+
 		void post_load() override
 		{
+			remove_hardware_breakpoints();
 			hide_being_debugged();
 			scheduler::loop(hide_being_debugged, scheduler::pipeline::async);
+			store_debug_functions();
 
 			const utils::nt::library ntdll("ntdll.dll");
 			nt_close_hook.create(ntdll.get_proc<void*>("NtClose"), nt_close_stub);
@@ -359,7 +674,9 @@ namespace arxan
 
 		void post_unpack() override
 		{
+			remove_hardware_breakpoints();
 			search_and_patch_integrity_checks();
+			restore_debug_functions();
 		}
 
 		component_priority priority() override
