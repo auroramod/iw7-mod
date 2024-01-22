@@ -258,6 +258,8 @@ namespace game
 	WEAK symbol<cmd_function_s*> cmd_functions{ 0x5D65CC8 };
 	WEAK symbol<const char*> command_whitelist{ 0x14D1B70 };
 
+	WEAK symbol<PLAYERCARD_CACHE_TASK_STAGE> g_DWPlayercardCacheDownloadTaskStage{ 0x80AE414 };
+
 	WEAK symbol<GfxDrawMethod> gfxDrawMethod{ 0x83E86A8 };
 
 	WEAK symbol<int> keyCatchers{ 0x2246C34 };

@@ -562,9 +562,11 @@ namespace party
 				server_connection_state.max_clients = std::stoi(sv_maxclients_str);
 
 				const auto profile_info = profile_infos::get_profile_info().value_or(profile_infos::profile_info{});
-				send_profile_info(target, steam::SteamUser()->GetSteamID().bits, profile_info);
+				profile_infos::send_profile_info(target, steam::SteamUser()->GetSteamID().bits, profile_info);
 
 				connect_to_party(target, mapname, gametype, sv_maxclients);
+
+				network::send(target, "get_profile_infos_server");
 			});
 		}
 	};

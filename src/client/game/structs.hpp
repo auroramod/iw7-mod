@@ -1752,4 +1752,11 @@ namespace game
 		unsigned __int16 childVariableBucket[65536];
 		ChildVariableValue childVariableValue[384000];
 	};
+
+	enum PLAYERCARD_CACHE_TASK_STAGE
+	{
+		PLAYERCARD_CACHE_TASK_STAGE_WAITING = 0x0,
+		PLAYERCARD_CACHE_TASK_STAGE_WORKING = 0x1,
+		PLAYERCARD_CACHE_TASK_STAGE_ALL_DONE = 0x2,
+	};
 }

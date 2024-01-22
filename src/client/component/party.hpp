@@ -10,7 +10,6 @@ namespace party
 		bool hostDefined;
 		std::string motd;
 		int max_clients;
-		std::string base_url;
 	};
 
 	void info_response_error(const std::string& error);
