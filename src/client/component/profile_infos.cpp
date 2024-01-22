@@ -40,10 +40,10 @@ namespace profile_infos
 
 		std::unordered_set<std::uint64_t> get_connected_client_xuids()
 		{
-			if (!game::SV_Loaded()) // is_host()
-			{
-				return {};
-			}
+			//if (!game::SV_Loaded()) // is_host()
+			//{
+			//	return {};
+			//}
 
 			std::unordered_set<std::uint64_t> xuids{};
 
@@ -65,7 +65,7 @@ namespace profile_infos
 		void clear_invalid_mappings()
 		{
 			const auto time = std::chrono::high_resolution_clock::now();
-			if (std::chrono::duration_cast<std::chrono::seconds>(time - last_clear).count() < 15) // add a grace period of 5 seconds since last clear
+			if (std::chrono::duration_cast<std::chrono::seconds>(time - last_clear).count() < 15) // add a grace period of 15 seconds since last clear
 			{
 				return;
 			}
@@ -106,7 +106,6 @@ namespace profile_infos
 
 	void send_profile_info(const game::netadr_s& address, const std::string& data)
 	{
-		//network::send(address, "profileInfo", buffer);
 		game::fragment_handler::fragment_data(data.data(), data.size(), [&address](const utils::byte_buffer& buffer)
 		{
 			network::send(address, "profileInfo", buffer.get_buffer());
@@ -119,7 +118,7 @@ namespace profile_infos
 		buffer.write(user_id);
 		info.serialize(buffer);
 
-		const std::string data = buffer.get_buffer();
+		const std::string data = buffer.move_buffer();
 
 		send_profile_info(address, data);
 	}
@@ -193,6 +192,25 @@ namespace profile_infos
 		}
 	}
 
+	void send_self_profile()
+	{
+		const auto server_session = game::SV_MainMP_GetServerLobby();
+
+		const auto* svs_clients = *game::svs_clients;
+		for (unsigned int i = 0; i < *game::svs_numclients; ++i)
+		{
+			if (svs_clients[i].header.state >= 1 && game::Party_IsHost(game::SV_MainMP_GetServerLobby(), svs_clients[i].clientIndex))
+			{
+				auto self = load_profile_info();
+				if (self.has_value())
+				{
+					printf("sending self...\n");
+					send_profile_info(svs_clients[i].remoteAddress, game::Session_GetXuid(server_session, svs_clients[i].clientIndex), self.value());
+				}
+			}
+		}
+	}
+
 	void add_profile_info(const std::uint64_t user_id, const profile_info& info, const game::netadr_s& sender_addr)
 	{
 		if (user_id == steam::SteamUser()->GetSteamID().bits)
@@ -206,23 +224,18 @@ namespace profile_infos
 
 		if (game::SV_Loaded()) // is_host()
 		{
-			printf("clear_invalid_mappings()...\n");
-
 			// clear disconnected players
-			//clear_invalid_mappings(); // clear BEFORE adding connecting user
-
-			printf("send_all_profile_infos()...\n");
+			clear_invalid_mappings(); // clear BEFORE adding connecting user
 
 			// send all infos to the new player
 			send_all_profile_infos(sender_addr);
 
-			printf("send_profile_info_to_all_clients()...\n");
-
 			// send new player info to all clients
 			send_profile_info_to_all_clients(user_id, info);
-		}
 
-		printf("pcache_refresh()...\n");
+			// send self too
+			send_self_profile();
+		}
 
 		profile_mapping.access([&](profile_map& profiles)
 		{
