@@ -22,6 +22,7 @@ namespace game
 	{
 		FEATURE_GRAVITY = 33,
 		FEATURE_TIMESCALE = 69,
+		FEATURE_RANDOM_PLAYERCARD_WHEN_MISSING = 163,
 	};
 
 	enum Sys_Folder

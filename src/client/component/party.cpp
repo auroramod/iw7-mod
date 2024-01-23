@@ -164,6 +164,9 @@ namespace party
 		void sv_start_map_for_party_stub(const char* map, const char* game_type, int client_count, int agent_count, bool hardcore,
 			bool map_is_preloaded, bool migrate)
 		{
+			profile_infos::xuid::clear_xuids();
+			profile_infos::clear_profile_infos();
+
 			preloaded_map = map_is_preloaded;
 			sv_start_map_for_party_hook.invoke<void>(map, game_type, client_count, agent_count, hardcore, map_is_preloaded, migrate);
 		}
@@ -313,6 +316,9 @@ namespace party
 	void connect(const game::netadr_s& target)
 	{
 		command::execute("luiOpenPopup AcceptingInvite", false);
+
+		profile_infos::xuid::clear_xuids();
+		profile_infos::clear_profile_infos();
 
 		server_connection_state.host = target;
 		server_connection_state.challenge = utils::cryptography::random::get_challenge();

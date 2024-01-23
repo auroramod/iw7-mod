@@ -21,8 +21,6 @@ namespace profile_infos
 {
 	namespace xuid
 	{
-		using client_xuid_array = std::array<std::uint64_t, 18>;
-
 		client_xuid_array client_xuids{};
 
 		void add_client_xuid(const std::uint32_t& client_index, const std::uint64_t& xuid)
@@ -102,8 +100,12 @@ namespace profile_infos
 				}
 				send_xuid(addr, xuid, i++);
 			}
-			// send self xuid here too
-			send_xuid(addr, steam::SteamUser()->GetSteamID().bits, 0);
+
+			if (!game::environment::is_dedi())
+			{
+				// send self xuid here too
+				send_xuid(addr, steam::SteamUser()->GetSteamID().bits, 0);
+			}
 		}
 	}
 
@@ -186,6 +188,14 @@ namespace profile_infos
 	void profile_info::serialize(utils::byte_buffer& buffer) const
 	{
 		buffer.write_string(this->m_memberplayer_card);
+	}
+
+	void clear_profile_infos()
+	{
+		profile_mapping.access([](profile_map& profiles)
+		{
+			profiles.clear();
+		});
 	}
 
 	void send_profile_info(const game::netadr_s& address, const std::string& data)
@@ -310,7 +320,8 @@ namespace profile_infos
 		if (game::Com_IsAnyLocalServerRunning()) // is_host()
 		{
 			// clear disconnected players
-			clear_invalid_mappings(); // clear BEFORE adding connecting user
+			// q: i think this needs fixing
+			//clear_invalid_mappings(); // clear BEFORE adding connecting user
 
 			send_all_profile_infos(sender_addr);	// send all stored profile infos to the new player
 			send_self_profile(sender_addr);			// send self profile info to the new player too
@@ -331,40 +342,6 @@ namespace profile_infos
 
 	namespace
 	{
-		std::uint64_t get_client_guid(const char* name)
-		{
-			const auto* svs_clients = *game::svs_clients;
-			for (unsigned int i = 0; i < *game::svs_numclients; ++i)
-			{
-				if (svs_clients[i].header.state >= 1 && !game::SV_BotIsBot(i))
-				{
-					if (!_strnicmp(name, svs_clients[i].name, 32))
-					{
-						std::uint64_t guid{};
-						game::StringToXUID(svs_clients[i].playerGuid, &guid);
-						return guid;
-					}
-				}
-			}
-			return 0;
-		}
-
-		utils::hook::detour playercardcache_getplayercard_hook;
-		bool playercardcache_getplayercard_stub(std::uint64_t user_id, const char* name, void* profile_data)
-		{
-			auto result = playercardcache_getplayercard_hook.invoke<bool>(user_id, name, profile_data);
-			if (user_id == 0)
-			{
-				// privatematch probably, let's do a shit fix
-				user_id = get_client_guid(name);
-				if (user_id)
-				{
-					return playercardcache_getplayercard_hook.invoke<bool>(user_id, name, profile_data);;
-				}
-			}
-			return result;
-		}
-
 		utils::hook::detour client_connect_hook;
 		const char* client_connect_stub(int client_num, unsigned __int16 script_pers_id)
 		{
@@ -374,21 +351,19 @@ namespace profile_infos
 			std::uint64_t xuid{};
 			game::StringToXUID(client->playerGuid, &xuid);
 
-			// this currently sends this stuff to host too but cba to fix
+			// are there really only 12 users in iw7?
+			game::g_serverSession->dyn.users[client_num].xuid = xuid; // add this here
+
 			xuid::add_client_xuid(client_num, xuid); // add to self
+
+			// don't send if client is self
 			if (client_num == 0 && !game::environment::is_dedi() && game::Com_IsAnyLocalServerRunning())
 			{
-				// self is host
+				return result;
 			}
-			else
-			{
-				xuid::send_xuid_to_all_clients(xuid, client_num); // add to all connected
-				xuid::send_all_xuids(client->remoteAddress);
-			}
-
-			//game::g_serverSession->dyn.users[client_num].registered = true;
-			//game::g_serverSession->dyn.users[client_num].addr = client->remoteAddress;
-			game::g_serverSession->dyn.users[client_num].xuid = xuid;
+			
+			xuid::send_xuid_to_all_clients(xuid, client_num); // add to all connected
+			xuid::send_all_xuids(client->remoteAddress);
 
 			return result;
 		}
@@ -399,16 +374,9 @@ namespace profile_infos
 	public:
 		void post_unpack() override
 		{
-			// session is disabled in privatematch if systemlink is not enabled
-			// this will cause xuids to be invalid, so this code won't work.
-
 			client_connect_hook.create(0xAFFF10_b, client_connect_stub);
 
-			dvars::override::register_bool("systemlink", false, game::DVAR_FLAG_REPLICATED);
-
-			playercardcache_getplayercard_hook.create(0xDB7D30_b, playercardcache_getplayercard_stub);
-
-			dvars::override::register_int("playercard_cache_validity_life", 30, 0, 1024, 0x0);
+			dvars::override::register_int("playercard_cache_validity_life", 300000, 0, 3600000, 0x0); // 5min
 
 			network::on("profileInfo", [](const game::netadr_s& client_addr, const std::string_view& data)
 			{
