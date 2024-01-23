@@ -322,12 +322,18 @@ links {"common"}
 
 prebuildcommands {"pushd %{_MAIN_SCRIPT_DIR}", "tools\\premake5 generate-buildinfo", "popd"}
 
-COMPUTER_NAME = os.getenv('COMPUTERNAME')
+local COMPUTER_NAME = os.getenv('COMPUTERNAME')
 if COMPUTER_NAME == "JOEL-PC" then
 	debugdir "D:\\Games\\PC\\IW7"
 	debugcommand "D:\\Games\\PC\\IW7\\$(TargetName)$(TargetExt)"
 	postbuildcommands {
 		"copy /y \"$(OutDir)$(TargetName)$(TargetExt)\" \"D:\\Games\\PC\\IW7\\$(TargetName)$(TargetExt)\"",
+	}
+elseif COMPUTER_NAME == "DESKTOP-P7PCR6I" or COMPUTER_NAME == "mikey" then
+	debugdir "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Call of Duty - Infinite Warfare"
+	debugcommand "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Call of Duty - Infinite Warfare\\$(TargetName)$(TargetExt)"
+	postbuildcommands {
+		"copy /y \"$(OutDir)$(TargetName)$(TargetExt)\" \"C:\\Program Files (x86)\\Steam\\steamapps\\common\\Call of Duty - Infinite Warfare\\$(TargetName)$(TargetExt)\"",
 	}
 end
 

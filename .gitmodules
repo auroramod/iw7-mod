@@ -35,3 +35,12 @@
 	path = deps/gsc-tool
 	url = https://github.com/Joelrau/gsc-tool.git
 	branch = iw7
+[submodule "deps/sol2"]
+	path = deps/sol2
+	url = https://github.com/ThePhD/sol2.git
+[submodule "deps/lua"]
+	path = deps/lua
+	url = https://github.com/lua/lua.git
+[submodule "deps/curl"]
+	path = deps/curl
+	url = https://github.com/curl/curl.git

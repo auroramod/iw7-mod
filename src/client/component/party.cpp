@@ -11,6 +11,7 @@
 #include "console/console.hpp"
 #include "network.hpp"
 #include "scheduler.hpp"
+#include "server_list.hpp"
 
 #include <utils/string.hpp>
 #include <utils/info_string.hpp>
@@ -21,12 +22,7 @@ namespace party
 {
 	namespace
 	{
-		struct
-		{
-			game::netadr_s host{};
-			std::string challenge{};
-			bool hostDefined{ false };
-		} connect_state;
+		connection_state server_connection_state{};
 
 		bool preloaded_map = false;
 
@@ -196,7 +192,7 @@ namespace party
 			a.popad64();
 
 			a.jmp(0xC563E2_b);
-		};
+		}
 	}
 
 	void start_map(const std::string& mapname, bool dev)
@@ -313,24 +309,25 @@ namespace party
 
 	void connect(const game::netadr_s& target)
 	{
-		//command::execute("lui_open_popup popup_acceptinginvite", false);
+		command::execute("luiOpenPopup AcceptingInvite", false);
 
-		connect_state.host = target;
-		connect_state.challenge = utils::cryptography::random::get_challenge();
-		connect_state.hostDefined = true;
+		server_connection_state.host = target;
+		server_connection_state.challenge = utils::cryptography::random::get_challenge();
+		server_connection_state.hostDefined = true;
 
-		network::send(target, "getInfo", connect_state.challenge);
+		network::send(target, "getInfo", server_connection_state.challenge);
 	}
 
 	void info_response_error(const std::string& error)
 	{
 		console::error("%s\n", error.data());
-		//if (game::Menu_IsMenuOpenAndVisible(0, "popup_acceptinginvite"))
-		//{
-		//	command::execute("lui_close popup_acceptinginvite", false);
-		//}
-
+		command::execute("luiLeaveMenu AcceptingInvite", false);
 		game::Com_SetLocalizedErrorMessage(error.data(), "MENU_NOTICE");
+	}
+
+	void reset_server_connection_state()
+	{
+		server_connection_state = {};
 	}
 
 	class component final : public component_interface
@@ -484,44 +481,44 @@ namespace party
 			network::on("infoResponse", [](const game::netadr_s& target, const std::string_view& data)
 			{
 				const utils::info_string info{ data };
-				//server_list::handle_info_response(target, info);
+				server_list::handle_info_response(target, info);
 
-				if (connect_state.host != target)
+				if (server_connection_state.host != target)
 				{
 					return;
 				}
 
-				if (info.get("challenge") != connect_state.challenge)
+				if (info.get("challenge") != server_connection_state.challenge)
 				{
-					info_response_error("Invalid challenge.");
+					info_response_error("Connection failed: Invalid challenge.");
 					return;
 				}
 
 				const auto gamename = info.get("gamename");
 				if (gamename != "IW7"s)
 				{
-					info_response_error("Invalid gamename.");
+					info_response_error("Connection failed: Invalid gamename.");
 					return;
 				}
 
 				const auto playmode = info.get("playmode");
 				if (game::GameModeType(std::atoi(playmode.data())) != game::Com_GameMode_GetActiveGameMode())
 				{
-					info_response_error("Invalid playmode.");
+					info_response_error("Connection failed: Invalid playmode.");
 					return;
 				}
 
 				const auto sv_running = info.get("sv_running");
 				if (!std::atoi(sv_running.data()))
 				{
-					info_response_error("Server not running.");
+					info_response_error("Connection failed: Server not running.");
 					return;
 				}
 
 				const auto mapname = info.get("mapname");
 				if (mapname.empty())
 				{
-					info_response_error("Invalid map.");
+					info_response_error("Connection failed: Invalid map.");
 					return;
 				}
 
@@ -536,12 +533,12 @@ namespace party
 				const auto sv_maxclients = std::atoi(sv_maxclients_str.data());
 				if (!sv_maxclients)
 				{
-					info_response_error("Invalid sv_maxclients.");
+					info_response_error("Connection failed: Invalid sv_maxclients.");
 					return;
 				}
 
-				//party::sv_motd = info.get("sv_motd");
-				//party::sv_maxclients = std::stoi(info.get("sv_maxclients"));
+				//server_connection_state.motd = info.get("sv_motd");
+				//server_connection_state.max_clients = std::stoi(sv_maxclients_str);
 
 				connect_to_party(target, mapname, gametype, sv_maxclients);
 			});
