@@ -113,19 +113,8 @@ namespace server_list
 			update_server_list = true;
 		}
 
-		int ui_feeder_count()
-		{
-			std::lock_guard<std::mutex> _(mutex);
-			const auto count = static_cast<int>(servers.size());
-#ifdef DEBUG
-			console::debug("server count: %d\n", count);
-#endif
-			const auto index = get_page_base_index();
-			const auto diff = count - index;
-			return diff > server_limit ? server_limit : static_cast<int>(diff);
-		}
 
-		const char* ui_feeder_item_text(const int index, const int column)
+		const char* ui_feeder_item_text(int arg0, int arg1, const int index, const int column, char* name)
 		{
 			std::lock_guard<std::mutex> _(mutex);
 
@@ -177,8 +166,8 @@ namespace server_list
 			}
 			case 5:
 				return servers[i].is_private ? "1" : "0";
-			case 6:
-				return servers[i].mod_name.empty() ? "" : servers[i].mod_name.data();
+			//case 6:
+			//	return servers[i].mod_name.empty() ? "" : servers[i].mod_name.data();
 			default:
 				return "";
 			}
@@ -300,10 +289,6 @@ namespace server_list
 
 		void lui_open_menu_stub(int controllerIndex, const char* menuName, int isPopup, int isModal, unsigned int isExclusive)
 		{
-#ifdef DEBUG
-			console::debug("[LUI] %s\n", menuName);
-#endif
-
 			if (!strcmp(menuName, "menu_systemlink_join"))
 			{
 				refresh_server_list();
@@ -484,36 +469,8 @@ namespace server_list
 
 			utils::hook::nop(0x69EA1D_b, 5);
 
-			// do feeder stuff
-			utils::hook::jump(0x28E117_b, utils::hook::assemble([](utils::hook::assembler& a)
-			{
-				a.mov(ecx, eax);
-
-				a.pushad64();
-				a.call_aligned(ui_feeder_count);
-				a.movd(xmm0, eax);
-				a.popad64();
-
-				a.mov(rax, qword_ptr(rbx, 0x48));
-				a.cvtdq2ps(xmm0, xmm0);
-				a.jmp(0x69E0E3_b);
-			}), true);
-
-			utils::hook::jump(0x69E2E8_b, utils::hook::assemble([](utils::hook::assembler& a)
-			{
-				a.push(rax);
-				a.pushad64();
-				a.mov(rcx, r9); // index
-				a.mov(rdx, qword_ptr(rsp, 0x78 + 0x18)); // column (h1: 0x78 + 10 = 0x88, iw7: 0x68 + 10 = 0x78)
-				a.call_aligned(ui_feeder_item_text);
-				a.mov(qword_ptr(rsp, 0x70), rax); // was 0x80, but idk where rax is suppose to be going...
-				a.popad64();
-				a.pop(rax);
-
-				a.mov(rsi, qword_ptr(rsp, 0x80)); // maybe wrong? idek lmfao
-				a.mov(rdi, rax);
-				a.jmp(0x69E2F8_b);
-			}), true);
+			utils::hook::call(0x69E45E_b, get_server_count);
+			utils::hook::jump(0xCC5F00_b, ui_feeder_item_text);
 
 			scheduler::loop(do_frame_work, scheduler::pipeline::main);
 			scheduler::loop(check_refresh, scheduler::pipeline::lui, 10ms);
