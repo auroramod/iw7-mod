@@ -165,7 +165,6 @@ namespace party
 			bool map_is_preloaded, bool migrate)
 		{
 			profile_infos::xuid::clear_xuids();
-			profile_infos::clear_profile_infos();
 
 			preloaded_map = map_is_preloaded;
 			sv_start_map_for_party_hook.invoke<void>(map, game_type, client_count, agent_count, hardcore, map_is_preloaded, migrate);

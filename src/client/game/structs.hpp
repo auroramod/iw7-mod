@@ -1807,8 +1807,10 @@ namespace game
 
 		struct SessionDynamicData
 		{
-			char __pad0[80];
+			bool sessionHandle;
+			char __pad0[79];
 			ClientInfo users[12];
+			char __pad1[80];
 		};
 
 		struct SessionData

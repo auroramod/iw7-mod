@@ -52,6 +52,7 @@ namespace profile_infos
 
 		void clear_xuids()
 		{
+			console::debug("[clear_xuids] removing xuids\n");
 			for (auto& xuid : client_xuids)
 			{
 				xuid = 0;
@@ -178,6 +179,13 @@ namespace profile_infos
 				}
 			});
 		}
+
+		void set_playercache_to_download(const std::uint64_t user_id)
+		{
+			game::XUID xuid{ user_id };
+			game::PlayercardCache_AddToDownload(0, xuid);
+			*game::g_DWPlayercardCacheDownloadTaskStage = game::PLAYERCARD_CACHE_TASK_STAGE_WAITING;
+		}
 	}
 
 	profile_info::profile_info(utils::byte_buffer& buffer)
@@ -192,6 +200,7 @@ namespace profile_infos
 
 	void clear_profile_infos()
 	{
+		console::debug("[clear_profile_infos] removing profiles\n");
 		profile_mapping.access([](profile_map& profiles)
 		{
 			profiles.clear();
@@ -334,10 +343,6 @@ namespace profile_infos
 		{
 			profiles[user_id] = info;
 		});
-
-		game::XUID xuid{ user_id };
-		game::PlayercardCache_AddToDownload(0, xuid);
-		*game::g_DWPlayercardCacheDownloadTaskStage = game::PLAYERCARD_CACHE_TASK_STAGE_WAITING;
 	}
 
 	namespace
@@ -367,6 +372,17 @@ namespace profile_infos
 
 			return result;
 		}
+
+		utils::hook::detour session_unregister_remote_player_hook;
+		void session_unregister_remote_player_stub(game::SessionData* session, const int slot)
+		{
+			session_unregister_remote_player_hook.invoke<void>(session, slot);
+
+			if (session == game::g_serverSession)
+			{
+				game::g_serverSession->dyn.users[slot].xuid = xuid::get_client_xuid(slot); // set this here
+			}
+		}
 	}
 
 	class component final : public component_interface
@@ -375,8 +391,9 @@ namespace profile_infos
 		void post_unpack() override
 		{
 			client_connect_hook.create(0xAFFF10_b, client_connect_stub);
+			session_unregister_remote_player_hook.create(0xC73970_b, session_unregister_remote_player_stub); // y u do dis to me?
 
-			dvars::override::register_int("playercard_cache_validity_life", 300000, 0, 3600000, 0x0); // 5min
+			dvars::override::register_int("playercard_cache_validity_life", 5000, 0, 3600000, 0x0); // 5sec
 
 			network::on("profileInfo", [](const game::netadr_s& client_addr, const std::string_view& data)
 			{
@@ -390,6 +407,7 @@ namespace profile_infos
 
 					const profile_info info(buffer);
 					add_profile_info(client_addr, user_id, info);
+					set_playercache_to_download(user_id);
 				}
 			});
 
@@ -416,6 +434,7 @@ namespace profile_infos
 				}
 
 				xuid::add_client_xuid(client_index, xuid);
+				set_playercache_to_download(xuid);
 			});
 		}
 	};
