@@ -184,6 +184,8 @@ namespace game
 
 	WEAK symbol<std::uint64_t(const void* session, const int clientNum)> Session_GetXuid{ 0xC72AB0 };
 
+	WEAK symbol<int(const char* str, std::uint64_t* xuid)> StringToXUID{ 0xCE6C40 };
+
 	WEAK symbol<char* ()> Sys_Cwd{ 0xCFE5A0 };
 	
 	WEAK symbol<int()> Sys_Milliseconds{ 0xD58110 };
@@ -266,6 +268,7 @@ namespace game
 	WEAK symbol<const char*> command_whitelist{ 0x14D1B70 };
 
 	WEAK symbol<PLAYERCARD_CACHE_TASK_STAGE> g_DWPlayercardCacheDownloadTaskStage{ 0x80AE414 };
+	WEAK symbol<CachedPlayerProfile> cached_playercards{ 0x80AE420 };
 
 	WEAK symbol<GfxDrawMethod> gfxDrawMethod{ 0x83E86A8 };
 
@@ -281,6 +284,8 @@ namespace game
 
 	WEAK symbol<unsigned int> svs_numclients{ 0x6B229E0 };
 	WEAK symbol<client_t*> svs_clients{ 0x6B22950 };
+
+	WEAK symbol<SessionData> g_serverSession{ 0x6B4E080 };
 
 	WEAK symbol<clientUIActive_t> clientUIActives{ 0x2246C30 };
 

@@ -1,6 +1,8 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
 
+#include "../steam/steam.hpp"
+
 #include "dvars.hpp"
 #include "command.hpp"
 #include "console/console.hpp"
@@ -10,9 +12,8 @@
 #include "scheduler.hpp"
 
 #include <utils/concurrency.hpp>
-
-#include "../steam/steam.hpp"
 #include <utils/io.hpp>
+#include <utils/hook.hpp>
 
 #include "game/fragment_handler.hpp"
 
@@ -20,33 +21,35 @@ namespace profile_infos
 {
 	namespace xuid
 	{
+		using client_xuid_array = std::array<std::uint64_t, 18>;
+
 		client_xuid_array client_xuids{};
 
-		void add_client_xuid(const std::uint32_t& player_id, const std::uint64_t& xuid)
+		void add_client_xuid(const std::uint32_t& client_index, const std::uint64_t& xuid)
 		{
-			console::debug("[add_client_xuid] adding xuid %llX for client num %u\n", xuid, player_id);
-			client_xuids[player_id] = xuid;
+			console::debug("[add_client_xuid] adding xuid %llX for client num %u\n", xuid, client_index);
+			client_xuids[client_index] = xuid;
 		}
 
-		std::uint64_t get_client_xuid(const std::uint32_t& player_id)
+		std::uint64_t get_client_xuid(const std::uint32_t& client_index)
 		{
-			if (client_xuids[player_id])
+			if (client_xuids[client_index])
 			{
 				// returns xuid for player. this must be on both the client & server
 				// client recieves data for this via playerXuid packet
-				return client_xuids[player_id];
+				return client_xuids[client_index];
 			}
-			
-			console::error("returning XUID 0 for %u\n", player_id);
+
+			console::error("returning XUID 0 for %u\n", client_index);
 			return static_cast<std::uint64_t>(0);
 		}
 
 		// TODO
-		void remove_client_xuid(const std::uint32_t& player_id)
+		void remove_client_xuid(const std::uint32_t& client_index)
 		{
-			const auto xuid = client_xuids[player_id];
-			console::debug("[remove_client_xuid] removing xuid %llX for client num %u\n", xuid, player_id);
-			client_xuids[player_id] = 0;
+			const auto xuid = client_xuids[client_index];
+			console::debug("[remove_client_xuid] removing xuid %llX for client num %u\n", xuid, client_index);
+			client_xuids[client_index] = 0;
 		}
 
 		void clear_xuids()
@@ -60,6 +63,47 @@ namespace profile_infos
 		client_xuid_array get_xuids()
 		{
 			return client_xuids;
+		}
+
+		void send_xuid(const game::netadr_s& addr, const std::uint64_t xuid, const std::uint32_t client_index)
+		{
+			utils::byte_buffer buffer{};
+			buffer.write(client_index);
+			buffer.write(xuid);
+
+			const std::string data = buffer.move_buffer();
+
+			game::fragment_handler::fragment_data(data.data(), data.size(), [&](const utils::byte_buffer& buffer)
+			{
+				network::send(addr, "playerXuid", buffer.get_buffer());
+			});
+		}
+
+		void send_xuid_to_all_clients(const std::uint64_t xuid, const std::uint32_t& client_index)
+		{
+			const auto* svs_clients = *game::svs_clients;
+			for (unsigned int i = 0; i < *game::svs_numclients; ++i)
+			{
+				if (svs_clients[i].header.state >= 1 && !game::SV_BotIsBot(i) && !game::Party_IsHost(game::SV_MainMP_GetServerLobby(), i))
+				{
+					send_xuid(svs_clients[i].remoteAddress, xuid, client_index);
+				}
+			}
+		}
+
+		void send_all_xuids(const game::netadr_s& addr)
+		{
+			int i = 0;
+			for (const auto xuid : xuid::get_xuids())
+			{
+				if (xuid == 0)
+				{
+					continue;
+				}
+				send_xuid(addr, xuid, i++);
+			}
+			// send self xuid here too
+			send_xuid(addr, steam::SteamUser()->GetSteamID().bits, 0);
 		}
 	}
 
@@ -85,14 +129,13 @@ namespace profile_infos
 
 		std::unordered_set<std::uint64_t> get_connected_client_xuids()
 		{
-			if (!game::SV_Loaded()) // is_host()
+			if (!game::Com_IsAnyLocalServerRunning()) // is_host()
 			{
 				return {};
 			}
 
 			std::unordered_set<std::uint64_t> xuids{};
 
-			const auto server_session = game::SV_MainMP_GetServerLobby();
 			const auto* svs_clients = *game::svs_clients;
 			for (unsigned int i = 0; i < *game::svs_numclients; ++i)
 			{
@@ -226,7 +269,7 @@ namespace profile_infos
 		const auto* svs_clients = *game::svs_clients;
 		for (unsigned int i = 0; i < *game::svs_numclients; ++i)
 		{
-			if (svs_clients[i].header.state >= 1 && !game::Party_IsHost(game::SV_MainMP_GetServerLobby(), i))
+			if (svs_clients[i].header.state >= 1 && !game::SV_BotIsBot(i) && !game::Party_IsHost(game::SV_MainMP_GetServerLobby(), i))
 			{
 				send_profile_info(svs_clients[i].remoteAddress, user_id, info);
 			}
@@ -238,8 +281,10 @@ namespace profile_infos
 		const auto* svs_clients = *game::svs_clients;
 		for (unsigned int i = 0; i < *game::svs_numclients; ++i)
 		{
-			if (svs_clients[i].header.state >= 1 && game::Party_IsHost(game::SV_MainMP_GetServerLobby(), i))
+			if (svs_clients[i].header.state >= 1 && !game::SV_BotIsBot(i) && game::Party_IsHost(game::SV_MainMP_GetServerLobby(), i))
 			{
+				assert(i == 0);
+
 				auto self = load_profile_info();
 				if (self.has_value())
 				{
@@ -247,27 +292,6 @@ namespace profile_infos
 					send_profile_info(addr, xuid::get_client_xuid(i), self.value());
 					break;
 				}
-			}
-		}
-	}
-
-	void send_xuid_to_all_clients(const std::uint64_t user_id, const std::uint32_t& num_client)
-	{
-		const auto* svs_clients = *game::svs_clients;
-		for (unsigned int i = 0; i < *game::svs_numclients; ++i)
-		{
-			if (svs_clients[i].header.state >= 1 && !game::Party_IsHost(game::SV_MainMP_GetServerLobby(), i))
-			{
-				utils::byte_buffer buffer{};
-				buffer.write(num_client);
-				buffer.write(user_id);
-
-				const std::string data = buffer.move_buffer();
-
-				game::fragment_handler::fragment_data(data.data(), data.size(), [&](const utils::byte_buffer& buffer)
-				{
-					network::send(svs_clients[i].remoteAddress, "playerXuid", buffer.get_buffer());
-				});
 			}
 		}
 	}
@@ -283,14 +307,8 @@ namespace profile_infos
 		console::debug("[add_profile_info] adding profile info for %llX\n", user_id);
 #endif
 
-		if (game::SV_Loaded()) // is_host()
+		if (game::Com_IsAnyLocalServerRunning()) // is_host()
 		{
-			const auto num_client = 1; // cgArray->snap->numClients
-			xuid::add_client_xuid(num_client, user_id);
-
-			// send new player xuid to all clients (TODO: find better way to just get xuid from client num lmfao)
-			send_xuid_to_all_clients(user_id, num_client);
-
 			// clear disconnected players
 			clear_invalid_mappings(); // clear BEFORE adding connecting user
 
@@ -306,9 +324,74 @@ namespace profile_infos
 			profiles[user_id] = info;
 		});
 
-		game::XUID xuid{user_id};
+		game::XUID xuid{ user_id };
 		game::PlayercardCache_AddToDownload(0, xuid);
-		command::execute("download_playercard", false);
+		*game::g_DWPlayercardCacheDownloadTaskStage = game::PLAYERCARD_CACHE_TASK_STAGE_WAITING;
+	}
+
+	namespace
+	{
+		std::uint64_t get_client_guid(const char* name)
+		{
+			const auto* svs_clients = *game::svs_clients;
+			for (unsigned int i = 0; i < *game::svs_numclients; ++i)
+			{
+				if (svs_clients[i].header.state >= 1 && !game::SV_BotIsBot(i))
+				{
+					if (!_strnicmp(name, svs_clients[i].name, 32))
+					{
+						std::uint64_t guid{};
+						game::StringToXUID(svs_clients[i].playerGuid, &guid);
+						return guid;
+					}
+				}
+			}
+			return 0;
+		}
+
+		utils::hook::detour playercardcache_getplayercard_hook;
+		bool playercardcache_getplayercard_stub(std::uint64_t user_id, const char* name, void* profile_data)
+		{
+			auto result = playercardcache_getplayercard_hook.invoke<bool>(user_id, name, profile_data);
+			if (user_id == 0)
+			{
+				// privatematch probably, let's do a shit fix
+				user_id = get_client_guid(name);
+				if (user_id)
+				{
+					return playercardcache_getplayercard_hook.invoke<bool>(user_id, name, profile_data);;
+				}
+			}
+			return result;
+		}
+
+		utils::hook::detour client_connect_hook;
+		const char* client_connect_stub(int client_num, unsigned __int16 script_pers_id)
+		{
+			auto result = client_connect_hook.invoke<const char*>(client_num, script_pers_id);
+
+			const auto client = game::svs_clients[client_num];
+			std::uint64_t xuid{};
+			game::StringToXUID(client->playerGuid, &xuid);
+
+			// this currently sends this stuff to host too but cba to fix
+			xuid::add_client_xuid(client_num, xuid); // add to self
+			if (client_num == 0 && !game::environment::is_dedi() && game::Com_IsAnyLocalServerRunning())
+			{
+				// self is host
+			}
+			else
+			{
+				xuid::send_xuid_to_all_clients(xuid, client_num); // add to all connected
+				xuid::send_all_xuids(client->remoteAddress);
+			}
+
+			//game::g_serverSession->dyn.users[client_num].registered = true;
+			//game::g_serverSession->dyn.users[client_num].addr = client->remoteAddress;
+			game::g_serverSession->dyn.users[client_num].xuid = xuid;
+
+			return result;
+		}
 	}
 
 	class component final : public component_interface
@@ -316,7 +399,16 @@ namespace profile_infos
 	public:
 		void post_unpack() override
 		{
-			dvars::override::register_int("playercard_cache_validity_life", 5, 1, 60, 0x0);
+			// session is disabled in privatematch if systemlink is not enabled
+			// this will cause xuids to be invalid, so this code won't work.
+
+			client_connect_hook.create(0xAFFF10_b, client_connect_stub);
+
+			dvars::override::register_bool("systemlink", false, game::DVAR_FLAG_REPLICATED);
+
+			playercardcache_getplayercard_hook.create(0xDB7D30_b, playercardcache_getplayercard_stub);
+
+			dvars::override::register_int("playercard_cache_validity_life", 30, 0, 1024, 0x0);
 
 			network::on("profileInfo", [](const game::netadr_s& client_addr, const std::string_view& data)
 			{
@@ -337,14 +429,25 @@ namespace profile_infos
 			{
 				utils::byte_buffer buffer(data);
 				std::string final_packet{};
-				if (game::fragment_handler::handle(server_addr, buffer, final_packet))
+				if (!game::fragment_handler::handle(server_addr, buffer, final_packet))
 				{
-					buffer = utils::byte_buffer(final_packet);
-
-					const auto num_client = buffer.read<std::uint32_t>();
-					const auto user_id = buffer.read<std::uint64_t>();
-					xuid::add_client_xuid(num_client, user_id);
+					return;
 				}
+
+				buffer = utils::byte_buffer(final_packet);
+
+				const auto client_index = buffer.read<std::uint32_t>();
+				const auto xuid = buffer.read<std::uint64_t>();
+
+				game::g_serverSession->dyn.users[client_index].xuid = xuid; // set this here
+
+				if (!game::Com_IsAnyLocalServerRunning() && server_addr.addr != party::get_server_connection_state().host.addr)
+				{
+					console::debug("playerXuid call from an unknown address\n");
+					return;
+				}
+
+				xuid::add_client_xuid(client_index, xuid);
 			});
 		}
 	};

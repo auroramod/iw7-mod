@@ -557,7 +557,12 @@ namespace game
 		struct entityState_t
 		{
 			__int16 number; // 0
+			char __pad0[150];
+			int surfType;
+			int clientNum;
 		}; // sizeof = ?
+
+		assert_offsetof(entityState_t, clientNum, 156);
 
 		struct gclient_s
 		{
@@ -609,9 +614,7 @@ namespace game
 			char __pad1[20];
 			char userinfo[1024];
 			char name[32]; // 1188
-			char __pad2[18200]; // 1220
-			int clientIndex; // 19420 // client->sess.cs.clientIndex
-			char __pad4[630192];
+			char __pad2[648396]; // 1220
 			netadr_s remoteAddress; // 649616
 			char __pad5[2460]; // 649636
 			char playerGuid[21]; // 652096
@@ -622,7 +625,6 @@ namespace game
 		static_assert(offsetof(client_t, gentity) == 136);
 		static_assert(offsetof(client_t, userinfo) == 164);
 		static_assert(offsetof(client_t, name) == 1188);
-		static_assert(offsetof(client_t, clientIndex) == 19420);
 		static_assert(offsetof(client_t, remoteAddress) == 649616);
 		static_assert(offsetof(client_t, playerGuid) == 652096);
 	}
@@ -1772,4 +1774,49 @@ namespace game
 		PLAYERCARD_CACHE_TASK_STAGE_WORKING = 0x1,
 		PLAYERCARD_CACHE_TASK_STAGE_ALL_DONE = 0x2,
 	};
+
+	struct CachedPlayerProfile
+	{
+		bool has_data;
+		XUID userID;
+		char profile[2201];
+		int time;
+	};
+
+	namespace session
+	{
+		struct SessionStaticData
+		{
+			const char* sessionName;
+			bool registerUsersWithVoice;
+		};
+
+		struct ClientInfo
+		{
+			bool registered;
+			bool voiceRegistered;
+			unsigned __int64 xuid;
+			int natType;
+			game::netadr_s addr;
+			int usrVoiceConnectivityBits;
+			int nextConnectivityTestTime[1];
+			bool muted;
+			bool privateSlot;
+		};
+
+		struct SessionDynamicData
+		{
+			char __pad0[80];
+			ClientInfo users[12];
+		};
+
+		struct SessionData
+		{
+			SessionStaticData staticData;
+			SessionDynamicData dyn;
+		};
+
+		assert_offsetof(SessionData, dyn.users, 96);
+	}
+	using namespace session;
 }

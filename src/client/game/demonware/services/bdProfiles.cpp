@@ -20,19 +20,6 @@ namespace demonware
 
 	void bdProfiles::getPublicInfos(service_server* server, byte_buffer* buffer) const
 	{
-		// force other entity ids to show up every time this is called
-		const auto* svs_clients = *game::svs_clients;
-		for (unsigned int i = 0; i < *game::svs_numclients; ++i)
-		{
-			if (svs_clients[i].header.state >= 1)
-			{
-				game::XUID xuid{};
-				xuid.m_id = profile_infos::xuid::get_client_xuid(i);
-				console::debug("[bdProfiles::getPublicInfos] PlayercardCache_AddToDownload adding %llX\n", xuid.m_id);
-				game::PlayercardCache_AddToDownload(0, xuid);
-			}
-		}
-
 		std::vector<std::pair<std::uint64_t, profile_infos::profile_info>> profile_infos{};
 
 		std::uint64_t entity_id;
