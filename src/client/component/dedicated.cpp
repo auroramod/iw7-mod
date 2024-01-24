@@ -63,36 +63,6 @@ namespace dedicated
 			}
 		}
 
-		std::vector<std::string>& get_console_command_queue()
-		{
-			static std::vector<std::string> console_command_queue;
-			return console_command_queue;
-		}
-
-		void execute_console_command([[maybe_unused]] const int local_client_num, const char* command)
-		{
-			if (game::Live_SyncOnlineDataFlags(0) == 0)
-			{
-				command::execute(command);
-			}
-			else
-			{
-				get_console_command_queue().emplace_back(command);
-			}
-		}
-
-		void execute_console_command_queue()
-		{
-			const auto queue = get_console_command_queue();
-			get_console_command_queue().clear();
-
-			for (const auto& command : queue)
-			{
-				game::Cbuf_AddText(0, command.data());
-				game::Cbuf_AddText(0, "\n");
-			}
-		}
-
 		bool party_is_server_dedicated_stub()
 		{
 			return true;
@@ -137,9 +107,9 @@ namespace dedicated
 			va_end(ap);
 
 			scheduler::once([]
-				{
-					command::execute("map_rotate");
-				}, scheduler::main, 3s);
+			{
+				command::execute("map_rotate");
+			}, scheduler::main, 3s);
 
 			game::Com_Error(game::ERR_DROP, "%s", buffer);
 		}
@@ -410,7 +380,6 @@ namespace dedicated
 				game::Cmd_RemoveCommand("disconnect");
 
 				execute_startup_command_queue();
-				execute_console_command_queue();
 
 				// Send heartbeat to dpmaster
 				scheduler::once(send_heartbeat, scheduler::pipeline::server);
