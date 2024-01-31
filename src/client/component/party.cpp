@@ -26,8 +26,6 @@ namespace party
 
 		bool preloaded_map = false;
 
-		std::unordered_map<char*, unsigned long long> guid_to_xuid;
-
 		void perform_game_initialization()
 		{
 			command::execute("onlinegame 1", true);
@@ -532,7 +530,7 @@ namespace party
 				const auto gametype = info.get("gametype");
 				if (gametype.empty())
 				{
-					info_response_error("Connection failed: Connection failed: Invalid gametype.");
+					info_response_error("Connection failed: Invalid gametype.");
 					return;
 				}
 

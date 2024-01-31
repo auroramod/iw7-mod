@@ -175,7 +175,7 @@ namespace demonware
 			info->data = data;
 
 #ifdef DW_DEBUG
-			console::debug("[DW]: [bdStorage]: set user file: %s\n", filename.data());
+			printf("[DW]: [bdStorage]: set user file: %s\n", filename.data());
 #endif
 
 			reply.add(info);
@@ -260,7 +260,7 @@ namespace demonware
 			if (!utils::io::read_file(path, &data))
 			{
 #ifdef DW_DEBUG
-				console::error("[DW]: [bdStorage]: get user file: missing file: %s, %s, %s\n", game.data(), filename.data(), platform.data());
+				printf("[DW]: [bdStorage]: get user file: missing file: %s, %s, %s\n", game.data(), filename.data(), platform.data());
 #endif
 				continue;
 			}
@@ -276,7 +276,7 @@ namespace demonware
 			++count;
 
 #ifdef DW_DEBUG
-			console::debug("[DW]: [bdStorage]: get user file: %s, %s, %s\n", game.data(), filename.data(), platform.data());
+			printf("[DW]: [bdStorage]: get user file: %s, %s, %s\n", game.data(), filename.data(), platform.data());
 #endif
 		}
 

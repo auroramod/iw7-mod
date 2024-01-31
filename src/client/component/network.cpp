@@ -242,15 +242,6 @@ namespace network
 		send_data(address, packet);
 	}
 
-	sockaddr_in convert_to_sockaddr(const game::netadr_s& address)
-	{
-		sockaddr_in to{};
-		to.sin_family = AF_INET;
-		to.sin_port = htons(address.port);
-		to.sin_addr.S_un.S_addr = address.addr;
-		return to;
-	}
-
 	void send_data(const game::netadr_s& address, const std::string& data)
 	{
 		auto size = static_cast<int>(data.size());
