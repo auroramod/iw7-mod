@@ -8,7 +8,7 @@ namespace demonware
 		bdTitleUtilities();
 
 	private:
-		void is_profanity(service_server* server, byte_buffer* buffer) const;
-		void get_server_time(service_server* server, byte_buffer* buffer) const;
+		void isProfanity(service_server* server, byte_buffer* buffer) const;
+		void getServerTime(service_server* server, byte_buffer* buffer) const;
 	};
 }

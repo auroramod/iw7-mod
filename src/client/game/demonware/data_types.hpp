@@ -1,6 +1,5 @@
 #pragma once
-
-#include "byte_buffer.hpp"
+#include "dw_include.hpp"
 
 namespace demonware
 {
@@ -35,6 +34,42 @@ namespace demonware
 		void deserialize(byte_buffer* buffer) override
 		{
 			buffer->read_blob(&this->file_data);
+		}
+	};
+
+	class bdStringResult final : public bdTaskResult
+	{
+	public:
+		std::string buffer;
+
+		explicit bdStringResult(std::string data) : buffer(std::move(data))
+		{
+		}
+
+		void serialize(byte_buffer* data) override
+		{
+			data->write_string(buffer);
+		}
+
+		void deserialize(byte_buffer* data) override
+		{
+			data->read_string(&buffer);
+		}
+	};
+
+	class bdProfanityResult final : public bdTaskResult
+	{
+	public:
+		uint32_t isProfanity;
+
+		void serialize(byte_buffer* buffer) override
+		{
+			buffer->write_uint32(this->isProfanity);
+		}
+
+		void deserialize(byte_buffer* buffer) override
+		{
+			buffer->read_uint32(&this->isProfanity);
 		}
 	};
 
