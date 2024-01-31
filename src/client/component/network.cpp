@@ -4,9 +4,11 @@
 #include "network.hpp"
 
 #include "game/game.hpp"
+#include "game/utils/fragment_handler.hpp"
 
 #include "console/console.hpp"
 #include "dvars.hpp"
+#include "scheduler.hpp"
 
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
@@ -303,6 +305,8 @@ namespace network
 	public:
 		void post_unpack() override
 		{
+			scheduler::loop(game::fragment_handler::clean, scheduler::async, 5s);
+
 			// redirect dw packet sends to our stub
 			utils::hook::jump(0xD942C0_b, dw_send_to_stub);
 

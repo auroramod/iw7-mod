@@ -1,6 +1,5 @@
 #include <std_include.hpp>
-#include "../services.hpp"
-#include "bdStorage.hpp"
+#include "../dw_include.hpp"
 
 #include "../../../component/profile_infos.hpp"
 
@@ -36,14 +35,14 @@ namespace demonware
 
 		for (auto& info : profile_infos)
 		{
-			auto result = new bdPublicProfileInfo;
+			auto result = std::make_unique<bdPublicProfileInfo>();
 			result->m_entityID = info.first;
 			result->m_memberplayer_card = std::move(info.second.m_memberplayer_card);
 
-			reply->add(result);
+			reply.add(result);
 		}
 
-		reply->send();
+		reply.send();
 	}
 
 	void bdProfiles::setPublicInfo(service_server* server, byte_buffer* buffer) const
@@ -53,48 +52,48 @@ namespace demonware
 		profile_infos::update_profile_info(info);
 
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdProfiles::getPrivateInfo(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdProfiles::setPrivateInfo(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdProfiles::deleteProfile(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdProfiles::setPrivateInfoByUserID(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdProfiles::getPrivateInfoByUserID(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdProfiles::setPublicInfoByUserID(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 }

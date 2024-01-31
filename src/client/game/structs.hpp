@@ -1,19 +1,11 @@
 #pragma once
 #include "types/database.hpp"
-#include "types/ddl.hpp"
 #include "types/demonware.hpp"
-#include "types/party.hpp"
-#include "types/pmem.hpp"
-#include "types/sv.hpp"
 
 namespace game
 {
 	using namespace database;
-	using namespace ddl;
 	using namespace demonware;
-	using namespace party;
-	using namespace pmem;
-	using namespace sv;
 
 	struct XUID
 	{
@@ -822,6 +814,64 @@ namespace game
 		int time;
 	};
 
+	namespace ddl
+	{
+		enum DDLType
+		{
+			DDL_INVALID_TYPE = 0xFFFFFFFF,
+			DDL_BYTE_TYPE = 0x0,
+			DDL_SHORT_TYPE = 0x1,
+			DDL_UINT_TYPE = 0x2,
+			DDL_INT_TYPE = 0x3,
+			DDL_UINT64_TYPE = 0x4,
+			DDL_FLOAT_TYPE = 0x5,
+			DDL_FIXEDPOINT_TYPE = 0x6,
+			DDL_STRING_TYPE = 0x7,
+			DDL_STRUCT_TYPE = 0x8,
+			DDL_ENUM_TYPE = 0x9,
+		};
+
+		union DDLValue
+		{
+			int intValue;
+			unsigned int uintValue;
+			unsigned __int64 uint64Value;
+			float floatValue;
+			float fixedPointValue;
+			const char* stringPtr;
+		};
+
+		struct DDLMember
+		{
+			const char* name;
+			int index;
+			int bitSize;
+			int limitSize;
+			int offset;
+			int type;
+			int externalIndex;
+			unsigned int rangeLimit;
+			bool isArray;
+			int arraySize;
+			int enumIndex;
+		};
+
+		struct DDLState
+		{
+			bool isValid;
+			int offset;
+			int arrayIndex;
+			DDLMember* member;
+			//const DDLDef* ddlDef;
+		};
+
+		struct DDLContext
+		{
+
+		};
+	}
+	using namespace ddl;
+
 	namespace session
 	{
 		struct SessionStaticData
@@ -836,19 +886,37 @@ namespace game
 			bool voiceRegistered;
 			unsigned __int64 xuid;
 			int natType;
-			game::netadr_s addr;
+			netadr_s addr;
 			int usrVoiceConnectivityBits;
 			int nextConnectivityTestTime[1];
 			bool muted;
 			bool privateSlot;
 		};
 
+		struct RegisteredUser
+		{
+			bool active;
+			unsigned __int64 xuid;
+			bool privateSlot;
+		};
+
 		struct SessionDynamicData
 		{
 			bool sessionHandle;
-			char __pad0[79];
-			ClientInfo users[12];
-			char __pad1[80];
+			char __pad0[47];
+			bool keysGenerated;
+			bool sessionStartCalled;
+			unsigned __int64 sessionNonce;
+			int privateSlots;
+			int publicSlots;
+			int flags;
+			bool qosListenEnabled;
+			ClientInfo users[18];
+			int localVoiceConnectivityBits;
+			int sessionCreateController;
+			int sessionDeleteTime;
+			bool allowJoining;
+			RegisteredUser internalRegisteredUsers[18];
 		};
 
 		struct SessionData
@@ -857,7 +925,127 @@ namespace game
 			SessionDynamicData dyn;
 		};
 
+		assert_sizeof(SessionData, 1552);
 		assert_offsetof(SessionData, dyn.users, 96);
+		assert_offsetof(SessionData, dyn.internalRegisteredUsers, 1120);
 	}
 	using namespace session;
+
+	namespace party
+	{
+		enum PartyPreloadMapStage : std::uint32_t
+		{
+			PRELOAD_MAP_IDLE = 0x0,
+			PRELOAD_MAP_INITIATED = 0x1,
+			PRELOAD_MAP_STARTED = 0x2,
+			PRELOAD_MAP_COUNT = 0x3,
+		};
+
+		struct PartyData
+		{
+			SessionData* session;
+			char __pad0[11436];
+			PartyPreloadMapStage preloadingMapStage;
+			char __pad1[101];
+			bool m_gameStartSkipCountdown;
+			char __pad2[110];
+			int lobbyFlags;
+			bool gameStartRequested;
+		};
+		static_assert(offsetof(PartyData, preloadingMapStage) == 11444);
+		static_assert(offsetof(PartyData, m_gameStartSkipCountdown) == 11549);
+		static_assert(offsetof(PartyData, lobbyFlags) == 11660);
+		static_assert(offsetof(PartyData, gameStartRequested) == 11664);
+	}
+	using namespace party;
+
+	namespace sv
+	{
+		struct SvServerInitSettings
+		{
+			char mapName[64];
+			char gameType[64];
+			char serverHostName[64];
+			bool hardcoreMode;
+			unsigned int maxClientCount;
+			unsigned int maxAgentCount;
+			bool isMapPreloaded;
+			bool isSaveGame;
+			bool isRestart;
+			bool isFrontEnd;
+			char __pad0[2];
+			bool serverThreadStartup;
+		}; //static_assert(sizeof(SvServerInitSettings) == 212);
+		static_assert(offsetof(SvServerInitSettings, maxClientCount) == 196);
+		static_assert(offsetof(SvServerInitSettings, isMapPreloaded) == 204);
+		static_assert(offsetof(SvServerInitSettings, isFrontEnd) == 207);
+		static_assert(offsetof(SvServerInitSettings, serverThreadStartup) == 210);
+	}
+	using namespace sv;
+
+	namespace pmem
+	{
+		enum PMem_Stack : __int32
+		{
+			PMEM_STACK_GAME = 0x0,
+			PMEM_STACK_RENDER_TARGETS = 0x1,
+			PMEM_STACK_MEM_VIRTUAL = 0x2,
+			PMEM_STACK_MEMCARD_LARGE_BUFFER = 0x3,
+			PMEM_STACK_SOUND = 0x4,
+			PMEM_STACK_STASHED_MEMORY = 0x5,
+			PMEM_STACK_CINEMATIC = 0x6,
+			PMEM_STACK_COUNT = 0x7,
+		};
+
+		enum PMem_Source
+		{
+			PMEM_SOURCE_EXTERNAL = 0x0,
+			PMEM_SOURCE_SCRIPT = 0x1,
+		};
+
+		enum PMem_Direction : __int32
+		{
+			PHYS_ALLOC_LOW = 0x0,
+			PHYS_ALLOC_HIGH = 0x1,
+			PHYS_ALLOC_COUNT = 0x2,
+		};
+
+		enum Mem_PageID
+		{
+		};
+
+		struct Mem_PageRange
+		{
+			Mem_PageID firstPageID;
+			Mem_PageID lastPageID;
+		};
+
+		struct PhysicalMemoryAllocation
+		{
+			const char* name;
+			char* prev_buffer;
+			char* next_buffer;
+			unsigned __int64 pos;
+			Mem_PageRange pageRange;
+		};
+
+		struct PhysicalMemoryPrim
+		{
+			const char* name;
+			unsigned int allocListCount;
+			char __pad0[4];
+			unsigned __int8* buf;
+			unsigned __int64 unk_pos;
+			int unk1;
+			char __pad2[4];
+			unsigned __int64 pos;
+			PhysicalMemoryAllocation allocList[32];
+		};
+
+		struct PhysicalMemory
+		{
+			PhysicalMemoryPrim prim[2];
+		};
+	}
+	using namespace pmem;
 }

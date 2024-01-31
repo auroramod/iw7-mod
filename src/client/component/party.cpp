@@ -6,7 +6,6 @@
 #include "steam/steam.hpp"
 
 #include "game/game.hpp"
-#include "game/fragment_handler.hpp"
 
 #include "command.hpp"
 #include "console/console.hpp"

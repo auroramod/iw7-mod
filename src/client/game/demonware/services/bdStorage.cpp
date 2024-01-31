@@ -1,15 +1,11 @@
 #include <std_include.hpp>
 #include "../dw_include.hpp"
 
-#include <component/console/console.hpp>
-
 #include <utils/nt.hpp>
 #include <utils/io.hpp>
 #include <utils/cryptography.hpp>
 
 #include "game/game.hpp"
-
-#define DW_DEBUG true
 
 namespace demonware
 {
@@ -18,7 +14,7 @@ namespace demonware
 		this->register_task(20, &bdStorage::listAllPublisherFiles);
 		this->register_task(21, &bdStorage::getPublisherFile);
 		this->register_task(24, &bdStorage::uploadAndValidateFiles);
-		this->register_task(18, &bdStorage::uploadFiles); // used for saving emblems (at least)
+		this->register_task(18, &bdStorage::uploadFiles);
 		this->register_task(16, &bdStorage::getFiles);
 		this->register_task(12, &bdStorage::getFile);
 
@@ -63,7 +59,7 @@ namespace demonware
 		}
 
 #ifdef DW_DEBUG
-		console::error("[DW]: [bdStorage]: missing publisher file: %s\n", name.data());
+		printf("[DW]: [bdStorage]: missing publisher file: %s\n", name.data());
 #endif
 
 		return false;
@@ -82,7 +78,7 @@ namespace demonware
 		buffer->read_string(&filename);
 
 #ifdef DW_DEBUG
-		console::debug("[DW]: [bdStorage]: list publisher files: %s\n", filename.data());
+		printf("[DW]: [bdStorage]: list publisher files: %s\n", filename.data());
 #endif
 
 		auto reply = server->create_reply(this->task_id());
@@ -113,7 +109,7 @@ namespace demonware
 		buffer->read_string(&filename);
 
 #ifdef DW_DEBUG
-		console::debug("[DW]: [bdStorage]: loading publisher file: %s\n", filename.data());
+		printf("[DW]: [bdStorage]: loading publisher file: %s\n", filename.data());
 #endif
 
 		std::string data;
@@ -121,7 +117,7 @@ namespace demonware
 		if (this->load_publisher_resource(filename, data))
 		{
 #ifdef DW_DEBUG
-			console::debug("[DW]: [bdStorage]: sending publisher file: %s, size: %lld\n", filename.data(), data.size());
+			printf("[DW]: [bdStorage]: sending publisher file: %s, size: %lld\n", filename.data(), data.size());
 #endif
 
 			auto reply = server->create_reply(this->task_id());
@@ -182,10 +178,10 @@ namespace demonware
 			console::debug("[DW]: [bdStorage]: set user file: %s\n", filename.data());
 #endif
 
-			reply->add(info);
+			reply.add(info);
 		}
 
-		reply->send();
+		reply.send();
 	}
 
 	void bdStorage::uploadFiles(service_server* server, byte_buffer* buffer) const
@@ -215,7 +211,7 @@ namespace demonware
 			const auto path = get_user_file_path(filename);
 			utils::io::write_file(path, data);
 
-			const auto info = new bdContextUserStorageFileInfo;
+			auto info = std::make_unique<bdContextUserStorageFileInfo>();
 			info->modifed_time = static_cast<uint32_t>(time(nullptr));
 			info->create_time = info->modifed_time;
 			info->priv = priv;
@@ -224,7 +220,7 @@ namespace demonware
 			info->filename = filename;
 
 #ifdef DW_DEBUG
-			console::debug("[DW]: [bdStorage]: set user file: %s\n", filename.data());
+			printf("[DW]: [bdStorage]: set user file: %s\n", filename.data());
 #endif
 
 			reply.add(info);
@@ -236,26 +232,26 @@ namespace demonware
 	void bdStorage::getFiles(service_server* server, byte_buffer* buffer) const
 	{
 		std::string platform;
-		uint32_t numunk;
-		uint32_t numfiles;
+		uint32_t num_users;
+		uint32_t num_files;
 		uint64_t user_id = 0;
 		std::string game;
 
 		buffer->read_string(&platform);
-		buffer->read_uint32(&numunk);
+		buffer->read_uint32(&num_users);
 
-		for (uint32_t i = 0; i < numunk; i++)
+		for (uint32_t i = 0; i < num_users; i++)
 		{
 			buffer->read_uint64(&user_id);
 			buffer->read_string(&game);
 		}
 
-		buffer->read_uint32(&numfiles);
+		buffer->read_uint32(&num_files);
 
 		auto reply = server->create_reply(this->task_id());
 
 		uint32_t count = 0;
-		for (uint32_t i = 0; i < numfiles; i++)
+		for (uint32_t i = 0; i < num_files; i++)
 		{
 			std::string filename, data;
 			buffer->read_string(&filename);

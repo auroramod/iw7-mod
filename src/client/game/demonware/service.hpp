@@ -5,8 +5,6 @@
 
 #include "servers/service_server.hpp"
 
-#define DW_DEBUG true
-
 namespace demonware
 {
 	class service

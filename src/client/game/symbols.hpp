@@ -163,7 +163,6 @@ namespace game
 	WEAK symbol<int(netadr_s a, netadr_s b)> NET_CompareBaseAdr{ 0xBB4A00 };
 
 	WEAK symbol<PartyData* ()> Party_GetActiveParty{ 0x9CC010 };
-	WEAK symbol<bool(const PartyData* party, const int memberIndex)> Party_IsHost{ 0xD9B470 };
 
 	WEAK symbol<void(const unsigned int controllerIndex, XUID xuid)> PlayercardCache_AddToDownload{ 0xDB72E0 };
 
@@ -183,6 +182,7 @@ namespace game
 	IW7_AddBaseDrawTextCmd(TXT, MC, F, game::R_GetFontHeight(F), X, Y, XS, YS, R, C, CP, CC, game::R_DrawSomething(S), 0, 0, 0, 0)
 
 	WEAK symbol<std::uint64_t(const void* session, const int clientNum)> Session_GetXuid{ 0xC72AB0 };
+	WEAK symbol<bool(const SessionData* session, const int memberIndex)> Session_IsHost{ 0xD9B470 };
 
 	WEAK symbol<int(const char* str, std::uint64_t* xuid)> StringToXUID{ 0xCE6C40 };
 
@@ -239,7 +239,7 @@ namespace game
 	WEAK symbol<int (int clientNum)> SV_ClientMP_GetClientPing{ 0xC507D0 };
 	WEAK symbol<char* (int entNum)> SV_GameMP_GetGuid{ 0xC12410 };
 	WEAK symbol<void()> SV_MainMP_KillLocalServer{ 0xC58DF0 };
-	WEAK symbol<PartyData* ()> SV_MainMP_GetServerLobby{ 0xC58DA0 };
+	WEAK symbol<SessionData* ()> SV_MainMP_GetServerLobby{ 0xC58DA0 };
 	WEAK symbol<void(int clientNum, svscmd_type type, const char* text)> SV_GameSendServerCommand{ 0xC54780 };
 	WEAK symbol<void(client_t* drop, const char* reason, bool tellThem)> SV_DropClient{ 0xC4FBA0 };
 	WEAK symbol<bool()> SV_Loaded{ 0xC114C0 };

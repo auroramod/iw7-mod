@@ -47,7 +47,8 @@ namespace game::fragment_handler
 
 		auto fragment_data = buffer.get_remaining_data();
 
-		if (fragment_index > fragment_count || !fragment_count || fragment_count > MAX_FRAGMENTS)
+		// Check for valid fragment_count and fragment_index
+		if (fragment_count == 0 || fragment_count > MAX_FRAGMENTS || fragment_index >= fragment_count)
 		{
 			return false;
 		}
@@ -55,6 +56,8 @@ namespace game::fragment_handler
 		return global_map.access<bool>([&](address_fragment_map& map)
 		{
 			auto& user_map = map[target];
+
+			// Check if the user_map is full
 			if (!user_map.contains(fragment_id) && user_map.size() > MAX_FRAGMENTS)
 			{
 				return false;
@@ -62,16 +65,19 @@ namespace game::fragment_handler
 
 			auto& packet_queue = user_map[fragment_id];
 
+			// Set fragment_count if not set
 			if (packet_queue.fragment_count == 0)
 			{
 				packet_queue.fragment_count = fragment_count;
 			}
 
+			// Check if fragment_count matches
 			if (packet_queue.fragment_count != fragment_count)
 			{
 				return false;
 			}
 
+			// Ensure fragment_index is within bounds
 			if (packet_queue.fragments.size() + 1 < fragment_count)
 			{
 				packet_queue.fragments[fragment_index] = std::move(fragment_data);
@@ -80,15 +86,16 @@ namespace game::fragment_handler
 
 			final_packet.clear();
 
+			// Reconstruct final_packet
 			for (size_t i = 0; i < fragment_count; ++i)
 			{
 				if (i == fragment_index)
 				{
-					final_packet.append(fragment_data);
+					final_packet.append(fragment_data.data(), fragment_data.size());
 				}
 				else
 				{
-					final_packet.append(packet_queue.fragments.at(i));
+					final_packet.append(packet_queue.fragments[i].data(), packet_queue.fragments[i].size());
 				}
 			}
 

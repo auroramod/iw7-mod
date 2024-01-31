@@ -1,5 +1,4 @@
 #pragma once
-#include "dw_include.hpp"
 
 namespace demonware
 {
