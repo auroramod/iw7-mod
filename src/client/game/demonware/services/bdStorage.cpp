@@ -1,5 +1,5 @@
 #include <std_include.hpp>
-#include "../services.hpp"
+#include "../dw_include.hpp"
 
 #include <utils/nt.hpp>
 #include <utils/io.hpp>
@@ -84,7 +84,7 @@ namespace demonware
 
 		if (this->load_publisher_resource(filename, data))
 		{
-			auto* info = new bdFileInfo;
+			auto info = std::make_unique<bdFileInfo>();
 
 			info->file_id = *reinterpret_cast<const uint64_t*>(utils::cryptography::sha1::compute(filename).data());
 			info->filename = filename;
@@ -95,10 +95,10 @@ namespace demonware
 			info->visibility = false;
 			info->checksum = "f5f1fb4ddd2d85e2ed9a28b3204125ec";
 
-			reply->add(info);
+			reply.add(info);
 		}
 
-		reply->send();
+		reply.send();
 	}
 
 	void bdStorage::getPublisherFile(service_server* server, byte_buffer* buffer)
@@ -120,12 +120,13 @@ namespace demonware
 #endif
 
 			auto reply = server->create_reply(this->task_id());
-			reply->add(new bdFileData(data));
-			reply->send();
+			auto result = std::make_unique<bdFileData>(data);
+			reply.add(result);
+			reply.send();
 		}
 		else
 		{
-			server->create_reply(this->task_id(), game::BD_NO_FILE)->send();
+			server->create_reply(this->task_id(), BD_NO_FILE).send();
 		}
 	}
 
@@ -161,7 +162,7 @@ namespace demonware
 			const auto path = get_user_file_path(filename);
 			utils::io::write_file(path, data);
 
-			auto* info = new bdFile2;
+			auto info = std::make_unique<bdFile2>();
 
 			info->unk1 = 0;
 			info->unk2 = 0;
@@ -176,10 +177,10 @@ namespace demonware
 			printf("[DW]: [bdStorage]: set user file: %s\n", filename.data());
 #endif
 
-			reply->add(info);
+			reply.add(info);
 		}
 
-		reply->send();
+		reply.send();
 	}
 
 	void bdStorage::getFiles(service_server* server, byte_buffer* buffer) const
@@ -218,14 +219,14 @@ namespace demonware
 				continue;
 			}
 
-			auto response = new bdFileQueryResult;
+			auto response = std::make_unique<bdFileQueryResult>();
 			response->user_id = user_id;
 			response->platform = platform;
 			response->filename = filename;
 			response->errorcode = 0;
 			response->filedata = data;
 
-			reply->add(response);
+			reply.add(response);
 			++count;
 
 #ifdef DW_DEBUG
@@ -233,13 +234,13 @@ namespace demonware
 #endif
 		}
 
-		reply->send();
+		reply.send();
 	}
 
 	void bdStorage::getFile(service_server* server, byte_buffer* buffer) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 }

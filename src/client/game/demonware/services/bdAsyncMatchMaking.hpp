@@ -8,9 +8,9 @@ namespace demonware
 		bdAsyncMatchMaking();
 
 	private:
-		void unk2(service_server* server, byte_buffer* buffer) const;
-		void unk3(service_server* server, byte_buffer* buffer) const;
-		void unk6(service_server* server, byte_buffer* buffer) const;
-		void unk7(service_server* server, byte_buffer* buffer) const;
+		void setPlayerInfo(service_server* server, byte_buffer* buffer) const;
+		void getMatchMakingPlayerToken(service_server* server, byte_buffer* buffer) const;
+		void initMatchMaking(service_server* server, byte_buffer* buffer) const;
+		void startMatchMaking(service_server* server, byte_buffer* buffer) const;
 	};
 }

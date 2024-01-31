@@ -1,8 +1,7 @@
 #include <std_include.hpp>
-#include "lobby_server.hpp"
+#include "../dw_include.hpp"
 
-#include "../services.hpp"
-#include "../keys.hpp"
+#include "lobby_server.hpp"
 
 #include <utils/cryptography.hpp>
 
@@ -36,8 +35,6 @@ namespace demonware
 		this->register_service<bdStorage>();
 		this->register_service<bdTeams>();
 		this->register_service<bdTitleUtilities>();
-		this->register_service<bdUNK63>();
-		this->register_service<bdUNK123>();
 		this->register_service<bdUserGroups>();
 	};
 
@@ -182,7 +179,7 @@ namespace demonware
 			uint8_t task_id;
 			buffer.read_ubyte(&task_id);
 
-			this->create_reply(task_id)->send();
+			this->create_reply(task_id).send();
 		}
 	}
 }

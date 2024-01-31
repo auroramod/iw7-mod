@@ -1,6 +1,5 @@
 #pragma once
 
-#include "bit_buffer.hpp"
 #include "byte_buffer.hpp"
 #include "data_types.hpp"
 
@@ -55,11 +54,6 @@ namespace demonware
 	class encrypted_reply final : public typed_reply
 	{
 	public:
-		encrypted_reply(const uint8_t type, bit_buffer* bbuffer) : typed_reply(type)
-		{
-			this->buffer_.append(bbuffer->get_buffer());
-		}
-
 		encrypted_reply(const uint8_t type, byte_buffer* bbuffer) : typed_reply(type)
 		{
 			this->buffer_.append(bbuffer->get_buffer());
@@ -71,11 +65,6 @@ namespace demonware
 	class unencrypted_reply final : public typed_reply
 	{
 	public:
-		unencrypted_reply(const uint8_t _type, bit_buffer* bbuffer) : typed_reply(_type)
-		{
-			this->buffer_.append(bbuffer->get_buffer());
-		}
-
 		unencrypted_reply(const uint8_t _type, byte_buffer* bbuffer) : typed_reply(_type)
 		{
 			this->buffer_.append(bbuffer->get_buffer());
@@ -93,7 +82,6 @@ namespace demonware
 		{
 		}
 
-		void send(bit_buffer* buffer, bool encrypted);
 		void send(byte_buffer* buffer, bool encrypted);
 
 		uint8_t type() const { return this->type_; }
@@ -123,10 +111,10 @@ namespace demonware
 
 			if (!this->error_)
 			{
-				buffer.write_uint32(uint32_t(this->objects_.size()));
+				buffer.write_uint32(static_cast<uint32_t>(this->objects_.size()));
 				if (!this->objects_.empty())
 				{
-					buffer.write_uint32(uint32_t(this->objects_.size()));
+					buffer.write_uint32(static_cast<uint32_t>(this->objects_.size()));
 
 					for (auto& object : this->objects_)
 					{
@@ -145,20 +133,17 @@ namespace demonware
 			return transaction_id;
 		}
 
-		void add(const std::shared_ptr<bdTaskResult>& object)
+		template<typename T>
+		void add(std::unique_ptr<T>& object)
 		{
-			this->objects_.push_back(object);
-		}
-
-		void add(bdTaskResult* object)
-		{
-			this->add(std::shared_ptr<bdTaskResult>(object));
+			static_assert(std::is_base_of_v<bdTaskResult, T>);
+			this->objects_.emplace_back(std::move(object));
 		}
 
 	private:
 		uint8_t type_;
 		uint32_t error_;
 		remote_reply reply_;
-		std::vector<std::shared_ptr<bdTaskResult>> objects_;
+		std::vector<std::unique_ptr<bdTaskResult>> objects_;
 	};
 }

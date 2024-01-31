@@ -1,17 +1,17 @@
 #include <std_include.hpp>
-#include "../services.hpp"
+#include "../dw_include.hpp"
 
 namespace demonware
 {
-	bdCMail::bdCMail() : service(29, "bdCMail")
+	bdCMail::bdCMail() : service(29, "bdCMail") // bdMail
 	{
-		this->register_task(10, &bdCMail::unk10);
+		this->register_task(10, &bdCMail::getMailInfo);
 	}
 
-	void bdCMail::unk10(service_server* server, byte_buffer* /*buffer*/) const
+	void bdCMail::getMailInfo(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 }
