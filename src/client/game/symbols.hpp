@@ -23,6 +23,7 @@ namespace game
 	WEAK symbol<void(errorParm code, const char* message, ...)> Com_Error{ 0xB8D830 };
 
 	WEAK symbol<void()> Com_Quit_f{ 0xBADC90 };
+	WEAK symbol<void()> j_Com_Quit_f{ 0xD33D10 };
 
 	WEAK symbol<bool()> Com_FrontEnd_IsInFrontEnd{ 0x5AE6C0 };
 	WEAK symbol<void()> Com_FrontEnd_ExitFrontEnd{ 0x5AE4F0 };
@@ -315,4 +316,6 @@ namespace game
 	WEAK symbol<char*> db_zip_memory{ 0x525B500 };
 
 	WEAK symbol<unsigned __int64> g_streamPos{ 0x5687E30 };
+
+	WEAK symbol<bool> g_quitRequested{ 0x779CD44 };
 }
