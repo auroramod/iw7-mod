@@ -149,6 +149,7 @@ namespace game
 	WEAK symbol<void(int localClientNum)> LUI_CoD_CLoseAll{ 0x6135C0 };
 
 	WEAK symbol<unsigned int(int controllerIndex)> Live_SyncOnlineDataFlags{ 0xDC5CE0 };
+	WEAK symbol<std::uint64_t(int controllerIndex)> Live_GetXuid{ 0xD32A20 };
 
 	WEAK symbol<PartyData* ()> Lobby_GetPartyData{ 0x9C3E20 };
 
@@ -162,6 +163,8 @@ namespace game
 	WEAK symbol<int(netadr_s a, netadr_s b)> NET_CompareBaseAdr{ 0xBB4A00 };
 
 	WEAK symbol<PartyData* ()> Party_GetActiveParty{ 0x9CC010 };
+
+	WEAK symbol<void(const unsigned int controllerIndex, XUID xuid)> PlayercardCache_AddToDownload{ 0xDB72E0 };
 
 	WEAK symbol<GfxFont* (const char* font, int size)> R_RegisterFont{ 0xDFC670 };
 	WEAK symbol<int(const char* text, int maxChars, GfxFont* font)> R_TextWidth{ 0xDFC770 };
@@ -177,6 +180,11 @@ namespace game
 	IW7_AddBaseDrawTextCmd(TXT, MC, F, game::R_GetFontHeight(F), X, Y, XS, YS, R, C,-1, 0, game::R_DrawSomething(S), 0, 0, 0, 0)
 #define R_AddCmdDrawTextWithCursor(TXT, MC, F, UNK, X, Y, XS, YS, R, C, S, CP, CC) \
 	IW7_AddBaseDrawTextCmd(TXT, MC, F, game::R_GetFontHeight(F), X, Y, XS, YS, R, C, CP, CC, game::R_DrawSomething(S), 0, 0, 0, 0)
+
+	WEAK symbol<std::uint64_t(const void* session, const int clientNum)> Session_GetXuid{ 0xC72AB0 };
+	WEAK symbol<bool(const SessionData* session, const int memberIndex)> Session_IsHost{ 0xD9B470 };
+
+	WEAK symbol<int(const char* str, std::uint64_t* xuid)> StringToXUID{ 0xCE6C40 };
 
 	WEAK symbol<char* ()> Sys_Cwd{ 0xCFE5A0 };
 	
@@ -229,8 +237,9 @@ namespace game
 	WEAK symbol<void()> SV_CmdsSP_MapRestart_f{ 0xC12B30 };
 	WEAK symbol<void()> SV_CmdsSP_FastRestart_f{ 0xC12AF0 };
 	WEAK symbol<int (int clientNum)> SV_ClientMP_GetClientPing{ 0xC507D0 };
-	WEAK symbol<char* (int entNum)> SV_GameMP_GetGuid{ 0XC12410 };
+	WEAK symbol<char* (int entNum)> SV_GameMP_GetGuid{ 0xC12410 };
 	WEAK symbol<void()> SV_MainMP_KillLocalServer{ 0xC58DF0 };
+	WEAK symbol<SessionData* ()> SV_MainMP_GetServerLobby{ 0xC58DA0 };
 	WEAK symbol<void(int clientNum, svscmd_type type, const char* text)> SV_GameSendServerCommand{ 0xC54780 };
 	WEAK symbol<void(client_t* drop, const char* reason, bool tellThem)> SV_DropClient{ 0xC4FBA0 };
 	WEAK symbol<bool()> SV_Loaded{ 0xC114C0 };
@@ -258,6 +267,9 @@ namespace game
 	WEAK symbol<cmd_function_s*> cmd_functions{ 0x5D65CC8 };
 	WEAK symbol<const char*> command_whitelist{ 0x14D1B70 };
 
+	WEAK symbol<PLAYERCARD_CACHE_TASK_STAGE> g_DWPlayercardCacheDownloadTaskStage{ 0x80AE414 };
+	WEAK symbol<CachedPlayerProfile> cached_playercards{ 0x80AE420 };
+
 	WEAK symbol<GfxDrawMethod> gfxDrawMethod{ 0x83E86A8 };
 
 	WEAK symbol<int> keyCatchers{ 0x2246C34 };
@@ -272,6 +284,8 @@ namespace game
 
 	WEAK symbol<unsigned int> svs_numclients{ 0x6B229E0 };
 	WEAK symbol<client_t*> svs_clients{ 0x6B22950 };
+
+	WEAK symbol<SessionData> g_serverSession{ 0x6B4E080 };
 
 	WEAK symbol<clientUIActive_t> clientUIActives{ 0x2246C30 };
 
