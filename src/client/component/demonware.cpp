@@ -4,7 +4,10 @@
 #include <utils/hook.hpp>
 #include <utils/thread.hpp>
 
+#include "dvars.hpp"
+
 #include "game/game.hpp"
+#include "game/demonware/dw_include.hpp"
 #include "game/demonware/servers/lobby_server.hpp"
 #include "game/demonware/servers/auth3_server.hpp"
 #include "game/demonware/servers/stun_server.hpp"
@@ -424,6 +427,7 @@ namespace demonware
 			}
 		}
 
+#ifdef DW_DEBUG
 		void bd_logger_stub(int /*type*/, const char* const /*channelName*/, const char* /*fileLoc*/, const char* const /*file*/,
 			const char* const function, const unsigned int /*line*/, const char* const msg, ...)
 		{
@@ -433,22 +437,12 @@ namespace demonware
 			va_start(ap, msg);
 
 			vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, msg, ap);
-#ifdef DW_DEBUG
+
 			printf("%s: %s\n", function, buffer);
-#endif
 
 			va_end(ap);
 		}
-
-		bool return_true()
-		{
-			return true;
-		}
-
-		int get_patching_status_stub()
-		{
-			return 1; // complete
-		}
+#endif
 	}
 
 	class component final : public component_interface
@@ -506,8 +500,8 @@ namespace demonware
 
 		void post_unpack() override
 		{
-#if defined(DEBUG) and defined(DW_DEBUG)
-			utils::hook::jump(0x1285040_b, bd_logger_stub, true);
+#ifdef DW_DEBUG
+			//utils::hook::jump(0x1285040_b, bd_logger_stub, true);
 #endif
 
 			utils::hook::set<uint8_t>(0xB5BB96F_b, 0x0);  // CURLOPT_SSL_VERIFYPEER
@@ -523,21 +517,20 @@ namespace demonware
 			utils::hook::copy_string(0x15E3600_b, "http://%s:%d/auth/");
 
 			// Skip bdAuth::validateResponseSignature
-			utils::hook::call(0x1245440_b, return_true); // bdRSAKey::importKey
-			utils::hook::call(0x1245472_b, return_true); // bdRSAKey::verifySignatureSHA256
+			utils::hook::set(0x129D200_b, 0xC301B0); // bdRSAKey::importKey
+			utils::hook::set(0x129D360_b, 0xC300000001B8); // bdRSAKey::verifySignatureSHA256
 
-			// Skip update check in Live_SyncOnlineDataFlags
-			utils::hook::set(0x52AB60_b, 0xC301B0);
+			// Remove Online_PatchStreamer checks
 			utils::hook::set<uint8_t>(0x52A6D0_b, 0xC3);
-			utils::hook::jump(0x52B800_b, get_patching_status_stub);
+			utils::hook::set(0x52AB60_b, 0xC300000001B8);
+			utils::hook::set(0x52B800_b, 0xC300000001B8);
 
-			// Skip some other thing in Live_SyncOnlineDataFlags
-			utils::hook::set(0x533390_b, 0xC301B0);
+			// Remove Online_Dailylogin check
+			utils::hook::set(0x533390_b, 0xC300000001B8);
 
-			utils::hook::set<uint8_t>(0xDC0C00_b, 0xC3); // Live_CheckForFullDisconnect
-
-			// isProfanity
-			utils::hook::set(0x9E3480_b, 0xC3C033);
+			// Increase Demonware connection timeouts
+			dvars::override::register_int("demonwareConsideredConnectedTime", 300000, 0, 0x7FFFFFFF, 0x0); // 5s -> 5min
+			dvars::override::register_int("dw_addrHandleTimeout", 300000, 0, 0x7FFFFFFF, 0x0); // 5s -> 5min
 		}
 
 		void pre_destroy() override

@@ -8,6 +8,6 @@ namespace demonware
 		bdCMail();
 
 	private:
-		void unk10(service_server* server, byte_buffer* buffer) const;
+		void getMailInfo(service_server* server, byte_buffer* buffer) const;
 	};
 }

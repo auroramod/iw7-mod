@@ -1,28 +1,34 @@
 #include <std_include.hpp>
-#include "../services.hpp"
+#include "../dw_include.hpp"
 
 namespace demonware
 {
 	bdTitleUtilities::bdTitleUtilities() : service(12, "bdTitleUtilities")
 	{
-		this->register_task(1, &bdTitleUtilities::is_profanity);
-		this->register_task(6, &bdTitleUtilities::get_server_time);
+		this->register_task(1, &bdTitleUtilities::isProfanity);
+		this->register_task(6, &bdTitleUtilities::getServerTime);
 	}
 
-	void bdTitleUtilities::is_profanity(service_server* server, byte_buffer* /*buffer*/) const
+	void bdTitleUtilities::isProfanity(service_server* server, byte_buffer* /*buffer*/) const
 	{
-		// TODO:
+		//std::string text;
+		//buffer->read_string(&text)
+
+		auto result = std::make_unique<bdProfanityResult>();
+		result->isProfanity = 0;
+
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.add(result);
+		reply.send();
 	}
 
-	void bdTitleUtilities::get_server_time(service_server* server, byte_buffer* /*buffer*/) const
+	void bdTitleUtilities::getServerTime(service_server* server, byte_buffer* /*buffer*/) const
 	{
-		auto* const time_result = new bdTimeStamp;
+		auto time_result = std::make_unique<bdTimeStamp>();
 		time_result->unix_time = uint32_t(time(nullptr));
 
 		auto reply = server->create_reply(this->task_id());
-		reply->add(time_result);
-		reply->send();
+		reply.add(time_result);
+		reply.send();
 	}
 }
