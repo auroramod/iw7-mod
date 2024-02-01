@@ -193,7 +193,7 @@ namespace profile_infos
 		const auto* svs_clients = *game::svs_clients;
 		for (unsigned int i = 0; i < *game::svs_numclients; ++i)
 		{
-			if (svs_clients[i].header.state >= 1 && !game::SV_BotIsBot(i) && !game::Session_IsHost(game::SV_MainMP_GetServerLobby(), i))
+			if (svs_clients[i].header.state >= 1 && !game::SV_ClientIsBot(i) && !game::Session_IsHost(game::SV_MainMP_GetServerLobby(), i))
 			{
 				send_profile_info(svs_clients[i].remoteAddress, user_id, info);
 			}
@@ -205,7 +205,7 @@ namespace profile_infos
 		const auto* svs_clients = *game::svs_clients;
 		for (unsigned int i = 0; i < *game::svs_numclients; ++i)
 		{
-			if (svs_clients[i].header.state >= 1 && !game::SV_BotIsBot(i) && game::Session_IsHost(game::SV_MainMP_GetServerLobby(), i))
+			if (svs_clients[i].header.state >= 1 && !game::SV_ClientIsBot(i) && game::Session_IsHost(game::SV_MainMP_GetServerLobby(), i))
 			{
 				assert(i == 0);
 
@@ -310,7 +310,7 @@ namespace profile_infos
 			const auto* svs_clients = *game::svs_clients;
 			for (unsigned int i = 0; i < *game::svs_numclients; ++i)
 			{
-				if (svs_clients[i].header.state >= 1 && !game::SV_BotIsBot(i) && !game::Session_IsHost(game::SV_MainMP_GetServerLobby(), i))
+				if (svs_clients[i].header.state >= 1 && !game::SV_ClientIsBot(i) && !game::Session_IsHost(game::SV_MainMP_GetServerLobby(), i))
 				{
 					send_xuid(svs_clients[i].remoteAddress, xuid, client_index);
 				}
@@ -344,6 +344,11 @@ namespace profile_infos
 		{
 			auto result = client_connect_hook.invoke<const char*>(client_num, script_pers_id);
 
+			if (game::SV_ClientIsBot(client_num))
+			{
+				return result;
+			}
+
 			const auto client = game::svs_clients[client_num];
 			std::uint64_t xuid{};
 			game::StringToXUID(client->playerGuid, &xuid);
@@ -367,7 +372,7 @@ namespace profile_infos
 		{
 			session_unregister_remote_player_hook.invoke<void>(session, slot);
 
-			set_client_xuid_to_session(game::SV_MainMP_GetServerLobby(), slot);
+			set_client_xuid_to_session(session, slot);
 		}
 	}
 
