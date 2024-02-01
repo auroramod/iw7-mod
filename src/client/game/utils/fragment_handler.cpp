@@ -99,6 +99,9 @@ namespace game::fragment_handler
 				}
 			}
 
+			// Erase fragment data
+			user_map.erase(fragment_id);
+
 			return true;
 		});
 	}

@@ -12,55 +12,55 @@ namespace demonware
 	bool byte_buffer::read_byte(char* output)
 	{
 		if (!this->read_data_type(BD_BB_SIGNED_CHAR8_TYPE)) return false;
-		return this->read(1, output);
+		return this->read(sizeof(*output), output);
 	}
 
 	bool byte_buffer::read_ubyte(unsigned char* output)
 	{
 		if (!this->read_data_type(BD_BB_UNSIGNED_CHAR8_TYPE)) return false;
-		return this->read(1, output);
+		return this->read(sizeof(*output), output);
 	}
 
 	bool byte_buffer::read_int16(short* output)
 	{
 		if (!this->read_data_type(BD_BB_SIGNED_INTEGER16_TYPE)) return false;
-		return this->read(2, output);
+		return this->read(sizeof(*output), output);
 	}
 
 	bool byte_buffer::read_uint16(unsigned short* output)
 	{
 		if (!this->read_data_type(BD_BB_UNSIGNED_INTEGER16_TYPE)) return false;
-		return this->read(2, output);
+		return this->read(sizeof(*output), output);
 	}
 
 	bool byte_buffer::read_int32(int* output)
 	{
 		if (!this->read_data_type(BD_BB_SIGNED_INTEGER32_TYPE)) return false;
-		return this->read(4, output);
+		return this->read(sizeof(*output), output);
 	}
 
 	bool byte_buffer::read_uint32(unsigned int* output)
 	{
 		if (!this->read_data_type(BD_BB_UNSIGNED_INTEGER32_TYPE)) return false;
-		return this->read(4, output);
+		return this->read(sizeof(*output), output);
 	}
 
 	bool byte_buffer::read_int64(__int64* output)
 	{
 		if (!this->read_data_type(BD_BB_SIGNED_INTEGER64_TYPE)) return false;
-		return this->read(8, output);
+		return this->read(sizeof(*output), output);
 	}
 
 	bool byte_buffer::read_uint64(unsigned __int64* output)
 	{
 		if (!this->read_data_type(BD_BB_UNSIGNED_INTEGER64_TYPE)) return false;
-		return this->read(8, output);
+		return this->read(sizeof(*output), output);
 	}
 
 	bool byte_buffer::read_float(float* output)
 	{
 		if (!this->read_data_type(BD_BB_FLOAT32_TYPE)) return false;
-		return this->read(4, output);
+		return this->read(sizeof(*output), output);
 	}
 
 	bool byte_buffer::read_string(std::string* output)
@@ -133,7 +133,7 @@ namespace demonware
 		if (!this->use_data_types_) return true;
 
 		unsigned char type;
-		this->read(1, &type);
+		this->read(sizeof(type), &type);
 		return type == expected;
 	}
 
@@ -161,67 +161,67 @@ namespace demonware
 	bool byte_buffer::write_bool(bool data)
 	{
 		this->write_data_type(BD_BB_BOOL_TYPE);
-		return this->write(1, &data);
+		return this->write(sizeof(data), &data);
 	}
 
 	bool byte_buffer::write_byte(char data)
 	{
 		this->write_data_type(BD_BB_SIGNED_CHAR8_TYPE);
-		return this->write(1, &data);
+		return this->write(sizeof(data), &data);
 	}
 
 	bool byte_buffer::write_ubyte(unsigned char data)
 	{
 		this->write_data_type(BD_BB_UNSIGNED_CHAR8_TYPE);
-		return this->write(1, &data);
+		return this->write(sizeof(data), &data);
 	}
 
 	bool byte_buffer::write_int16(short data)
 	{
 		this->write_data_type(BD_BB_SIGNED_INTEGER16_TYPE);
-		return this->write(2, &data);
+		return this->write(sizeof(data), &data);
 	}
 
 	bool byte_buffer::write_uint16(unsigned short data)
 	{
 		this->write_data_type(BD_BB_UNSIGNED_INTEGER16_TYPE);
-		return this->write(2, &data);
+		return this->write(sizeof(data), &data);
 	}
 
 	bool byte_buffer::write_int32(int data)
 	{
 		this->write_data_type(BD_BB_SIGNED_INTEGER32_TYPE);
-		return this->write(4, &data);
+		return this->write(sizeof(data), &data);
 	}
 
 	bool byte_buffer::write_uint32(unsigned int data)
 	{
 		this->write_data_type(BD_BB_UNSIGNED_INTEGER32_TYPE);
-		return this->write(4, &data);
+		return this->write(sizeof(data), &data);
 	}
 
 	bool byte_buffer::write_int64(__int64 data)
 	{
 		this->write_data_type(BD_BB_SIGNED_INTEGER64_TYPE);
-		return this->write(8, &data);
+		return this->write(sizeof(data), &data);
 	}
 
 	bool byte_buffer::write_uint64(unsigned __int64 data)
 	{
 		this->write_data_type(BD_BB_UNSIGNED_INTEGER64_TYPE);
-		return this->write(8, &data);
+		return this->write(sizeof(data), &data);
 	}
 
 	bool byte_buffer::write_data_type(unsigned char data)
 	{
 		if (!this->use_data_types_) return true;
-		return this->write(1, &data);
+		return this->write(sizeof(data), &data);
 	}
 
 	bool byte_buffer::write_float(float data)
 	{
 		this->write_data_type(BD_BB_FLOAT32_TYPE);
-		return this->write(4, &data);
+		return this->write(sizeof(data), &data);
 	}
 
 	bool byte_buffer::write_string(const std::string& data)
