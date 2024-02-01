@@ -11,6 +11,7 @@ namespace demonware
 		this->register_task(43, &bdMarketplace::purchaseOnSteamInitialize);
 		this->register_task(44, &bdMarketplace::purchaseOnSteamFinalize);
 		this->register_task(49, &bdMarketplace::getExpiredInventoryItems);
+		this->register_task(58, &bdMarketplace::validateInventoryItemsToken);
 		this->register_task(60, &bdMarketplace::steamProcessDurable);
 		this->register_task(85, &bdMarketplace::steamProcessDurableV2);
 		this->register_task(122, &bdMarketplace::purchaseSkus);
@@ -43,6 +44,13 @@ namespace demonware
 	}
 
 	void bdMarketplace::getExpiredInventoryItems(service_server* server, byte_buffer* /*buffer*/) const
+	{
+		// TODO:
+		auto reply = server->create_reply(this->task_id());
+		reply.send();
+	}
+
+	void bdMarketplace::validateInventoryItemsToken(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());

@@ -133,7 +133,7 @@ namespace demonware
 
 	std::string bdStorage::get_user_file_path(const std::string& name)
 	{
-		return "players2/user/" + name;
+		return "iw7-mod/players2/user/" + name;
 	}
 
 	void bdStorage::uploadAndValidateFiles(service_server* server, byte_buffer* buffer) const
@@ -231,53 +231,62 @@ namespace demonware
 
 	void bdStorage::getFiles(service_server* server, byte_buffer* buffer) const
 	{
-		std::string platform;
-		uint32_t num_users;
-		uint32_t num_files;
-		uint64_t user_id = 0;
-		std::string game;
+		std::string context;
+		buffer->read_string(&context);
 
-		buffer->read_string(&platform);
-		buffer->read_uint32(&num_users);
+		uint32_t count;
+		buffer->read_uint32(&count);
 
-		for (uint32_t i = 0; i < num_users; i++)
+		std::vector<std::pair<uint64_t, std::string>> user_ctxs;
+
+		for (auto i = 0u; i < count; i++)
 		{
+			uint64_t user_id;
+			std::string acc_type;
 			buffer->read_uint64(&user_id);
-			buffer->read_string(&game);
+			buffer->read_string(&acc_type);
+
+			user_ctxs.emplace_back(user_id, acc_type);
 		}
 
-		buffer->read_uint32(&num_files);
+		buffer->read_uint32(&count);
+
+		std::vector<std::string> filenames;
+
+		for (auto i = 0u; i < count; i++)
+		{
+			std::string filename;
+			buffer->read_string(&filename);
+			filenames.push_back(std::move(filename));
+		}
 
 		auto reply = server->create_reply(this->task_id());
-
-		uint32_t count = 0;
-		for (uint32_t i = 0; i < num_files; i++)
+		for (size_t i = 0u; i < filenames.size(); i++)
 		{
-			std::string filename, data;
-			buffer->read_string(&filename);
+			auto entry = std::make_unique<bdFileQueryResult>();
+			entry->user_id = user_ctxs.at(i).first;
+			entry->platform = user_ctxs.at(i).second;
+			entry->filename = filenames.at(i);
+			entry->errorcode = 0;
 
-			const auto path = get_user_file_path(filename);
-			if (!utils::io::read_file(path, &data))
+			auto& name = filenames.at(i);
+			std::string filedata;
+			if (utils::io::read_file(get_user_file_path(name), &filedata))
 			{
+				entry->filedata = filedata;
 #ifdef DW_DEBUG
-				printf("[DW]: [bdStorage]: get user file: missing file: %s, %s, %s\n", game.data(), filename.data(), platform.data());
+				printf("[DW]: [bdStorage]: get user file: %s\n", name.data());
 #endif
-				continue;
+			}
+			else
+			{
+				entry->errorcode = game::BD_NO_FILE;
+#ifdef DW_DEBUG
+				printf("[DW]: [bdStorage]: missing user file: %s\n", name.data());
+#endif
 			}
 
-			auto response = std::make_unique<bdFileQueryResult>();
-			response->user_id = user_id;
-			response->platform = platform;
-			response->filename = filename;
-			response->errorcode = 0;
-			response->filedata = data;
-
-			reply.add(response);
-			++count;
-
-#ifdef DW_DEBUG
-			printf("[DW]: [bdStorage]: get user file: %s, %s, %s\n", game.data(), filename.data(), platform.data());
-#endif
+			reply.add(entry);
 		}
 
 		reply.send();

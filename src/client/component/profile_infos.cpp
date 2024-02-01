@@ -25,9 +25,9 @@ namespace profile_infos
 		std::optional<profile_info> load_profile_info()
 		{
 			std::string data{};
-			if (!utils::io::read_file("players2/user/profile_info", &data))
+			if (!utils::io::read_file("iw7-mod/players2/user/profile_info", &data))
 			{
-				console::error("[load_profile_info] failed to load profile_info for self!\n");
+				//console::error("[load_profile_info] failed to load profile_info for self!\n");
 				return {};
 			}
 
@@ -174,7 +174,7 @@ namespace profile_infos
 		std::string data{};
 		data.reserve(info.m_memberplayer_card.size());
 		data.append(info.m_memberplayer_card);
-		utils::io::write_file("players2/user/profile_info", data);
+		utils::io::write_file("iw7-mod/players2/user/profile_info", data);
 	}
 
 	void send_all_profile_infos(const game::netadr_s& sender_addr)
