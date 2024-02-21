@@ -124,7 +124,9 @@ namespace steam
 
 		::utils::nt::library::load(steam_path / "tier0_s64.dll");
 		::utils::nt::library::load(steam_path / "vstdlib_s64.dll");
+#ifdef LOAD_STEAM_OVERLAY
 		::utils::nt::library::load(steam_path / "gameoverlayrenderer64.dll");
+#endif
 		::utils::nt::library::load(steam_path / "steamclient64.dll");
 
 		steam_proxy::initialize();
