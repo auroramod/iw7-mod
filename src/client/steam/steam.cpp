@@ -91,7 +91,7 @@ namespace steam
 
 			// someone concluded this can cause issues and from my knowledge, removing this doesn't break anything (unless it does?)
 			// if it does and is discovered, please make a issue <3
-#ifdef 0
+			/*
 			for (const auto& callback : callback_list_)
 			{
 				if (callback && callback->get_i_callback() == result.type)
@@ -99,7 +99,7 @@ namespace steam
 					callback->run(result.data, false, 0);
 				}
 			}
-#endif
+			*/
 
 			if (result.data)
 			{
