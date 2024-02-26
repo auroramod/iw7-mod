@@ -70,8 +70,6 @@ namespace server_list
 
 		void refresh_server_list()
 		{
-			console::debug("refresh_server_list\n");
-
 			{
 				std::lock_guard<std::mutex> _(mutex);
 				servers.clear();
@@ -102,7 +100,6 @@ namespace server_list
 				}
 				else
 				{
-					console::info("Connecting to (%d - %zu): %s\n", index, i, servers[i].host_name.data());
 					party::connect(servers[i].address);
 				}
 			}
@@ -289,7 +286,7 @@ namespace server_list
 
 		void lui_open_menu_stub(int controllerIndex, const char* menuName, int isPopup, int isModal, unsigned int isExclusive)
 		{
-			if (!strcmp(menuName, "menu_systemlink_join"))
+			if (!strcmp(menuName, "SystemLinkMenu"))
 			{
 				refresh_server_list();
 			}
