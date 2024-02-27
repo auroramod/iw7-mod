@@ -122,6 +122,11 @@ int main()
 	srand(uint32_t(time(nullptr)));
 	remove_crash_file();
 
+	MessageBoxA(nullptr, "This client is in active development and is not completely finished. It still lacks a few key features for a \"client\"."
+		"\n\nIf you are expecting a client without any issues at all, you'd be wrong. This project mainly expands the modding, supports LAN play, & private matches w/ direct connect."
+		"\n\nWith all this in mind, please don't make duplicate issues and ask for support if you are on a dirty build of the client. We're not ready for support or much yet - please bare with us!"
+		"\n\nIf you'd like to contribute, come help us @ https://github.com/auroramod/iw7-mod :)", "WARNING", MB_ICONEXCLAMATION);
+
 	{
 		component_loader::sort();
 
