@@ -397,6 +397,12 @@ namespace profile_infos
 					const auto user_id = buffer.read<uint64_t>();
 
 					const profile_info info(buffer);
+					if (info.m_memberplayer_card.empty())
+					{
+						// player has no card set
+						return;
+					}
+
 					add_profile_info(client_addr, user_id, info);
 					set_playercardcache_to_download(user_id);
 				}

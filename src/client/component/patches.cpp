@@ -320,6 +320,8 @@ namespace patches
 
 			// disable host migration
 			utils::hook::set<uint8_t>(0xC5A200_b, 0xC3);
+
+			utils::hook::set(0x6D5280_b, 0xC301B0); // NetConstStrings_IsPrecacheAllowed
 		}
 	};
 }
