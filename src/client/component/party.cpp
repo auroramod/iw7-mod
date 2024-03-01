@@ -436,6 +436,25 @@ namespace party
 				game::SV_CmdsMP_RequestMapRestart(0, 0);
 			});
 
+			command::add("reconnect", [](const command::params& argument)
+			{
+				if (!server_connection_state.hostDefined)
+				{
+					console::info("Cannot connect to server.\n");
+					return;
+				}
+
+				if (game::CL_IsGameClientActive(0))
+				{
+					command::execute("disconnect");
+					command::execute("reconnect");
+				}
+				else
+				{
+					connect(server_connection_state.host);
+				}
+			});
+
 			command::add("connect", [](const command::params& argument)
 			{
 				if (argument.size() != 2)
