@@ -70,8 +70,6 @@ namespace server_list
 
 		void refresh_server_list()
 		{
-			console::debug("refresh_server_list\n");
-
 			{
 				std::lock_guard<std::mutex> _(mutex);
 				servers.clear();
@@ -102,7 +100,6 @@ namespace server_list
 				}
 				else
 				{
-					console::info("Connecting to (%d - %zu): %s\n", index, i, servers[i].host_name.data());
 					party::connect(servers[i].address);
 				}
 			}
@@ -126,9 +123,9 @@ namespace server_list
 
 			switch (column)
 			{
-			case 0:
+			case 2:
 				return servers[i].host_name.empty() ? "" : servers[i].host_name.data();
-			case 1:
+			case 3:
 			{
 				const auto& map_name = servers[i].map_name;
 				if (map_name.empty())
@@ -143,29 +140,29 @@ namespace server_list
 				}
 				return map_display_name;
 			}
-			case 2:
+			case 4:
 			{
 				const auto client_count = servers[i].clients - servers[i].bots;
 				return utils::string::va("%d/%d [%d]", client_count, servers[i].max_clients,
 					servers[i].clients);
 			}
-			case 3:
-				return servers[i].game_type.empty() ? "" : servers[i].game_type.data();
-			case 4:
-			{
-				const auto ping = servers[i].ping ? servers[i].ping : 999;
-				if (ping < 75)
-				{
-					return utils::string::va("^2%d", ping);
-				}
-				else if (ping < 150)
-				{
-					return utils::string::va("^3%d", ping);
-				}
-				return utils::string::va("^1%d", ping);
-			}
 			case 5:
-				return servers[i].is_private ? "1" : "0";
+				return servers[i].game_type.empty() ? "" : servers[i].game_type.data();
+			//case 10:
+			//{
+			//	const auto ping = servers[i].ping ? servers[i].ping : 999;
+			//	if (ping < 75)
+			//	{
+			//		return utils::string::va("^2%d", ping);
+			//	}
+			//	else if (ping < 150)
+			//	{
+			//		return utils::string::va("^3%d", ping);
+			//	}
+			//	return utils::string::va("^1%d", ping);
+			//}
+			case 10:
+				return servers[i].in_game ? "0" : "1";
 			//case 6:
 			//	return servers[i].mod_name.empty() ? "" : servers[i].mod_name.data();
 			default:
@@ -289,7 +286,7 @@ namespace server_list
 
 		void lui_open_menu_stub(int controllerIndex, const char* menuName, int isPopup, int isModal, unsigned int isExclusive)
 		{
-			if (!strcmp(menuName, "menu_systemlink_join"))
+			if (!strcmp(menuName, "SystemLinkMenu"))
 			{
 				refresh_server_list();
 			}
