@@ -21,6 +21,7 @@ namespace patches
 		utils::hook::detour live_get_map_index_hook;
 		utils::hook::detour content_do_we_have_content_pack_hook;
 		utils::hook::detour init_network_dvars_hook;
+		utils::hook::detour g_find_config_string_index_hook;
 
 		std::string get_login_username()
 		{
@@ -225,6 +226,12 @@ namespace patches
 		{
 			//init_network_dvars_hook.invoke<void>(dvar);
 		}
+
+		unsigned int g_find_config_string_index_stub(const char* name, unsigned int start, unsigned int max, int create, const char* errormsg)
+		{
+			create = 1;
+			return g_find_config_string_index_hook.invoke<unsigned int>(name, start, max, create, errormsg);
+		}
 	}
 
 	class component final : public component_interface
@@ -232,6 +239,9 @@ namespace patches
 	public:
 		void post_unpack() override
 		{
+			// allows settext method to work with strings that are not localized
+			g_find_config_string_index_hook.create(0x5E9B80_b, g_find_config_string_index_stub);
+
 			// register custom dvars
 			com_register_common_dvars_hook.create(0xBADF30_b, com_register_common_dvars_stub);
 
@@ -310,6 +320,8 @@ namespace patches
 
 			// disable host migration
 			utils::hook::set<uint8_t>(0xC5A200_b, 0xC3);
+
+			utils::hook::set(0x6D5280_b, 0xC301B0); // NetConstStrings_IsPrecacheAllowed
 		}
 	};
 }

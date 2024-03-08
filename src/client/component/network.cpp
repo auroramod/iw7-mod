@@ -4,9 +4,11 @@
 #include "network.hpp"
 
 #include "game/game.hpp"
+#include "game/utils/fragment_handler.hpp"
 
 #include "console/console.hpp"
 #include "dvars.hpp"
+#include "scheduler.hpp"
 
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
@@ -30,16 +32,27 @@ namespace network
 		auto& callbacks = get_callbacks();
 		const auto handler = callbacks.find(cmd_string);
 		const auto offset = cmd_string.size() + 5;
-		if (message->cursize < offset || handler == callbacks.end())
+		if (message->cursize < 0 || static_cast<size_t>(message->cursize) < offset || handler == callbacks.end())
 		{
 			return false;
 		}
 
-		const std::string_view data(message->data + offset, message->cursize - offset);
+		const std::basic_string_view data(message->data + offset, message->cursize - offset);
 
-		//console::debug("[Network] Handling command %s\n", cmd_string.data());
+		console::debug("[network] handling command \"%s\"\n", cmd_string.data());
 
-		handler->second(*address, data);
+		try
+		{
+			handler->second(*address, data);
+		}
+		catch (const std::exception& e)
+		{
+			printf("Error: %s\n", e.what());
+		}
+		//catch (...)
+		//{
+		//}
+
 		return true;
 	}
 
@@ -232,15 +245,14 @@ namespace network
 	void send_data(const game::netadr_s& address, const std::string& data)
 	{
 		auto size = static_cast<int>(data.size());
+		if (size > 1280)
+		{
+			console::error("Packet was too long. Truncated!\n");
+			size = 1280;
+		}
+
 		if (address.type == game::NA_LOOPBACK)
 		{
-			// TODO: Fix this for loopback
-			if (size > 1280)
-			{
-				console::error("Packet was too long. Truncated!\n");
-				size = 1280;
-			}
-
 			game::NET_SendLoopPacket(game::NS_CLIENT1, size, data.data(), &address);
 		}
 		else
@@ -284,6 +296,8 @@ namespace network
 	public:
 		void post_unpack() override
 		{
+			scheduler::loop(game::fragment_handler::clean, scheduler::async, 5s);
+
 			// redirect dw packet sends to our stub
 			utils::hook::jump(0xD942C0_b, dw_send_to_stub);
 

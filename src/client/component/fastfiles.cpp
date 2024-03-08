@@ -223,7 +223,7 @@ namespace fastfiles
 
 				game::XZoneInfo info{};
 				info.name = name;
-				info.allocFlags = game::DB_ZONE_GAME;
+				info.allocFlags = game::DB_ZONE_COMMON;
 				info.allocFlags |= game::DB_ZONE_CUSTOM; // skip extra zones with this flag
 
 				game::DB_LoadXAssets(&info, 1, game::DBSyncMode::DB_LOAD_ASYNC);

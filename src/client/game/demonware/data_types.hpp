@@ -1,7 +1,5 @@
 #pragma once
 
-#include "byte_buffer.hpp"
-
 namespace demonware
 {
 	class bdTaskResult
@@ -35,6 +33,42 @@ namespace demonware
 		void deserialize(byte_buffer* buffer) override
 		{
 			buffer->read_blob(&this->file_data);
+		}
+	};
+
+	class bdStringResult final : public bdTaskResult
+	{
+	public:
+		std::string buffer;
+
+		explicit bdStringResult(std::string data) : buffer(std::move(data))
+		{
+		}
+
+		void serialize(byte_buffer* data) override
+		{
+			data->write_string(buffer);
+		}
+
+		void deserialize(byte_buffer* data) override
+		{
+			data->read_string(&buffer);
+		}
+	};
+
+	class bdProfanityResult final : public bdTaskResult
+	{
+	public:
+		uint32_t isProfanity;
+
+		void serialize(byte_buffer* buffer) override
+		{
+			buffer->write_uint32(this->isProfanity);
+		}
+
+		void deserialize(byte_buffer* buffer) override
+		{
+			buffer->read_uint32(&this->isProfanity);
 		}
 	};
 
@@ -206,6 +240,124 @@ namespace demonware
 			buffer->read_string(&this->platform);
 			buffer->read_string(&this->filename);
 			buffer->read_blob(&this->data);
+		}
+	};
+
+	class bdContextUserStorageFileInfo final : public bdTaskResult
+	{
+	public:
+		std::uint32_t create_time;
+		std::uint32_t modifed_time;
+		bool priv;
+		std::uint64_t owner_id;
+		std::string account_type;
+		std::string filename;
+
+		void serialize(byte_buffer* buffer) override
+		{
+			buffer->write_uint32(this->create_time);
+			buffer->write_uint32(this->modifed_time);
+			buffer->write_bool(this->priv);
+			buffer->write_uint64(this->owner_id);
+			buffer->write_string(this->account_type);
+			buffer->write_string(this->filename);
+		}
+
+		void deserialize(byte_buffer* buffer) override
+		{
+			buffer->read_uint32(&this->create_time);
+			buffer->read_uint32(&this->modifed_time);
+			buffer->read_bool(&this->priv);
+			buffer->read_uint64(&this->owner_id);
+			buffer->read_string(&this->account_type);
+			buffer->read_string(&this->filename);
+		}
+	};
+
+	class bdPublicProfileInfo final : public bdTaskResult
+	{
+	public:
+		std::uint64_t m_entityID;
+		std::string m_memberplayer_card;
+
+		void serialize(byte_buffer* buffer) override
+		{
+			buffer->write_uint64(this->m_entityID);
+			buffer->write_blob(this->m_memberplayer_card);
+		}
+
+		void deserialize(byte_buffer* buffer) override
+		{
+			buffer->read_uint64(&this->m_entityID);
+			buffer->read_blob(&this->m_memberplayer_card);
+		}
+	};
+
+	class bdSessionID final : public bdTaskResult
+	{
+	public:
+		uint64_t session_id;
+
+		void serialize(byte_buffer* buffer) override
+		{
+			buffer->write_blob(LPSTR(&this->session_id), sizeof this->session_id);
+		}
+
+		void deserialize(byte_buffer* buffer) override
+		{
+			int size{};
+			char* data{};
+			buffer->read_blob(&data, &size);
+
+			if (data && uint32_t(size) >= sizeof(this->session_id))
+			{
+				this->session_id = *reinterpret_cast<uint64_t*>(data);
+			}
+		}
+	};
+
+	class bdMatchMakingInfo final : bdTaskResult
+	{
+		bdSessionID m_sessionID;
+		std::string m_hostAddr;
+		uint32_t m_hostAddrSize;
+		uint32_t m_gameType;
+		uint32_t m_maxPlayers;
+		uint32_t m_numPlayers;
+
+		void serialize(byte_buffer* buffer) override
+		{
+			buffer->write_blob(this->m_hostAddr);
+			this->m_sessionID.serialize(buffer);
+			buffer->write_uint32(this->m_gameType);
+			buffer->write_uint32(this->m_maxPlayers);
+			buffer->write_uint32(this->m_numPlayers);
+		}
+
+		void deserialize(byte_buffer* buffer) override
+		{
+			buffer->read_blob(&this->m_hostAddr);
+			buffer->read_uint32(&this->m_gameType);
+			buffer->read_uint32(&this->m_maxPlayers);
+		}
+	};
+
+	class bdPerformanceValue final : public bdTaskResult
+	{
+	public:
+		uint64_t user_id;
+		int64_t performance;
+
+		void serialize(byte_buffer* buffer) override
+		{
+			buffer->write_uint64(this->user_id);
+			buffer->write_int64(this->performance);
+		}
+
+		void deserialize(byte_buffer* buffer) override
+		{
+			buffer->read_uint64(&this->user_id);
+			buffer->read_int64(&this->performance);
 		}
 	};
 }

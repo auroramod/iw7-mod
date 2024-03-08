@@ -1,5 +1,5 @@
 #include <std_include.hpp>
-#include "../services.hpp"
+#include "../dw_include.hpp"
 
 #include "game/game.hpp"
 
@@ -16,19 +16,19 @@ namespace demonware
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdMarketingComms::reportFullMessagesViewed(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
-	void bdMarketingComms::unk6(service_server* server, byte_buffer* buffer) const
+	void bdMarketingComms::unk6(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
-		server->create_reply(this->task_id(), game::BD_NO_FILE)->send();
+		server->create_reply(this->task_id(), BD_NO_FILE).send();
 	}
 }

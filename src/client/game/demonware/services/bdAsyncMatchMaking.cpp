@@ -1,48 +1,32 @@
 #include <std_include.hpp>
-#include "../services.hpp"
+#include "../dw_include.hpp"
 
 namespace demonware
 {
 	bdAsyncMatchMaking::bdAsyncMatchMaking() : service(145, "bdAsyncMatchMaking")
 	{
-		this->register_task(2, &bdAsyncMatchMaking::unk2);
-		this->register_task(3, &bdAsyncMatchMaking::unk3);
-		this->register_task(6, &bdAsyncMatchMaking::unk6);
-		this->register_task(7, &bdAsyncMatchMaking::unk7);
+		this->register_task(2, &bdAsyncMatchMaking::setPlayerInfo);
+		this->register_task(3, &bdAsyncMatchMaking::getMatchMakingPlayerToken);
+		this->register_task(6, &bdAsyncMatchMaking::initMatchMaking);
+		this->register_task(7, &bdAsyncMatchMaking::startMatchMaking);
 	}
 
-	void bdAsyncMatchMaking::unk2(service_server* server, byte_buffer* /*buffer*/) const
+	void bdAsyncMatchMaking::setPlayerInfo(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
-	void bdAsyncMatchMaking::unk3(service_server* server, byte_buffer* /*buffer*/) const
+	void bdAsyncMatchMaking::getMatchMakingPlayerToken(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
-	void bdAsyncMatchMaking::unk6(service_server* server, byte_buffer* /*buffer*/) const
+	void bdAsyncMatchMaking::initMatchMaking(service_server* server, byte_buffer* /*buffer*/) const
 	{
-		class task6Result final : public bdTaskResult
-		{
-		public:
-			std::string jsondata;
-
-			void serialize(byte_buffer* data) override
-			{
-				data->write_string(jsondata);
-			}
-
-			void deserialize(byte_buffer* data) override
-			{
-				data->read_string(&jsondata);
-			}
-		};
-
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
 
@@ -60,17 +44,16 @@ namespace demonware
 			writer(s_buffer);
 		response_json.Accept(writer);
 
-		auto response = new task6Result;
-		response->jsondata = std::string(s_buffer.GetString(), s_buffer.GetSize());
-		reply->add(response);
+		auto response = std::make_unique<bdStringResult>(std::string(s_buffer.GetString(), s_buffer.GetSize()));
+		reply.add(response);
 
-		reply->send();
+		reply.send();
 	}
 
-	void bdAsyncMatchMaking::unk7(service_server* server, byte_buffer* /*buffer*/) const
+	void bdAsyncMatchMaking::startMatchMaking(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 }

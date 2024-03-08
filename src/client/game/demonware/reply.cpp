@@ -1,7 +1,5 @@
 #include <std_include.hpp>
-#include "keys.hpp"
-#include "reply.hpp"
-#include "servers/service_server.hpp"
+#include "dw_include.hpp"
 
 #include <utils/cryptography.hpp>
 
@@ -63,16 +61,6 @@ namespace demonware
 		response.write(8, hash_data.data());
 
 		return response.get_buffer();
-	}
-
-	void remote_reply::send(bit_buffer* buffer, const bool encrypted)
-	{
-		std::unique_ptr<typed_reply> reply;
-
-		if (encrypted) reply = std::make_unique<encrypted_reply>(this->type_, buffer);
-		else reply = std::make_unique<unencrypted_reply>(this->type_, buffer);
-
-		this->server_->send_reply(reply.get());
 	}
 
 	void remote_reply::send(byte_buffer* buffer, const bool encrypted)

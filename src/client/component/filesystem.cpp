@@ -17,6 +17,7 @@ namespace filesystem
 	namespace
 	{
 		utils::hook::detour fs_startup_hook;
+		utils::hook::detour fs_build_os_path_hook;
 
 		bool initialized = false;
 
@@ -91,6 +92,18 @@ namespace filesystem
 		{
 			static auto current_path = std::filesystem::current_path().string();
 			return current_path.data();
+		}
+
+		void fs_build_os_path_stub(const char* base, const char* game, const char* qpath, char* ospath)
+		{
+			if (!_stricmp(game, "players2"))
+			{
+				const auto path = "iw7-mod/"s + game;
+				fs_build_os_path_hook.invoke<void>(base, path.data(), qpath, ospath);
+				return;
+			}
+
+			fs_build_os_path_hook.invoke<void>(base, game, qpath, ospath);
 		}
 	}
 
@@ -231,6 +244,7 @@ namespace filesystem
 		void post_unpack() override
 		{
 			fs_startup_hook.create(0xCDD800_b, fs_startup_stub);
+			fs_build_os_path_hook.create(0xCDBBF0_b, fs_build_os_path_stub);
 
 			utils::hook::jump(0xCFE5E0_b, sys_default_install_path_stub);
 

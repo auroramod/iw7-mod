@@ -10,10 +10,6 @@
 #include "utils/hook.hpp"
 #include <utils/string.hpp>
 
-// Fonts used in game:
-// fonts/blender_pro_bold.ttf, fonts/blender_pro_book.ttf, fonts/blender_pro_heavy.ttf, fonts/blender_pro_medium.ttf
-// fonts/changelingneo-regular.ttf, fonts/dev.ttf, fonts/fira_mono_bold.ttf, fonts/fira_mono_regular.ttf, fonts/iw6_digital.ttf
-
 namespace branding
 {
 	namespace

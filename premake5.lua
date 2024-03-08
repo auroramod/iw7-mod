@@ -78,6 +78,11 @@ newoption {
 }
 
 newoption {
+	trigger = "steam-overlay",
+	description = "Enable the Steam Overlay."
+}
+
+newoption {
 	trigger = "inject-host-as-lib",
 	description = "Decide whether to load the game as lib or to inject it"
 }
@@ -246,7 +251,11 @@ warnings "Extra"
 characterset "ASCII"
 
 if _OPTIONS["dev-build"] then
-	defines {"DEV_BUILD"}
+	defines "DEV_BUILD"
+end
+
+if _OPTIONS["steam-overlay"] then
+	defines "LOAD_STEAM_OVERLAY"
 end
 
 if os.getenv("CI") then

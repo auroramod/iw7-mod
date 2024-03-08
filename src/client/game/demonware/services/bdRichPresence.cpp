@@ -1,5 +1,5 @@
 #include <std_include.hpp>
-#include "../services.hpp"
+#include "../dw_include.hpp"
 
 namespace demonware
 {
@@ -13,13 +13,13 @@ namespace demonware
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdRichPresence::getInfo(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 }

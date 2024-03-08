@@ -92,11 +92,20 @@ namespace logger
 			console::info("Working directory: %s\n", game::Sys_Cwd());
 		}
 
-		void com_init_stub(void* a1)
+		void com_init_stub(utils::hook::assembler& a)
 		{
-			com_init_pre();
-			utils::hook::invoke<void>(0xB8EF90_b, a1);
-			com_init_post();
+			// arxan doesn't like his registers/stack getting touched
+			a.pushad64();
+			a.call_aligned(com_init_pre);
+			a.popad64();
+
+			a.call(0xB8EF90_b);
+
+			a.pushad64();
+			a.call_aligned(com_init_post);
+			a.popad64();
+
+			a.jmp(0xD4D8DD_b);
 		}
 	}
 
@@ -114,7 +123,7 @@ namespace logger
 			// Com_Printf
 			utils::hook::jump(0x343080_b, print_info);
 
-			utils::hook::call(0xD4D8D8_b, com_init_stub);
+			utils::hook::jump(0xD4D8D8_b, utils::hook::assemble(com_init_stub), false);
 
 			if (!game::environment::is_dedi())
 			{

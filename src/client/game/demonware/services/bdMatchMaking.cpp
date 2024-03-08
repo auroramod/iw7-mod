@@ -1,5 +1,7 @@
 #include <std_include.hpp>
-#include "../services.hpp"
+#include "../dw_include.hpp"
+
+#include "steam/steam.hpp"
 
 namespace demonware
 {
@@ -24,106 +26,118 @@ namespace demonware
 
 	void bdMatchMaking::createSession(service_server* server, byte_buffer* /*buffer*/) const
 	{
-		// TODO:
+		auto id = std::make_unique<bdSessionID>();
+		id->session_id = steam::SteamUser()->GetSteamID().bits;
+
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.add(id);
+		reply.send();
 	}
 
 	void bdMatchMaking::updateSession(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
-	void bdMatchMaking::deleteSession(service_server* server, byte_buffer* /*buffer*/) const
+	void bdMatchMaking::deleteSession(service_server* server, byte_buffer* buffer) const
 	{
-		// TODO:
+		bdSessionID id;
+		id.deserialize(buffer);
+
+		byte_buffer out_data;
+		id.serialize(&out_data);
+
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdMatchMaking::findSessionFromID(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdMatchMaking::findSessions(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdMatchMaking::getPerformanceValues(service_server* server, byte_buffer* /*buffer*/) const
 	{
-		// TODO:
+		auto result = std::make_unique<bdPerformanceValue>();
+		result->user_id = steam::SteamUser()->GetSteamID().bits;
+		result->performance = 10;
+
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.add(result);
+		reply.send();
 	}
 
 	void bdMatchMaking::getSessionInvites(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdMatchMaking::updateSessionPlayers(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdMatchMaking::submitPerformance(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdMatchMaking::notifyJoin(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdMatchMaking::inviteToSession(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdMatchMaking::findSessionsPaged(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdMatchMaking::findSessionsByEntityIDs(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdMatchMaking::findSessionsFromIDs(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 
 	void bdMatchMaking::findSessionsTwoPass(service_server* server, byte_buffer* /*buffer*/) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
-		reply->send();
+		reply.send();
 	}
 }

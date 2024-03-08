@@ -8,7 +8,7 @@ namespace demonware
 		bdContentStreaming();
 
 	private:
-		void unk2(service_server* server, byte_buffer* buffer) const;
-		void unk3(service_server* server, byte_buffer* buffer) const;
+		void listFilesByOwner(service_server* server, byte_buffer* buffer) const;
+		void listAllPublisherFiles(service_server* server, byte_buffer* buffer) const;
 	};
 }

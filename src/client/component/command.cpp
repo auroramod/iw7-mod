@@ -446,7 +446,11 @@ namespace command
 	private:
 		static void add_commands()
 		{
-			add("quit", game::Com_Quit_f);
+			add("quit", []()
+			{
+				*game::g_quitRequested = true;
+			});
+
 			add("crash", []()
 			{
 				*reinterpret_cast<int*>(1) = 0;

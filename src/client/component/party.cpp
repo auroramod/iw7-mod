@@ -10,6 +10,7 @@
 #include "command.hpp"
 #include "console/console.hpp"
 #include "network.hpp"
+#include "profile_infos.hpp"
 #include "scheduler.hpp"
 #include "server_list.hpp"
 
@@ -161,6 +162,8 @@ namespace party
 		void sv_start_map_for_party_stub(const char* map, const char* game_type, int client_count, int agent_count, bool hardcore,
 			bool map_is_preloaded, bool migrate)
 		{
+			profile_infos::xuid::clear_xuids();
+
 			preloaded_map = map_is_preloaded;
 			sv_start_map_for_party_hook.invoke<void>(map, game_type, client_count, agent_count, hardcore, map_is_preloaded, migrate);
 		}
@@ -311,6 +314,9 @@ namespace party
 	{
 		command::execute("luiOpenPopup AcceptingInvite", false);
 
+		profile_infos::xuid::clear_xuids();
+		profile_infos::clear_profile_infos();
+
 		server_connection_state.host = target;
 		server_connection_state.challenge = utils::cryptography::random::get_challenge();
 		server_connection_state.hostDefined = true;
@@ -325,9 +331,9 @@ namespace party
 		game::Com_SetLocalizedErrorMessage(error.data(), "MENU_NOTICE");
 	}
 
-	void reset_server_connection_state()
+  connection_state get_server_connection_state()
 	{
-		server_connection_state = {};
+		return server_connection_state;
 	}
 
 	class component final : public component_interface
@@ -429,6 +435,25 @@ namespace party
 				}
 
 				game::SV_CmdsMP_RequestMapRestart(0, 0);
+			});
+
+			command::add("reconnect", [](const command::params& argument)
+			{
+				if (!server_connection_state.hostDefined)
+				{
+					console::info("Cannot connect to server.\n");
+					return;
+				}
+
+				if (game::CL_IsGameClientActive(0))
+				{
+					command::execute("disconnect");
+					command::execute("reconnect");
+				}
+				else
+				{
+					connect(server_connection_state.host);
+				}
 			});
 
 			command::add("connect", [](const command::params& argument)
@@ -537,8 +562,17 @@ namespace party
 					return;
 				}
 
-				//server_connection_state.motd = info.get("sv_motd");
-				//server_connection_state.max_clients = std::stoi(sv_maxclients_str);
+				server_connection_state.motd = info.get("sv_motd");
+				server_connection_state.max_clients = std::stoi(sv_maxclients_str);
+
+				const auto profile_info = profile_infos::get_profile_info();
+				if (!profile_info.has_value())
+				{
+					console::error("profile_info has no value to send, possible undefined behavior ahead\n");
+				}
+
+				const auto profile_info_value = profile_info.value_or(profile_infos::profile_info{});
+				profile_infos::send_profile_info(target, steam::SteamUser()->GetSteamID().bits, profile_info_value);
 
 				connect_to_party(target, mapname, gametype, sv_maxclients);
 			});

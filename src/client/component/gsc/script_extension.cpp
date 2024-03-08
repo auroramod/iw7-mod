@@ -380,15 +380,15 @@ namespace gsc
 
 	void vm_call_builtin_method_stub(utils::hook::assembler& a)
 	{
-		a.pushad64();
+		//a.pushad64();
 		a.push(rdx);
 		a.push(ecx);
 		a.mov(rdx, rdi); // function id is stored in rdi
 		a.mov(ecx, ebx); // ent ref is stored in ebx
-		a.call_aligned(vm_call_builtin_method_internal);
+		a.call(vm_call_builtin_method_internal);
 		a.pop(rdx);
 		a.pop(ecx);
-		a.popad64();
+		//a.popad64();
 
 		a.jmp(0xC0E8F9_b);
 	}

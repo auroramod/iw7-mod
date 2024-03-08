@@ -89,6 +89,9 @@ namespace steam
 				result_handlers_[result.call]->run(result.data, false, result.call);
 			}
 
+			// someone concluded this can cause issues and from my knowledge, removing this doesn't break anything (unless it does?)
+			// if it does and is discovered, please make a issue <3
+			/*
 			for (const auto& callback : callback_list_)
 			{
 				if (callback && callback->get_i_callback() == result.type)
@@ -96,10 +99,11 @@ namespace steam
 					callback->run(result.data, false, 0);
 				}
 			}
+			*/
 
 			if (result.data)
 			{
-				free(result.data);
+				std::free(result.data);
 			}
 		}
 
@@ -165,11 +169,8 @@ namespace steam
 			return install_path.data();
 		}
 
-		char path[MAX_PATH] = {0};
-		DWORD length = sizeof(path);
-
 		std::string path_str;
-		if (::utils::io::read_file("steam_path.txt", &path_str)) // steam_path.txt in root for directory
+		if (::utils::io::read_file("steam_path.txt", &path_str)) // steam_path.txt in root for directory, manually fixes issues lol
 		{
 			install_path = path_str;
 			return install_path.data();
@@ -177,9 +178,10 @@ namespace steam
 
 		// check if Steam contains information in registry for the install path
 		HKEY reg_key;
-		if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "Software\\WOW6432Node\\Valve\\Steam", 0, KEY_QUERY_VALUE,
-		                  &reg_key) == ERROR_SUCCESS)
+		if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "Software\\WOW6432Node\\Valve\\Steam", 0, KEY_QUERY_VALUE, &reg_key) == ERROR_SUCCESS)
 		{
+			char path[MAX_PATH]{};
+			DWORD length = sizeof(path);
 			RegQueryValueExA(reg_key, "InstallPath", nullptr, nullptr, reinterpret_cast<BYTE*>(path), &length);
 			RegCloseKey(reg_key);
 			install_path = path;
@@ -216,7 +218,6 @@ namespace steam
 			return &c;
 		}
 
-
 		MessageBoxA(0, interfacename, __FUNCTION__, 0);
 		return nullptr;
 	}
@@ -238,7 +239,6 @@ namespace steam
 	void SteamGameServer_Shutdown()
 	{
 	}
-
 
 	friends* SteamFriends()
 	{
