@@ -28,9 +28,9 @@ namespace party
 	void connect(const game::netadr_s& target);
 	void start_map(const std::string& mapname, bool dev = false);
 
-	//void clear_sv_motd();
+	void clear_sv_motd();
 	connection_state get_server_connection_state();
-	//std::optional<discord_information> get_server_discord_info();
+	std::optional<discord_information> get_server_discord_info();
 
 	int get_client_num_by_name(const std::string& name);
 

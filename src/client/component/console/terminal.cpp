@@ -341,14 +341,14 @@ namespace terminal
 	public:
 		component()
 		{
-			if(!game::environment::is_dedi())
+			printf_hook.create(printf, printf_stub);
+
+			if (!game::environment::is_dedi())
 				ShowWindow(GetConsoleWindow(), SW_HIDE);
 		}
 
 		void post_unpack() override
 		{
-			printf_hook.create(printf, printf_stub);
-
 			ShowWindow(GetConsoleWindow(), SW_SHOW);
 			SetConsoleTitle("IW7-Mod: " VERSION);
 

@@ -136,6 +136,14 @@ namespace utils::string
 		*out = '\0';
 	}
 
+	std::string strip(const std::string& string)
+	{
+		std::string new_string;
+		new_string.resize(string.size() + 1, 0);
+		strip(string.data(), new_string.data(), static_cast<int>(new_string.size()));
+		return new_string.data();
+	}
+
 #pragma warning(push)
 #pragma warning(disable: 4100)
 	std::string convert(const std::wstring& wstr)

@@ -31,6 +31,8 @@ namespace game
 	WEAK symbol<void()> Com_FrontEndScene_ShutdownAndDisable{ 0x5AEFB0 };
 	WEAK symbol<void()> Com_FrontEndScene_Shutdown{ 0x5AED00 };
 
+	WEAK symbol<int> s_frontEndScene_state{ 0x4BFF608 };
+
 	WEAK symbol<void(GameModeType)> Com_GameMode_SetDesiredGameMode{ 0x5AFDA0 };
 	WEAK symbol<GameModeType()> Com_GameMode_GetActiveGameMode{ 0x5AFD50 };
 	WEAK symbol<bool(const char* name)> Com_GameMode_SupportsMap{ 0x5AFE10 };
@@ -258,6 +260,7 @@ namespace game
 	WEAK symbol<const char* (const char*)> UI_GetMapDisplayName{ 0xCC6270 };
 	WEAK symbol<const char* (const char*)> UI_GetGameTypeDisplayName{ 0xCC61C0 };
 	WEAK symbol<void(unsigned int localClientNum, const char** args)> UI_RunMenuScript{ 0xCC9710 };
+	WEAK symbol<const char* (const char* string)> UI_SafeTranslateString{ 0xCC9790 };
 
 	WEAK symbol<void* (jmp_buf* Buf, int Value)> longjmp{ 0x12C0758 };
 	WEAK symbol<int(jmp_buf* Buf)> _setjmp{ 0x1423110 };
@@ -265,6 +268,8 @@ namespace game
 	/***************************************************************
 	 * Variables
 	 **************************************************************/
+
+	//WEAK symbol<int> client_actives_something{ 0x2246C51 }; // 0x140995A8B in IW7 idb shows this to be cgameinitialized times the local client number
 
 	WEAK symbol<int> g_script_error_level{ 0x6B16298 };
 	WEAK symbol<jmp_buf> g_script_error{ 0x6B162A0 };
@@ -327,7 +332,7 @@ namespace game
 
 	WEAK symbol<bool> g_quitRequested{ 0x779CD44 };
   
-  WEAK symbol<unsigned int> gameEntityId{ 0x665A124 };
+	WEAK symbol<unsigned int> gameEntityId{ 0x665A124 };
 	WEAK symbol<int> level_time{ 0x3C986D8 };
 
 	namespace hks

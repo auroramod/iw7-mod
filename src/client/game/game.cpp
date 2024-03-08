@@ -85,6 +85,14 @@ namespace game
 		"cp",
 	};
 
+	const char* G_GAME_MODE_STRINGS_FORMATTED[] =
+	{
+		"Multiplayer", // this is really none, but its for discord presence :P
+		"Singleplayer",
+		"Multiplayer",
+		"Zombies",
+	};
+
 	const char* Com_GameMode_GetActiveGameModeStr()
 	{
 		return G_GAME_MODE_STRINGS[game::Com_GameMode_GetActiveGameMode()];

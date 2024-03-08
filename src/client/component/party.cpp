@@ -24,6 +24,32 @@ namespace party
 	namespace
 	{
 		connection_state server_connection_state{};
+		std::optional<discord_information> server_discord_info{};
+
+		/*
+		struct usermap_file
+		{
+			std::string extension;
+			std::string name;
+			bool optional;
+		};
+
+		// snake case these names before release
+		std::vector<usermap_file> usermap_files =
+		{
+			{".ff", "usermap_hash", false},
+			{"_load.ff", "usermap_load_hash", true},
+			{".arena", "usermap_arena_hash", true},
+			{".pak", "usermap_pak_hash", true},
+		};
+
+		std::vector<usermap_file> mod_files =
+		{
+			{".ff", "mod_hash", false},
+			{"_pre_gfx.ff", "mod_pre_gfx_hash", true},
+			{".pak", "mod_pak_hash", true},
+		};
+		*/
 
 		bool preloaded_map = false;
 
@@ -38,8 +64,8 @@ namespace party
 
 		void connect_to_party(const game::netadr_s& target, const std::string& mapname, const std::string& gametype, int sv_maxclients)
 		{
-			if (game::Com_GameMode_GetActiveGameMode() != game::GAME_MODE_MP &&
-				game::Com_GameMode_GetActiveGameMode() != game::GAME_MODE_CP)
+			const auto mode = game::Com_GameMode_GetActiveGameMode();
+			if (mode != game::GAME_MODE_MP && mode != game::GAME_MODE_CP)
 			{
 				return;
 			}
@@ -336,9 +362,14 @@ namespace party
 		game::Com_SetLocalizedErrorMessage(error.data(), "MENU_NOTICE");
 	}
 
-  connection_state get_server_connection_state()
+	connection_state get_server_connection_state()
 	{
 		return server_connection_state;
+	}
+
+	std::optional<discord_information> get_server_discord_info()
+	{
+		return server_discord_info;
 	}
 
 	class component final : public component_interface
@@ -499,6 +530,34 @@ namespace party
 				info.set("playmode", utils::string::va("%i", game::Com_GameMode_GetActiveGameMode()));
 				info.set("sv_running", utils::string::va("%i", get_dvar_bool("sv_running") && !game::Com_FrontEndScene_IsActive()));
 				info.set("dedicated", utils::string::va("%i", get_dvar_bool("dedicated")));
+				info.set("sv_wwwBaseUrl", get_dvar_string("sv_wwwBaseUrl"));
+				info.set("sv_discordImageUrl", get_dvar_string("sv_discordImageUrl"));
+				info.set("sv_discordImageText", get_dvar_string("sv_discordImageText"));
+
+				/*
+				if (!fastfiles::is_stock_map(mapname))
+				{
+					for (const auto& file : usermap_files)
+					{
+						const auto path = get_usermap_file_path(mapname, file.extension);
+						const auto hash = get_file_hash(path);
+						info.set(file.name, hash);
+					}
+				}
+
+				const auto fs_game = get_dvar_string("fs_game");
+				info.set("fs_game", fs_game);
+
+				if (!fs_game.empty())
+				{
+					for (const auto& file : mod_files)
+					{
+						const auto hash = get_file_hash(utils::string::va("%s/mod%s", 
+							fs_game.data(), file.extension.data()));
+						info.set(file.name, hash);
+					}
+				}
+				*/
 
 				network::send(target, "infoResponse", info.build(), '\n');
 			});
@@ -515,6 +574,13 @@ namespace party
 
 				if (server_connection_state.host != target)
 				{
+					return;
+				}
+
+				const auto protocol = info.get("protocol");
+				if (std::atoi(protocol.data()) != PROTOCOL)
+				{
+					info_response_error("Connection failed: Invalid protocol.");
 					return;
 				}
 
@@ -567,6 +633,14 @@ namespace party
 					return;
 				}
 
+				server_connection_state.base_url = info.get("sv_wwwBaseUrl");
+				/*
+				if (download_files(target, info, false))
+				{
+					return;
+				}
+				*/
+
 				server_connection_state.motd = info.get("sv_motd");
 				server_connection_state.max_clients = std::stoi(sv_maxclients_str);
 
@@ -578,6 +652,14 @@ namespace party
 
 				const auto profile_info_value = profile_info.value_or(profile_infos::profile_info{});
 				profile_infos::send_profile_info(target, steam::SteamUser()->GetSteamID().bits, profile_info_value);
+
+				discord_information discord_info{};
+				discord_info.image = info.get("sv_discordImageUrl");
+				discord_info.image_text = info.get("sv_discordImageText");
+				if (!discord_info.image.empty() || !discord_info.image_text.empty())
+				{
+					server_discord_info.emplace(discord_info);
+				}
 
 				connect_to_party(target, mapname, gametype, sv_maxclients);
 			});

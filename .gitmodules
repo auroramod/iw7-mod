@@ -44,3 +44,6 @@
 [submodule "deps/curl"]
 	path = deps/curl
 	url = https://github.com/curl/curl.git
+[submodule "deps/discord-rpc"]
+	path = deps/discord-rpc
+	url = https://github.com/fedddddd/discord-rpc

@@ -54,6 +54,7 @@ namespace game
 	int SV_Cmd_Argc();
 	const char* SV_Cmd_Argv(int index);
 
+	extern const char* G_GAME_MODE_STRINGS_FORMATTED[];
 	const char* Com_GameMode_GetActiveGameModeStr();
 	const char* Com_GameMode_GetGameModeStr(GameModeType gameMode);
 
