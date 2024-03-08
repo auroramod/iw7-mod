@@ -12,6 +12,7 @@
 #include "network.hpp"
 #include "profile_infos.hpp"
 #include "scheduler.hpp"
+#include "server_list.hpp"
 
 #include <utils/string.hpp>
 #include <utils/info_string.hpp>
@@ -330,7 +331,7 @@ namespace party
 		game::Com_SetLocalizedErrorMessage(error.data(), "MENU_NOTICE");
 	}
 
-	connection_state get_server_connection_state()
+  connection_state get_server_connection_state()
 	{
 		return server_connection_state;
 	}
@@ -504,8 +505,8 @@ namespace party
 
 			network::on("infoResponse", [](const game::netadr_s& target, const std::string_view& data)
 			{
-				const utils::info_string info = data;
-				//server_list::handle_info_response(target, info);
+				const utils::info_string info{ data };
+				server_list::handle_info_response(target, info);
 
 				if (server_connection_state.host != target)
 				{

@@ -89,6 +89,7 @@ namespace scheduler
 		utils::hook::detour r_end_frame_hook;
 		utils::hook::detour g_run_frame_hook;
 		utils::hook::detour main_frame_hook;
+		utils::hook::detour hks_frame_hook;
 
 		void execute(const pipeline type)
 		{
@@ -116,6 +117,16 @@ namespace scheduler
 			});
 
 			return main_frame_hook.invoke<void*>();
+		}
+
+		void hks_frame_stub()
+		{
+			const auto state = *game::hks::lua_state;
+			if (state)
+			{
+				execute(pipeline::lui);
+			}
+			hks_frame_hook.invoke<bool>();
 		}
 	}
 
@@ -188,6 +199,7 @@ namespace scheduler
 			r_end_frame_hook.create(0xE267B0_b, scheduler::r_end_frame_stub);
 			g_run_frame_hook.create(0xB15E20_b, scheduler::server_frame_stub);
 			main_frame_hook.create(0xB8E2D0_b, scheduler::main_frame_stub);
+			hks_frame_hook.create(0x613440_b, scheduler::hks_frame_stub);
 		}
 
 		void pre_destroy() override

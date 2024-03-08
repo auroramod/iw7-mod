@@ -9,6 +9,8 @@
 #include "console/console.hpp"
 #include "scheduler.hpp"
 #include "filesystem.hpp"
+#include "server_list.hpp"
+#include "network.hpp"
 
 #include <utils/json.hpp>
 
@@ -22,6 +24,8 @@ namespace dedicated
 	namespace
 	{
 		utils::hook::detour com_quit_f_hook;
+
+		const game::dvar_t* sv_lanOnly;
 
 		void kill_server()
 		{
@@ -75,6 +79,39 @@ namespace dedicated
 		void gscr_is_using_match_rules_data_stub()
 		{
 			game::Scr_AddInt(0);
+		}
+
+		void send_heartbeat()
+		{
+			if (sv_lanOnly->current.enabled)
+			{
+				return;
+			}
+
+			game::netadr_s target{};
+			if (server_list::get_master_server(target))
+			{
+				network::send(target, "heartbeat", "IW7");
+			}
+		}
+
+		void sys_error_stub(const char* msg, ...)
+		{
+			char buffer[2048]{};
+
+			va_list ap;
+			va_start(ap, msg);
+
+			vsnprintf_s(buffer, _TRUNCATE, msg, ap);
+
+			va_end(ap);
+
+			scheduler::once([]
+			{
+				command::execute("map_rotate");
+			}, scheduler::main, 3s);
+
+			game::Com_Error(game::ERR_DROP, "%s", buffer);
 		}
 
 		void init_dedicated_server()
@@ -189,7 +226,7 @@ namespace dedicated
 			game::Dvar_RegisterBool("dedicated", true, game::DVAR_FLAG_READ, "Dedicated server");
 
 			// Add lanonly mode
-			game::Dvar_RegisterBool("sv_lanOnly", false, game::DVAR_FLAG_NONE, "Don't send heartbeat");
+			sv_lanOnly = game::Dvar_RegisterBool("sv_lanOnly", false, game::DVAR_FLAG_NONE, "Don't send heartbeat");
 
 			// Disable frontend
 			//dvars::override::register_bool("frontEndSceneEnabled", false, game::DVAR_FLAG_READ);
@@ -202,6 +239,9 @@ namespace dedicated
 			dvars::override::register_bool("r_loadForRenderer", false, game::DVAR_FLAG_READ);
 
 			dvars::override::register_bool("intro", false, game::DVAR_FLAG_READ);
+
+			// Stop crashing from sys_errors
+			utils::hook::jump(0xD34180_b, sys_error_stub, true);
 
 			// Is party dedicated
 			utils::hook::jump(0x5DFC10_b, party_is_server_dedicated_stub);
@@ -340,6 +380,12 @@ namespace dedicated
 				game::Cmd_RemoveCommand("disconnect");
 
 				execute_startup_command_queue();
+
+				// Send heartbeat to dpmaster
+				scheduler::once(send_heartbeat, scheduler::pipeline::server);
+				scheduler::loop(send_heartbeat, scheduler::pipeline::server, 10min);
+				command::add("heartbeat", send_heartbeat);
+
 			}, scheduler::pipeline::main, 1s);
 
 			// dedicated info

@@ -24,6 +24,8 @@ namespace scripting
 	std::unordered_map<std::string, std::vector<std::pair<std::string, const char*>>> script_function_table_sort;
 	std::unordered_map<const char*, std::pair<std::string, std::string>> script_function_table_rev;
 
+	utils::concurrency::container<shared_table_t> shared_table;
+
 	std::string current_file;
 
 	namespace
@@ -47,19 +49,16 @@ namespace scripting
 		void vm_notify_stub(const unsigned int notify_list_owner_id, const game::scr_string_t string_value,
 			game::VariableValue* top)
 		{
-			if (!game::Com_FrontEnd_IsInFrontEnd())
+			const auto* string = game::SL_ConvertToString(string_value);
+			if (string)
 			{
-				const auto* string = game::SL_ConvertToString(string_value);
-				if (string)
-				{
-					event e{};
-					e.name = string;
-					e.entity = notify_list_owner_id;
+				event e {};
+				e.name = string;
+				e.entity = notify_list_owner_id;
 
-					for (auto* value = top; value->type != game::VAR_PRECODEPOS; --value)
-					{
-						e.arguments.emplace_back(*value);
-					}
+				for (auto* value = top; value->type != game::VAR_PRECODEPOS; --value)
+				{
+					e.arguments.emplace_back(*value);
 				}
 			}
 

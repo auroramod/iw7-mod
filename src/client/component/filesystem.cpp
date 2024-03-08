@@ -10,6 +10,7 @@
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
 #include <utils/io.hpp>
+#include <utils/properties.hpp>
 
 namespace filesystem
 {
@@ -51,6 +52,7 @@ namespace filesystem
 
 			initialized = true;
 
+			filesystem::register_path(utils::properties::get_appdata_path() / "cdata"); // CLIENT_DATA_FOLDER
 			filesystem::register_path(L".");
 			filesystem::register_path(L"iw7-mod");
 			filesystem::register_path(L"devraw_shared");
