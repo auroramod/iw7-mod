@@ -230,6 +230,11 @@ namespace network
 			// Rather than try and let the player in, just tell them they are a duplicate player and reject connection
 			game::NET_OutOfBandPrint(game::NS_SERVER, from, "error\nYou are already connected to the server.");
 		}
+
+		void* memmove_stub(void* dst, void* src, size_t size)
+		{
+			return std::memmove(dst, src, std::min(size, 1262ull));
+		}
 	}
 
 	void send(const game::netadr_s& address, const std::string& command, const std::string& data, const char separator)
@@ -360,17 +365,15 @@ namespace network
 
 			// ignore built in "print" oob command and add in our own
 			utils::hook::set<uint8_t>(0x9B0326_b, 0xEB);
-			network::on("print", [](const game::netadr_s&, const std::string_view& data)
-			{
-				const std::string message{ data };
-				console::info(message.data());
-			});
 
 			// initialize query_socket
 			utils::hook::jump(0xD57C7E_b, net_init_stub);
 
 			// use our own protocol version
 			utils::hook::jump(0xCE8290_b, get_protocol_version_stub);
+
+			// patch buffer overflow
+			utils::hook::call(0xBB4ABB_b, memmove_stub); // NET_DeferPacketToClient
 		}
 	};
 }
