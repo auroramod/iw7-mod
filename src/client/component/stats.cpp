@@ -20,6 +20,8 @@ namespace stats
 		utils::hook::detour is_item_unlocked_hook2;
 		utils::hook::detour item_quantity_hook;
 
+		game::dvar_t* cg_loot_count = nullptr;
+
 		bool is_item_unlocked_stub(__int64 a1, int a2, const char* unlock_table, unsigned __int8* value)
 		{
 			if (dvars::cg_unlockall_items && dvars::cg_unlockall_items->current.enabled)
@@ -47,7 +49,10 @@ namespace stats
 			// 30000 crashes
 			if (id != 30000 && dvars::cg_unlockall_loot && dvars::cg_unlockall_loot->current.enabled)
 			{
-				return 1;
+				if (cg_loot_count)
+				{
+					return cg_loot_count->current.integer;
+				}
 			}
 
 			return result;
@@ -357,6 +362,8 @@ namespace stats
 				dvars::cg_unlockall_items = game::Dvar_RegisterBool("cg_unlockall_items", false, game::DVAR_FLAG_SAVED, "Whether items should be locked based on the player's stats or always unlocked.");
 				game::Dvar_RegisterBool("cg_unlockall_classes", false, game::DVAR_FLAG_SAVED, "Whether classes should be locked based on the player's stats or always unlocked."); // TODO: need LUI scripting
 				dvars::cg_unlockall_loot = game::Dvar_RegisterBool("cg_unlockall_loot", false, game::DVAR_FLAG_SAVED, "Whether loot should be locked based on the player's stats or always unlocked.");
+				
+				cg_loot_count = game::Dvar_RegisterInt("cg_loot_count", 1, 1, std::numeric_limits<int>::max(), game::DVAR_FLAG_SAVED, "Amount of loot to give for items");
 			}, scheduler::main);
 
 			// unlockables
