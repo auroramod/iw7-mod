@@ -169,11 +169,11 @@ namespace command
 			{
 				if (args.size() == 1)
 				{
-					const auto current = game::Dvar_ValueToString(dvar, dvar->current);
-					const auto reset = game::Dvar_ValueToString(dvar, dvar->reset);
+					const std::string current = game::Dvar_ValueToString(dvar, dvar->current);
+					const std::string reset = game::Dvar_ValueToString(dvar, dvar->reset);
 
 					console::info("\"%s\" is: \"%s\" default: \"%s\" checksum: %d type: %i\n",
-						dvars::dvar_get_name(dvar).data(), current, reset, dvar->checksum, dvar->type);
+						dvars::dvar_get_name(dvar).data(), current.data(), reset.data(), dvar->checksum, dvar->type);
 
 					const auto dvar_info = dvars::dvar_get_description(dvar);
 
@@ -184,7 +184,7 @@ namespace command
 				}
 				else
 				{
-					char command[0x1000] = { 0 };
+					char command[0x1000]{};
 					game::Dvar_GetCombinedString(command, 1);
 					game::Dvar_SetCommand(args[0], command);
 				}
