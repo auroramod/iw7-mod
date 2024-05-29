@@ -68,7 +68,7 @@ namespace stats
 				{
 				case game::DDL_BYTE_TYPE:
 				case game::DDL_SHORT_TYPE:
-				case game::DDL_UINT_TYPE:
+				case game::DDL_BOOL_TYPE:
 				case game::DDL_INT_TYPE:
 					console::info("%d\n", value.intValue);
 					break;

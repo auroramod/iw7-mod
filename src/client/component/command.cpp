@@ -249,6 +249,7 @@ namespace command
 				else
 				{
 					player.call("giveweapon", { arg });
+					player.call("switchtoweapon", { arg });
 				}
 			}
 			catch (...)

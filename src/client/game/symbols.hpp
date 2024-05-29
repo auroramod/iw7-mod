@@ -232,12 +232,14 @@ namespace game
 	WEAK symbol<const char* (const StringTable* table, const int comparisonColumn, const char* value, const int valueColumn)> StringTable_Lookup{ 0xCE7950 };
 	WEAK symbol<const char* (const StringTable* table, const int row, const int column)> StringTable_GetColumnValueForRow{ 0xCE78E0 };
 
+	WEAK symbol<scr_string_t(const char* str)> SL_FindString{ 0xC035F0 };
 	WEAK symbol<scr_string_t(const char* str, unsigned int user)> SL_GetString{ 0xC037E0 };
 	WEAK symbol<const char*(scr_string_t stringValue)> SL_ConvertToString{ 0xC03300 };
 	WEAK symbol<unsigned int(const char* str)> SL_GetCanonicalString{ 0xBFD340 };
 
 	WEAK symbol<void(const char* string)> SV_Cmd_TokenizeString{ 0xB7DD00 };
 	WEAK symbol<void()> SV_Cmd_EndTokenizedString{ 0xB7DCC0 };
+	WEAK symbol<void(int clientNum, const char* reason, bool kickedForInactivity)> SV_CmdsMP_KickClientNum{ 0xC4CCC0 };
 	WEAK symbol<void(const char* map, const char* gameType, int clientCount, int agentCount, bool hardcore,
 		bool mapIsPreloaded, bool migrate)> SV_CmdsMP_StartMapForParty{ 0xC4D150 };
 	WEAK symbol<void()> SV_CmdsMP_CheckLoadGame{ 0xC4C9E0 };
@@ -251,8 +253,12 @@ namespace game
 	WEAK symbol<void(client_t* drop, const char* reason, bool tellThem)> SV_DropClient{ 0xC4FBA0 };
 	WEAK symbol<bool()> SV_Loaded{ 0xC114C0 };
 	WEAK symbol<bool(const char* name)> SV_MapExists{ 0xCDB620 };
-	WEAK symbol<bool(int clientNum)> SV_BotIsBot{ 0xC3BC90 };
 	WEAK symbol<void* (int num)> SV_GetPlayerstateForClientNum{ 0xC123A0 };
+
+	WEAK symbol<gentity_s* (const char* bot_name, unsigned int head, unsigned int body, unsigned int helmet)> SV_AddBot{ 0xC4E340 };
+	WEAK symbol<bool(int clientNum)> SV_BotIsBot{ 0xC3BC90 };
+	WEAK symbol<const char* ()> SV_BotGetRandomName{ 0xC3B4E0 };
+	WEAK symbol<int(gentity_s* ent)> SV_SpawnTestClient{ 0xC51DE0 };
 
 	WEAK symbol<void(int)> SND_StopSounds{ 0xCA06E0 };
 	WEAK symbol<void(const char*)> SND_SetMusicState{ 0xC9E110 };

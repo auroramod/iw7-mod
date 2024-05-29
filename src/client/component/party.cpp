@@ -310,7 +310,7 @@ namespace party
 		server_connection_state = {};
 	}
 
-	int get_client_count()
+	unsigned int get_client_count()
 	{
 		auto count = 0;
 		const auto* svs_clients = *game::svs_clients;
@@ -325,7 +325,7 @@ namespace party
 		return count;
 	}
 
-	int get_bot_count()
+	unsigned int get_bot_count()
 	{
 		auto count = 0;
 		const auto* svs_clients = *game::svs_clients;
