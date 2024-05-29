@@ -98,6 +98,43 @@ namespace gameplay
 				a.jmp(0xAFB1EC_b);
 			});
 		}
+
+		void cg_calculate_weapon_movement_debug_stub(game::cg_s* glob, float* origin)
+		{
+			// Retrieve the hook value
+			float value = utils::hook::invoke<float>(0x889B60_b, glob, origin);
+
+			// Initialize values
+			float valueX = -6.0f * value;
+			float valueY = 0.0f * value;
+			float valueZ = 0.0f * value;
+
+			// Apply values
+			origin[0] += valueX * glob->viewModelAxis[0][0];
+			origin[1] += valueX * glob->viewModelAxis[0][1];
+			origin[2] += valueX * glob->viewModelAxis[0][2];
+
+			origin[0] += valueY * glob->viewModelAxis[1][0];
+			origin[1] += valueY * glob->viewModelAxis[1][1];
+			origin[2] += valueY * glob->viewModelAxis[1][2];
+
+			origin[0] += valueZ * glob->viewModelAxis[2][0];
+			origin[1] += valueZ * glob->viewModelAxis[2][1];
+			origin[2] += valueZ * glob->viewModelAxis[2][2];
+
+			// Apply dvar values
+			origin[0] += dvars::cg_gun_x->current.value * glob->viewModelAxis[0][0];
+			origin[1] += dvars::cg_gun_x->current.value * glob->viewModelAxis[0][1];
+			origin[2] += dvars::cg_gun_x->current.value * glob->viewModelAxis[0][2];
+
+			origin[0] += dvars::cg_gun_y->current.value * glob->viewModelAxis[1][0];
+			origin[1] += dvars::cg_gun_y->current.value * glob->viewModelAxis[1][1];
+			origin[2] += dvars::cg_gun_y->current.value * glob->viewModelAxis[1][2];
+
+			origin[0] += dvars::cg_gun_z->current.value * glob->viewModelAxis[2][0];
+			origin[1] += dvars::cg_gun_z->current.value * glob->viewModelAxis[2][1];
+			origin[2] += dvars::cg_gun_z->current.value * glob->viewModelAxis[2][2];
+		}
 	}
 
 	class component final : public component_interface
@@ -122,6 +159,12 @@ namespace gameplay
 			dvars::override::register_int("g_speed", 190, 0x80000000, 0x7FFFFFFF, 0xC0 | game::DVAR_FLAG_REPLICATED);
 			utils::hook::nop(0xAFB1DF_b, 13);
 			utils::hook::jump(0xAFB1DF_b, g_speed_stub(), true);
+
+			// Implement gun position dvars
+			dvars::cg_gun_x = game::Dvar_RegisterFloat("cg_gun_x", 0.0f, -800.0f, 800.0f, game::DvarFlags::DVAR_FLAG_NONE, "Forward position of the viewmodel");
+			dvars::cg_gun_y = game::Dvar_RegisterFloat("cg_gun_y", 0.0f, -800.0f, 800.0f, game::DvarFlags::DVAR_FLAG_NONE, "Right position of the viewmodel");
+			dvars::cg_gun_z = game::Dvar_RegisterFloat("cg_gun_z", 0.0f, -800.0f, 800.0f, game::DvarFlags::DVAR_FLAG_NONE, "Up position of the viewmodel");
+			utils::hook::jump(0x8D5930_b, cg_calculate_weapon_movement_debug_stub);
 		}
 	};
 }
