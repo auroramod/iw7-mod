@@ -3,13 +3,18 @@
 #include "loader/component_loader.hpp"
 #include "game/game.hpp"
 
-#include "script_extension.hpp"
 #include "script_error.hpp"
+#include "script_extension.hpp"
+#include "script_loading.hpp"
 
 #include "component/scripting.hpp"
 
+#include "component/console/console.hpp"
+
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
+
+#include "error_info_map.hpp"
 
 using namespace utils::string;
 
@@ -22,6 +27,9 @@ namespace gsc
 		std::uint32_t current_filename = 0;
 
 		std::string unknown_function_error;
+
+		bool force_error_print = false;
+		std::optional<std::string> gsc_error_msg;
 
 		std::array<const char*, 27> var_typename =
 		{
@@ -281,6 +289,128 @@ namespace gsc
 		}
 	}
 
+	namespace
+	{
+		utils::hook::detour scr_error_internal_hook;
+
+		std::optional<std::string> get_opcode_name(const std::uint8_t opcode)
+		{
+			try
+			{
+				const auto index = gsc_ctx->opcode_enum(opcode);
+				return { gsc_ctx->opcode_name(index) };
+			}
+			catch (...)
+			{
+				return {};
+			}
+		}
+
+		void builtin_call_error(const std::string& error)
+		{
+			const auto function_id = get_function_id();
+
+			if (function_id > func_table_count)
+			{
+				console::warn("in call to builtin method \"%s\"%s", gsc_ctx->meth_name(function_id).data(), error.data());
+			}
+			else
+			{
+				console::warn("in call to builtin function \"%s\"%s", gsc_ctx->func_name(function_id).data(), error.data());
+			}
+		}
+
+		void print_callstack()
+		{
+			for (auto frame = game::scr_VmPub->function_frame; frame != game::scr_VmPub->function_frame_start; --frame)
+			{
+				const auto pos = frame == game::scr_VmPub->function_frame ? game::scr_function_stack->pos : frame->fs.pos;
+				const auto function = find_function(frame->fs.pos);
+
+				if (function.has_value())
+				{
+					console::warn("\tat function \"%s\" in file \"%s.gsc\"\n", function.value().first.data(), function.value().second.data());
+				}
+				else
+				{
+					console::warn("\tat unknown location %p\n", pos);
+				}
+			}
+		}
+
+		void vm_error_internal()
+		{
+			const bool dev_script = developer_script ? developer_script->current.enabled : false;
+
+			if (!dev_script && !force_error_print)
+			{
+				return;
+			}
+
+			console::warn("*********** script runtime error *************\n");
+
+			const auto opcode_id = *reinterpret_cast<std::uint8_t*>(0x6B22940_b);
+			const std::string error_str = gsc_error_msg.has_value()
+				? utils::string::va(": %s", gsc_error_msg.value().data())
+				: "";
+
+			if ((opcode_id >= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltin0) && opcode_id <= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltin))
+				|| (opcode_id >= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltinMethod0) && opcode_id <= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltinMethod)))
+			{
+				builtin_call_error(error_str);
+			}
+			else
+			{
+				const auto opcode = get_opcode_name(opcode_id);
+				if (opcode.has_value())
+				{
+					console::warn("while processing instruction %s%s\n", opcode.value().data(), error_str.data());
+				}
+				else
+				{
+					console::warn("while processing instruction 0x%X%s\n", opcode_id, error_str.data());
+				}
+			}
+
+			force_error_print = false;
+			gsc_error_msg = {};
+
+			print_callstack();
+			console::warn("**********************************************\n");
+		}
+
+		void vm_error_stub(__int64 mark_pos)
+		{
+			vm_error_internal();
+
+			utils::hook::invoke<void>(0x510C80_b, mark_pos);
+		}
+
+		void scr_error_internal_stub()
+		{
+			const auto ret_addr = reinterpret_cast<std::uint64_t>(_ReturnAddress());
+			if (!gsc_error_msg.has_value())
+			{
+				const auto it = scr_error_info_map.find(ret_addr - 5);
+
+				if (it != scr_error_info_map.end() && !it->second.empty())
+				{
+					gsc_error_msg = it->second;
+				}
+			}
+
+			scr_error_internal_hook.invoke<void>();
+		}
+	}
+
+	void scr_error(const char* error, const bool force_print)
+	{
+		force_error_print = force_print;
+		gsc_error_msg = error;
+
+		game::Scr_ErrorInternal();
+	}
+
 	std::optional<std::pair<std::string, std::string>> find_function(const char* pos)
 	{
 		for (const auto& file : scripting::script_function_table_sort)
@@ -304,6 +434,10 @@ namespace gsc
 		void post_unpack() override
 		{
 			scr_emit_function_hook.create(0xBFCF90_b, &scr_emit_function_stub);
+
+			scr_error_internal_hook.create(game::Scr_ErrorInternal, scr_error_internal_stub);
+
+			utils::hook::call(0xC0F8C1_b, vm_error_stub); // LargeLocalResetToMark
 
 			utils::hook::call(0xBFCF3A_b, compile_error_stub); // CompileError (LinkFile)
 			utils::hook::call(0xBFCF86_b, compile_error_stub); // ^
