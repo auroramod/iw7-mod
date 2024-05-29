@@ -23,6 +23,8 @@
 
 namespace arxan
 {
+	std::mutex arxan_mutex;
+
 	namespace integrity
 	{
 		const std::vector<std::pair<uint8_t*, size_t>>& get_text_sections()
@@ -657,6 +659,8 @@ namespace arxan
 
 		void post_load() override
 		{
+			const std::lock_guard<std::mutex> lock(arxan_mutex);
+
 			remove_hardware_breakpoints();
 			hide_being_debugged();
 			scheduler::loop(hide_being_debugged, scheduler::pipeline::async);
@@ -674,6 +678,8 @@ namespace arxan
 
 		void post_unpack() override
 		{
+			const std::lock_guard<std::mutex> lock(arxan_mutex);
+
 			remove_hardware_breakpoints();
 			search_and_patch_integrity_checks();
 			restore_debug_functions();
