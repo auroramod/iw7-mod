@@ -193,8 +193,8 @@ namespace discord
 			discord_presence.startTimestamp = saved_time;
 
 			//const auto game_initialized = game::client_actives_something[0] == 1; // 196 * client num = resultc
-			const auto game_initialized = false; // TODO: figure out a way to do this
-			if (!game_initialized || game::Com_FrontEndScene_IsActive())
+			//const auto game_initialized = false; // TODO: figure out a way to do this
+			if (/*!game_initialized || */game::Com_FrontEndScene_IsActive())
 			{
 				update_discord_frontend();
 			}

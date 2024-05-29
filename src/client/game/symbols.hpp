@@ -161,6 +161,8 @@ namespace game
 
 	WEAK symbol<Material* (const char* material)> Material_RegisterHandle{ 0xE11CE0 };
 
+	WEAK symbol<bool(int localClientNum, const char* menuName)> Menu_IsMenuOpenAndVisible{ 0x61CA70 };
+
 	WEAK symbol<void(netadr_s*, sockaddr*)> NetadrToSockadr{ 0xCE6B90 };
 	WEAK symbol<void(netsrc_t, netadr_s*, const char*)> NET_OutOfBandPrint{ 0xBB4EE0 };
 	WEAK symbol<void(netsrc_t sock, int length, const void* data, const netadr_s* to)> NET_SendLoopPacket{ 0xBB50A0 };

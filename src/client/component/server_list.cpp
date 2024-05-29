@@ -235,12 +235,7 @@ namespace server_list
 
 		bool is_server_list_open()
 		{
-#ifdef DEBUG
-			return false;
-#else
-			// TODO
-			return game::Menu_IsMenuOpenAndVisible(0, "menu_systemlink_join");
-#endif
+			return game::Menu_IsMenuOpenAndVisible(0, "SystemLinkMenu");
 		}
 
 		bool is_scrolling_disabled()
