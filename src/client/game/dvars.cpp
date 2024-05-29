@@ -25,6 +25,10 @@ namespace dvars
 
 	game::dvar_t* cg_draw2D = nullptr;
 
+	game::dvar_t* cg_gun_x = nullptr;
+	game::dvar_t* cg_gun_y = nullptr;
+	game::dvar_t* cg_gun_z = nullptr;
+
 	game::dvar_t* cg_unlockall_items = nullptr;
 	game::dvar_t* cg_unlockall_loot = nullptr;
 
