@@ -13,6 +13,10 @@
 #include "breakpoints.hpp"
 #include "illegal_instructions.hpp"
 
+#ifdef DEBUG
+//#define PATCH_BREAKPOINTS
+#endif
+
 #define PRECOMPUTED_INTEGRITY_CHECKS
 #define PRECOMPUTED_BREAKPOINTS
 #define PRECOMPUTED_ILLEGAL_INSTRUCTIONS
@@ -473,6 +477,7 @@ namespace arxan
 				utils::hook::jump(game_address, stub, false);
 			}
 
+#ifdef PATCH_BREAKPOINTS
 #ifdef PRECOMPUTED_BREAKPOINTS
 			void patch_breakpoints_precomputed()
 			{
@@ -632,6 +637,7 @@ namespace arxan
 				handle_handler[handle] = nullptr;
 				return RemoveVectoredExceptionHandler(handle);
 			}
+#endif
 		}
 	}
 	using namespace anti_debug;
@@ -645,14 +651,20 @@ namespace arxan
 			{
 				return set_thread_context_stub;
 			}
-			else if (function == "AddVectoredExceptionHandler")
+
+#ifdef PATCH_BREAKPOINTS
+			if (!utils::nt::is_wine())
 			{
-				return exceptions::add_vectored_exception_handler_stub;
+				if (function == "AddVectoredExceptionHandler")
+				{
+					return exceptions::add_vectored_exception_handler_stub;
+				}
+				else if (function == "RemoveVectoredExceptionHandler")
+				{
+					return exceptions::remove_vectored_exception_handler_stub;
+				}
 			}
-			else if (function == "RemoveVectoredExceptionHandler")
-			{
-				return exceptions::remove_vectored_exception_handler_stub;
-			}
+#endif
 
 			return nullptr;
 		}
@@ -664,7 +676,10 @@ namespace arxan
 			remove_hardware_breakpoints();
 			hide_being_debugged();
 			scheduler::loop(hide_being_debugged, scheduler::pipeline::async);
-			store_debug_functions();
+			if (!utils::nt::is_wine())
+			{
+				store_debug_functions();
+			}
 
 			const utils::nt::library ntdll("ntdll.dll");
 			nt_close_hook.create(ntdll.get_proc<void*>("NtClose"), nt_close_stub);
@@ -682,7 +697,10 @@ namespace arxan
 
 			remove_hardware_breakpoints();
 			search_and_patch_integrity_checks();
-			restore_debug_functions();
+			if (!utils::nt::is_wine())
+			{
+				restore_debug_functions();
+			}
 		}
 
 		component_priority priority() override
