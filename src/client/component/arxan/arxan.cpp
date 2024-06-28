@@ -13,10 +13,6 @@
 #include "breakpoints.hpp"
 #include "illegal_instructions.hpp"
 
-#ifdef DEBUG
-//#define PATCH_BREAKPOINTS
-#endif
-
 #define PRECOMPUTED_INTEGRITY_CHECKS
 #define PRECOMPUTED_BREAKPOINTS
 #define PRECOMPUTED_ILLEGAL_INSTRUCTIONS
@@ -477,7 +473,6 @@ namespace arxan
 				utils::hook::jump(game_address, stub, false);
 			}
 
-#ifdef PATCH_BREAKPOINTS
 #ifdef PRECOMPUTED_BREAKPOINTS
 			void patch_breakpoints_precomputed()
 			{
@@ -637,7 +632,6 @@ namespace arxan
 				handle_handler[handle] = nullptr;
 				return RemoveVectoredExceptionHandler(handle);
 			}
-#endif
 		}
 	}
 	using namespace anti_debug;
@@ -652,7 +646,6 @@ namespace arxan
 				return set_thread_context_stub;
 			}
 
-#ifdef PATCH_BREAKPOINTS
 			if (!utils::nt::is_wine())
 			{
 				if (function == "AddVectoredExceptionHandler")
@@ -664,7 +657,6 @@ namespace arxan
 					return exceptions::remove_vectored_exception_handler_stub;
 				}
 			}
-#endif
 
 			return nullptr;
 		}
