@@ -466,6 +466,57 @@ namespace game
 		netadr_s address;
 	};
 
+	struct GfxFont
+	{
+		const char* fontName;
+		int pixelHeight;
+		TTFDef* ttfDef;
+	};
+
+	enum GfxDrawSceneMethod
+	{
+		GFX_DRAW_SCENE_STANDARD = 0x1,
+	};
+
+	struct GfxDrawMethod
+	{
+		int drawScene;
+		int baseTechType;
+		int emissiveTechType;
+		int forceTechType;
+	};
+
+	struct directory_t
+	{
+		char path[256];
+		char gamedir[256];
+	};
+
+	struct searchpath_s
+	{
+		searchpath_s* next;
+		directory_t* dir;
+		int bLocalized;
+		int playersFolder;
+		int language;
+		int pad;
+	};
+
+	enum PLAYERCARD_CACHE_TASK_STAGE
+	{
+		PLAYERCARD_CACHE_TASK_STAGE_WAITING = 0x0,
+		PLAYERCARD_CACHE_TASK_STAGE_WORKING = 0x1,
+		PLAYERCARD_CACHE_TASK_STAGE_ALL_DONE = 0x2,
+	};
+
+	struct CachedPlayerProfile
+	{
+		bool has_data;
+		XUID userID;
+		char profile[2201];
+		int time;
+	};
+
 	namespace entity
 	{
 		enum connstate_t : std::uint32_t
@@ -582,244 +633,197 @@ namespace game
 	};
 	static_assert(offsetof(cg_s, viewModelAxis) == 324368);
 
-	struct GfxFont
+	namespace scripting
 	{
-		const char* fontName;
-		int pixelHeight;
-		TTFDef* ttfDef;
-	};
+		enum VariableType
+		{
+			VAR_UNDEFINED = 0x0,
+			VAR_BEGIN_REF = 0x1,
+			VAR_POINTER = 0x1,
+			VAR_STRING = 0x2,
+			VAR_ISTRING = 0x3,
+			VAR_VECTOR = 0x4,
+			VAR_END_REF = 0x5,
+			VAR_FLOAT = 0x5,
+			VAR_INTEGER = 0x6,
+			VAR_CODEPOS = 0x7,
+			VAR_PRECODEPOS = 0x8,
+			VAR_FUNCTION = 0x9,
+			VAR_BUILTIN_FUNCTION = 0xA,
+			VAR_BUILTIN_METHOD = 0xB,
+			VAR_STACK = 0xC,
+			VAR_ANIMATION = 0xD,
+			VAR_PRE_ANIMATION = 0xE,
+			VAR_THREAD = 0xF,
+			VAR_NOTIFY_THREAD = 0x10,
+			VAR_TIME_THREAD = 0x11,
+			VAR_CHILD_THREAD = 0x12,
+			VAR_OBJECT = 0x13,
+			VAR_DEAD_ENTITY = 0x14,
+			VAR_ENTITY = 0x15,
+			VAR_ARRAY = 0x16,
+			VAR_DEAD_THREAD = 0x17,
+			VAR_COUNT = 0x18,
+			VAR_FREE = 0x18,
+			VAR_THREAD_LIST = 0x19,
+			VAR_ENDON_LIST = 0x1A,
+			VAR_TOTAL_COUNT = 0x1B,
+		};
 
-	enum GfxDrawSceneMethod
-	{
-		GFX_DRAW_SCENE_STANDARD = 0x1,
-	};
+		struct scr_entref_t
+		{
+			unsigned short entnum;
+			unsigned short classnum;
+		};
 
-	struct GfxDrawMethod
-	{
-		int drawScene;
-		int baseTechType;
-		int emissiveTechType;
-		int forceTechType;
-	};
+		struct VariableStackBuffer
+		{
+			const char* pos;
+			unsigned __int16 size;
+			unsigned __int16 bufLen;
+			unsigned __int16 localId;
+			char time;
+			char buf[1];
+		};
 
-	struct directory_t
-	{
-		char path[256];
-		char gamedir[256];
-	};
+		union VariableUnion
+		{
+			int intValue;
+			unsigned int uintValue;
+			float floatValue;
+			unsigned int stringValue;
+			const float* vectorValue;
+			const char* codePosValue;
+			unsigned int pointerValue;
+			VariableStackBuffer* stackValue;
+			unsigned int entityOffset;
+		};
 
-	struct searchpath_s
-	{
-		searchpath_s* next;
-		directory_t* dir;
-		int bLocalized;
-		int playersFolder;
-		int language;
-		int pad;
-	};
+		struct VariableValue
+		{
+			VariableUnion u;
+			int type;
+		};
 
-	enum VariableType
-	{
-		VAR_UNDEFINED = 0x0,
-		VAR_BEGIN_REF = 0x1,
-		VAR_POINTER = 0x1,
-		VAR_STRING = 0x2,
-		VAR_ISTRING = 0x3,
-		VAR_VECTOR = 0x4,
-		VAR_END_REF = 0x5,
-		VAR_FLOAT = 0x5,
-		VAR_INTEGER = 0x6,
-		VAR_CODEPOS = 0x7,
-		VAR_PRECODEPOS = 0x8,
-		VAR_FUNCTION = 0x9,
-		VAR_BUILTIN_FUNCTION = 0xA,
-		VAR_BUILTIN_METHOD = 0xB,
-		VAR_STACK = 0xC,
-		VAR_ANIMATION = 0xD,
-		VAR_PRE_ANIMATION = 0xE,
-		VAR_THREAD = 0xF,
-		VAR_NOTIFY_THREAD = 0x10,
-		VAR_TIME_THREAD = 0x11,
-		VAR_CHILD_THREAD = 0x12,
-		VAR_OBJECT = 0x13,
-		VAR_DEAD_ENTITY = 0x14,
-		VAR_ENTITY = 0x15,
-		VAR_ARRAY = 0x16,
-		VAR_DEAD_THREAD = 0x17,
-		VAR_COUNT = 0x18,
-		VAR_FREE = 0x18,
-		VAR_THREAD_LIST = 0x19,
-		VAR_ENDON_LIST = 0x1A,
-		VAR_TOTAL_COUNT = 0x1B,
-	};
+		struct function_stack_t
+		{
+			const char* pos;
+			unsigned int localId;
+			unsigned int localVarCount;
+			VariableValue* top;
+			VariableValue* startTop;
+		};
 
-	struct scr_entref_t
-	{
-		unsigned short entnum;
-		unsigned short classnum;
-	};
+		struct function_frame_t
+		{
+			function_stack_t fs;
+			int topType;
+		};
 
-	struct VariableStackBuffer
-	{
-		const char* pos;
-		unsigned __int16 size;
-		unsigned __int16 bufLen;
-		unsigned __int16 localId;
-		char time;
-		char buf[1];
-	};
+		struct scrVmPub_t
+		{
+			unsigned int* localVars;
+			VariableValue* maxstack;
+			int function_count;
+			function_frame_t* function_frame;
+			VariableValue* top;
+			unsigned int inparamcount;
+			unsigned int outparamcount;
+			function_frame_t function_frame_start[32];
+			VariableValue stack[2048];
+		};
 
-	union VariableUnion
-	{
-		int intValue;
-		unsigned int uintValue;
-		float floatValue;
-		unsigned int stringValue;
-		const float* vectorValue;
-		const char* codePosValue;
-		unsigned int pointerValue;
-		VariableStackBuffer* stackValue;
-		unsigned int entityOffset;
-	};
+		struct ObjectVariableChildren
+		{
+			unsigned __int16 firstChild;
+			unsigned __int16 lastChild;
+		};
 
-	struct VariableValue
-	{
-		VariableUnion u;
-		int type;
-	};
+		struct ObjectVariableValue_u_f
+		{
+			unsigned __int16 prev;
+			unsigned __int16 next;
+		};
 
-	struct function_stack_t
-	{
-		const char* pos;
-		unsigned int localId;
-		unsigned int localVarCount;
-		VariableValue* top;
-		VariableValue* startTop;
-	};
+		union ObjectVariableValue_u_o_u
+		{
+			unsigned __int16 size;
+			unsigned __int16 entnum;
+			unsigned __int16 nextEntId;
+			unsigned __int16 self;
+		};
 
-	struct function_frame_t
-	{
-		function_stack_t fs;
-		int topType;
-	};
+		struct	ObjectVariableValue_u_o
+		{
+			unsigned __int16 refCount;
+			ObjectVariableValue_u_o_u u;
+		};
 
-	struct scrVmPub_t
-	{
-		unsigned int* localVars;
-		VariableValue* maxstack;
-		int function_count;
-		function_frame_t* function_frame;
-		VariableValue* top;
-		unsigned int inparamcount;
-		unsigned int outparamcount;
-		function_frame_t function_frame_start[32];
-		VariableValue stack[2048];
-	};
+		union ObjectVariableValue_w
+		{
+			unsigned int type;
+			unsigned int classnum;
+			unsigned int notifyName;
+			unsigned int waitTime;
+			unsigned int parentLocalId;
+		};
 
-	struct ObjectVariableChildren
-	{
-		unsigned __int16 firstChild;
-		unsigned __int16 lastChild;
-	};
+		struct ChildVariableValue_u_f
+		{
+			unsigned __int16 prev;
+			unsigned __int16 next;
+		};
 
-	struct ObjectVariableValue_u_f
-	{
-		unsigned __int16 prev;
-		unsigned __int16 next;
-	};
+		union ChildVariableValue_u
+		{
+			ChildVariableValue_u_f f;
+			VariableUnion u;
+		};
 
-	union ObjectVariableValue_u_o_u
-	{
-		unsigned __int16 size;
-		unsigned __int16 entnum;
-		unsigned __int16 nextEntId;
-		unsigned __int16 self;
-	};
+		struct ChildBucketMatchKeys_keys
+		{
+			unsigned __int16 name_hi;
+			unsigned __int16 parentId;
+		};
 
-	struct	ObjectVariableValue_u_o
-	{
-		unsigned __int16 refCount;
-		ObjectVariableValue_u_o_u u;
-	};
+		union ChildBucketMatchKeys
+		{
+			ChildBucketMatchKeys_keys keys;
+			unsigned int match;
+		};
 
-	union ObjectVariableValue_w
-	{
-		unsigned int type;
-		unsigned int classnum;
-		unsigned int notifyName;
-		unsigned int waitTime;
-		unsigned int parentLocalId;
-	};
+		struct ChildVariableValue
+		{
+			ChildVariableValue_u u;
+			unsigned __int16 next;
+			char type;
+			char name_lo;
+			ChildBucketMatchKeys k;
+			unsigned __int16 nextSibling;
+			unsigned __int16 prevSibling;
+		};
 
-	struct ChildVariableValue_u_f
-	{
-		unsigned __int16 prev;
-		unsigned __int16 next;
-	};
+		union ObjectVariableValue_u
+		{
+			ObjectVariableValue_u_f f;
+			ObjectVariableValue_u_o o;
+		};
 
-	union ChildVariableValue_u
-	{
-		ChildVariableValue_u_f f;
-		VariableUnion u;
-	};
+		struct ObjectVariableValue
+		{
+			ObjectVariableValue_u u;
+			ObjectVariableValue_w w;
+		};
 
-	struct ChildBucketMatchKeys_keys
-	{
-		unsigned __int16 name_hi;
-		unsigned __int16 parentId;
-	};
-
-	union ChildBucketMatchKeys
-	{
-		ChildBucketMatchKeys_keys keys;
-		unsigned int match;
-	};
-
-	struct ChildVariableValue
-	{
-		ChildVariableValue_u u;
-		unsigned __int16 next;
-		char type;
-		char name_lo;
-		ChildBucketMatchKeys k;
-		unsigned __int16 nextSibling;
-		unsigned __int16 prevSibling;
-	};
-
-	union ObjectVariableValue_u
-	{
-		ObjectVariableValue_u_f f;
-		ObjectVariableValue_u_o o;
-	};
-
-	struct ObjectVariableValue
-	{
-		ObjectVariableValue_u u;
-		ObjectVariableValue_w w;
-	};
-
-	struct scrVarGlob_t
-	{
-		ObjectVariableValue objectVariableValue[40960];
-		ObjectVariableChildren objectVariableChildren[40960];
-		unsigned __int16 childVariableBucket[65536];
-		ChildVariableValue childVariableValue[384000];
-	};
-
-	enum PLAYERCARD_CACHE_TASK_STAGE
-	{
-		PLAYERCARD_CACHE_TASK_STAGE_WAITING = 0x0,
-		PLAYERCARD_CACHE_TASK_STAGE_WORKING = 0x1,
-		PLAYERCARD_CACHE_TASK_STAGE_ALL_DONE = 0x2,
-	};
-
-	struct CachedPlayerProfile
-	{
-		bool has_data;
-		XUID userID;
-		char profile[2201];
-		int time;
-	};
+		struct scrVarGlob_t
+		{
+			ObjectVariableValue objectVariableValue[40960];
+			ObjectVariableChildren objectVariableChildren[40960];
+			unsigned __int16 childVariableBucket[65536];
+			ChildVariableValue childVariableValue[384000];
+		};
+	}
+	using namespace scripting;
 
 	namespace ddl
 	{

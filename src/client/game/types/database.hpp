@@ -1,7 +1,7 @@
 #pragma once
 #include <d3d11.h>
 
-namespace game::database
+namespace database
 {
 	typedef float vec_t;
 	typedef vec_t vec2_t[2];
@@ -193,14 +193,14 @@ namespace game::database
 	union FxCombinedUnion
 	{
 		FxEffectDef* fx;
-		ParticleSystemDef* particleSystemDef;
+		ParticleSystemDef* vfx;
 		void* data;
 	};
 
 	enum FxCombinedType : std::uint8_t
 	{
-		FX_COMBINED_DEFAULT,
-		FX_COMBINED_PARTICLE_SYSTEM,
+		FX_COMBINED_FX,
+		FX_COMBINED_VFX,
 	};
 
 	struct FxCombinedDef
@@ -1018,6 +1018,181 @@ namespace game::database
 		char flags;
 	}; assert_sizeof(XModelLodInfo, 0x40);
 
+	enum SurfaceFlags : std::uint32_t
+	{
+		SURFACE_FLAG_NONE = 0x00000000,
+		SURFACE_FLAG_BARK = 0x00080000,
+		SURFACE_FLAG_BRICK = 0x00100000,
+		SURFACE_FLAG_CARPET_SOLID = 0x00180000,
+		SURFACE_FLAG_CLOTH = 0x00200000,
+		SURFACE_FLAG_CONCRETE_DRY = 0x00280000,
+		SURFACE_FLAG_DIRT = 0x00300000,
+		SURFACE_FLAG_FLESH = 0x00380000,
+		SURFACE_FLAG_FOLIAGE_DRY = 0x00400000,
+		SURFACE_FLAG_GLASS_PANE = 0x00480000,
+		SURFACE_FLAG_GRASS_SHORT = 0x00500000,
+		SURFACE_FLAG_GRAVEL = 0x00580000,
+		SURFACE_FLAG_ICE_SOLID = 0x00600000,
+		SURFACE_FLAG_METAL_THICK = 0x00680000,
+		SURFACE_FLAG_METAL_GRATE = 0x00700000,
+		SURFACE_FLAG_MUD = 0x00780000,
+		SURFACE_FLAG_PAPER = 0x00800000,
+		SURFACE_FLAG_PLASTER = 0x00880000,
+		SURFACE_FLAG_ROCK = 0x00900000,
+		SURFACE_FLAG_SAND = 0x00980000,
+		SURFACE_FLAG_SNOW = 0x00A00000,
+		SURFACE_FLAG_WATER = 0x00A80000,
+		SURFACE_FLAG_WOOD_SOLID = 0x00B00000,
+		SURFACE_FLAG_ASPHALT_DRY = 0x00B80000,
+		SURFACE_FLAG_CERAMIC = 0x00C00000,
+		SURFACE_FLAG_PLASTIC = 0x00C80000,
+		SURFACE_FLAG_RUBBER = 0x00D00000,
+		SURFACE_FLAG_FRUIT = 0x00D80000,
+		SURFACE_FLAG_METAL_PAINTED = 0x00E00000,
+		SURFACE_FLAG_RIOTSHIELD = 0x00E80000,
+		SURFACE_FLAG_SLUSH = 0x00F00000,
+		SURFACE_FLAG_ASPHALT_WET = 0x00F80000,
+		SURFACE_FLAG_CARPET_WOOD = 0x01000000,
+		SURFACE_FLAG_CARPET_METAL = 0x01080000,
+		SURFACE_FLAG_CONCRETE_WET = 0x01100000,
+		SURFACE_FLAG_CUSHION = 0x01180000,
+		SURFACE_FLAG_DEFAULT = 0x01200000,
+		SURFACE_FLAG_FOLIAGE_WET = 0x01280000,
+		SURFACE_FLAG_GLASS_BROKEN = 0x01300000,
+		SURFACE_FLAG_GLASS_SOLID = 0x01380000,
+		SURFACE_FLAG_GLASS_VEHICLE = 0x01400000,
+		SURFACE_FLAG_GRASS_TALL = 0x01480000,
+		SURFACE_FLAG_ICE_THIN = 0x01500000,
+		SURFACE_FLAG_METAL_THIN = 0x01580000,
+		SURFACE_FLAG_ROBOT_HEAD = 0x01600000,
+		SURFACE_FLAG_ROBOT_TORSO = 0x01680000,
+		SURFACE_FLAG_ROBOT_LIMB = 0x01700000,
+		SURFACE_FLAG_ROBOT_ARMOR = 0x01780000,
+		SURFACE_FLAG_BIG_ROBOT_HEAD = 0x01800000,
+		SURFACE_FLAG_BIG_ROBOT_LIMB = 0x01880000,
+		SURFACE_FLAG_WATER_KNEE = 0x01900000,
+		SURFACE_FLAG_WATER_WAIST = 0x01980000,
+		SURFACE_FLAG_WOOD_FLOOR = 0x01A00000,
+		SURFACE_FLAG_USER_TERRAIN_1 = 0x01A80000,
+		SURFACE_FLAG_USER_TERRAIN_2 = 0x01B00000,
+		SURFACE_FLAG_USER_TERRAIN_3 = 0x01B80000,
+		SURFACE_FLAG_USER_TERRAIN_4 = 0x01C00000,
+		SURFACE_FLAG_USER_TERRAIN_5 = 0x01C80000,
+		SURFACE_FLAG_USER_TERRAIN_6 = 0x01D00000,
+		SURFACE_FLAG_USER_TERRAIN_7 = 0x01D80000,
+		SURFACE_FLAG_USER_TERRAIN_8 = 0x01E00000,
+		SURFACE_FLAG_USER_TERRAIN_9 = 0x01E80000,
+		SURFACE_FLAG_USER_TERRAIN_10 = 0x01F00000,
+		SURFACE_FLAG_CODE_RESERVED = 0x01F80000,
+		SURFACE_FLAG_OPAQUEGLASS = 0x01380000,
+		SURFACE_FLAG_CLIPMISSILE = 0x00000000,
+		SURFACE_FLAG_AI_NOSIGHT = 0x00000000,
+		SURFACE_FLAG_CLIPSHOT = 0x00000000,
+		SURFACE_FLAG_PLAYERCLIP = 0x00000000,
+		SURFACE_FLAG_MONSTERCLIP = 0x00000000,
+		SURFACE_FLAG_AICLIPALLOWDEATH = 0x00000000,
+		SURFACE_FLAG_VEHICLECLIP = 0x00000000,
+		SURFACE_FLAG_ITEMCLIP = 0x00000000,
+		SURFACE_FLAG_NODROP = 0x00000000,
+		SURFACE_FLAG_NONSOLID = 0x00004000,
+		SURFACE_FLAG_DETAIL = 0x00000000,
+		SURFACE_FLAG_STRUCTURAL = 0x00000000,
+		SURFACE_FLAG_PORTAL = 0x80000000,
+		SURFACE_FLAG_CANSHOOTCLIP = 0x00000000,
+		SURFACE_FLAG_ORIGIN = 0x00000000,
+		SURFACE_FLAG_SKY = 0x00000004,
+		SURFACE_FLAG_NOCASTSHADOW = 0x00040000,
+		SURFACE_FLAG_PHYSICSGEOM = 0x00000000,
+		SURFACE_FLAG_LIGHTPORTAL = 0x00000000,
+		SURFACE_FLAG_OUTDOORBOUNDS = 0x00000000,
+		SURFACE_FLAG_SLICK = 0x00000002,
+		SURFACE_FLAG_NOIMPACT = 0x00000010,
+		SURFACE_FLAG_NOMARKS = 0x00000020,
+		SURFACE_FLAG_NOPENETRATE = 0x00000100,
+		SURFACE_FLAG_LADDER = 0x00000008,
+		SURFACE_FLAG_NODAMAGE = 0x00000001,
+		SURFACE_FLAG_MANTLEON = 0x02000000,
+		SURFACE_FLAG_MANTLEOVER = 0x04000000,
+		SURFACE_FLAG_STAIRS = 0x00000200,
+		SURFACE_FLAG_SOFT = 0x00001000,
+		SURFACE_FLAG_NOSTEPS = 0x00002000,
+		SURFACE_FLAG_NODRAW = 0x00000080,
+		SURFACE_FLAG_NOLIGHTMAP = 0x00000400,
+		SURFACE_FLAG_NODLIGHT = 0x00020000,
+		SURFACE_FLAG_NAVINCLUSIONVOLUME = 0x00000000,
+		SURFACE_FLAG_NAVEXCLUSIONVOLUME = 0x00000000,
+		SURFACE_FLAG_NAV3DVOLUME = 0x00000000,
+	};
+
+	enum SurfaceTypeBits : std::uint64_t
+	{
+		SURFACE_TYPE_BIT_NONE = 0x0,
+		SURFACE_TYPE_BIT_BARK = 0x1,
+		SURFACE_TYPE_BIT_BRICK = 0x2,
+		SURFACE_TYPE_BIT_CARPET_SOLID = 0x4,
+		SURFACE_TYPE_BIT_CLOTH = 0x8,
+		SURFACE_TYPE_BIT_CONCRETE_DRY = 0x10,
+		SURFACE_TYPE_BIT_DIRT = 0x20,
+		SURFACE_TYPE_BIT_FLESH = 0x40,
+		SURFACE_TYPE_BIT_FOLIAGE_DRY = 0x80,
+		SURFACE_TYPE_BIT_GLASS_PANE = 0x100,
+		SURFACE_TYPE_BIT_GRASS_SHORT = 0x200,
+		SURFACE_TYPE_BIT_GRAVEL = 0x400,
+		SURFACE_TYPE_BIT_ICE_SOLID = 0x800,
+		SURFACE_TYPE_BIT_METAL_THICK = 0x1000,
+		SURFACE_TYPE_BIT_METAL_GRATE = 0x2000,
+		SURFACE_TYPE_BIT_MUD = 0x4000,
+		SURFACE_TYPE_BIT_PAPER = 0x8000,
+		SURFACE_TYPE_BIT_PLASTER = 0x10000,
+		SURFACE_TYPE_BIT_ROCK = 0x20000,
+		SURFACE_TYPE_BIT_SAND = 0x40000,
+		SURFACE_TYPE_BIT_SNOW = 0x80000,
+		SURFACE_TYPE_BIT_WATER = 0x100000,
+		SURFACE_TYPE_BIT_WOOD_SOLID = 0x200000,
+		SURFACE_TYPE_BIT_ASPHALT_DRY = 0x400000,
+		SURFACE_TYPE_BIT_CERAMIC = 0x800000,
+		SURFACE_TYPE_BIT_PLASTIC = 0x1000000,
+		SURFACE_TYPE_BIT_RUBBER = 0x2000000,
+		SURFACE_TYPE_BIT_FRUIT = 0x4000000,
+		SURFACE_TYPE_BIT_METAL_PAINTED = 0x8000000,
+		SURFACE_TYPE_BIT_RIOTSHIELD = 0x10000000,
+		SURFACE_TYPE_BIT_SLUSH = 0x20000000,
+		SURFACE_TYPE_BIT_ASPHALT_WET = 0x40000000,
+		SURFACE_TYPE_BIT_CARPET_WOOD = 0x80000000,
+		SURFACE_TYPE_BIT_CARPET_METAL = 0x100000000,
+		SURFACE_TYPE_BIT_CONCRETE_WET = 0x200000000,
+		SURFACE_TYPE_BIT_CUSHION = 0x400000000,
+		SURFACE_TYPE_BIT_DEFAULT = 0x800000000,
+		SURFACE_TYPE_BIT_FOLIAGE_WET = 0x1000000000,
+		SURFACE_TYPE_BIT_GLASS_BROKEN = 0x2000000000,
+		SURFACE_TYPE_BIT_GLASS_SOLID = 0x4000000000,
+		SURFACE_TYPE_BIT_GLASS_VEHICLE = 0x8000000000,
+		SURFACE_TYPE_BIT_GRASS_TALL = 0x10000000000,
+		SURFACE_TYPE_BIT_ICE_THIN = 0x20000000000,
+		SURFACE_TYPE_BIT_METAL_THIN = 0x40000000000,
+		SURFACE_TYPE_BIT_ROBOT_HEAD = 0x80000000000,
+		SURFACE_TYPE_BIT_ROBOT_TORSO = 0x100000000000,
+		SURFACE_TYPE_BIT_ROBOT_LIMB = 0x200000000000,
+		SURFACE_TYPE_BIT_ROBOT_ARMOR = 0x400000000000,
+		SURFACE_TYPE_BIT_BIG_ROBOT_HEAD = 0x800000000000,
+		SURFACE_TYPE_BIT_BIG_ROBOT_LIMB = 0x1000000000000,
+		SURFACE_TYPE_BIT_WATER_KNEE = 0x2000000000000,
+		SURFACE_TYPE_BIT_WATER_WAIST = 0x4000000000000,
+		SURFACE_TYPE_BIT_WOOD_FLOOR = 0x8000000000000,
+		SURFACE_TYPE_BIT_USER_TERRAIN_1 = 0x10000000000000,
+		SURFACE_TYPE_BIT_USER_TERRAIN_2 = 0x20000000000000,
+		SURFACE_TYPE_BIT_USER_TERRAIN_3 = 0x40000000000000,
+		SURFACE_TYPE_BIT_USER_TERRAIN_4 = 0x80000000000000,
+		SURFACE_TYPE_BIT_USER_TERRAIN_5 = 0x100000000000000,
+		SURFACE_TYPE_BIT_USER_TERRAIN_6 = 0x200000000000000,
+		SURFACE_TYPE_BIT_USER_TERRAIN_7 = 0x400000000000000,
+		SURFACE_TYPE_BIT_USER_TERRAIN_8 = 0x800000000000000,
+		SURFACE_TYPE_BIT_USER_TERRAIN_9 = 0x1000000000000000,
+		SURFACE_TYPE_BIT_USER_TERRAIN_10 = 0x2000000000000000,
+		SURFACE_TYPE_BIT_CODE_RESERVED = 0x4000000000000000,
+		SURFACE_TYPE_BIT_OPAQUEGLASS = 0x8000000000000000,
+	};
+
 	struct XModelCollSurf_s
 	{
 		Bounds bounds;
@@ -1062,7 +1237,10 @@ namespace game::database
 		XMODEL_FLAG_ANIMATED_VERTS = 0x1,
 		XMODEL_FLAG_REACTIVE_MOTION = 0x8,
 		XMODEL_FLAG_COMPOSITE = 0x400,
+		XMODEL_FLAG_HAS_DEFAULT_MODEL = 0x8000,
 		XMODEL_FLAG_HAS_ANY_DEFAULT_SURFS = 0x10000,
+		XMODEL_FLAG_HAS_ALL_DEFAULT_SURFS = 0x20000,
+		XMODEL_FLAG_HAS_RIGID_VERT_LIST = 0x80000,
 		XMODEL_FLAG_HAS_MAYHEM_SELFVIS = 0x8000000,
 	};
 
@@ -1428,16 +1606,18 @@ namespace game::database
 		Packed128 packed;
 	};
 
-	enum SurfaceTypeBits : std::uint64_t
+	enum TechsetdefRenderFlags : std::uint8_t
 	{
-
+		TECHSETDEF_RENDER_FLAGS_NONE = 0x0,
+		TECHSETDEF_RENDER_FLAGS_2D = 0x1,
+		TECHSETDEF_RENDER_FLAGS_CASTS_SHADOWS = 0x2,
 	};
 
 	struct MaterialInfo
 	{
 		const char* name;
 		unsigned char gameFlags;
-		unsigned char unkFlags;
+		unsigned char unkFlags; // runtimeFlags?
 		unsigned char sortKey;
 		unsigned char textureAtlasRowCount;
 		unsigned char textureAtlasColumnCount;
@@ -3005,7 +3185,7 @@ namespace game::database
 		unsigned int transientZoneList;
 		unsigned int entityId;
 		float uvIntensity;
-		float heatIntensity;
+		float irIntensity;
 		float color[3];
 		float dir[3];
 		float up[3];
@@ -3545,11 +3725,12 @@ namespace game::database
 		DYNENT_TYPE_INVALID = 0x0,
 		DYNENT_TYPE_CLUTTER = 0x1,
 		DYNENT_TYPE_CLUTTER_NOSHADOW = 0x2,
-		DYNENT_TYPE_SCRIPTABLEINST = 0x3,
-		DYNENT_TYPE_SCRIPTABLEPHYSICS = 0x4,
-		DYNENT_TYPE_LINKED = 0x5,
-		DYNENT_TYPE_LINKED_NOSHADOW = 0x6,
-		DYNENT_TYPE_COUNT = 0x7,
+		DYNENT_TYPE_HINGE = 0x3,
+		DYNENT_TYPE_SCRIPTABLEINST = 0x4,
+		DYNENT_TYPE_SCRIPTABLEPHYSICS = 0x5,
+		DYNENT_TYPE_LINKED = 0x6,
+		DYNENT_TYPE_LINKED_NOSHADOW = 0x7,
+		DYNENT_TYPE_COUNT = 0x8,
 	};
 
 	enum DynEntityBasis
@@ -3586,13 +3767,13 @@ namespace game::database
 		char __pad3[10];
 		DynEntityLinkToDef* linkTo;
 		bool noPhysics;
-		bool unk;
-		char __pad4[1];
+		bool unk1;
+		bool unk2;
 		bool distantShadows;
 		bool noSpotShadows;
 		bool isTransient;
 		bool transientZoneLoaded;
-		char __pad5[1];
+		char unk3;
 		char priority;
 		char __pad6[7];
 	}; assert_sizeof(DynEntityDef, 112);
@@ -4218,7 +4399,8 @@ namespace game::database
 		char* livePath;
 		unsigned int flags;
 		GfxOrientedBoundingBox obb;
-		float unk;
+		float density;
+		float falloff;
 		GfxVolumetricMask masks[4];
 	}; assert_sizeof(GfxVolumetric, 240);
 	assert_offsetof(GfxVolumetric, masks, 80);
@@ -4279,64 +4461,87 @@ namespace game::database
 		float rgb[56][3];
 	}; assert_sizeof(GfxLightGridColorsHDR, 672);
 
-	struct unk_1453E2FD0
+	struct GfxProbeData
+	{
+		unsigned int data[16];
+	}; assert_sizeof(GfxProbeData, 64);
+
+	struct GfxGpuLightGridProbePosition
 	{
 		float origin[3];
-	}; assert_sizeof(unk_1453E2FD0, 12);
+	}; assert_sizeof(GfxGpuLightGridProbePosition, 12);
 
-	struct unk_1453E47B0
+	struct GfxSHProbeData
 	{
-		char __pad0[88];
-	}; assert_sizeof(unk_1453E47B0, 88);
+		unsigned __int16 coeffs[29];
+		unsigned __int16 pad[3];
+	};
 
-	struct unk_1453E47D0
+	struct GfxGpuLightGridZone
 	{
-		char __pad0[16];
-	}; assert_sizeof(unk_1453E47D0, 16);
+		unsigned int numProbes;
+		unsigned int firstProbe;
+		unsigned int numTetrahedrons;
+		unsigned int firstTetrahedron;
+		unsigned int firstVoxelTetrahedronIndex;
+		//unsigned int voxelTetrahedronInternalNodeShift;
+		unsigned int numVoxelTetrahedronIndices;
+		GfxSHProbeData fallbackProbeData;
+	}; assert_sizeof(GfxGpuLightGridZone, 88);
 
-	struct unk_1453E47F8
+	struct GfxGpuLightGridTetrahedron
 	{
-		char __pad0[16];
-	}; assert_sizeof(unk_1453E47F8, 16);
+		unsigned int indexFlags[4];
+	}; assert_sizeof(GfxGpuLightGridTetrahedron, 16);
 
-	struct unk_1453E4830
+	struct GfxGpuLightGridTetrahedronNeighbors
 	{
-		char __pad0[4];
-	}; assert_sizeof(unk_1453E4830, 4);
+		unsigned int neighbors[4];
+	}; assert_sizeof(GfxGpuLightGridTetrahedronNeighbors, 16);
+
+	struct GfxGpuLightGridTetrahedronVisibility
+	{
+		unsigned int visibility[16];
+	}; assert_sizeof(GfxGpuLightGridTetrahedronVisibility, 64);
+
+	struct GfxGpuLightGridVoxelStartTetrahedron
+	{
+		unsigned int index;
+	}; assert_sizeof(GfxGpuLightGridVoxelStartTetrahedron, 4);
 
 	struct GfxLightGridProbeData
 	{
 		unsigned int gpuVisibleProbesCount;
-		unk_1453E2FD0* gpuVisibleProbes;
-		char* gpuVisibleProbesData; // 64 * (count * 0x2000)
+		GfxGpuLightGridProbePosition* gpuVisibleProbePositions;
+		GfxProbeData* gpuVisibleProbesData; // 64 * (count * 0x2000)
 		void* gpuVisibleProbesBuffer;
 		void* gpuVisibleProbesView;
 		void* gpuVisibleProbesRWView;
-		unsigned int probesDataCount;
-		char* probesData; // 64 * count
-		void* probesDataBuffer;
-		void* probesDataView;
-		void* probesDataRWView;
-		unk_1453E2FD0* probesPositions;
-		void* probesPositionsBuffer;
-		void* probesPositionsView;
-		unsigned int unk01Count;
-		unk_1453E47B0* unk01;
-		unsigned int probeTetsCount;
-		unsigned int probeTetVisibilityCount;
-		unk_1453E47D0* probeTets;
-		void* probeTetsBuffer;
-		void* probeTetsView;
-		unk_1453E47F8* probeTetNeighbors;
-		void* probeTetNeighborsBuffer;
-		void* probeTetNeighborsView;
-		char* probeTetVisibility; // 64 * count
-		void* probeTetVisibilityBuffer;
-		void* probeTetVisibilityView;
-		unsigned int probeVoxelStartTetCount;
-		unk_1453E4830* probeVoxelStartTet;
-		void* probeVoxelStartTetBuffer;
-		void* probeVoxelStartTetView;
+		unsigned int probeCount;
+		GfxProbeData* probes; // 64 * count
+		void* probesBuffer;
+		void* probesView;
+		void* probesRWView;
+		GfxGpuLightGridProbePosition* probePositions;
+		void* probePositionsBuffer;
+		void* probePositionsView;
+		unsigned int zoneCount;
+		GfxGpuLightGridZone* zones;
+		unsigned int tetrahedronCount;
+		unsigned int tetrahedronCountVisible;
+		GfxGpuLightGridTetrahedron* tetrahedrons;
+		void* tetrahedronBuffer;
+		void* tetrahedronView;
+		GfxGpuLightGridTetrahedronNeighbors* tetrahedronNeighbors;
+		void* tetrahedronNeighborsBuffer;
+		void* tetrahedronNeighborsView;
+		GfxGpuLightGridTetrahedronVisibility* tetrahedronVisibility; // 64 * count
+		void* tetrahedronVisibilityBuffer;
+		void* tetrahedronVisibilityView;
+		unsigned int voxelStartTetrahedronCount;
+		GfxGpuLightGridVoxelStartTetrahedron* voxelStartTetrahedron;
+		void* voxelStartTetrahedronBuffer;
+		void* voxelStartTetrahedronView;
 	}; assert_sizeof(GfxLightGridProbeData, 240);
 
 	struct GfxLightGrid
@@ -4939,7 +5144,8 @@ namespace game::database
 		unsigned int unk1;
 		float coordOffset;
 		float coordScale;
-		int unk2[2];
+		float unk2;
+		int pad;
 	}; assert_sizeof(GfxLightDef, 0x28);
 
 	struct AnimationEntry
@@ -6755,6 +6961,35 @@ namespace game::database
 		bool rotate;
 	};
 
+	enum hitLocation_t
+	{
+		HITLOC_NONE = 0x0,
+		HITLOC_HELMET = 0x1,
+		HITLOC_HEAD = 0x2,
+		HITLOC_NECK = 0x3,
+		HITLOC_TORSO_UPR = 0x4,
+		HITLOC_TORSO_LWR = 0x5,
+		HITLOC_R_ARM_UPR = 0x6,
+		HITLOC_L_ARM_UPR = 0x7,
+		HITLOC_R_ARM_LWR = 0x8,
+		HITLOC_L_ARM_LWR = 0x9,
+		HITLOC_R_HAND = 0xA,
+		HITLOC_L_HAND = 0xB,
+		HITLOC_R_LEG_UPR = 0xC,
+		HITLOC_L_LEG_UPR = 0xD,
+		HITLOC_R_LEG_LWR = 0xE,
+		HITLOC_L_LEG_LWR = 0xF,
+		HITLOC_R_FOOT = 0x10,
+		HITLOC_L_FOOT = 0x11,
+		HITLOC_GUN = 0x12,
+		HITLOC_SHIELD = 0x13,
+		HITLOC_ARMOR = 0x14,
+		HITLOC_SOFT = 0x15,
+		HITLOC_NUM = 0x16,
+		HITLOC_LIMB_START = 0x6,
+		HITLOC_LIMB_END = 0x11,
+	};
+
 	struct WeaponDef
 	{
 		const char* szOverlayName;
@@ -7610,19 +7845,7 @@ namespace game::database
 		const char* szLUICrosshairWidget;
 	}; assert_sizeof(WeaponCompleteDef, 0x138);
 
-	enum PARTICLE_FLAG
-	{
-		PARTICLE_FLAG_KILL = 0x1,
-		PARTICLE_FLAG_PENDING_DEFERRED_PHYSICS = 0x2,
-		PARTICLE_FLAG_IMPACT = 0x4,
-		PARTICLE_FLAG_IMPACT_WITH_RAYCAST = 0x8,
-		PARTICLE_FLAG_AT_REST = 0x10,
-		PARTICLE_FLAG_SENT_FIRST_RAY_CAST = 0x20,
-		PARTICLE_FLAG_PENDING_DEFERRED_PHYSICS_UPDATE = 0x40,
-		PARTICLE_FLAG_HAS_SOUND = 0x80,
-	};
-
-	enum PARTICLE_MODULE_FLAG
+	enum PARTICLE_MODULE_FLAG : std::uint32_t
 	{
 		PARTICLE_MODULE_FLAG_DISABLED = 0x1,
 		PARTICLE_MODULE_FLAG_HAS_CURVES = 0x2,
@@ -7645,7 +7868,66 @@ namespace game::database
 		PARTICLE_MODULE_FLAGS_ALL = 0xFFFFFFFF,
 	};
 
-	enum PARTICLE_EMITTER_DEF_FLAG
+	enum PARTICLE_STATE_DEF_FLAG : std::uint64_t
+	{
+		PARTICLE_STATE_DEF_FLAG_DISABLED = 0x1,
+		PARTICLE_STATE_DEF_FLAG_HAS_CAMERA_OFFSET = 0x2,
+		PARTICLE_STATE_DEF_FLAG_HAS_SPAWN_SHAPE = 0x4,
+		PARTICLE_STATE_DEF_FLAG_HAS_POSITION_CURVE = 0x8,
+		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION_1D_CURVE = 0x10,
+		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION_3D_CURVE = 0x20,
+		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION_1D_INIT = 0x40,
+		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION_3D_INIT = 0x80, // c
+		PARTICLE_STATE_DEF_FLAG_HAS_VELOCITY_CURVE_LOCAL1 = 0x100,
+		PARTICLE_STATE_DEF_FLAG_HAS_VELOCITY_CURVE_WORLD1 = 0x200,
+		PARTICLE_STATE_DEF_FLAG_HAS_VELOCITY_CURVE_LOCAL2 = 0x400,
+		PARTICLE_STATE_DEF_FLAG_HAS_VELOCITY_CURVE_WORLD2 = 0x800,
+		PARTICLE_STATE_DEF_FLAG_USE_PHYSICS = 0x1000, // c
+		PARTICLE_STATE_DEF_FLAG_MIRROR_TEXTURE_HORIZONTALLY = 0x2000, // c
+		PARTICLE_STATE_DEF_FLAG_MIRROR_TEXTURE_HORIZONTALLY_RANDOM = 0x4000, // c
+		PARTICLE_STATE_DEF_FLAG_MIRROR_TEXTURE_VERTICALLY = 0x8000, // c
+		PARTICLE_STATE_DEF_FLAG_MIRROR_TEXTURE_VERTICALLY_RANDOM = 0x10000, // c
+		PARTICLE_STATE_DEF_FLAG_SORT_PARTICLES = 0x20000,
+		PARTICLE_STATE_DEF_FLAG_HANDLE_ON_IMPACT = 0x40000,
+		PARTICLE_STATE_DEF_FLAG_PLAYER_FACING = 0x80000, // c
+		PARTICLE_STATE_DEF_FLAG_PLAYER_FACING_LOCK_UP_VECTOR = 0x100000, // c
+		PARTICLE_STATE_DEF_FLAG_USE_OCCLUSION_QUERY = 0x200000, // c
+
+		PARTICLE_STATE_DEF_FLAG_HAS_COLOR = 0x400000,
+		PARTICLE_STATE_DEF_FLAG_HAS_RAY_CAST_PHYSICS = 0x800000,
+		PARTICLE_STATE_DEF_FLAG_0x1000000 = 0x1000000,
+
+		PARTICLE_STATE_DEF_FLAG_HAS_EMISSIVE_CURVE = 0x2000000, // c
+		PARTICLE_STATE_DEF_FLAG_HAS_INTENSITY_CURVE = 0x4000000,
+		PARTICLE_STATE_DEF_FLAG_USE_VECTOR_FIELDS = 0x8000000,
+		PARTICLE_STATE_DEF_FLAG_INHERIT_PARENT_VELOCITY = 0x10000000,
+		PARTICLE_STATE_DEF_FLAG_DRAW_WITH_VIEW_MODEL = 0x20000000,
+		PARTICLE_STATE_DEF_FLAG_PLAY_SOUNDS = 0x40000000,
+		PARTICLE_STATE_DEF_FLAG_HAS_CAMERA_OFFSET_POSITION_ONLY = 0x40000000, // c
+		PARTICLE_STATE_DEF_FLAG_ON_IMPACT_USE_SURFACE_TYPE = 0x80000000,
+		PARTICLE_STATE_DEF_FLAG_IS_SPRITE = 0x100000000, // c
+		PARTICLE_STATE_DEF_FLAG_HAS_TRANS_SHADOWS = 0x200000000, // c
+		PARTICLE_STATE_DEF_FLAG_HAS_CHILD_EFFECTS = 0x400000000,
+		PARTICLE_STATE_DEF_FLAG_BLOCKS_SIGHT = 0x0,
+		PARTICLE_STATE_DEF_FLAG_HANDLE_TIME_IN_STATE = 0x0,
+		PARTICLE_STATE_DEF_FLAG_SCALE_BY_DISTANCE = 0x0,
+		PARTICLE_STATE_DEF_FLAG_HAS_VECTOR_FIELD_CURVE = 0x0,
+		PARTICLE_STATE_DEF_FLAG_USE_LOCAL_VECTOR_FIELDS_ONLY = 0x0,
+		PARTICLE_STATE_DEF_FLAG_HAS_SHADER_CURVE = 0x0,
+		PARTICLE_STATE_DEF_FLAG_HAS_SIZE_CURVE = 0x0,
+		PARTICLE_STATE_DEF_FLAG_HAS_SIZE_LERP = 0x0,
+		PARTICLE_STATE_DEF_FLAG_HAS_TEMPERATURE_CURVE = 0x0,
+		PARTICLE_STATE_DEF_FLAG_HAS_LIGHTING_FRACTION_CURVE = 0x0,
+		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION_CURVE = 0x30,
+		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION_1D = 0x50,
+		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION_3D = 0xA0,
+		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION = 0xF0,
+		PARTICLE_STATE_DEF_FLAG_HAS_MIRROR_TEXTURE = 0x1E000, // c
+		PARTICLE_STATE_DEF_FLAG_HAS_VELOCITY_CURVE = 0x300,
+		PARTICLE_STATE_DEF_FLAG_REQUIRES_WORLD_COLLISION = 0x801000,
+	};
+
+	enum PARTICLE_EMITTER_DEF_FLAG : std::uint32_t
 	{
 		PARTICLE_EMITTER_DEF_FLAG_DISABLED = 0x1,
 		PARTICLE_EMITTER_DEF_FLAG_USE_BURST_MODE = 0x2,
@@ -7675,79 +7957,7 @@ namespace game::database
 		PARTICLE_EMITTER_DEF_FLAG_IGNORE_FOV_SCALE = 0x2000000,
 	};
 
-	enum PARTICLE_ELEMENT_TYPE
-	{
-		PARTICLE_ELEMENT_TYPE_BILLBOARD_SPRITE = 0x0,
-		PARTICLE_ELEMENT_TYPE_BEAM = 0x1,
-		PARTICLE_ELEMENT_TYPE_DECAL = 0x2,
-		PARTICLE_ELEMENT_TYPE_FLARE = 0x3,
-		PARTICLE_ELEMENT_TYPE_GEO_TRAIL = 0x4,
-		PARTICLE_ELEMENT_TYPE_LIGHT_OMNI = 0x5,
-		PARTICLE_ELEMENT_TYPE_LIGHT_SPOT = 0x6,
-		PARTICLE_ELEMENT_TYPE_MODEL = 0x7,
-		PARTICLE_ELEMENT_TYPE_ORIENTED_SPRITE = 0x8,
-		PARTICLE_ELEMENT_TYPE_RUNNER = 0x9,
-		PARTICLE_ELEMENT_TYPE_TAIL = 0xA,
-		PARTICLE_ELEMENT_TYPE_VECTOR_FIELD = 0xB,
-		PARTICLE_ELEMENT_TYPE_VOLUMETRIC = 0xC,
-		PARTICLE_ELEMENT_TYPE_DISMEMBER = 0xD,
-	};
-
-	enum PARTICLE_STATE_DEF_FLAG
-	{
-		PARTICLE_STATE_DEF_FLAG_DISABLED = 0x1,
-		PARTICLE_STATE_DEF_FLAG_HAS_CAMERA_OFFSET = 0x2,
-		PARTICLE_STATE_DEF_FLAG_HAS_SPAWN_SHAPE = 0x4,
-		PARTICLE_STATE_DEF_FLAG_HAS_POSITION_CURVE = 0x8,
-		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION_1D_CURVE = 0x10,
-		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION_3D_CURVE = 0x20,
-		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION_1D_INIT = 0x40,
-		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION_3D_INIT = 0x80,
-		PARTICLE_STATE_DEF_FLAG_HAS_VELOCITY_CURVE_LOCAL = 0x100,
-		PARTICLE_STATE_DEF_FLAG_HAS_VELOCITY_CURVE_WORLD = 0x200,
-		PARTICLE_STATE_DEF_FLAG_USE_PHYSICS = 0x400,
-		PARTICLE_STATE_DEF_FLAG_MIRROR_TEXTURE_HORIZONTALLY = 0x800,
-		PARTICLE_STATE_DEF_FLAG_MIRROR_TEXTURE_HORIZONTALLY_RANDOM = 0x1000,
-		PARTICLE_STATE_DEF_FLAG_MIRROR_TEXTURE_VERTICALLY = 0x2000,
-		PARTICLE_STATE_DEF_FLAG_MIRROR_TEXTURE_VERTICALLY_RANDOM = 0x4000,
-		PARTICLE_STATE_DEF_FLAG_SORT_PARTICLES = 0x8000,
-		PARTICLE_STATE_DEF_FLAG_HANDLE_ON_IMPACT = 0x10000,
-		PARTICLE_STATE_DEF_FLAG_PLAYER_FACING = 0x20000,
-		PARTICLE_STATE_DEF_FLAG_PLAYER_FACING_LOCK_UP_VECTOR = 0x40000,
-		PARTICLE_STATE_DEF_FLAG_USE_OCCLUSION_QUERY = 0x80000,
-		PARTICLE_STATE_DEF_FLAG_HAS_COLOR = 0x100000,
-		PARTICLE_STATE_DEF_FLAG_HAS_RAY_CAST_PHYSICS = 0x200000,
-		PARTICLE_STATE_DEF_FLAG_HAS_EMISSIVE_CURVE = 0x400000,
-		PARTICLE_STATE_DEF_FLAG_HAS_INTENSITY_CURVE = 0x800000,
-		PARTICLE_STATE_DEF_FLAG_USE_VECTOR_FIELDS = 0x1000000,
-		PARTICLE_STATE_DEF_FLAG_INHERIT_PARENT_VELOCITY = 0x2000000,
-		PARTICLE_STATE_DEF_FLAG_DRAW_WITH_VIEW_MODEL = 0x4000000,
-		PARTICLE_STATE_DEF_FLAG_PLAY_SOUNDS = 0x8000000,
-		PARTICLE_STATE_DEF_FLAG_HAS_CAMERA_OFFSET_POSITION_ONLY = 0x10000000,
-		PARTICLE_STATE_DEF_FLAG_ON_IMPACT_USE_SURFACE_TYPE = 0x20000000,
-		PARTICLE_STATE_DEF_FLAG_IS_SPRITE = 0x40000000,
-		PARTICLE_STATE_DEF_FLAG_HAS_TRANS_SHADOWS = 0x80000000,
-		PARTICLE_STATE_DEF_FLAG_HAS_CHILD_EFFECTS = 0x0,
-		PARTICLE_STATE_DEF_FLAG_BLOCKS_SIGHT = 0x0,
-		PARTICLE_STATE_DEF_FLAG_HANDLE_TIME_IN_STATE = 0x0,
-		PARTICLE_STATE_DEF_FLAG_SCALE_BY_DISTANCE = 0x0,
-		PARTICLE_STATE_DEF_FLAG_HAS_VECTOR_FIELD_CURVE = 0x0,
-		PARTICLE_STATE_DEF_FLAG_USE_LOCAL_VECTOR_FIELDS_ONLY = 0x0,
-		PARTICLE_STATE_DEF_FLAG_HAS_SHADER_CURVE = 0x0,
-		PARTICLE_STATE_DEF_FLAG_HAS_SIZE_CURVE = 0x0,
-		PARTICLE_STATE_DEF_FLAG_HAS_SIZE_LERP = 0x0,
-		PARTICLE_STATE_DEF_FLAG_HAS_TEMPERATURE_CURVE = 0x0,
-		PARTICLE_STATE_DEF_FLAG_HAS_LIGHTING_FRACTION_CURVE = 0x0,
-		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION_CURVE = 0x30,
-		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION_1D = 0x50,
-		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION_3D = 0xA0,
-		PARTICLE_STATE_DEF_FLAG_HAS_ROTATION = 0xF0,
-		PARTICLE_STATE_DEF_FLAG_HAS_MIRROR_TEXTURE = 0x7800,
-		PARTICLE_STATE_DEF_FLAG_HAS_VELOCITY_CURVE = 0x300,
-		PARTICLE_STATE_DEF_FLAG_REQUIRES_WORLD_COLLISION = 0x200400,
-	};
-
-	enum PARTICLE_SYSTEM_DEF_FLAG
+	enum PARTICLE_SYSTEM_DEF_FLAG : std::uint32_t
 	{
 		PARTICLE_SYSTEM_DEF_FLAG_HAS_SPRITES = 0x1,
 		PARTICLE_SYSTEM_DEF_FLAG_HAS_NON_SPRITES = 0x2,
@@ -7755,7 +7965,7 @@ namespace game::database
 		PARTICLE_SYSTEM_DEF_FLAG_HAS_PHYSICS_HEAVY = 0x8,
 		PARTICLE_SYSTEM_DEF_FLAG_HAS_PHYSICS_LIGHT = 0x10,
 		PARTICLE_SYSTEM_DEF_FLAG_HAS_SCRIPTED_INPUTS = 0x20,
-		PARTICLE_SYSTEM_DEF_FLAG_USE_OCCLUSION_QUERY = 0x40,
+		PARTICLE_SYSTEM_DEF_FLAG_USE_OCCLUSION_QUERY = 0x40, // c
 		PARTICLE_SYSTEM_DEF_FLAG_USE_OCCLUSION_QUERY_OVERRIDE_POS = 0x80,
 		PARTICLE_SYSTEM_DEF_FLAG_KILL_ON_OWNER_ENTITY_DEATH = 0x100,
 		PARTICLE_SYSTEM_DEF_FLAG_HAS_TRANS_SHADOWS = 0x200,
@@ -7820,7 +8030,7 @@ namespace game::database
 		PARTICLE_MODULE_FORCE = 0x24,
 		PARTICLE_MODULE_GRAVITY = 0x25,
 		PARTICLE_MODULE_INTENSITY_GRAPH = 0x26,
-		PARTICLE_MODULE_TEMPERATURE_GRAPH = 0x27,
+		PARTICLE_MODULE_PARENT_VELOCITY_GRAPH = 0x27,
 		PARTICLE_MODULE_PHYSICS_LIGHT = 0x28,
 		PARTICLE_MODULE_PHYSICS_RAY_CAST = 0x29,
 		PARTICLE_MODULE_POSITION_GRAPH = 0x2A,
@@ -7829,14 +8039,33 @@ namespace game::database
 		PARTICLE_MODULE_SIZE_GRAPH = 0x2D,
 		PARTICLE_MODULE_SIZE_LERP = 0x2E,
 		PARTICLE_MODULE_VELOCITY_GRAPH = 0x2F,
-		PARTICLE_MODULE_TEST_BIRTH = 0x30,
-		PARTICLE_MODULE_TEST_DEATH = 0x31,
-		PARTICLE_MODULE_TEST_GRAVITY = 0x32,
-		PARTICLE_MODULE_TEST_IMPACT = 0x33,
-		PARTICLE_MODULE_TEST_POS = 0x34,
-		PARTICLE_MODULE_TEST_TIME_IN_STATE = 0x35,
+		PARTICLE_MODULE_TEST_AGE = 0x30,
+		PARTICLE_MODULE_TEST_BIRTH = 0x31,
+		PARTICLE_MODULE_TEST_DEATH = 0x32,
+		PARTICLE_MODULE_TEST_GRAVITY = 0x33,
+		PARTICLE_MODULE_TEST_IMPACT = 0x34,
+		PARTICLE_MODULE_TEST_POS = 0x35,
 		PARTICLE_MODULE_COUNT = 0x36,
 		PARTICLE_MODULE_INVALID = 0xFF,
+	};
+
+	enum PARTICLE_ELEMENT_TYPE : std::uint32_t
+	{
+		PARTICLE_ELEMENT_TYPE_BILLBOARD_SPRITE = 0,
+		PARTICLE_ELEMENT_TYPE_BEAM = 1,
+		PARTICLE_ELEMENT_TYPE_CLOUD = 2,
+		PARTICLE_ELEMENT_TYPE_SPARK_CLOUD = 3,
+		PARTICLE_ELEMENT_TYPE_DECAL = 4,
+		PARTICLE_ELEMENT_TYPE_FLARE = 5,
+		PARTICLE_ELEMENT_TYPE_GEO_TRAIL = 6,
+		PARTICLE_ELEMENT_TYPE_LIGHT_OMNI = 7,
+		PARTICLE_ELEMENT_TYPE_LIGHT_SPOT = 8,
+		PARTICLE_ELEMENT_TYPE_MODEL = 9,
+		PARTICLE_ELEMENT_TYPE_ORIENTED_SPRITE = 10,
+		PARTICLE_ELEMENT_TYPE_RUNNER = 11,
+		PARTICLE_ELEMENT_TYPE_TAIL = 12,
+		PARTICLE_ELEMENT_TYPE_VECTOR_FIELD = 13,
+		PARTICLE_ELEMENT_TYPE_VOLUMETRIC = 14,
 	};
 
 	struct float4
@@ -7904,10 +8133,9 @@ namespace game::database
 
 	struct ParticleModuleInitAtlas : ParticleModule
 	{
+		int m_playRate;
 		int m_startFrame;
 		int m_loopCount;
-		bool m_randomIndex;
-		bool m_playOverLife;
 	}; assert_sizeof(ParticleModuleInitAtlas, 20);
 
 	struct ParticleModuleInitAttributes : ParticleModule
@@ -8013,14 +8241,14 @@ namespace game::database
 	struct ParticleModuleInitLightOmni : ParticleModule
 	{
 		ParticleLinkedAssetListDef m_linkedAssetList;
-		float m_fovOuter;
-		float m_fovInner;
-		float m_bulbRadius;
-		float m_bulbLength;
+		float m_tonemappingScaleFactor;
+		float m_intensityIR;
 		bool m_disableVolumetric;
-		bool m_disableShadowMap;
-		bool m_disableDynamicShadows;
-		bool m_scriptScale;
+		unsigned char m_exponent;
+		char __pad0[2];
+		float m_shadowSoftness;
+		float m_shadowBias;
+		float m_shadowArea;
 	}; assert_sizeof(ParticleModuleInitLightOmni, 48);
 
 	struct ParticleModuleInitLightSpot : ParticleModule
@@ -8029,21 +8257,19 @@ namespace game::database
 		float m_fovInner;
 		float m_bulbRadius;
 		float m_bulbLength;
-		float m_distanceFalloff;
-		//float m_fovCollimation;
 		float m_brightness;
+		float unk1;
 		float m_intensityUV;
 		float m_intensityIR;
-		//float m_intensityHeat;
+		float m_shadowNearPlane;
+		float m_toneMappingScaleFactor;
 		float m_shadowSoftness;
 		float m_shadowBias;
 		float m_shadowArea;
-		float m_shadowNearPlane;
-		float m_toneMappingScaleFactor;
 		bool m_disableVolumetric;
 		bool m_disableShadowMap;
 		bool m_disableDynamicShadows;
-		bool m_scriptScale;
+		bool m_exponent;
 		ParticleLinkedAssetListDef m_linkedAssetList;
 	}; assert_sizeof(ParticleModuleInitLightSpot, 80);
 	assert_offsetof(ParticleModuleInitLightSpot, m_linkedAssetList, 64);
@@ -8154,12 +8380,37 @@ namespace game::database
 		ParticleCurveDef m_curves[1];
 	}; assert_sizeof(ParticleModuleInitSpawn, 32);
 
+	enum ParticleModuleAxesFlags
+	{
+		PARTICLE_MODULE_AXES_FLAG_POS_X = 0x1,
+		PARTICLE_MODULE_AXES_FLAG_NEG_X = 0x2,
+		PARTICLE_MODULE_AXES_FLAG_POS_Y = 0x4,
+		PARTICLE_MODULE_AXES_FLAG_NEG_Y = 0x8,
+		PARTICLE_MODULE_AXES_FLAG_POS_Z = 0x10,
+		PARTICLE_MODULE_AXES_FLAG_NEG_Z = 0x20,
+		PARTICLE_MODULE_AXES_FLAG_ALL_X = 0x3,
+		PARTICLE_MODULE_AXES_FLAG_ALL_Y = 0xC,
+		PARTICLE_MODULE_AXES_FLAG_ALL_Z = 0x30,
+		PARTICLE_MODULE_AXES_FLAG_ALL_POS = 0x15,
+		PARTICLE_MODULE_AXES_FLAG_ALL_NEG = 0x2A,
+		PARTICLE_MODULE_AXES_FLAG_ALL = 0x3F,
+	};
+
+	enum ParticleSpawnFlags
+	{
+		PARTICLE_SPAWN_ONLY_ON_SURFACE = 0x1,
+		PARTICLE_SPAWN_USE_CURVE_VALUES = 0x2,
+		PARTICLE_SPAWN_USE_MODIFIER_SCALE = 0x4,
+		PARTICLE_SPAWN_IS_DETERMINISTIC = 0x8,
+		PARTICLE_SPAWN_UNIFORM = 0x10,
+	};
+
 	struct ParticleModuleInitSpawnShape : ParticleModule
 	{
-		char m_axisFlags[1];
-		char m_spawnFlags[1];
-		char m_normalAxis[1];
-		char m_spawnType[1];
+		char m_axisFlags;
+		char m_spawnFlags;
+		char m_normalAxis;
+		char m_spawnType;
 		float m_volumeCubeRoot;
 		//float4 m_calculationOffset;
 		float4 m_offset;
@@ -8179,8 +8430,8 @@ namespace game::database
 		bool m_rotateCalculatedOffset;
 		float m_halfHeight;
 		ParticleFloatRange m_radius;
+		float4 unk;
 		float4 m_directionQuat;
-		unsigned int m_pad[4];
 	}; assert_sizeof(ParticleModuleInitSpawnShapeCylinder, 80);
 
 	struct ParticleModuleInitSpawnShapeEllipsoid : ParticleModuleInitSpawnShape
@@ -8210,7 +8461,7 @@ namespace game::database
 	{
 		unsigned int m_pad[2];
 		ParticleFloatRange m_radius;
-		unsigned int m_pad2[4];
+		float4 m_offset2;
 	}; assert_sizeof(ParticleModuleInitSpawnShapeSphere, 64);
 
 	struct ParticleModuleInitTail : ParticleModule
@@ -8294,12 +8545,11 @@ namespace game::database
 		ParticleCurveDef m_curves[2];
 	}; assert_sizeof(ParticleModuleIntensityGraph, 48);
 
-	struct ParticleModuleTemperatureGraph : ParticleModule
+	struct ParticleModuleParentVelocityGraph : ParticleModule
 	{
-		bool firstCurve;
-		char m_pad[7];
+		unsigned int m_pad[2];
 		ParticleCurveDef m_curves[2];
-	}; assert_sizeof(ParticleModuleTemperatureGraph, 48);
+	}; assert_sizeof(ParticleModuleParentVelocityGraph, 48);
 
 	struct ParticleModulePhysicsLight : ParticleModule
 	{
@@ -8372,6 +8622,34 @@ namespace game::database
 		unsigned int m_pad[1];
 	};
 
+	enum ParticleUseOrientationOptions
+	{
+		PARTICLE_USE_ORIENTATION_OPTION_IDENTITY = 0x0,
+		PARTICLE_USE_ORIENTATION_OPTION_ROTATION = 0x1,
+		PARTICLE_USE_ORIENTATION_OPTION_RELATIVE_ROTATION = 0x2,
+		PARTICLE_USE_ORIENTATION_OPTION_VELOCITY_Y = 0x3,
+		PARTICLE_USE_ORIENTATION_OPTION_VELOCITY_X = 0x4,
+		PARTICLE_USE_ORIENTATION_OPTION_VELOCITY_Z = 0x5,
+		PARTICLE_USE_ORIENTATION_OPTION_RELATIVE = 0x6,
+		PARTICLE_USE_ORIENTATION_OPTION_COUNT = 0x7,
+	};
+
+	enum ParticleUseScaleOptions
+	{
+		PARTICLE_USE_SCALE_OPTION_NONE = 0x0,
+		PARTICLE_USE_SCALE_OPTION_MULT = 0x1,
+		PARTICLE_USE_SCALE_OPTION_OVERRIDE = 0x2,
+		PARTICLE_USE_SCALE_OPTION_COUNT = 0x3,
+	};
+
+	enum ParticleUseVelocityOptions
+	{
+		PARTICLE_USE_VELOCITY_OPTION_NONE = 0x0,
+		PARTICLE_USE_VELOCITY_OPTION_MULT = 0x1,
+		PARTICLE_USE_VELOCITY_OPTION_OVERRIDE = 0x2,
+		PARTICLE_USE_VELOCITY_OPTION_COUNT = 0x3,
+	};
+
 	struct ParticleModuleTest : ParticleModule
 	{
 		unsigned short m_moduleIndex;
@@ -8381,6 +8659,11 @@ namespace game::database
 		ParticleModuleTestEventHandlerData m_eventHandlerData;
 	}; assert_sizeof(ParticleModuleTest, 48);
 	assert_offsetof(ParticleModuleTest, m_eventHandlerData, 16);
+
+	struct ParticleModuleTestAge : ParticleModuleTest
+	{
+		float m_age;
+	};
 
 	struct ParticleModuleTestBirth : ParticleModuleTest
 	{
@@ -8399,10 +8682,6 @@ namespace game::database
 	};
 
 	struct ParticleModuleTestPos : ParticleModuleTest
-	{
-	};
-
-	struct ParticleModuleTestTimeInState : ParticleModuleTest
 	{
 	};
 
@@ -8448,7 +8727,7 @@ namespace game::database
 		ParticleModuleForce force;
 		ParticleModuleGravity gravity;
 		ParticleModuleIntensityGraph intensityGraph;
-		ParticleModuleTemperatureGraph temperatureGraph;
+		ParticleModuleParentVelocityGraph parentVelocityGraph;
 		ParticleModulePhysicsLight physicsLight;
 		ParticleModulePhysicsRayCast physicsRayCast;
 		ParticleModulePositionGraph positionGraph;
@@ -8457,17 +8736,17 @@ namespace game::database
 		ParticleModuleSizeGraph sizeGraph;
 		ParticleModuleSizeLerp sizeLerp;
 		ParticleModuleVelocityGraph velocityGraph;
+		ParticleModuleTestAge testAge;
 		ParticleModuleTestBirth testBirth;
 		ParticleModuleTestDeath testDeath;
 		ParticleModuleTestGravity testGravity;
 		ParticleModuleTestImpact testImpact;
 		ParticleModuleTestPos testPos;
-		ParticleModuleTestTimeInState testTimeInState;
 	};
 
 	struct ParticleModuleDef
 	{
-		ParticleModuleType type;
+		ParticleModuleType moduleType;
 		unsigned int m_pad[3];
 		ParticleModuleTypeDef moduleData;
 	}; assert_sizeof(ParticleModuleDef, 160);
@@ -8480,48 +8759,12 @@ namespace game::database
 		PARTICLE_GRAVITY_OPTION_COUNT = 0x3,
 	};
 
-	enum ParticleInstancePoolAction
+	enum ParticleModuleGroup
 	{
-		PARTICLE_INSTANCE_POOL_ACTION_NO_SPAWN = 0x0,
-		PARTICLE_INSTANCE_POOL_ACTION_KILL_OLDEST_AND_SPAWN = 0x1,
-		PARTICLE_INSTANCE_POOL_ACTION_COUNT = 0x2,
-	};
-
-	enum ParticleDataFlags
-	{
-		USE_NONE = 0x0,
-		USE_POSITION = 0x1,
-		USE_VELOCITY = 0x2,
-		USE_COLOR = 0x4,
-		USE_ROTATION_ANGLE = 0x8,
-		USE_ROTATION_RATE = 0x10,
-		USE_SPAWN_POS = 0x20,
-		USE_SPAWN_QUAT = 0x40,
-		USE_SIZE = 0x80,
-		USE_EMISSIVE = 0x100,
-		USE_PARENT_VELOCITY = 0x200,
-		USE_CHILD_SYSTEM = 0x400,
-		USE_SPAWN_TIME = 0x800,
-		USE_LIFE = 0x1000,
-		USE_STATE = 0x2000,
-		USE_RANDOM_SEED = 0x4000,
-		USE_FLAGS = 0x8000,
-		USE_MODULE_TESTS = 0x10000,
-		USE_HANDLE = 0x20000,
-		USE_INTENSITY = 0x40000,
-		USE_TEMPERATURE = 0x80000,
-		USE_CAMERA_DISTANCE = 0x100000,
-		USE_INHERIT_PERCENTAGE = 0x200000,
-		USE_RAY_CAST_HANDLE = 0x400000,
-		USE_ATLAS_INDEX = 0x800000,
-		USE_VECTOR_FIELD_SCALE = 0x1000000,
-		USE_LIGHTING_FRAC = 0x2000000,
-		USE_PREV_PLACEMENT = 0x4000000,
-		USE_SHADER_PARAMS = 0x8000000,
-		CHECK_FIELD_COUNT = 0x8000001,
-		USE_ALL = 0xFFFFFFF,
-		USE_BASE = 0x192F8FF,
-		USE_EMISSIVE_CURVES = 0x2040100,
+		PARTICLE_MODULE_GROUP_INIT = 0x0,
+		PARTICLE_MODULE_GROUP_UPDATE = 0x1,
+		PARTICLE_MODULE_GROUP_TEST = 0x2,
+		PARTICLE_MODULE_GROUP_COUNT = 0x3,
 	};
 
 	struct ParticleModuleGroupDef
@@ -8557,12 +8800,9 @@ namespace game::database
 		float spawnFrustumCullRadius;
 		unsigned int flags;
 		ParticleGravityOptions gravityOptions;
-		//int groupIDs[4];
-		ParticleFloatRange emitByDistanceDensity;
-		unsigned int instancePool;
-		unsigned int soloInstanceMax;
-		ParticleInstancePoolAction instanceAction;
-		ParticleDataFlags m_dataFlags;
+		int groupIDs[4];
+		float unk1;
+		float unk2;
 		ParticleFloatRange particleSpawnShapeRange;
 		unsigned int pad[1];
 	}; assert_sizeof(ParticleEmitterDef, 144);
@@ -8675,11 +8915,22 @@ namespace game::database
 		FxSpawnDefOneShot oneShot;
 	};
 
+	enum FXElemAtlasBehavior : std::uint8_t
+	{
+		FX_ATLAS_START_FIXED = 0x0,
+		FX_ATLAS_START_RANDOM = 0x1,
+		FX_ATLAS_START_INDEXED = 0x2,
+		FX_ATLAS_START_MASK = 0x3,
+		FX_ATLAS_PLAY_OVER_LIFE = 0x4,
+		FX_ATLAS_LOOP_ONLY_N_TIMES = 0x8,
+	};
+
 	struct FxElemAtlas
 	{
 		unsigned char behavior;
 		unsigned char index;
 		unsigned char fps;
+		unsigned char unk;
 		unsigned char loopCount;
 		unsigned char colIndexBits;
 		unsigned char rowIndexBits;
@@ -8824,22 +9075,23 @@ namespace game::database
 	{
 		FX_ELEM_TYPE_SPRITE_BILLBOARD = 0,
 		FX_ELEM_TYPE_SPRITE_ORIENTED = 1,
-		FX_ELEM_TYPE_SPRITE_ROTATED = 2,
-		FX_ELEM_TYPE_TAIL = 3,
-		FX_ELEM_TYPE_LINE = 4,
-		FX_ELEM_TYPE_TRAIL = 5,
-		FX_ELEM_TYPE_FLARE = 6,
-		FX_ELEM_TYPE_PARTICLE_SIM_ANIMATION = 7,
-		FX_ELEM_TYPE_CLOUD = 8,
-		FX_ELEM_TYPE_SPARK_CLOUD = 9,
-		FX_ELEM_TYPE_SPARK_FOUNTAIN = 10,
-		FX_ELEM_TYPE_MODEL = 11,
-		FX_ELEM_TYPE_OMNI_LIGHT = 12,
-		FX_ELEM_TYPE_SPOT_LIGHT = 13,
-		FX_ELEM_TYPE_SOUND = 14,
-		FX_ELEM_TYPE_DECAL = 15,
-		FX_ELEM_TYPE_RUNNER = 16,
-		FX_ELEM_TYPE_VECTORFIELD = 17,
+		FX_ELEM_TYPE_TAIL = 2,
+		FX_ELEM_TYPE_TRAIL = 3,
+		FX_ELEM_TYPE_FLARE = 4,
+		FX_ELEM_TYPE_PARTICLE_SIM_ANIMATION = 5,
+		FX_ELEM_TYPE_CLOUD = 6,
+		FX_ELEM_TYPE_SPARK_CLOUD = 7,
+		FX_ELEM_TYPE_SPARK_FOUNTAIN = 8,
+		FX_ELEM_TYPE_MODEL = 9,
+		FX_ELEM_TYPE_OMNI_LIGHT = 10,
+		FX_ELEM_TYPE_SPOT_LIGHT = 11,
+		FX_ELEM_TYPE_SOUND = 12,
+		FX_ELEM_TYPE_DECAL = 13,
+		FX_ELEM_TYPE_RUNNER = 14,
+		FX_ELEM_TYPE_VECTORFIELD = 15,
+		FX_ELEM_TYPE_COUNT = 16,
+		FX_ELEM_TYPE_LAST_SPRITE = FX_ELEM_TYPE_PARTICLE_SIM_ANIMATION,
+		FX_ELEM_TYPE_LAST_DRAWN = FX_ELEM_TYPE_SPOT_LIGHT,
 	};
 
 	enum FxElemDefFlags : std::uint32_t
@@ -8869,27 +9121,28 @@ namespace game::database
 		FX_ELEM_NODRAW_IN_THERMAL_VIEW = 0x20000,
 		FX_ELEM_THERMAL_MASK = 0x22000,
 		FX_ELEM_SPAWN_IMPACT_FX_WITH_SURFACE_NAME = 0x40000,
-		FX_ELEM_RECEIVE_DYNAMIC_LIGHT = 0x80000,
+		FX_ELEM_DEPRECATED = 0x80000,
 		FX_ELEM_VOLUMETRIC_TRAIL = 0x100000,
 		FX_ELEM_USE_COLLISION = 0x200000,
 		FX_ELEM_USE_VECTORFIELDS = 0x400000,
-		FX_ELEM_NO_SURFACE_HDR_SCALAR = 0x800000,
 		FX_ELEM_HAS_VELOCITY_GRAPH_LOCAL = 0x1000000,
 		FX_ELEM_HAS_VELOCITY_GRAPH_WORLD = 0x2000000,
 		FX_ELEM_HAS_GRAVITY = 0x4000000,
 		FX_ELEM_USE_MODEL_PHYSICS = 0x8000000,
 		FX_ELEM_NONUNIFORM_SCALE = 0x10000000,
-		FX_ELEM_CLOUD_SHAPE_CUBE = 0x0,
-		FX_ELEM_CLOUD_SHAPE_SPHERE_LARGE = 0x20000000,
-		FX_ELEM_CLOUD_SHAPE_SPHERE_MEDIUM = 0x40000000,
-		FX_ELEM_CLOUD_SHAPE_SPHERE_SMALL = 0x60000000,
-		FX_ELEM_CLOUD_SHAPE_MASK = 0x60000000,
 		FX_ELEM_FOUNTAIN_DISABLE_COLLISION = 0x80000000,
 	};
 
 	enum FxElemDefExtraFlags : std::uint32_t
 	{
-
+		FX_ELEM2_BILLBOARD_FACING_CAMERA_PERPENDICULAR = 0x1,
+		FX_ELEM2_BILLBOARD_FACING_PLAYER = 0x2,
+		FX_ELEM2_BILLBOARD_FACING_MASK = 0x3,
+		FX_ELEM2_EMIT_TRAILS = 0x4,
+		FX_ELEM2_REACTIVE_TURBULANCE = 0x8,
+		FX_ELEM2_GPU_LIGHTING = 0x10,
+		FX_ELEM2_GPU_LIGHTING_SH = 0x20,
+		FX_ELEM2_COLOR_OR_ALPHA_CURVE = 0x40,
 	};
 
 	struct FxElemDef
@@ -8912,8 +9165,7 @@ namespace game::database
 		FxFloatRange gravity;
 		FxFloatRange reflectionFactor;
 		FxElemAtlas atlas;
-		char unk[2];
-		unsigned char elemType;
+		FxElemType elemType;
 		unsigned char visualCount;
 		unsigned char velIntervalCount;
 		unsigned char visStateIntervalCount;
@@ -8932,13 +9184,23 @@ namespace game::database
 		unsigned char useItemClip;
 		unsigned char fadeInfo;
 		int randomSeed;
-		float litMaxColorChangePerSec;
-		float litUnlitBlendFactor;
+		float litUnlitBlendFactor; // FX_EvaluateVisualState_DoLighting
+		float pad;
 	}; assert_sizeof(FxElemDef, 304);
 	assert_offsetof(FxElemDef, elemType, 182);
 	assert_offsetof(FxElemDef, visualCount, 183);
 	assert_offsetof(FxElemDef, visuals, 208);
 	assert_offsetof(FxElemDef, extended, 280);
+
+	enum FxEffectDefFlags : std::uint32_t
+	{
+		FX_EFFECT_NEEDS_LIGHTING_AT_SPAWN = 0x1,
+		FX_EFFECT_NEEDS_LIGHTING_PER_FRAME_AT_ORIGIN = 0x2,
+		FX_EFFECT_RECEIVES_DYNAMIC_LIGHTING_PER_FRAME_AT_ORIGIN = 0x4,
+		FX_EFFECT_USE_VECTORFIELDS = 0x8,
+		FX_EFFECT_UNK = 0x10,
+		FX_EFFECT_NEEDS_LIGHTING_AT_SPAWN_2 = 0x20,
+	};
 
 	struct FxEffectDef
 	{
@@ -11147,10 +11409,10 @@ namespace game::database
 		unsigned short iDetonateTime;
 		unsigned short iMeleeTime;
 		unsigned short meleeChargeTime;
-		unsigned short meleeUnkTime;
+		unsigned short meleeChargeDelay;
 		unsigned short altMeleeTime;
 		unsigned short altMeleeChargeTime;
-		unsigned short altMeleeUnkTime;
+		unsigned short altMeleeChargeDelay;
 		unsigned short iReloadTime;
 		unsigned short iFastReloadTime;
 		unsigned short reloadShowRocketTime;
@@ -11647,10 +11909,14 @@ namespace game::database
 	enum DBAllocFlags : std::int32_t
 	{
 		DB_ZONE_NONE = 0x0,
-		DB_ZONE_COMMON = 0x1,
-		DB_ZONE_GAME = 0x4, // maybe
+		DB_ZONE_PERMAMENT = 0x1,
+		DB_ZONE_UI = 0x20,
+		DB_ZONE_UI_SCENE = 0x40,
+		DB_ZONE_GAME = 0x80,
 		DB_ZONE_LOAD = 0x100,
-		DB_ZONE_CUSTOM = 0x1000000 // added for custom zone loading
+		DB_ZONE_PRELOAD_LEVEL_SP = 0x20000,
+		DB_ZONE_PRELOAD_TRANSIENT_SP = 0x40000,
+		DB_ZONE_CUSTOM = 0x1000000, // added for custom zone loading
 	};
 
 	struct XZoneInfo

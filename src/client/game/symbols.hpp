@@ -83,6 +83,7 @@ namespace game
 	WEAK symbol<bool(const char* zoneName)> DB_IsLocalized{ 0x3BC500 };
 	WEAK symbol<char* (const char* filename, char* buf, int size)> DB_ReadRawFile{ 0xA79E30 };
 	WEAK symbol<int(const RawFile* rawfile)> DB_GetRawFileLen{ 0xF20AF0 };
+	WEAK symbol<void(int flags)> DB_UnloadFastfilesByZoneFlags{ 0xA7BCE0 };
 
 	WEAK symbol<const char* (const DDLState* state, int enumValue)> DDL_Lookup_GetEnumString{ 0x30430 };
 	WEAK symbol<bool(const DDLState* state)> DDL_StateIsLeaf{ 0x2E3C0 };
