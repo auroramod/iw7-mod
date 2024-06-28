@@ -306,6 +306,19 @@ namespace gsc
 			}
 		}
 
+		std::uint32_t get_opcode_size(const std::uint8_t opcode)
+		{
+			try
+			{
+				const auto index = gsc_ctx->opcode_enum(opcode);
+				return gsc_ctx->opcode_size(index);
+			}
+			catch (...)
+			{
+				return 0;
+			}
+		}
+
 		void builtin_call_error(const std::string& error)
 		{
 			const auto function_id = get_function_id();
@@ -320,21 +333,62 @@ namespace gsc
 			}
 		}
 
-		void print_callstack()
+		void print_callstack(uint8_t opcode_id)
 		{
+			bool first = true;
+
 			for (auto frame = game::scr_VmPub->function_frame; frame != game::scr_VmPub->function_frame_start; --frame)
 			{
-				const auto pos = frame == game::scr_VmPub->function_frame ? game::scr_function_stack->pos : frame->fs.pos;
+				const auto function_stack = game::scr_function_stack;
+				const auto pos = frame == game::scr_VmPub->function_frame ? function_stack->pos : frame->fs.pos;
 				const auto function = find_function(frame->fs.pos);
 
 				if (function.has_value())
 				{
-					console::warn("\tat function \"%s\" in file \"%s.gsc\"\n", function.value().first.data(), function.value().second.data());
+					auto& file_name = function.value().second;
+
+					if (gsc::source_pos_map.contains(file_name))
+					{
+						const auto script = gsc::loaded_scripts[file_name];
+						assert(script);
+
+						const auto& pos_map = gsc::source_pos_map[file_name];
+						std::uint32_t opcode_size = 0;
+						if (first)
+						{
+							opcode_size = get_opcode_size(opcode_id);
+						}
+						if (!opcode_size)
+						{
+							opcode_size = 3; // function call
+						}
+						auto position = static_cast<std::uint32_t>(pos - script->bytecode);
+						position = position + opcode_size;
+
+						if (pos_map.contains(position))
+						{
+							const auto& info = pos_map.at(position);
+
+							console::warn("\tat function \"%s\" in file \"%s.gsc\" (line %d, col %d)\n",
+								function.value().first.data(), file_name.data(), info.line, info.column);
+						}
+						else
+						{
+							goto NO_DEVMAP;
+						}
+					}
+					else
+					{
+					NO_DEVMAP:
+						console::warn("\tat function \"%s\" in file \"%s.gsc\"\n", function.value().first.data(), file_name.data());
+					}
 				}
 				else
 				{
 					console::warn("\tat unknown location %p\n", pos);
 				}
+
+				first = false;
 			}
 		}
 
@@ -375,13 +429,20 @@ namespace gsc
 			force_error_print = false;
 			gsc_error_msg = {};
 
-			print_callstack();
+			print_callstack(opcode_id);
 			console::warn("**********************************************\n");
 		}
 
 		void vm_error_stub(__int64 mark_pos)
 		{
-			vm_error_internal();
+			try
+			{
+				vm_error_internal();
+			}
+			catch (xsk::gsc::error& err)
+			{
+				console::error("vm_error: %s\n", err.what());
+			}
 
 			utils::hook::invoke<void>(0x510C80_b, mark_pos);
 		}

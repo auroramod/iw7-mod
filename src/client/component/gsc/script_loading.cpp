@@ -19,7 +19,9 @@
 
 namespace gsc
 {
-	std::unique_ptr<xsk::gsc::iw7::context> gsc_ctx = std::make_unique<xsk::gsc::iw7::context>();;
+	std::unique_ptr<xsk::gsc::iw7::context> gsc_ctx = std::make_unique<xsk::gsc::iw7::context>();
+	std::unordered_map<std::string, game::ScriptFile*> loaded_scripts;
+	std::unordered_map<std::string, code_pos_map> source_pos_map;
 
 	namespace
 	{
@@ -30,7 +32,6 @@ namespace gsc
 		std::unordered_map<std::string, std::uint32_t> init_handles;
 
 		utils::memory::allocator scriptfile_allocator;
-		std::unordered_map<std::string, game::ScriptFile*> loaded_scripts;
 
 		char* script_mem_buf = nullptr;
 		std::uint64_t script_mem_buf_size = 0;
@@ -105,6 +106,35 @@ namespace gsc
 			return false;
 		}
 
+		void parse_gsc_map(const std::string& name, const xsk::gsc::buffer& devmap)
+		{
+			auto data = devmap.data;
+			auto offset = 0;
+
+			auto count = *reinterpret_cast<const int*>(data + offset);
+			offset += sizeof(uint32_t);
+
+			console::debug("parsing gscmap for \"%s\" (%d)\n", name.data(), count);
+
+			code_pos_map pos_map{};
+
+			for (auto i = 0; i < count; ++i)
+			{
+				auto pos = *reinterpret_cast<const uint32_t*>(data + offset);
+				offset += sizeof(uint32_t);
+
+				auto line = *reinterpret_cast<const uint16_t*>(data + offset);
+				offset += sizeof(uint16_t);
+
+				auto column = *reinterpret_cast<const uint16_t*>(data + offset);
+				offset += sizeof(uint16_t);
+
+				pos_map[pos] = { line, column };
+			}
+
+			source_pos_map[name] = pos_map;
+		}
+
 		game::ScriptFile* load_custom_script(const char* file_name, const std::string& real_name)
 		{
 			if (const auto itr = loaded_scripts.find(file_name); itr != loaded_scripts.end())
@@ -149,8 +179,11 @@ namespace gsc
 				const auto assembly_ptr = compiler.compile(real_name, data);
 				const auto output_script = assembler.assemble(*assembly_ptr);
 
-				const auto bytecode = output_script.first;
-				const auto stack = output_script.second;
+				const auto bytecode = std::get<0>(output_script);
+				const auto stack = std::get<1>(output_script);
+				const auto devmap = std::get<2>(output_script);
+
+				parse_gsc_map(real_name, devmap);
 
 				const auto script_file_ptr = static_cast<game::ScriptFile*>(scriptfile_allocator.allocate(sizeof(game::ScriptFile)));
 				script_file_ptr->name = file_name;
@@ -293,21 +326,20 @@ namespace gsc
 				xsk::gsc::build::dev :
 				xsk::gsc::build::prod;
 
-			gsc_ctx->init(comp_mode, [](const std::string& include_name)
-				-> std::pair<xsk::gsc::buffer, std::vector<std::uint8_t>>
+			gsc_ctx->init(comp_mode, []([[maybe_unused]] auto const* ctx, const auto& included_path) -> std::pair<xsk::gsc::buffer, std::vector<std::uint8_t>>
 			{
-				const auto real_name = get_raw_script_file_name(include_name);
+				const auto script_name = std::filesystem::path(included_path).replace_extension().string();
 
 				std::string file_buffer;
-				if (!read_raw_script_file(real_name, &file_buffer) || file_buffer.empty())
+				if (!read_raw_script_file(script_name, &file_buffer) || file_buffer.empty())
 				{
-					const auto name = get_script_file_name(include_name);
+					const auto name = get_script_file_name(script_name);
 					if (game::DB_XAssetExists(game::ASSET_TYPE_SCRIPTFILE, name.data()))
 					{
-						return read_compiled_script_file(name, real_name);
+						return read_compiled_script_file(name, script_name);
 					}
 
-					throw std::runtime_error(std::format("Could not load gsc file '{}'", real_name));
+					throw std::runtime_error(std::format("Could not load gsc file '{}'", script_name));
 				}
 
 				std::vector<std::uint8_t> script_data;

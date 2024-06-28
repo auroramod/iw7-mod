@@ -16,24 +16,24 @@ namespace gsc
 		//sub_1400B2BE0
 		{0x1400b2ced,""},
 		//sub_1400F4F90
-		{0x1400f5142,""},
-		{0x1400f5246,""},
-		{0x1400f52b2,""},
-		{0x1400f53e2,""},
-		{0x1400f544f,""},
+		{0x1400f5142,"Invalid match data definition specified."},
+		{0x1400f5246,"Invalid match data definition specified."},
+		{0x1400f52b2,"Invalid match data definition specified."},
+		{0x1400f53e2,"Invalid match data definition specified."},
+		{0x1400f544f,"Invalid match data definition specified."},
 		//sub_1400F5AC0
-		{0x1400f5c4e,""},
-		{0x1400f5cbb,""},
+		{0x1400f5c4e,"Invalid match data definition specified."},
+		{0x1400f5cbb,"Invalid match data definition specified."},
 		//sub_1400F5EF0
-		{0x1400f60ca,""},
-		{0x1400f6139,""},
+		{0x1400f60ca,"Invalid match data definition specified."},
+		{0x1400f6139,"Invalid match data definition specified."},
 		//sub_1400F6440
-		{0x1400f64b7,""},
+		{0x1400f64b7,"Invalid match data definition specified. lifeCount must be a short"},
 		//sub_1400F6540
-		{0x1400f65e6,""},
-		{0x1400f660e,""},
+		{0x1400f65e6,"Invalid match data definition specified. The lives field must be an indexed array of life structures"},
+		{0x1400f660e,"Invalid match data definition specified. The players field must be an indexed array of player structures"},
 		//sub_140117AB0
-		{0x140117b38,""},
+		{0x140117b38,"ERROR: G_RagdollConstraintEntity_Spawn(), Will not spawn."},
 		//sub_1403D9B70
 		{0x1403d9bac,""},
 		//sub_1403D9D80

@@ -114,9 +114,10 @@ namespace gsc
 			}
 		}
 
-		void vm_call_builtin_method_internal(game::scr_entref_t ent_ref, int function_id)
+		int meth_function_id = 0;
+		void vm_call_builtin_method_internal(game::scr_entref_t ent_ref)
 		{
-			const auto custom_function_id = static_cast<std::uint16_t>(function_id); // cast for gsc-tool & our custom method map
+			const auto custom_function_id = static_cast<std::uint16_t>(meth_function_id); // cast for gsc-tool & our custom method map
 			const auto custom = methods.contains(custom_function_id);
 			if (custom)
 			{
@@ -124,7 +125,7 @@ namespace gsc
 				return;
 			}
 
-			builtin_method meth = meth_table[function_id - 0x8000];
+			builtin_method meth = meth_table[meth_function_id - 0x8000];
 			if (meth == nullptr)
 			{
 				scr_error(utils::string::va("builtin method \"%s\" doesn't exist", gsc_ctx->meth_name(custom_function_id).data()), true);
@@ -134,19 +135,24 @@ namespace gsc
 			meth(ent_ref);
 		}
 
+		void save_meth_func_id([[maybe_unused]] game::scr_entref_t ent_ref, int function_id)
+		{
+			meth_function_id = function_id;
+		}
+
 		void vm_call_builtin_method_stub(utils::hook::assembler& a)
 		{
-			//a.pushad64();
+			a.pushad64();
 			a.push(rdx);
 			a.push(ecx);
 			a.mov(rdx, rdi); // function id is stored in rdi
 			a.mov(ecx, ebx); // ent ref is stored in ebx
-			a.call(vm_call_builtin_method_internal);
+			a.call_aligned(save_meth_func_id);
 			a.pop(rdx);
 			a.pop(ecx);
-			//a.popad64();
+			a.popad64();
 
-			a.jmp(0xC0E8F9_b);
+			a.jmp(0xC0E8F2_b);
 		}
 
 		void print(const function_args& args)
@@ -283,7 +289,11 @@ namespace gsc
 	public:
 		void post_unpack() override
 		{
-			developer_script = game::Dvar_RegisterBool("developer_script", true, 0, "Enable developer script comments"); // enable by default for now
+#ifdef DEBUG
+			developer_script = game::Dvar_RegisterBool("developer_script", true, 0, "Enable developer script comments");
+#else
+			developer_script = game::Dvar_RegisterBool("developer_script", false, 0, "Enable developer script comments");
+#endif
 
 			utils::hook::set<uint32_t>(0xBFD16B_b + 1, func_table_count); // change builtin func count
 			utils::hook::set<uint32_t>(0xBFD172_b + 4, static_cast<uint32_t>(reverse_b((&func_table))));
@@ -296,7 +306,8 @@ namespace gsc
 			utils::hook::inject(0xBFD5AF_b + 3, &meth_table);
 			utils::hook::set<uint32_t>(0xBFD5B6_b + 2, sizeof(meth_table));
 			utils::hook::nop(0xC0E8EB_b, 14); // nop the lea & call at the end of call_builtin_method
-			utils::hook::jump(0xC0E8EB_b, utils::hook::assemble(vm_call_builtin_method_stub), true);
+			utils::hook::jump(0xC0E8EB_b, utils::hook::assemble(vm_call_builtin_method_stub));
+			utils::hook::call(0xC0E8F2_b, vm_call_builtin_method_internal);
 
 			utils::hook::jump(0xC0D0A4_b, utils::hook::assemble(vm_execute_stub), true);
 
