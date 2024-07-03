@@ -19,6 +19,8 @@ namespace game
 	WEAK symbol<unsigned int(int handle, int num_param)> Scr_ExecThread{ 0xC0ACD0 };
 
 	WEAK symbol<float()> BG_GetGravity{ 0x68DD0 };
+	WEAK game::symbol<unsigned int(unsigned short* weapon, game::playerState_s* ps)> BG_PlayerLastWeaponHandForViewWeapon{ 0x74B410 };
+	WEAK game::symbol<bool(game::playerState_s* ps, game::weapAnimFiles_t anim, int hand, unsigned char pmoveHandler)> BG_ViewModelAnimExists{ 0x751200 };
 
 	WEAK symbol<void(errorParm code, const char* message, ...)> Com_Error{ 0xB8D830 };
 
@@ -126,6 +128,7 @@ namespace game
 	WEAK symbol<void(char* buffer)> FS_FreeFile{ 0xCDE1F0 };
 	WEAK symbol<void(int h, const char* fmt, ...)> FS_Printf{ 0xCDD1C0 };
 
+	WEAK symbol<gentity_s* (scr_entref_t ent)> GetEntity{ 0xB50EA0 };
 	WEAK symbol<unsigned int(unsigned int)> GetObjectType{ 0xC059E0 };
 	WEAK symbol<unsigned int(unsigned int, unsigned int)> GetVariable{ 0xC05A90 };
 	WEAK symbol<unsigned int(unsigned int parentId, unsigned int unsignedValue)> GetNewVariable{ 0xC05660 };
@@ -215,6 +218,10 @@ namespace game
 	WEAK symbol<char* (const size_t size, unsigned int alignment, int type, int source)> PMem_AllocFromSource_NoDebug{ 0xCF0A90 };
 	WEAK symbol<void(const char* name, int allocDir)> PMem_Free{ 0xCF10D0 };
 
+	WEAK game::symbol<bool(__int64 weaponMap, game::playerState_s* ps, unsigned int hand, unsigned char pmoveHandler)> PM_Weapon_IsInInterruptibleState{ 0x728210 };
+	WEAK game::symbol<void(__int64 weaponMap, game::playerState_s* ps, unsigned char pmoveHandler)> PM_BuildWeaponAnimArrays{ 0x71AC50 };
+	WEAK game::symbol<void(game::pmove_t* pm, int hand)> PM_Weapon_Idle{ 0x727910 };
+
 	WEAK symbol<unsigned int(unsigned int localId, const char* pos,
 		unsigned int paramcount)> VM_Execute{ 0xC0CDB0 };
 
@@ -229,6 +236,7 @@ namespace game
 	WEAK symbol<int(unsigned int classnum, int entnum, int offset)> Scr_SetObjectField{ 0x40B6E0 };
 	WEAK symbol<int()> Scr_GetInt{ 0xC0B950 };
 	WEAK symbol<void()> Scr_ErrorInternal{ 0xC0AC30 };
+	WEAK symbol<void(const char* str)> Scr_AllocGlobalString{ 0xC03C70 };
 
 	WEAK symbol<ScreenPlacement* ()> ScrPlace_GetViewPlacement{ 0x9E4090 };
 
@@ -270,6 +278,8 @@ namespace game
 	WEAK symbol<const char* (const char*)> UI_GetGameTypeDisplayName{ 0xCC61C0 };
 	WEAK symbol<void(unsigned int localClientNum, const char** args)> UI_RunMenuScript{ 0xCC9710 };
 	WEAK symbol<const char* (const char* string)> UI_SafeTranslateString{ 0xCC9790 };
+
+	WEAK game::symbol<float(game::XAnim_s* anims, unsigned int anim)> XAnimGetLengthMsec{ 0xD761C0 };
 
 	WEAK symbol<void* (jmp_buf* Buf, int Value)> longjmp{ 0x12C0758 };
 	WEAK symbol<int(jmp_buf* Buf)> _setjmp{ 0x1423110 };

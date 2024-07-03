@@ -517,6 +517,42 @@ namespace game
 		int time;
 	};
 
+	struct XAnimParent
+	{
+		unsigned __int16 flags;
+		unsigned __int16 children;
+	};
+
+	union $1A6660B292B883AB62F4E15A2C35B0BF
+	{
+		game::XAnimParts* parts;
+		XAnimParent animParent;
+	};
+
+	struct XAnimEntry
+	{
+		char nodeType[1];
+		char lod;
+		unsigned __int16 numAnims;
+		unsigned __int16 parent;
+		unsigned __int16 bindingIndex;
+		$1A6660B292B883AB62F4E15A2C35B0BF ___u2;
+	};
+
+	struct XAnim_s
+	{
+		unsigned int size;
+		bool initialized;
+		bool dirtyBindings;
+		unsigned __int16 numGameParameters;
+		unsigned __int16 maxGameParameters;
+		unsigned __int16 numBindings;
+		unsigned __int16 maxBindings;
+		const void** gameParameterNames;
+		void* bindings;
+		XAnimEntry entries[1];
+	};
+
 	namespace entity
 	{
 		enum connstate_t : std::uint32_t
@@ -560,9 +596,134 @@ namespace game
 
 		assert_offsetof(entityState_t, clientNum, 156);
 
+		enum weaponstate_t : std::int32_t
+		{
+			WEAPON_READY = 0,
+			WEAPON_RAISING = 1,
+			WEAPON_RAISING_ALTSWITCH = 2,
+			WEAPON_RAISING_ALTSWITCH_ADS = 3,
+		};
+
+		enum WeaponAnimNumber : std::int32_t
+		{
+			WEAP_IDLE = 0,
+			WEAP_FORCE_IDLE = 1,
+			WEAP_ATTACK = 2,
+			WEAP_ATTACK_LASTSHOT = 3,
+			WEAP_RECHAMBER = 4,
+			WEAP_ADS_ATTACK = 5,
+			WEAP_ADS_ATTACK_LASTSHOT = 6,
+			WEAP_ADS_RECHAMBER = 7,
+			WEAP_GRENADE_PRIME = 8,
+			WEAP_GRENADE_PRIME_READY_TO_THROW = 9,
+			WEAP_MELEE_SWIPE = 10,
+			WEAP_MELEE_HIT = 11,
+			WEAP_MELEE_FATAL = 12,
+			WEAP_MELEE_MISS = 13,
+			WEAP_MELEE_VICTIM_CROUCHING_HIT = 14,
+			WEAP_MELEE_VICTIM_CROUCHING_FATAL = 15,
+			WEAP_MELEE_VICTIM_CROUCHING_MISS = 16,
+			WEAP_DROP = 17,
+			WEAP_RAISE = 18,
+			WEAP_FIRST_RAISE = 19,
+			WEAP_RELOAD = 20,
+			WEAP_RELOAD_EMPTY = 21,
+			WEAP_RELOAD_START = 22,
+			WEAP_RELOAD_END = 23,
+			WEAP_ALTSWITCHFROM = 24,
+			WEAP_ALTSWITCHFROM_ADS = 25,
+			WEAP_ALTSWITCHFROM_AKIMBO = 26,
+			WEAP_ALTSWITCHTO = 27,
+			WEAP_ALTSWITCHTO_ADS = 28,
+			WEAP_ALTSWITCHTO_AKIMBO = 29,
+			WEAP_QUICK_DROP = 30,
+			WEAP_QUICK_RAISE = 31,
+			WEAP_EMPTY_DROP = 32,
+			WEAP_EMPTY_RAISE = 33,
+			WEAP_SPRINT_IN = 34,
+			WEAP_SPRINT_IN_CANCEL = 35,
+			WEAP_SPRINT_LOOP = 36,
+			WEAP_SPRINT_OUT = 37,
+			WEAP_STUNNED_START = 38,
+			WEAP_STUNNED_LOOP = 39,
+			WEAP_STUNNED_END = 40,
+			WEAP_HOLD_FIRE = 41,
+			WEAP_DETONATE = 42,
+			WEAP_NIGHTVISION_WEAR = 43,
+			WEAP_NIGHTVISION_REMOVE = 44,
+			WEAP_BLAST_IMPACT_FRONT = 45,
+			WEAP_BLAST_IMPACT_LEFT = 46,
+			WEAP_BLAST_IMPACT_BACK = 47,
+			WEAP_BLAST_IMPACT_RIGHT = 48,
+			WEAP_SLIDE = 49,
+			WEAP_SWIM_LOOP = 50,
+			WEAP_DODGE = 51,
+			WEAP_LEAP_IN = 52,
+			WEAP_LEAP_LOOP = 53,
+			WEAP_LEAP_OUT = 54,
+			WEAP_LEAP_CANCEL = 55,
+			WEAP_CHARGE_INT = 56,
+			WEAP_CHARGE_LOOP = 57,
+			WEAP_CHARGE_OUT = 58,
+			WEAP_ADS_CHARGE_INT = 59,
+			WEAP_ADS_CHARGE_LOOP = 60,
+			WEAP_ADS_CHARGE_OUT = 61,
+			WEAP_WALLRUN = 62,
+			WEAP_INSPECT = 100, // custom added
+		};
+
+		struct PlayerActiveWeaponState
+		{
+			int weapAnim;
+			int weaponTime;
+			int weaponDelay;
+			int weaponRestrictKickTime;
+			int weaponState;
+			char __pad0[32];
+		}; 
+		assert_sizeof(PlayerActiveWeaponState, 52);
+		assert_offsetof(PlayerActiveWeaponState, weapAnim, 0);
+		assert_offsetof(PlayerActiveWeaponState, weaponTime, 4);
+		assert_offsetof(PlayerActiveWeaponState, weaponDelay, 8);
+		assert_offsetof(PlayerActiveWeaponState, weaponState, 16);
+
+		typedef int GameModeFlagValues[2];
+
+		struct playerState_s
+		{
+			int commandTime;
+			int pm_type;
+			char __pad0[1612];
+			PlayerActiveWeaponState weapState[2];
+			char __pad1[464];
+			GameModeFlagValues weapFlags;
+		};
+		assert_offsetof(playerState_s, weapState, 1620);
+		assert_offsetof(playerState_s, weapFlags, 2188);
+
+		struct pmove_t
+		{
+			void* unk;
+			playerState_s* ps;
+			char __pad0[560];
+			unsigned char handler;
+		};
+		assert_offsetof(pmove_t, handler, 576);
+
+		struct pml_t
+		{
+			float forward[3];
+			float right[3];
+			float up[3];
+			float frametime;
+			int msec;
+		};
+		assert_offsetof(pml_t, msec, 40);
+
 		struct gclient_s
 		{
-			char __pad0[19376];
+			playerState_s ps;
+			char __pad0[17180];
 			char name[32]; // 19376
 			char __pad1[1516];
 			int flags; // 20924
