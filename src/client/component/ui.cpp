@@ -39,7 +39,7 @@ namespace ui
 				dvars::cg_draw2D = game::Dvar_RegisterBool("cg_draw2D", true, game::DVAR_FLAG_NONE, "Draw 2D screen elements");
 			}, scheduler::main);
 
-			cg_draw2d_hook.create(0x781D90_b, cg_draw2d_stub);
+			cg_draw2d_hook.create(0x140781D90, cg_draw2d_stub);
 		}
 	};
 }

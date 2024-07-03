@@ -465,29 +465,29 @@ namespace gsc
 		void post_unpack() override
 		{
 			// Allocate script memory (PMem doesn't work)
-			db_alloc_x_zone_memory_internal_hook.create(0xA75450_b, db_alloc_x_zone_memory_internal_stub);
+			db_alloc_x_zone_memory_internal_hook.create(0x140A75450, db_alloc_x_zone_memory_internal_stub);
 
 			// Increase allocated script memory
-			utils::hook::set<uint32_t>(0xA75B5C_b + 1, 0x480000 + static_cast<std::uint32_t>(script_memory.size));
-			utils::hook::set<uint32_t>(0xA75BAA_b + 4, 0x480 + (static_cast<std::uint32_t>(script_memory.size) >> 12));
-			utils::hook::set<uint32_t>(0xA75BBE_b + 6, 0x480 + (static_cast<std::uint32_t>(script_memory.size) >> 12));
+			utils::hook::set<uint32_t>(0x140A75B5C + 1, 0x480000 + static_cast<std::uint32_t>(script_memory.size));
+			utils::hook::set<uint32_t>(0x140A75BAA + 4, 0x480 + (static_cast<std::uint32_t>(script_memory.size) >> 12));
+			utils::hook::set<uint32_t>(0x140A75BBE + 6, 0x480 + (static_cast<std::uint32_t>(script_memory.size) >> 12));
 
 			// Load our scripts with an uncompressed stack
-			utils::hook::call(0xC09DA7_b, db_get_raw_buffer_stub);
+			utils::hook::call(0x140C09DA7, db_get_raw_buffer_stub);
 
 			// Compiler start and cleanup, also loads scripts
-			scr_begin_load_scripts_hook.create(0xBFD500_b, scr_begin_load_scripts_stub);
-			scr_end_load_scripts_hook.create(0xBFD630_b, scr_end_load_scripts_stub);
+			scr_begin_load_scripts_hook.create(0x140BFD500, scr_begin_load_scripts_stub);
+			scr_end_load_scripts_hook.create(0x140BFD630, scr_end_load_scripts_stub);
 
 			// ProcessScript: hook xasset functions to return our own custom scripts
-			utils::hook::call(0xC09D37_b, find_script);
-			utils::hook::call(0xC09D47_b, db_is_x_asset_default);
+			utils::hook::call(0x140C09D37, find_script);
+			utils::hook::call(0x140C09D47, db_is_x_asset_default);
 
 			// execute main handle
-			g_load_structs_hook.create(0x409FB0_b, g_load_structs_stub);
+			g_load_structs_hook.create(0x140409FB0, g_load_structs_stub);
 
 			// execute init handle
-			scr_load_level_hook.create(0xB51B40_b, scr_load_level_stub);
+			scr_load_level_hook.create(0x140B51B40, scr_load_level_stub);
 
 			scripting::on_shutdown([](bool free_scripts, bool post_shutdown)
 			{

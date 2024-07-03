@@ -66,7 +66,7 @@ namespace system_check
 
 		void verify_binary_version()
 		{
-			const auto value = *reinterpret_cast<DWORD*>(0x1337_b);
+			const auto value = *reinterpret_cast<DWORD*>(0x140001337);
 			if (!utils::nt::is_wine() && value != 0xB43C9275)
 			{
 				throw std::runtime_error("Unsupported Call of Duty: Infinite Warfare version");

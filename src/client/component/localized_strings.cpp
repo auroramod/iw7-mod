@@ -50,7 +50,7 @@ namespace localized_strings
 		void post_unpack() override
 		{
 			// Change some localized strings
-			seh_string_ed_get_string_hook.create(0xCBBB10_b, &seh_string_ed_get_string);
+			seh_string_ed_get_string_hook.create(0x140CBBB10, &seh_string_ed_get_string);
 		}
 	};
 }

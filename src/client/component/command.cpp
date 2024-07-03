@@ -79,8 +79,8 @@ namespace command
 			static std::string comand_line_buffer = GetCommandLineA();
 			auto* command_line = comand_line_buffer.data();
 
-			auto& com_num_console_lines = *reinterpret_cast<int*>(0x6006DB0_b);
-			auto* com_console_lines = reinterpret_cast<char**>(0x6006DC0_b);
+			auto& com_num_console_lines = *reinterpret_cast<int*>(0x146006DB0);
+			auto* com_console_lines = reinterpret_cast<char**>(0x146006DC0);
 
 			auto inq = false;
 			com_console_lines[0] = command_line;
@@ -111,8 +111,8 @@ namespace command
 
 		void parse_startup_variables()
 		{
-			auto& com_num_console_lines = *reinterpret_cast<int*>(0x6006DB0_b);
-			auto* com_console_lines = reinterpret_cast<char**>(0x6006DC0_b);
+			auto& com_num_console_lines = *reinterpret_cast<int*>(0x146006DB0);
+			auto* com_console_lines = reinterpret_cast<char**>(0x146006DC0);
 
 			for (int i = 0; i < com_num_console_lines; i++)
 			{
@@ -435,11 +435,11 @@ namespace command
 	public:
 		void post_unpack() override
 		{
-			utils::hook::jump(0xBB1DC0_b, dvar_command_stub, true);
-			client_command_mp_hook.create(0xB105D0_b, &client_command_mp);
-			client_command_sp_hook.create(0x483130_b, &client_command_sp);
+			utils::hook::jump(0x140BB1DC0, dvar_command_stub, true);
+			client_command_mp_hook.create(0x140B105D0, &client_command_mp);
+			client_command_sp_hook.create(0x140483130, &client_command_sp);
 
-			parse_commandline_hook.create(0xF2F67B_b, parse_commandline);
+			parse_commandline_hook.create(0x140F2F67B, parse_commandline);
 
 			add_commands();
 		}

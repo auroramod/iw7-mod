@@ -11,7 +11,7 @@ namespace chat
 	{
 		game::GfxFont* ui_get_font_handle_stub()
 		{
-			const auto font = *reinterpret_cast<game::GfxFont**>(0x74CC850_b); // textFont
+			const auto font = *reinterpret_cast<game::GfxFont**>(0x1474CC850); // textFont
 			return font;
 		}
 	}
@@ -22,9 +22,9 @@ namespace chat
 		void post_unpack() override
 		{
 			// use better font
-			utils::hook::call(0x35602C_b, ui_get_font_handle_stub); // con_drawsay
-			utils::hook::call(0x9A7843_b, ui_get_font_handle_stub); // cl_keys_draw_text_override_field
-			utils::hook::call(0x77D250_b, ui_get_font_handle_stub); // cg_drawmp_drawchatmessages
+			utils::hook::call(0x14035602C, ui_get_font_handle_stub); // con_drawsay
+			utils::hook::call(0x1409A7843, ui_get_font_handle_stub); // cl_keys_draw_text_override_field
+			utils::hook::call(0x14077D250, ui_get_font_handle_stub); // cg_drawmp_drawchatmessages
 		}
 	};
 }

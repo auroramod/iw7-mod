@@ -29,7 +29,7 @@ namespace filesystem
 
 		void fs_display_path()
 		{
-			console::info("Current language: %s\n", game::SEH_GetLanguageName(*reinterpret_cast<int*>(0x74C6420_b)));
+			console::info("Current language: %s\n", game::SEH_GetLanguageName(*reinterpret_cast<int*>(0x1474C6420)));
 			console::info("Current search paths:\n");
 
 			if (game::fs_searchpaths.get())
@@ -243,13 +243,13 @@ namespace filesystem
 	public:
 		void post_unpack() override
 		{
-			fs_startup_hook.create(0xCDD800_b, fs_startup_stub);
-			fs_build_os_path_hook.create(0xCDBBF0_b, fs_build_os_path_stub);
+			fs_startup_hook.create(0x140CDD800, fs_startup_stub);
+			fs_build_os_path_hook.create(0x140CDBBF0, fs_build_os_path_stub);
 
-			utils::hook::jump(0xCFE5E0_b, sys_default_install_path_stub);
+			utils::hook::jump(0x140CFE5E0, sys_default_install_path_stub);
 
 			// fs_game flags
-			utils::hook::set<uint32_t>(0xCDD415_b, 0);
+			utils::hook::set<uint32_t>(0x140CDD415, 0);
 		}
 	};
 }

@@ -62,9 +62,7 @@ namespace weapon
 
 		game::WeaponDef* GetWeaponDef(unsigned __int16* weapon)
 		{
-			game::symbol<game::WeaponDef*> bg_weaponDefs{ 0x5210120 };
-			auto* weapon_def = bg_weaponDefs[*weapon];
-			return weapon_def;
+			return game::bg_weaponDefs[*weapon];
 		}
 
 		int XAnimPartsGetLengthMsec(game::XAnimParts* parts)
@@ -277,11 +275,11 @@ namespace weapon
 			});
 #endif
 
-			CG_Weapons_GetWeaponAnimRate_hook.create(0x932550_b, CG_Weapons_GetWeaponAnimRate_stub);
-			BG_MapWeaponAnimStateToAnimIndex_hook.create(0x74A300_b, BG_MapWeaponAnimStateToAnimIndex_stub);
-			PM_Weapon_Check_hook.create(0x723350_b, PM_Weapon_Check_stub);
-			PM_Weapon_IsInInterruptibleState_hook.create(0x728210_b, PM_Weapon_IsInInterruptibleState_stub);
-			PM_WeaponProcessState_hook.create(0x72C3B0_b, PM_WeaponProcessState_stub);
+			CG_Weapons_GetWeaponAnimRate_hook.create(0x140932550, CG_Weapons_GetWeaponAnimRate_stub);
+			BG_MapWeaponAnimStateToAnimIndex_hook.create(0x14074A300, BG_MapWeaponAnimStateToAnimIndex_stub);
+			PM_Weapon_Check_hook.create(0x140723350, PM_Weapon_Check_stub);
+			PM_Weapon_IsInInterruptibleState_hook.create(0x140728210, PM_Weapon_IsInInterruptibleState_stub);
+			PM_WeaponProcessState_hook.create(0x14072C3B0, PM_WeaponProcessState_stub);
 
 			gsc::method::add("startweaponinspection", [](game::scr_entref_t ent_ref, const gsc::function_args& args)
 			{

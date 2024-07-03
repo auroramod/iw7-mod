@@ -25,7 +25,7 @@ namespace ranked
 				game::Dvar_RegisterBool("onlinegame", true, game::DVAR_FLAG_READ, "Current game is an online game with stats, custom classes, unlocks");
 
 				// Fix sessionteam always returning none (SV_ClientMP_HasAssignedTeam_Internal)
-				utils::hook::set(0xC50BC0_b, 0xC300B0);
+				utils::hook::set(0x140C50BC0, 0xC300B0);
 			}
 		}
 

@@ -72,6 +72,11 @@ namespace discord
 		void update_discord_frontend()
 		{
 			discord_presence.details = game::G_GAME_MODE_STRINGS_FORMATTED[game::Com_GameMode_GetActiveGameMode()];
+			if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_NONE)
+			{
+				discord_presence.details = game::G_GAME_MODE_STRINGS_FORMATTED[game::GAME_MODE_MP];
+			}
+
 			discord_presence.startTimestamp = 0;
 
 			/*

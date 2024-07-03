@@ -5,7 +5,6 @@
 
 #include "game.hpp"
 #include "dvars.hpp"
-#include <utils/hook.hpp>
 
 namespace dvars
 {

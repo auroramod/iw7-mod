@@ -8,12 +8,6 @@ namespace game
 {
 	uint64_t base_address;
 
-	void load_base_address()
-	{
-		const auto module = GetModuleHandleA(0);
-		base_address = reinterpret_cast<uint64_t>(module);
-	}
-
 	namespace environment
 	{
 		bool is_dedi()
@@ -87,7 +81,7 @@ namespace game
 
 	const char* G_GAME_MODE_STRINGS_FORMATTED[] =
 	{
-		"Multiplayer", // this is really none, but its for discord presence :P
+		"None",
 		"Singleplayer",
 		"Multiplayer",
 		"Zombies",
@@ -232,11 +226,6 @@ namespace game
 	{
 		return svs_clients[client_num]->remoteAddress.type == NA_BOT;
 	}
-}
-
-size_t operator"" _b(const size_t ptr)
-{
-	return game::base_address + ptr;
 }
 
 size_t reverse_b(const size_t ptr)

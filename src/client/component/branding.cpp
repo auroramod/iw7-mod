@@ -57,7 +57,7 @@ namespace branding
 				}
 			}, scheduler::pipeline::renderer);
 
-			ui_get_formatted_build_number_hook.create(0xCD1170_b, ui_get_formatted_build_number_stub);
+			ui_get_formatted_build_number_hook.create(0x140CD1170, ui_get_formatted_build_number_stub);
 		}
 	};
 }

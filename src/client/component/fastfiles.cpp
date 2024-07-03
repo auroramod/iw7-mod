@@ -146,17 +146,17 @@ namespace fastfiles
 
 			a.bind(original);
 			//a.popad64();
-			a.call(0x3BC450_b); // strnicmp_ffotd
+			a.call(0x1403BC450); // strnicmp_ffotd
 			a.mov(r12d, edi);
-			a.mov(rdx, 0x1467970_b); // "patch_"
-			a.jmp(0x3BA9C0_b);
+			a.mov(rdx, 0x141467970); // "patch_"
+			a.jmp(0x1403BA9C0);
 
 			a.bind(skip);
 			//a.popad64();
 			a.mov(r12d, game::DB_ZONE_CUSTOM);
 			a.not_(r12d);
 			a.and_(edi, r12d);
-			a.jmp(0x3BAC06_b);
+			a.jmp(0x1403BAC06);
 		}
 	}
 	using namespace zone_loading;
@@ -181,29 +181,29 @@ namespace fastfiles
 	public:
 		void post_unpack() override
 		{
-			db_try_load_x_file_internal_hook.create(0x3BBC40_b, db_try_load_x_file_internal_stub);
+			db_try_load_x_file_internal_hook.create(0x1403BBC40, db_try_load_x_file_internal_stub);
 #if defined(DEBUG) and defined(XFILE_DEBUG)
-			db_init_load_x_file_hook.create(0x9E8D10_b, db_init_load_x_file_stub);
+			db_init_load_x_file_hook.create(0x1409E8D10, db_init_load_x_file_stub);
 #else
-			db_load_x_zone_hook.create(0x3BA920_b, db_load_x_zone_stub);
+			db_load_x_zone_hook.create(0x1403BA920, db_load_x_zone_stub);
 #endif
 
 			db_find_xasset_header_hook.create(game::DB_FindXAssetHeader, db_find_xasset_header_stub);
-			db_add_xasset_hook.create(0xA76520_b, db_add_xasset_stub);
+			db_add_xasset_hook.create(0x140A76520, db_add_xasset_stub);
 
 			g_dump_scripts = game::Dvar_RegisterBool("g_dumpScripts", false, game::DVAR_FLAG_NONE, "Dump GSC scripts");
 
 			// Don't fatal on certain missing zones
-			db_is_patch_hook.create(0x3BC580_b, db_is_patch_stub);
+			db_is_patch_hook.create(0x1403BC580, db_is_patch_stub);
 			// Don't load extra zones with loadzone
-			utils::hook::nop(0x3BA9B1_b, 15);
-			utils::hook::jump(0x3BA9B1_b, utils::hook::assemble(skip_extra_zones_stub), true);
+			utils::hook::nop(0x1403BA9B1, 15);
+			utils::hook::jump(0x1403BA9B1, utils::hook::assemble(skip_extra_zones_stub), true);
 
 			// Allow loading of unsigned fastfiles
-			utils::hook::set<uint8_t>(0x9E8CAE_b, 0xEB); // DB_InflateInit
+			utils::hook::set<uint8_t>(0x1409E8CAE, 0xEB); // DB_InflateInit
 
 			// Skip signature validation
-			utils::hook::set(0x9E6390_b, 0xC301B0);
+			utils::hook::set(0x1409E6390, 0xC301B0);
 
 			command::add("loadzone", [](const command::params& params)
 			{

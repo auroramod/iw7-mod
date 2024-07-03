@@ -35,11 +35,11 @@ namespace splash
 		void post_unpack() override
 		{
 			// Disable native splash screen
-			utils::hook::set<uint8_t>(0xD58240_b, 0xC3);
+			utils::hook::set<uint8_t>(0x140D58240, 0xC3);
 			if (!utils::nt::is_wine())
 			{
-				utils::hook::jump(0xD584F0_b, destroy_stub, true);
-				utils::hook::jump(0xD58530_b, destroy_stub, true);
+				utils::hook::jump(0x140D584F0, destroy_stub, true);
+				utils::hook::jump(0x140D58530, destroy_stub, true);
 			}
 		}
 

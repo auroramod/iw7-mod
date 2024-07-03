@@ -54,7 +54,7 @@ namespace input
 				{
 					binding = binding + 1;
 				}
-				utils::hook::invoke<void>(0x35DFB0_b, local_client_num, binding, key, 1); // CL_InputMP_ExecBinding
+				utils::hook::invoke<void>(0x14035DFB0, local_client_num, binding, key, 1); // CL_InputMP_ExecBinding
 			}
 		}
 
@@ -179,20 +179,20 @@ namespace input
 				return;
 			}
 
-			cl_char_event_hook.create(0x9A7350_b, cl_char_event_stub);
-			cl_key_event_hook.create(0x9A7980_b, cl_key_event_stub);
+			cl_char_event_hook.create(0x1409A7350, cl_char_event_stub);
+			cl_key_event_hook.create(0x1409A7980, cl_key_event_stub);
 
 			custom_binds.push_back("+actionslot 8");
 			custom_binds.push_back("-actionslot 8");
 
 			// write all bindings to config file
-			utils::hook::jump(0x9A9F70_b, key_write_bindings_to_buffer_stub);
+			utils::hook::jump(0x1409A9F70, key_write_bindings_to_buffer_stub);
 
 			// links a custom command to an index
-			utils::hook::jump(0x9A8EA0_b, key_get_binding_for_cmd_stub);
+			utils::hook::jump(0x1409A8EA0, key_get_binding_for_cmd_stub);
 
 			// execute custom binds
-			cl_execute_key_hook.create(0x32A3B0_b, &cl_execute_key_stub);
+			cl_execute_key_hook.create(0x14032A3B0, &cl_execute_key_stub);
 		}
 	};
 }

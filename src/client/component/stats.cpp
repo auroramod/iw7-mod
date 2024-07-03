@@ -367,14 +367,14 @@ namespace stats
 			}, scheduler::main);
 
 			// unlockables
-			is_item_unlocked_hook.create(0x34E020_b, is_item_unlocked_stub);
-			is_item_unlocked_hook2.create(0x34CF40_b, is_item_unlocked_stub2);
+			is_item_unlocked_hook.create(0x14034E020, is_item_unlocked_stub);
+			is_item_unlocked_hook2.create(0x14034CF40, is_item_unlocked_stub2);
 
 			// loot
-			item_quantity_hook.create(0x51DBE0_b, item_quantity_stub);
+			item_quantity_hook.create(0x14051DBE0, item_quantity_stub);
 
 			// GetPlayerData print
-			utils::hook::jump(0xB84F00_b, com_ddl_print_state); // Com_DDL_PrintState
+			utils::hook::jump(0x140B84F00, com_ddl_print_state); // Com_DDL_PrintState
 		}
 	};
 }

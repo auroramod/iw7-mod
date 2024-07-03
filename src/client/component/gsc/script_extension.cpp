@@ -152,7 +152,7 @@ namespace gsc
 			a.pop(ecx);
 			a.popad64();
 
-			a.jmp(0xC0E8F2_b);
+			a.jmp(0x140C0E8F2);
 		}
 
 		void print(const function_args& args)
@@ -205,7 +205,7 @@ namespace gsc
 			a.inc(rsi);
 			a.mov(dword_ptr(rbp, 0x94), r15d);
 
-			a.jmp(0xC0D0B2_b);
+			a.jmp(0x140C0D0B2);
 
 			a.bind(replace);
 
@@ -295,21 +295,21 @@ namespace gsc
 			developer_script = game::Dvar_RegisterBool("developer_script", false, 0, "Enable developer script comments");
 #endif
 
-			utils::hook::set<uint32_t>(0xBFD16B_b + 1, func_table_count); // change builtin func count
-			utils::hook::set<uint32_t>(0xBFD172_b + 4, static_cast<uint32_t>(reverse_b((&func_table))));
-			utils::hook::inject(0xBFD5A1_b + 3, &func_table);
-			utils::hook::set<uint32_t>(0xBFD595_b + 2, sizeof(func_table));
-			utils::hook::nop(0xC0E5CE_b, 7);
-			utils::hook::call(0xC0E5CE_b, vm_call_builtin_function_internal);
+			utils::hook::set<uint32_t>(0x140BFD16B + 1, func_table_count); // change builtin func count
+			utils::hook::set<uint32_t>(0x140BFD172 + 4, static_cast<uint32_t>(reverse_b((&func_table))));
+			utils::hook::inject(0x140BFD5A1 + 3, &func_table);
+			utils::hook::set<uint32_t>(0x140BFD595 + 2, sizeof(func_table));
+			utils::hook::nop(0x140C0E5CE, 7);
+			utils::hook::call(0x140C0E5CE, vm_call_builtin_function_internal);
 
-			utils::hook::set<uint32_t>(0xBFD182_b + 4, static_cast<uint32_t>(reverse_b((&meth_table))));
-			utils::hook::inject(0xBFD5AF_b + 3, &meth_table);
-			utils::hook::set<uint32_t>(0xBFD5B6_b + 2, sizeof(meth_table));
-			utils::hook::nop(0xC0E8EB_b, 14); // nop the lea & call at the end of call_builtin_method
-			utils::hook::jump(0xC0E8EB_b, utils::hook::assemble(vm_call_builtin_method_stub));
-			utils::hook::call(0xC0E8F2_b, vm_call_builtin_method_internal);
+			utils::hook::set<uint32_t>(0x140BFD182 + 4, static_cast<uint32_t>(reverse_b((&meth_table))));
+			utils::hook::inject(0x140BFD5AF + 3, &meth_table);
+			utils::hook::set<uint32_t>(0x140BFD5B6 + 2, sizeof(meth_table));
+			utils::hook::nop(0x140C0E8EB, 14); // nop the lea & call at the end of call_builtin_method
+			utils::hook::jump(0x140C0E8EB, utils::hook::assemble(vm_call_builtin_method_stub));
+			utils::hook::call(0x140C0E8F2, vm_call_builtin_method_internal);
 
-			utils::hook::jump(0xC0D0A4_b, utils::hook::assemble(vm_execute_stub), true);
+			utils::hook::jump(0x140C0D0A4, utils::hook::assemble(vm_execute_stub), true);
 
 			/*
 			if (game::environment::is_dedi())

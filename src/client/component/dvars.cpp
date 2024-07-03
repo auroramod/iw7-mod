@@ -377,17 +377,17 @@ namespace dvars
 	public:
 		void post_unpack() override
 		{
-			dvar_register_bool_hook.create(0xCEB380_b, &dvar_register_bool);
-			dvar_register_float_hook.create(0xCEB890_b, &dvar_register_float);
-			dvar_register_int_hook.create(0xCEB920_b, &dvar_register_int);
-			dvar_register_string_hook.create(0xCEBD50_b, &dvar_register_string);
-			dvar_register_vector2_hook.create(0xCEBF50_b, &dvar_register_vector2);
-			dvar_register_vector3_hook.create(0xCEBFE0_b, &dvar_register_vector3);
+			dvar_register_bool_hook.create(0x140CEB380, &dvar_register_bool);
+			dvar_register_float_hook.create(0x140CEB890, &dvar_register_float);
+			dvar_register_int_hook.create(0x140CEB920, &dvar_register_int);
+			dvar_register_string_hook.create(0x140CEBD50, &dvar_register_string);
+			dvar_register_vector2_hook.create(0x140CEBF50, &dvar_register_vector2);
+			dvar_register_vector3_hook.create(0x140CEBFE0, &dvar_register_vector3);
 
-			dvar_register_new_hook.create(0xCEBA60_b, dvar_register_new);
-			dvar_re_register_hook.create(0xCEC210_b, dvar_re_register);
-			dvar_de_register_hook.create(0xCE9F30_b, dvar_de_register);
-			dvar_register_variant_hook.create(0xCEBDD0_b, dvar_register_variant);
+			dvar_register_new_hook.create(0x140CEBA60, dvar_register_new);
+			dvar_re_register_hook.create(0x140CEC210, dvar_re_register);
+			dvar_de_register_hook.create(0x140CE9F30, dvar_de_register);
+			dvar_register_variant_hook.create(0x140CEBDD0, dvar_register_variant);
 		}
 
 		component_priority priority() override

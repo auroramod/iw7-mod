@@ -90,7 +90,7 @@ namespace party
 			perform_game_initialization();
 
 			// setup agent count
-			utils::hook::invoke<void>(0xC19B00_b, gametype.data());
+			utils::hook::invoke<void>(0x140C19B00, gametype.data());
 
 			preloaded_map = false;
 
@@ -110,7 +110,7 @@ namespace party
 			if (game::Com_FrontEnd_IsInFrontEnd())
 			{
 				// Com_FrontEndScene_ShutdownAndDisable
-				utils::hook::invoke<void>(0x5AEFB0_b);
+				utils::hook::invoke<void>(0x1405AEFB0);
 			}
 
 			game::SV_CmdsMP_StartMapForParty(
@@ -161,12 +161,12 @@ namespace party
 			if (preloaded_map)
 			{
 				// Com_GameStart_BeginClient
-				utils::hook::invoke<void>(0x5B0130_b, mapname, gametype, a3);
+				utils::hook::invoke<void>(0x1405B0130, mapname, gametype, a3);
 			}
 			else
 			{
 				// DB_LoadLevelXAssets
-				utils::hook::invoke<void>(0x3B9C90_b, mapname, 0);
+				utils::hook::invoke<void>(0x1403B9C90, mapname, 0);
 			}
 		}
 
@@ -175,12 +175,12 @@ namespace party
 			if (preloaded_map)
 			{
 				// Com_RestartForFrontend
-				utils::hook::invoke<void>(0xBAF0B0_b);
+				utils::hook::invoke<void>(0x140BAF0B0);
 			}
 			else
 			{
 				// Com_Restart
-				utils::hook::invoke<void>(0xBAF0A0_b);
+				utils::hook::invoke<void>(0x140BAF0A0);
 			}
 		}
 
@@ -198,7 +198,7 @@ namespace party
 		{
 			if (init_settings->maxClientCount != *game::svs_numclients)
 			{
-				game::Com_Error(game::ERR_DROP, reinterpret_cast<const char*>(0x1512140_b));
+				game::Com_Error(game::ERR_DROP, reinterpret_cast<const char*>(0x141512140));
 			}
 
 			if (!init_settings->serverThreadStartup)
@@ -206,7 +206,7 @@ namespace party
 				if (!init_settings->isRestart)
 				{
 					// Nav_AllocNavPower
-					memset(&*reinterpret_cast<__int64*>(0x4E3A490_b + 8), 0, 0x78680ui64 - 8);
+					memset(&*reinterpret_cast<__int64*>(0x144E3A490 + 8), 0, 0x78680ui64 - 8);
 				}
 			}
 		}
@@ -220,7 +220,7 @@ namespace party
 
 			a.popad64();
 
-			a.jmp(0xC563E2_b);
+			a.jmp(0x140C563E2);
 		}
 	}
 
@@ -382,32 +382,32 @@ namespace party
 			static const char* a3 = "fast_restart_sp";
 
 			// patch singleplayer "map" -> "map_sp"
-			utils::hook::set(0x1BBA800_b + 0, a1);
-			utils::hook::set(0x1BBA800_b + 24, a1);
-			utils::hook::set(0x1BBA800_b + 56, a1);
+			utils::hook::set(0x141BBA800 + 0, a1);
+			utils::hook::set(0x141BBA800 + 24, a1);
+			utils::hook::set(0x141BBA800 + 56, a1);
 
 			// patch singleplayer map_restart -> "map_restart_sp"
-			utils::hook::set(0x1BBA740_b + 0, a2);
-			utils::hook::set(0x1BBA740_b + 24, a2);
-			utils::hook::set(0x1BBA740_b + 56, a2);
+			utils::hook::set(0x141BBA740 + 0, a2);
+			utils::hook::set(0x141BBA740 + 24, a2);
+			utils::hook::set(0x141BBA740 + 56, a2);
 
 			// patch singleplayer fast_restart -> "fast_restart_sp"
-			utils::hook::set(0x1BBA700_b + 0, a3);
-			utils::hook::set(0x1BBA700_b + 24, a3);
-			utils::hook::set(0x1BBA700_b + 56, a3);
+			utils::hook::set(0x141BBA700 + 0, a3);
+			utils::hook::set(0x141BBA700 + 24, a3);
+			utils::hook::set(0x141BBA700 + 56, a3);
 
-			utils::hook::set<uint8_t>(0xC562FD_b, 0xEB); // allow mapname to be changed while server is running
+			utils::hook::set<uint8_t>(0x140C562FD, 0xEB); // allow mapname to be changed while server is running
 
-			utils::hook::nop(0xA7A8DF_b, 5); // R_SyncRenderThread inside CL_MainMp_PreloadMap ( freezes )
+			utils::hook::nop(0x140A7A8DF, 5); // R_SyncRenderThread inside CL_MainMp_PreloadMap ( freezes )
 
-			utils::hook::call(0x9AFE84_b, com_gamestart_beginclient_stub); // blackscreen issue on connect
-			utils::hook::call(0x9B4077_b, com_gamestart_beginclient_stub); // may not be necessary (map rotate)
-			utils::hook::call(0x9B404A_b, com_restart_for_frontend_stub); // may not be necessary (map rotate)
+			utils::hook::call(0x1409AFE84, com_gamestart_beginclient_stub); // blackscreen issue on connect
+			utils::hook::call(0x1409B4077, com_gamestart_beginclient_stub); // may not be necessary (map rotate)
+			utils::hook::call(0x1409B404A, com_restart_for_frontend_stub); // may not be necessary (map rotate)
 
-			sv_start_map_for_party_hook.create(0xC4D150_b, sv_start_map_for_party_stub);
+			sv_start_map_for_party_hook.create(0x140C4D150, sv_start_map_for_party_stub);
 
-			utils::hook::nop(0xC563C3_b, 12); // far jump = 12 bytes
-			utils::hook::jump(0xC563C3_b, utils::hook::assemble(reset_mem_stuff_stub), true);
+			utils::hook::nop(0x140C563C3, 12); // far jump = 12 bytes
+			utils::hook::jump(0x140C563C3, utils::hook::assemble(reset_mem_stuff_stub), true);
 
 			command::add("map", [](const command::params& args)
 			{

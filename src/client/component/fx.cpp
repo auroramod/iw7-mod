@@ -13,8 +13,8 @@ namespace fx
 		void post_unpack() override
 		{
 			// skip "fx/" and "vfx/" name prefix checks
-			utils::hook::set<uint8_t>(0xB34889_b, 0xEB); // Scr_LoadFx
-			utils::hook::nop(0xD0FBFD_b, 2); // ParticleSystem_Register
+			utils::hook::set<uint8_t>(0x140B34889, 0xEB); // Scr_LoadFx
+			utils::hook::nop(0x140D0FBFD, 2); // ParticleSystem_Register
 		}
 	};
 }

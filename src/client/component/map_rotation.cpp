@@ -171,7 +171,7 @@ namespace map_rotation
 			command::add("map_rotate", &perform_map_rotation);
 
 			// Hook GScr_ExitLevel 
-			utils::hook::jump(0xB52E50_b, &trigger_map_rotation, true);
+			utils::hook::jump(0x140B52E50, &trigger_map_rotation, true);
 
 			previous_priority = GetPriorityClass(GetCurrentProcess());
 		}
