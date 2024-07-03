@@ -306,19 +306,6 @@ namespace gsc
 			}
 		}
 
-		std::uint32_t get_opcode_size(const std::uint8_t opcode)
-		{
-			try
-			{
-				const auto index = gsc_ctx->opcode_enum(opcode);
-				return gsc_ctx->opcode_size(index);
-			}
-			catch (...)
-			{
-				return 0;
-			}
-		}
-
 		void builtin_call_error(const std::string& error)
 		{
 			const auto function_id = get_function_id();
@@ -353,17 +340,17 @@ namespace gsc
 						assert(script);
 
 						const auto& pos_map = gsc::source_pos_map[file_name];
-						std::uint32_t opcode_size = 0;
-						if (first)
-						{
-							opcode_size = get_opcode_size(opcode_id);
-						}
-						if (!opcode_size)
-						{
-							opcode_size = 3; // function call
-						}
+						
 						auto position = static_cast<std::uint32_t>(pos - script->bytecode);
-						position = position + opcode_size;
+						for (auto i = 0; i < 8; ++i)
+						{
+							auto position_fixup = position + i;
+							if (pos_map.contains(position_fixup))
+							{
+								position = position_fixup;
+								break;
+							}
+						}
 
 						if (pos_map.contains(position))
 						{
