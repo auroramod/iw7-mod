@@ -313,6 +313,9 @@ namespace patches
 
 			// precache is always allowed
 			utils::hook::set(0x1406D5280, 0xC301B0); // NetConstStrings_IsPrecacheAllowed
+
+			utils::hook::nop(0x140E6A2FB, 2); // don't wait for occlusion query to succeed (forever loop)
+			utils::hook::nop(0x140E6A30C, 2); // ^
 		}
 	};
 }
