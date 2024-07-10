@@ -730,12 +730,14 @@ namespace game
 		struct playerState_s
 		{
 			int commandTime;
+			int serverTime;
+			int inputTime;
 			int pm_type;
 			int pm_time;
 			GameModeFlagContainer<PMoveFlagsCommon, PMoveFlagsSP, PMoveFlagsMP, 64> pm_flags;
 			GameModeFlagContainer<POtherFlagsCommon, POtherFlagsSP, POtherFlagsMP, 64> otherFlags;
 			GameModeFlagContainer<PLinkFlagsCommon, PLinkFlagsSP, PLinkFlagsMP, 32> linkFlags;
-			char __pad0[312];
+			char __pad0[304];
 			GameModeFlagContainer<EntityStateFlagsCommon, EntityStateFlagsSP, EntityStateFlagsMP, 32> eFlags;
 			char __pad1[1272];
 			PlayerActiveWeaponState weapState[2];
@@ -744,9 +746,7 @@ namespace game
 			float fWeaponPosFrac;
 			char __pad3[0x4000];
 		}; // unk size
-		assert_offsetof(playerState_s, pm_flags, 12);
-		assert_offsetof(playerState_s, otherFlags, 20);
-		assert_offsetof(playerState_s, linkFlags, 28);
+		assert_offsetof(playerState_s, pm_type, 12);
 		assert_offsetof(playerState_s, eFlags, 344);
 		assert_offsetof(playerState_s, weapState, 1620);
 		assert_offsetof(playerState_s, weapFlags, 2188);
