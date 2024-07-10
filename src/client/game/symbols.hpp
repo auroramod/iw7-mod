@@ -152,14 +152,14 @@ namespace game
 	WEAK symbol<void(int localClientNum, const char* menuName, int isPopup, int isModal, int isExclusive)> LUI_OpenMenu{ 0x140CC0CA0 };
 	WEAK symbol<void(int localClientNum, const char* menuName, int immediate)> LUI_CloseMenu{ 0x140CC0C40 };
 	WEAK symbol<void(int localClientNum)> LUI_CoD_CLoseAll{ 0x1406135C0 };
+	WEAK symbol<void(const char* fmt, ...)> LUI_Interface_DebugPrint{ 0x14061C43F };
+	WEAK symbol<void()> LUI_EnterCriticalSection{ 0x140600080 };
+	WEAK symbol<void()> LUI_LeaveCriticalSection{ 0x140602280 };
 
 	WEAK symbol<unsigned int(int controllerIndex)> Live_SyncOnlineDataFlags{ 0x140DC5CE0 };
 	WEAK symbol<std::uint64_t(int controllerIndex)> Live_GetXuid{ 0x140D32A20 };
 
 	WEAK symbol<PartyData* ()> Lobby_GetPartyData{ 0x1409C3E20 };
-
-	WEAK symbol<void()> LUI_EnterCriticalSection{ 0x140600080 };
-	WEAK symbol<void()> LUI_LeaveCriticalSection{ 0x140602280 };
 
 	WEAK symbol<Material* (const char* material)> Material_RegisterHandle{ 0x140E11CE0 };
 

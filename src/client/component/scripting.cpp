@@ -188,8 +188,8 @@ namespace scripting
 					console::info("gamename: %s\n", "IW7");
 					console::info("gamedate: %s\n", __DATE__);
 
-					//G_LogPrintf("------------------------------------------------------------\n");
-					//G_LogPrintf("InitGame: %s\n", serverinfo);
+					game::G_LogPrintf("------------------------------------------------------------\n");
+					game::G_LogPrintf("InitGame\n");
 				}
 
 				sv_initgame_vm_hook.invoke<void>(init_settings);
@@ -206,8 +206,8 @@ namespace scripting
 				{
 					console::info("==== ShutdownGame (%d) ====\n", full_clear);
 
-					//G_LogPrintf("ShutdownGame:\n");
-					//G_LogPrintf("------------------------------------------------------------\n");
+					game::G_LogPrintf("ShutdownGame:\n");
+					game::G_LogPrintf("------------------------------------------------------------\n");
 				}
 
 				shutdown_game_pre(full_clear);

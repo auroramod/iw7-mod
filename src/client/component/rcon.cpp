@@ -96,7 +96,7 @@ namespace rcon
 				if (client->header.state >= 1 && client->gentity && client->gentity->client)
 				{
 					char clean_name[32] = { 0 };
-					strncpy_s(clean_name, client->gentity->client->name, sizeof(clean_name));
+					strncpy_s(clean_name, client->gentity->client->sess.name, sizeof(clean_name));
 					game::I_CleanStr(clean_name);
 
 					buffer.append(utils::string::va("%3i %5i %3s %s %32s %16s %21s %5i\n",

@@ -385,23 +385,6 @@ namespace gsc
 				return utils::string::to_upper(string);
 			});
 
-			/*
-			function::add("logprint", [](const function_args& args)
-			{
-				std::string buffer{};
-
-				for (auto i = 0u; i < args.size(); ++i)
-				{
-					const auto string = args[i].as<std::string>();
-					buffer.append(string);
-				}
-
-				game::G_LogPrintf("%s", buffer.data());
-
-				return scripting::script_value{};
-			});
-			*/
-
 			function::add("executecommand", [](const function_args& args)
 			{
 				command::execute(args[0].as<std::string>(), false);

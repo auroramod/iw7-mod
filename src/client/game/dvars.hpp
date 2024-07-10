@@ -37,6 +37,9 @@ namespace dvars
 	extern game::dvar_t* bg_bounces;
 	extern game::dvar_t* bg_playerEjection;
 
+	extern game::dvar_t* logfile;
+	extern game::dvar_t* g_log;
+
 	std::string dvar_get_vector_domain(const int components, const game::DvarLimits& domain);
 	std::string dvar_get_domain(const game::DvarType type, const game::DvarLimits& domain);
 	std::string dvar_get_name(const game::dvar_t* dvar);

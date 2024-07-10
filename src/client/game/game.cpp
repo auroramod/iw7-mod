@@ -1,8 +1,10 @@
 #include <std_include.hpp>
 #include "game.hpp"
+#include "dvars.hpp"
 
 #include <utils/flags.hpp>
 #include <utils/string.hpp>
+#include <utils/io.hpp>
 
 namespace game
 {
@@ -225,6 +227,31 @@ namespace game
 	bool SV_ClientIsBot(unsigned int client_num)
 	{
 		return svs_clients[client_num]->remoteAddress.type == NA_BOT;
+	}
+
+	void G_LogPrintf(const char* fmt, ...)
+	{
+		if (!dvars::logfile->current.enabled)
+		{
+			return;
+		}
+
+		char va_buffer[0x400] = { 0 };
+
+		va_list ap;
+		va_start(ap, fmt);
+		vsprintf_s(va_buffer, fmt, ap);
+		va_end(ap);
+
+		const auto file = dvars::g_log->current.string;
+		const auto time = *game::level_time / 1000;
+
+		utils::io::write_file(file, utils::string::va("%3i:%i%i %s",
+			time / 60,
+			time % 60 / 10,
+			time % 60 % 10,
+			va_buffer
+		), true);
 	}
 }
 

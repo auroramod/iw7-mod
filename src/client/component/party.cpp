@@ -293,7 +293,7 @@ namespace party
 			if (game::g_entities[i].client)
 			{
 				char client_name[32] = { 0 };
-				strncpy_s(client_name, game::g_entities[i].client->name, sizeof(client_name));
+				strncpy_s(client_name, game::g_entities[i].client->sess.name, sizeof(client_name));
 				game::I_CleanStr(client_name);
 
 				if (client_name == name)

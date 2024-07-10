@@ -553,6 +553,13 @@ namespace game
 		XAnimEntry entries[1];
 	};
 
+	enum SayModes
+	{
+		SAY_ALL = 0x0,
+		SAY_TEAM = 0x1,
+		SAY_TELL = 0x2,
+	};
+
 	namespace entity
 	{
 		enum connstate_t : std::uint32_t
@@ -770,16 +777,65 @@ namespace game
 		};
 		assert_offsetof(pml_t, msec, 40);
 
+		enum clientConnected_t
+		{
+			CON_DISCONNECTED = 0x0,
+			CON_CONNECTING = 0x1,
+			CON_CONNECTED = 0x2,
+		};
+
+		enum sessionState_t
+		{
+			SESS_STATE_PLAYING = 0x0,
+			SESS_STATE_DEAD = 0x1,
+			SESS_STATE_SPECTATOR = 0x2,
+			SESS_STATE_INTERMISSION = 0x3,
+		};
+
+		enum team_t : std::int32_t
+		{
+			TEAM_FREE = 0x0,
+			TEAM_BAD = 0x0,
+			TEAM_AXIS = 0x1,
+			TEAM_ALLIES = 0x2,
+			TEAM_SPECTATOR = 0x3,
+			TEAM_NUM_TEAMS = 0x4,
+		};
+
+		struct clientState_s
+		{
+			int clientIndex;
+			team_t team;
+			char __pad0[108];
+			char name[32];
+		};
+
+		struct clientSession_t
+		{
+			clientConnected_t connected;
+			sessionState_t sessionState;
+			char __pad0[280];
+			char name[32];
+			char __pad1[12];
+			clientState_s cs;
+		}; // unk size
+
 		struct gclient_s
 		{
 			playerState_s ps;
-			char __pad0[19376 - sizeof(playerState_s)];
-			char name[32]; // 19376
-			char __pad1[1516];
+			char __pad0[19088 - sizeof(playerState_s)];
+			clientSession_t sess; // 19088
+			char __pad1[20924 - sizeof(clientSession_t) - 19088];
 			int flags; // 20924
 		}; // sizeof = 29208?
 
-		static_assert(offsetof(gclient_s, name) == 19376);
+		assert_offsetof(gclient_s, sess.sessionState, 19092);
+		assert_offsetof(gclient_s, sess.name, 19376);
+
+		assert_offsetof(gclient_s, sess.cs, 19420);
+		assert_offsetof(gclient_s, sess.cs.team, 19424);
+		assert_offsetof(gclient_s, sess.cs.name, 19536);
+
 		static_assert(offsetof(gclient_s, flags) == 20924);
 
 #pragma pack(push, 1)

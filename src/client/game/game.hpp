@@ -67,6 +67,8 @@ namespace game
 
 	bool SV_ClientIsBot(client_t* client);
 	bool SV_ClientIsBot(unsigned int client_num);
+
+	void G_LogPrintf(const char* fmt, ...);
 }
 
 size_t reverse_b(const size_t ptr);
