@@ -25,6 +25,10 @@ namespace dvars
 	extern game::dvar_t* cg_gun_y;
 	extern game::dvar_t* cg_gun_z;
 
+	extern game::dvar_t* cg_thirdPerson;
+	extern game::dvar_t* cg_thirdPersonRange;
+	extern game::dvar_t* cg_thirdPersonAngle;
+
 	extern game::dvar_t* cg_unlockall_items;
 	extern game::dvar_t* cg_unlockall_loot;
 

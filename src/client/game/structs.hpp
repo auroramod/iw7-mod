@@ -687,17 +687,67 @@ namespace game
 		assert_offsetof(PlayerActiveWeaponState, weaponDelay, 8);
 		assert_offsetof(PlayerActiveWeaponState, weaponState, 16);
 
-		typedef int GameModeFlagValues[2];
+		enum pmtype_t : std::int32_t
+		{
+			PM_NORMAL = 0x0,
+			PM_NORMAL_LINKED = 0x1,
+			PM_NOCLIP = 0x2,
+			PM_UFO = 0x3,
+			PM_MPVIEWER = 0x4,
+			PM_SPECTATOR = 0x5,
+			PM_INTERMISSION = 0x6,
+			PM_DEAD = 0x7,
+			PM_DEAD_LINKED = 0x8,
+		};
+
+		enum PMoveFlagsCommon : std::uint64_t;
+		enum PMoveFlagsSP : std::uint64_t;
+		enum PMoveFlagsMP : std::uint64_t;
+
+		enum POtherFlagsCommon : std::uint64_t;
+		enum POtherFlagsSP : std::uint64_t;
+		enum POtherFlagsMP : std::uint64_t;
+
+		enum PLinkFlagsCommon : std::uint32_t;
+		enum PLinkFlagsSP : std::uint32_t;
+		enum PLinkFlagsMP : std::uint32_t;
+
+		enum EntityStateFlagsCommon : std::uint32_t;
+		enum EntityStateFlagsSP : std::uint32_t;
+		enum EntityStateFlagsMP : std::uint32_t;
+
+		enum PWeaponFlagsCommon : std::uint64_t;
+		enum PWeaponFlagsSP : std::uint64_t;
+		enum PWeaponFlagsMP : std::uint64_t;
+
+		template<typename CommonE, typename spE, typename mpE, int bitSize>
+		struct GameModeFlagContainer
+		{
+			static_assert(bitSize % sizeof(unsigned int) * CHAR_BIT == 0, "bitSize must be divisible by sizeof(unsigned int) * CHAR_BIT");
+			unsigned int m_flags[bitSize >> (sizeof(unsigned int) + 1)];
+		};
 
 		struct playerState_s
 		{
 			int commandTime;
 			int pm_type;
-			char __pad0[1612];
+			int pm_time;
+			GameModeFlagContainer<PMoveFlagsCommon, PMoveFlagsSP, PMoveFlagsMP, 64> pm_flags;
+			GameModeFlagContainer<POtherFlagsCommon, POtherFlagsSP, POtherFlagsMP, 64> otherFlags;
+			GameModeFlagContainer<PLinkFlagsCommon, PLinkFlagsSP, PLinkFlagsMP, 32> linkFlags;
+			char __pad0[312];
+			GameModeFlagContainer<EntityStateFlagsCommon, EntityStateFlagsSP, EntityStateFlagsMP, 32> eFlags;
+			char __pad1[1272];
 			PlayerActiveWeaponState weapState[2];
-			char __pad1[464];
-			GameModeFlagValues weapFlags;
-		};
+			char __pad2[464];
+			GameModeFlagContainer<PWeaponFlagsCommon, PWeaponFlagsSP, PWeaponFlagsMP, 64> weapFlags;
+			float fWeaponPosFrac;
+			char __pad3[0x4000];
+		}; // unk size
+		assert_offsetof(playerState_s, pm_flags, 12);
+		assert_offsetof(playerState_s, otherFlags, 20);
+		assert_offsetof(playerState_s, linkFlags, 28);
+		assert_offsetof(playerState_s, eFlags, 344);
 		assert_offsetof(playerState_s, weapState, 1620);
 		assert_offsetof(playerState_s, weapFlags, 2188);
 
@@ -723,7 +773,7 @@ namespace game
 		struct gclient_s
 		{
 			playerState_s ps;
-			char __pad0[17180];
+			char __pad0[19376 - sizeof(playerState_s)];
 			char name[32]; // 19376
 			char __pad1[1516];
 			int flags; // 20924
@@ -787,12 +837,44 @@ namespace game
 	}
 	using namespace entity;
 
+	enum CubemapShot
+	{
+		CUBEMAPSHOT_NONE = 0x0,
+		CUBEMAPSHOT_RIGHT = 0x1,
+		CUBEMAPSHOT_LEFT = 0x2,
+		CUBEMAPSHOT_BACK = 0x3,
+		CUBEMAPSHOT_FRONT = 0x4,
+		CUBEMAPSHOT_UP = 0x5,
+		CUBEMAPSHOT_DOWN = 0x6,
+		CUBEMAPSHOT_COUNT = 0x7,
+	};
+
 	struct cg_s
 	{
-		char __pad0[324368];
+		playerState_s predictedPlayerState;
+		char __pad0[19160 - sizeof(playerState_s)];
+		CubemapShot cubemapShot;
+		int cubemapSize;
+		char __pad1[305200];
 		float viewModelAxis[4][3];
-	};
+		char __pad2[168476];
+		int renderScreen;
+		int latestSnapshotNum;
+		int latestSnapshotTime;
+		int mapRestart;
+		int spectatingThirdPerson;
+		int renderingThirdPerson;
+		char __pad3[60792];
+		bool m_deathCameraFailsafeLock;
+		char __pad4[3];
+		char __pad5[486328];
+	}; static_assert(sizeof(cg_s) == 1040040);
+	static_assert(offsetof(cg_s, cubemapShot) == 19160);
+	static_assert(offsetof(cg_s, cubemapSize) == 19164);
 	static_assert(offsetof(cg_s, viewModelAxis) == 324368);
+	static_assert(offsetof(cg_s, renderScreen) == 492892);
+	static_assert(offsetof(cg_s, renderingThirdPerson) == 492912);
+	static_assert(offsetof(cg_s, m_deathCameraFailsafeLock) == 553708);
 
 	namespace scripting
 	{

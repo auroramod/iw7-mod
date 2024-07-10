@@ -164,9 +164,9 @@ namespace weapon
 
 		void PM_Weapon_CheckForInspect(game::pmove_t* pm, game::pml_t* pml)
 		{
-			if ((pm->ps->weapFlags[1] & WEAP_FLAG2_INSPECT) != 0)
+			if ((pm->ps->weapFlags.m_flags[1] & WEAP_FLAG2_INSPECT) != 0)
 			{
-				pm->ps->weapFlags[1] = ~pm->ps->weapFlags[1] & WEAP_FLAG2_INSPECT;
+				pm->ps->weapFlags.m_flags[1] = ~pm->ps->weapFlags.m_flags[1] & WEAP_FLAG2_INSPECT;
 			}
 			else
 			{
@@ -290,7 +290,7 @@ namespace weapon
 					return scripting::script_value{};
 				}
 
-				ent->client->ps.weapFlags[1] |= WEAP_FLAG2_INSPECT; // lets hope the game doesn't use this flag already...
+				ent->client->ps.weapFlags.m_flags[1] |= WEAP_FLAG2_INSPECT; // lets hope the game doesn't use this flag already...
 				return scripting::script_value{};
 			});
 

@@ -28,6 +28,10 @@ namespace dvars
 	game::dvar_t* cg_gun_y = nullptr;
 	game::dvar_t* cg_gun_z = nullptr;
 
+	game::dvar_t* cg_thirdPerson = nullptr;
+	game::dvar_t* cg_thirdPersonRange = nullptr;
+	game::dvar_t* cg_thirdPersonAngle = nullptr;
+
 	game::dvar_t* cg_unlockall_items = nullptr;
 	game::dvar_t* cg_unlockall_loot = nullptr;
 
