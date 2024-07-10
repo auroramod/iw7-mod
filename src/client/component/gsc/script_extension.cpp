@@ -311,17 +311,6 @@ namespace gsc
 
 			utils::hook::jump(0x140C0D0A4, utils::hook::assemble(vm_execute_stub), true);
 
-			/*
-			if (game::environment::is_dedi())
-			{
-				function::add("isusingmatchrulesdata", [](const function_args& args)
-				{
-					// return 0 so the game doesn't override the cfg
-					return 0;
-				});
-			}
-			*/
-
 			function::add("print", [](const function_args& args)
 			{
 				print(args);
@@ -375,9 +364,14 @@ namespace gsc
 				const auto what = args[0].get_raw();
 				const auto with = args[1].get_raw();
 
-				if (what.type != game::VAR_FUNCTION || with.type != game::VAR_FUNCTION)
+				if (what.type != game::VAR_FUNCTION)
 				{
-					throw std::runtime_error("replacefunc: parameter 1 must be a function");
+					throw std::runtime_error("parameter 1 must be a function");
+				}
+
+				if (with.type != game::VAR_FUNCTION)
+				{
+					throw std::runtime_error("parameter 2 must be a function");
 				}
 
 				vm_execute_hooks[what.u.codePosValue] = with.u.codePosValue;

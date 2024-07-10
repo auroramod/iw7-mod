@@ -56,7 +56,7 @@ namespace gsc
 			{
 				const auto& pos = function.value();
 				unknown_function_error = std::format(
-					"while processing function '{}' in script '{}':\nunknown script '{}'", pos.first, pos.second, scripting::current_file
+					"while processing function '{}' in script '{}':\nunknown script '{}'", pos.function, pos.file, scripting::current_file
 				);
 			}
 			else
@@ -289,62 +289,58 @@ namespace gsc
 			}
 		}
 
-		void print_callstack(uint8_t opcode_id)
+		void print_callstack()
 		{
-			bool first = true;
-
 			for (auto frame = game::scr_VmPub->function_frame; frame != game::scr_VmPub->function_frame_start; --frame)
 			{
-				const auto function_stack = game::scr_function_stack;
-				const auto pos = frame == game::scr_VmPub->function_frame ? function_stack->pos : frame->fs.pos;
-				const auto function = find_function(pos);
+				const auto pos = frame == game::scr_VmPub->function_frame ? game::scr_function_stack->pos : frame->fs.pos;
+				const auto script_info = find_function(pos);
 
-				if (function.has_value())
+				if (!script_info.has_value())
 				{
-					auto& file_name = function.value().second;
+					console::warn("\tat unknown location %p\n", pos);
+					continue;
+				}
 
-					if (gsc::source_pos_map.contains(file_name))
+				const auto& function = script_info->function;
+				const auto& file = script_info->file;
+				const auto* loaded_script = gsc::get_loaded_script(file);
+
+				if (loaded_script)
+				{
+					const auto script = loaded_script->ptr;
+					assert(script);
+
+					const auto& pos_map = loaded_script->devmap;
+
+					auto position = static_cast<std::uint32_t>(pos - script->bytecode);
+					for (auto i = 0; i < 8; ++i)
 					{
-						const auto script = gsc::loaded_scripts[file_name];
-						assert(script);
-
-						const auto& pos_map = gsc::source_pos_map[file_name];
-						
-						auto position = static_cast<std::uint32_t>(pos - script->bytecode);
-						for (auto i = 0; i < 8; ++i)
+						auto position_fixup = position + i;
+						if (pos_map.contains(position_fixup))
 						{
-							auto position_fixup = position + i;
-							if (pos_map.contains(position_fixup))
-							{
-								position = position_fixup;
-								break;
-							}
+							position = position_fixup;
+							break;
 						}
+					}
 
-						if (pos_map.contains(position))
-						{
-							const auto& info = pos_map.at(position);
+					if (pos_map.contains(position))
+					{
+						const auto& info = pos_map.at(position);
 
-							console::warn("\tat function \"%s\" in file \"%s.gsc\" (line %d, col %d)\n",
-								function.value().first.data(), file_name.data(), info.line, info.column);
-						}
-						else
-						{
-							goto NO_DEVMAP;
-						}
+						console::warn("\tat function \"%s\" in file \"%s.gsc\" (line %d, col %d)\n",
+							function.data(), file.data(), info.line, info.column);
 					}
 					else
 					{
-					NO_DEVMAP:
-						console::warn("\tat function \"%s\" in file \"%s.gsc\"\n", function.value().first.data(), file_name.data());
+						goto NO_DEVMAP;
 					}
 				}
 				else
 				{
-					console::warn("\tat unknown location %p\n", pos);
+				NO_DEVMAP:
+					console::warn("\tat function \"%s\" in file \"%s.gsc\"\n", function.data(), file.data());
 				}
-
-				first = false;
 			}
 		}
 
@@ -360,9 +356,8 @@ namespace gsc
 			console::warn("*********** script runtime error *************\n");
 
 			const auto opcode_id = *reinterpret_cast<std::uint8_t*>(0x146B22940);
-			const std::string error_str = gsc_error_msg.has_value()
-				? utils::string::va(": %s", gsc_error_msg.value().data())
-				: "";
+
+			const std::string error_str = gsc_error_msg.has_value() ? std::format(": {}", gsc_error_msg.value()) : std::string();
 
 			if ((opcode_id >= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltin0) && opcode_id <= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltin))
 				|| (opcode_id >= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltinMethod0) && opcode_id <= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltinMethod)))
@@ -385,7 +380,7 @@ namespace gsc
 			force_error_print = false;
 			gsc_error_msg = {};
 
-			print_callstack(opcode_id);
+			print_callstack();
 			console::warn("**********************************************\n");
 		}
 
@@ -428,16 +423,21 @@ namespace gsc
 		game::Scr_ErrorInternal();
 	}
 
-	std::optional<std::pair<std::string, std::string>> find_function(const char* pos)
+	std::optional<script_info_t> find_function(const char* pos)
 	{
 		for (const auto& file : scripting::script_function_table_sort)
 		{
+			const auto first_function = file.second.begin();
 			for (auto i = file.second.begin(); i != file.second.end() && std::next(i) != file.second.end(); ++i)
 			{
 				const auto next = std::next(i);
 				if (pos >= i->second && pos < next->second)
 				{
-					return {std::make_pair(i->first, file.first)};
+					script_info_t info{};
+					info.function = i->first;
+					info.file = file.first;
+					info.script_start = first_function->second;
+					return { info };
 				}
 			}
 		}

@@ -3,16 +3,20 @@
 
 namespace gsc
 {
-	extern std::unique_ptr<xsk::gsc::iw7::context> gsc_ctx;
-    extern std::unordered_map<std::string, game::ScriptFile*> loaded_scripts;
+	struct col_line_t
+	{
+		std::uint16_t line;
+		std::uint16_t column;
+	};
 
-    struct source_pos_info
-    {
-        xsk::u16 line;
-        xsk::u16 column;
-    };
-    using code_pos_map = std::map<uint32_t, source_pos_info>;
-    extern std::unordered_map<std::string, code_pos_map> source_pos_map;
+	struct loaded_script_t
+	{
+		game::ScriptFile* ptr;
+		std::map<std::uint32_t, col_line_t> devmap;
+	};
+
+	extern std::unique_ptr<xsk::gsc::iw7::context> gsc_ctx;
 
 	game::ScriptFile* find_script(game::XAssetType type, const char* name, int allow_create_default);
+	loaded_script_t* get_loaded_script(const std::string& name);
 }
