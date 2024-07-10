@@ -297,7 +297,7 @@ namespace gsc
 			{
 				const auto function_stack = game::scr_function_stack;
 				const auto pos = frame == game::scr_VmPub->function_frame ? function_stack->pos : frame->fs.pos;
-				const auto function = find_function(frame->fs.pos);
+				const auto function = find_function(pos);
 
 				if (function.has_value())
 				{
