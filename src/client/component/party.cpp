@@ -409,6 +409,12 @@ namespace party
 			utils::hook::nop(0x140C563C3, 12); // far jump = 12 bytes
 			utils::hook::jump(0x140C563C3, utils::hook::assemble(reset_mem_stuff_stub), true);
 
+			// show custom drop reason
+			utils::hook::set<uint8_t>(0x1409B0AFF, 0xEB);
+
+			// enable custom kick reason in GScr_KickPlayer
+			utils::hook::set<uint8_t>(0x140B5377E, 0xEB);
+
 			command::add("map", [](const command::params& args)
 			{
 				if (args.size() != 2)
@@ -510,6 +516,89 @@ namespace party
 				{
 					connect(target);
 				}
+			});
+
+			command::add("kickClient", [](const command::params& params)
+			{
+				if (params.size() < 2)
+				{
+					console::info("usage: kickClient <num>, <reason>(optional)\n");
+					return;
+				}
+
+				if (!game::SV_Loaded() || game::Com_FrontEnd_IsInFrontEnd())
+				{
+					return;
+				}
+
+				std::string reason;
+				if (params.size() > 2)
+				{
+					reason = params.join(2);
+				}
+				if (reason.empty())
+				{
+					reason = "EXE_PLAYERKICKED";
+				}
+
+				const auto client_num = atoi(params.get(1));
+				if (client_num < 0 || static_cast<unsigned int>(client_num) >= *game::svs_numclients)
+				{
+					return;
+				}
+
+				scheduler::once([client_num, reason]()
+				{
+					game::SV_CmdsMP_KickClientNum(client_num, reason.data(), false);
+				}, scheduler::pipeline::server);
+			});
+
+			command::add("kick", [](const command::params& params)
+			{
+				if (params.size() < 2)
+				{
+					console::info("usage: kick <name>, <reason>(optional)\n");
+					return;
+				}
+
+				if (!game::SV_Loaded() || game::Com_FrontEnd_IsInFrontEnd())
+				{
+					return;
+				}
+
+				std::string reason;
+				if (params.size() > 2)
+				{
+					reason = params.join(2);
+				}
+				if (reason.empty())
+				{
+					reason = "EXE_PLAYERKICKED";
+				}
+
+				const std::string name = params.get(1);
+				if (name == "all"s)
+				{
+					for (auto i = 0u; i < *game::svs_numclients; ++i)
+					{
+						scheduler::once([i, reason]()
+						{
+							game::SV_CmdsMP_KickClientNum(i, reason.data(), false);
+						}, scheduler::pipeline::server);
+					}
+					return;
+				}
+
+				const auto client_num = get_client_num_by_name(name);
+				if (client_num < 0 || static_cast<unsigned int>(client_num) >= *game::svs_numclients)
+				{
+					return;
+				}
+
+				scheduler::once([client_num, reason]()
+				{
+					game::SV_CmdsMP_KickClientNum(client_num, reason.data(), false);
+				}, scheduler::pipeline::server);
 			});
 
 			network::on("getInfo", [](const game::netadr_s& target, const std::string_view& data)
