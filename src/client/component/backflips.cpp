@@ -18,6 +18,11 @@ namespace backflips
 	public:
 		void post_unpack() override
 		{
+			if (game::environment::is_dedi())
+			{
+				return;
+			}
+
 			utils::hook::call(0x140B6E70A, use_view_pitch_dvars);
 
 			utils::hook::call(0x1406F5CF0, use_view_pitch_dvars);
