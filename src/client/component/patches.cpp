@@ -38,27 +38,13 @@ namespace patches
 		{
 			game::dvar_t* name_dvar;
 			game::dvar_t* com_maxfps;
-			game::dvar_t* cg_fov;
-			game::dvar_t* cg_fovScale;
 
 			name_dvar = game::Dvar_RegisterString("name", get_login_username().data(), game::DVAR_FLAG_SAVED, "Player name.");
 			com_maxfps = game::Dvar_RegisterInt("com_maxfps", 0, 0, 1000, game::DVAR_FLAG_SAVED, "Cap frames per second");
-			cg_fov = game::Dvar_RegisterFloat("cg_fov", 65.0f, 1.0f, 160.f, game::DVAR_FLAG_SAVED,
-				"The field of view angle in degrees");
-			cg_fovScale = game::Dvar_RegisterFloat("cg_fovScale", 1.0f, 0.1f, 2.0f, game::DVAR_FLAG_SAVED,
-				"Scale applied to the field of view");
 
 			*reinterpret_cast<game::dvar_t**>(0x146005758) = com_maxfps;
 			dvars::disable::re_register("com_maxfps");
 			dvars::disable::de_register("com_maxfps");
-
-			*reinterpret_cast<game::dvar_t**>(0x141FA6DA0) = cg_fov;
-			dvars::disable::re_register("cg_fov");
-			dvars::disable::de_register("cg_fov");
-
-			*reinterpret_cast<game::dvar_t**>(0x141FA6DB0) = cg_fovScale;
-			dvars::disable::re_register("cg_fovScale");
-			dvars::disable::de_register("cg_fovScale");
 
 			return com_register_common_dvars_hook.invoke<void>();
 		}
@@ -265,9 +251,6 @@ namespace patches
 			utils::hook::call(0x140B7CEF9, db_read_raw_file_stub);
 			// Add cheat override to exec
 			utils::hook::call(0x140B7CF11, cbuf_execute_buffer_internal_stub);
-
-			// don't reset our fov
-			utils::hook::set<uint8_t>(0x1408A6160, 0xC3);
 
 			// don't register every replicated dvar as a network dvar
 			init_network_dvars_hook.create(0x140B7A920, init_network_dvars_stub);

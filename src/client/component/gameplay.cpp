@@ -101,7 +101,7 @@ namespace gameplay
 
 		void cg_calculate_weapon_movement_debug_stub(game::cg_s* glob, float* origin)
 		{
-			// Retrieve the hook value
+			// CG_View_CalcFovCompensation
 			float value = utils::hook::invoke<float>(0x140889B60, glob, origin);
 
 			// Initialize values
