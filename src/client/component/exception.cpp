@@ -156,7 +156,7 @@ namespace exception
 			auto* set_filter = ntdll.get_proc<void(*)(LPTOP_LEVEL_EXCEPTION_FILTER)>("RtlSetUnhandledExceptionFilter");
 
 			set_filter(exception_filter);
-			utils::hook::jump(set_filter, set_unhandled_exception_filter_stub);
+			utils::hook::jump(set_filter, set_unhandled_exception_filter_stub, true);
 		}
 	};
 }
