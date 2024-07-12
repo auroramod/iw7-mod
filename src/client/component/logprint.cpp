@@ -70,7 +70,7 @@ namespace logprint
 				try
 				{
 					const scripting::entity self_{ game::Scr_GetEntityId(self->s.number, 0) };
-					assert(self, "self must be defined in Scr_PlayerDamage");
+					assert(self && "self must be defined in Scr_PlayerDamage");
 
 					int lpselfnum = self_.call("getentitynumber").as<int>();
 					std::string lpselfname = self_.get("name").as<std::string>();
@@ -131,7 +131,7 @@ namespace logprint
 				try
 				{
 					const scripting::entity self_{ game::Scr_GetEntityId(self->s.number, 0) };
-					assert(self, "self must be defined in Scr_PlayerKilled");
+					assert(self && "self must be defined in Scr_PlayerKilled");
 
 					int lpselfnum = self_.call("getentitynumber").as<int>();
 					std::string lpselfname = self_.get("name").as<std::string>();
