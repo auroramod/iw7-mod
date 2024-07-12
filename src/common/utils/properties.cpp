@@ -18,7 +18,7 @@ namespace utils::properties
 				CoTaskMemFree(path);
 			});
 
-		static auto appdata = std::filesystem::path(path) / "iw7-mod";
+		static auto appdata = std::filesystem::path(path) / "auroramod/iw7-mod";
 		return appdata;
 	}
 }
