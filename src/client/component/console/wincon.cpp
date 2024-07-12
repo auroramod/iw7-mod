@@ -36,6 +36,11 @@ namespace wincon
 	class component final : public component_interface
 	{
 	public:
+		component()
+		{
+			ShowWindow(GetConsoleWindow(), SW_SHOW);
+		}
+
 		void post_start() override
 		{
 			const auto handle = CreateThread(0, 0, wincon::console, 0, 0, 0);

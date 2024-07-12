@@ -17,6 +17,7 @@
 #include <utils/string.hpp>
 #include <utils/properties.hpp>
 #include <utils/cryptography.hpp>
+#include <utils/flags.hpp>
 
 #define FILES_PATH "files.json"
 #define FILES_PATH_DEV "files-dev.json"
@@ -262,7 +263,9 @@ namespace updater
 		{
 			return std::thread([=]
 			{
+				console::info("[Updater] Downloading file \"%s\"\n", file.name.data());
 				const auto data = download_data_file(file.name);
+
 				if (!data.has_value())
 				{
 					console::error("[Updater] File failed to download \"%s\"\n", file.name.data());
@@ -349,7 +352,6 @@ namespace updater
 					});
 				};
 
-				console::info("[Updater] Creating thread for file \"%s\"\n", file.name.data());
 				download_threads.emplace_back(create_file_thread(file, cb));
 			}
 
@@ -385,7 +387,7 @@ namespace updater
 						console::error("[Updater] Failed to write file \"%s\", aborting update\n", file.name.data());
 						download_failed = true;
 						return;
-					} 
+					}
 					
 					if (is_binary_name(file.name))
 					{
@@ -396,8 +398,12 @@ namespace updater
 
 			if (!download_failed && is_binary_modified)
 			{
-				console::info("[Updater] Restarting\n");
-				utils::nt::relaunch_self();
+				if (!utils::flags::has_flag("update-only"))
+				{
+					console::info("[Updater] Restarting\n");
+					utils::nt::relaunch_self();
+				}
+
 				utils::nt::terminate();
 			}
 		}
