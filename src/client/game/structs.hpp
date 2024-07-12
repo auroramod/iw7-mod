@@ -560,6 +560,11 @@ namespace game
 		SAY_TELL = 0x2,
 	};
 
+	enum ConfigString : std::int32_t
+	{
+		CS_TIMESCALE = 3464,
+	};
+
 	namespace entity
 	{
 		enum connstate_t : std::uint32_t

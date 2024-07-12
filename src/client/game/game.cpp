@@ -244,7 +244,7 @@ namespace game
 		va_end(ap);
 
 		const auto file = dvars::g_log->current.string;
-		const auto time = *game::level_time / 1000;
+		const auto time = *game::gameTime / 1000;
 
 		utils::io::write_file(file, utils::string::va("%3i:%i%i %s",
 			time / 60,

@@ -40,7 +40,15 @@ namespace patches
 			game::dvar_t* com_maxfps;
 
 			name_dvar = game::Dvar_RegisterString("name", get_login_username().data(), game::DVAR_FLAG_SAVED, "Player name.");
-			com_maxfps = game::Dvar_RegisterInt("com_maxfps", 0, 0, 1000, game::DVAR_FLAG_SAVED, "Cap frames per second");
+
+			if (game::environment::is_dedi())
+			{
+				com_maxfps = game::Dvar_RegisterInt("com_maxfps", 85, 0, 100, game::DVAR_FLAG_NONE, "Cap frames per second");
+			}
+			else
+			{
+				com_maxfps = game::Dvar_RegisterInt("com_maxfps", 0, 0, 1000, game::DVAR_FLAG_SAVED, "Cap frames per second");
+			}
 
 			*reinterpret_cast<game::dvar_t**>(0x146005758) = com_maxfps;
 			dvars::disable::re_register("com_maxfps");
@@ -222,7 +230,7 @@ namespace patches
 			com_register_common_dvars_hook.create(0x140BADF30, com_register_common_dvars_stub);
 
 			// patch some features
-			com_game_mode_supports_feature_hook.create(0x1405AFDE0, com_game_mode_supports_feature_stub);
+			com_game_mode_supports_feature_hook.create(game::Com_GameMode_SupportsFeature, com_game_mode_supports_feature_stub);
 
 			// get client name from dvar
 			utils::hook::jump(0x140D32770, live_get_local_client_name);

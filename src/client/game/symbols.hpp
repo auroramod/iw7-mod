@@ -37,11 +37,14 @@ namespace game
 	WEAK symbol<void(GameModeType)> Com_GameMode_SetDesiredGameMode{ 0x1405AFDA0 };
 	WEAK symbol<GameModeType()> Com_GameMode_GetActiveGameMode{ 0x1405AFD50 };
 	WEAK symbol<bool(const char* name)> Com_GameMode_SupportsMap{ 0x1405AFE10 };
+	WEAK symbol<bool(Com_GameMode_Feature)> Com_GameMode_SupportsFeature{ 0x1405AFDE0 };
 
 	WEAK symbol<bool()> Com_IsAnyLocalServerStarting{ 0x140BAD9C0 };
 	WEAK symbol<bool()> Com_IsAnyLocalServerRunning{ 0x140BAD9A0 };
 
 	WEAK symbol<void(const char* localizedMessage, const char* localizedTitle)> Com_SetLocalizedErrorMessage{ 0x140BAF300 };
+
+	WEAK symbol<void(float startTimescale, float endTimescale, int deltaMsec)> Com_SetSlowMotion{ 0x140BAFD70 };
 
 	WEAK symbol<void()> Com_SyncThreads{ 0x140BB02D0 };
 
@@ -121,6 +124,7 @@ namespace game
 	WEAK symbol<void(dvar_t* dvar, DvarSetSource source)> Dvar_Reset{ 0x140CEC490 };
 	WEAK symbol<unsigned int(const char* name)> Dvar_GenerateChecksum{ 0x140CEA520 };
 	WEAK symbol<void(dvar_t* dvar, int value)> Dvar_SetInt{ 0x140CED3D0 };
+	WEAK symbol<void(dvar_t* dvar, float value)> Dvar_SetFloat{ 0x140CECD90 };
 	WEAK symbol<void(bool cheatOverride)> Dvar_OverrideCheatProtection{ 0x140CEB250 };
 
 	WEAK symbol<__int64(const char* qpath, char** buffer)> FS_ReadFile{ 0x140CDE200 };
@@ -265,6 +269,7 @@ namespace game
 	WEAK symbol<bool()> SV_Loaded{ 0x140C114C0 };
 	WEAK symbol<bool(const char* name)> SV_MapExists{ 0x140CDB620 };
 	WEAK symbol<playerState_s* (int num)> SV_GetPlayerstateForClientNum{ 0x140C123A0 };
+	WEAK symbol<void(unsigned int index, const char* val)> SV_SetConfigString{ 0x140C11CD0 };
 
 	WEAK symbol<gentity_s* (const char* bot_name, unsigned int head, unsigned int body, unsigned int helmet)> SV_AddBot{ 0x140C4E340 };
 	WEAK symbol<bool(int clientNum)> SV_BotIsBot{ 0x140C3BC90 };
@@ -350,7 +355,9 @@ namespace game
 	WEAK symbol<bool> g_quitRequested{ 0x14779CD44 };
   
 	WEAK symbol<unsigned int> gameEntityId{ 0x14665A124 };
-	WEAK symbol<int> level_time{ 0x143C986D8 };
+	WEAK symbol<int> gameTime{ 0x143C986D8 };
+
+	WEAK symbol<int> com_frameTime{ 0x1460053C0 };
 
 	WEAK symbol<int> s_frontEndScene_state{ 0x144BFF608 };
 
