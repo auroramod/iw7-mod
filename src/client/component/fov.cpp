@@ -4,7 +4,6 @@
 #include "game/game.hpp"
 #include "game/dvars.hpp"
 
-#include "scheduler.hpp"
 #include "dvars.hpp"
 
 #include <utils/hook.hpp>

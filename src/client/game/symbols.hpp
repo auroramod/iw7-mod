@@ -19,8 +19,9 @@ namespace game
 	WEAK symbol<unsigned int(int handle, int num_param)> Scr_ExecThread{ 0x140C0ACD0 };
 
 	WEAK symbol<float()> BG_GetGravity{ 0x140068DD0 };
-	WEAK game::symbol<unsigned int(unsigned short* weapon, game::playerState_s* ps)> BG_PlayerLastWeaponHandForViewWeapon{ 0x14074B410 };
-	WEAK game::symbol<bool(game::playerState_s* ps, game::weapAnimFiles_t anim, int hand, unsigned char pmoveHandler)> BG_ViewModelAnimExists{ 0x140751200 };
+	WEAK symbol<unsigned int(unsigned short* weapon, playerState_s* ps)> BG_PlayerLastWeaponHandForViewWeapon{ 0x14074B410 };
+	WEAK symbol<bool(playerState_s* ps, weapAnimFiles_t anim, int hand, unsigned char pmoveHandler)> BG_ViewModelAnimExists{ 0x140751200 };
+	WEAK symbol<char* (const unsigned short* weapon, bool isAlternate, char* output, unsigned int maxStringLen)> BG_GetWeaponNameComplete{ 0x140733D50 };
 
 	WEAK symbol<void(errorParm code, const char* message, ...)> Com_Error{ 0x140B8D830 };
 
@@ -141,6 +142,7 @@ namespace game
 	WEAK symbol<void* (void*, const char* name)> G_GetWeaponForName { 0x140B4FCB0 };
 	WEAK symbol<int (void*, const void* weapon, int dualWield, int startInAltMode, int usedBefore)> G_GivePlayerWeapon{ 0x140B69400 };
 	WEAK symbol<int(void*, const void* weapon, const bool isAlternate, int hadWeapon)> G_InitializeAmmo{ 0x140B1B0E0 };
+	WEAK symbol<scr_string_t(hitLocation_t hitLoc)> G_GetHitLocationString{ 0x1403F5D70 };
 
 	WEAK symbol<char* (char* string)> I_CleanStr{ 0x140CFACC0 };
 
@@ -216,9 +218,9 @@ namespace game
 	WEAK symbol<char* (const size_t size, unsigned int alignment, int type, int source)> PMem_AllocFromSource_NoDebug{ 0x140CF0A90 };
 	WEAK symbol<void(const char* name, int allocDir)> PMem_Free{ 0x140CF10D0 };
 
-	WEAK game::symbol<bool(__int64 weaponMap, game::playerState_s* ps, unsigned int hand, unsigned char pmoveHandler)> PM_Weapon_IsInInterruptibleState{ 0x140728210 };
-	WEAK game::symbol<void(__int64 weaponMap, game::playerState_s* ps, unsigned char pmoveHandler)> PM_BuildWeaponAnimArrays{ 0x14071AC50 };
-	WEAK game::symbol<void(game::pmove_t* pm, int hand)> PM_Weapon_Idle{ 0x140727910 };
+	WEAK symbol<bool(__int64 weaponMap, playerState_s* ps, unsigned int hand, unsigned char pmoveHandler)> PM_Weapon_IsInInterruptibleState{ 0x140728210 };
+	WEAK symbol<void(__int64 weaponMap, playerState_s* ps, unsigned char pmoveHandler)> PM_BuildWeaponAnimArrays{ 0x14071AC50 };
+	WEAK symbol<void(pmove_t* pm, int hand)> PM_Weapon_Idle{ 0x140727910 };
 
 	WEAK symbol<unsigned int(unsigned int localId, const char* pos,
 		unsigned int paramcount)> VM_Execute{ 0x140C0CDB0 };
@@ -277,7 +279,7 @@ namespace game
 	WEAK symbol<void(unsigned int localClientNum, const char** args)> UI_RunMenuScript{ 0x140CC9710 };
 	WEAK symbol<const char* (const char* string)> UI_SafeTranslateString{ 0x140CC9790 };
 
-	WEAK game::symbol<float(game::XAnim_s* anims, unsigned int anim)> XAnimGetLengthMsec{ 0x140D761C0 };
+	WEAK symbol<float(XAnim_s* anims, unsigned int anim)> XAnimGetLengthMsec{ 0x140D761C0 };
 
 	WEAK symbol<void* (jmp_buf* Buf, int Value)> longjmp{ 0x1412C0758 };
 	WEAK symbol<int(jmp_buf* Buf)> _setjmp{ 0x141423110 };
@@ -353,6 +355,8 @@ namespace game
 	WEAK symbol<int> s_frontEndScene_state{ 0x144BFF608 };
 
 	WEAK symbol<WeaponDef*> bg_weaponDefs{ 0x145210120 };
+
+	WEAK symbol<const char*> g_HitLocNames{ 0x14196AAF0 };
 
 	namespace hks
 	{

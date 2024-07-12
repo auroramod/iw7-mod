@@ -929,6 +929,7 @@ namespace game
 	static_assert(offsetof(cg_s, cubemapSize) == 19164);
 	static_assert(offsetof(cg_s, viewModelAxis) == 324368);
 	static_assert(offsetof(cg_s, renderScreen) == 492892);
+	static_assert(offsetof(cg_s, spectatingThirdPerson) == 492908);
 	static_assert(offsetof(cg_s, renderingThirdPerson) == 492912);
 	static_assert(offsetof(cg_s, m_deathCameraFailsafeLock) == 553708);
 

@@ -278,6 +278,12 @@ namespace party
 			command::execute(utils::string::va("ui_gametype %s", gametype->current.string), true);
 		}
 
+		auto* hardcore = game::Dvar_FindVar("g_hardcore");
+		if (hardcore)
+		{
+			command::execute(utils::string::va("ui_hardcore %s", hardcore->current.enabled), true);
+		}
+
 		perform_game_initialization();
 
 		console::info("Starting map: %s\n", mapname.data());
@@ -414,6 +420,9 @@ namespace party
 
 			// enable custom kick reason in GScr_KickPlayer
 			utils::hook::set<uint8_t>(0x140B5377E, 0xEB);
+
+			// disable this, maybe causes no issues, but fixes Session unregister on map change/restart
+			utils::hook::set<uint8_t>(0x140851B50, 0xC3); // CG_ServerCmdMP_ParsePlayerInfos
 
 			command::add("map", [](const command::params& args)
 			{

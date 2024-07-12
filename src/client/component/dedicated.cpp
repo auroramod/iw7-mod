@@ -27,6 +27,16 @@ namespace dedicated
 
 		const game::dvar_t* sv_lanOnly;
 
+		const char* sv_get_game_type_stub()
+		{
+			return game::Dvar_FindVar("g_gametype")->current.string;
+		}
+
+		bool sv_is_hardcore_mode_stub()
+		{
+			return game::Dvar_FindVar("g_hardcore")->current.enabled;
+		}
+
 		void kill_server()
 		{
 			game::SV_MainMP_KillLocalServer();
@@ -256,6 +266,11 @@ namespace dedicated
 
 			// delay startup commands until the initialization is done
 			utils::hook::call(0x140B8D20F, execute_startup_command);
+
+			utils::hook::set<uint32_t>(0x140B21107 + 2, 0x482); // g_gametype flags
+			utils::hook::set<uint32_t>(0x140B21137 + 2, 0x480); // g_hardcore flags
+			utils::hook::jump(0x140C12400, sv_get_game_type_stub);
+			utils::hook::jump(0x140C12660, sv_is_hardcore_mode_stub);
 
 			utils::hook::nop(0x140CDD5D3, 5); // don't load config file
 			utils::hook::nop(0x140B7CE46, 5); // ^

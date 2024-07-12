@@ -208,7 +208,7 @@ namespace scripting
 
 	void set_object_variable(const unsigned int parent_id, const unsigned int id, const script_value& value)
 	{
-		const auto offset = 0xFA00 * (parent_id & 3);
+		const auto offset = 0xA000 * (parent_id & 3);
 		const auto variable_id = game::GetVariable(parent_id, id);
 		const auto variable = &game::scr_VarGlob->childVariableValue[variable_id + offset];
 		const auto& raw_value = value.get_raw();
@@ -228,7 +228,7 @@ namespace scripting
 
 	script_value get_object_variable(const unsigned int parent_id, const unsigned int id)
 	{
-		const auto offset = 0xFA00 * (parent_id & 3);
+		const auto offset = 0xA000 * (parent_id & 3);
 		const auto variable_id = game::FindVariable(parent_id, id);
 		if (!variable_id)
 		{

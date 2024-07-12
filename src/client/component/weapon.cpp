@@ -238,11 +238,6 @@ namespace weapon
 	public:
 		void post_unpack() override
 		{
-			if (game::environment::is_dedi())
-			{
-				return;
-			}
-
 #ifdef DEBUG
 			command::add("setWeaponFieldFloat", [](const command::params& params)
 			{
