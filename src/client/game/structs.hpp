@@ -565,6 +565,26 @@ namespace game
 		CS_TIMESCALE = 3464,
 	};
 
+	enum FontStyle
+	{
+		FONT_STYLE_NONE = 0,
+		FONT_STYLE_SHADOW = 3,
+		FONT_STYLE_STRONG_SHADOW = 6,
+		FONT_STYLE_OUTLINE = 7,
+		FONT_STYLE_STRONG_OUTLINE = 8,
+	};
+
+	struct FontGlowStyle
+	{
+		float glowMinDistance;
+		float glowMaxDistance;
+		vec2_t glowUVOffset;
+		vec4_t glowColor;
+		float outlineGlowMinDistance;
+		float outlineGlowMaxDistance;
+		vec4_t outlineGlowColor;
+	};
+
 	namespace entity
 	{
 		enum connstate_t : std::uint32_t

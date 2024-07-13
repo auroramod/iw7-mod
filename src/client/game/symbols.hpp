@@ -185,13 +185,13 @@ namespace game
 	WEAK symbol<GfxFont* (const char* font, int size)> R_RegisterFont{ 0x140DFC670 };
 	WEAK symbol<int(const char* text, int maxChars, GfxFont* font)> R_TextWidth{ 0x140DFC770 };
 	WEAK symbol<int(void* font)> R_GetFontHeight{ 0x1412727B0 };
-	WEAK symbol<void* (int a1)> R_Font_GetLegacyFontStyle{ 0x140DFBD00 };
+	WEAK symbol<FontGlowStyle* (int style)> R_Font_GetLegacyFontStyle{ 0x140DFBD00 };
 	WEAK symbol<void()> R_SyncRenderThread{ 0x140E27EE0 };
 	WEAK symbol<void(float x, float y, float width, float height, float s0, float t0, float s1, float t1,
 		float* color, Material* material, int unk)> R_AddCmdDrawStretchPic{ 0x140E24DC0 };
 	WEAK symbol<void* (const char* text, int maxChars, void* font, int fontHeight, float x,
 		float y, float xScale, float yScale, float rotation, float* color,
-		int cursor_pos, char cursor_char, void* style_unk, int a14, int a15, int a16, int a17)> AddBaseDrawTextCmd{ 0x140E23D90 };
+		int cursorPos, char cursor, FontGlowStyle* glowStyle, int a14, int a15, int a16, int a17)> AddBaseDrawTextCmd{ 0x140E23D90 };
 #define R_AddCmdDrawText(TXT, MC, F, X, Y, XS, YS, R, C, S) \
 	AddBaseDrawTextCmd(TXT, MC, F, game::R_GetFontHeight(F), X, Y, XS, YS, R, C,-1, 0, game::R_Font_GetLegacyFontStyle(S), 0, 0, 0, 0)
 #define R_AddCmdDrawTextWithCursor(TXT, MC, F, UNK, X, Y, XS, YS, R, C, S, CP, CC) \

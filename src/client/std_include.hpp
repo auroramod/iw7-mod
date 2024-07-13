@@ -106,3 +106,19 @@ using namespace std::literals;
 #define assert_offsetof(__ASSET__, __VARIABLE__, __OFFSET__) static_assert(offsetof(__ASSET__, __VARIABLE__) == __OFFSET__)
 
 #define __FILENAME__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
+
+#if defined(_WIN32) && defined(_WIN64)
+#define TARGET_ARCHITECTURE "win64"
+#elif defined(_WIN32)
+#define TARGET_ARCHITECTURE "win32"
+#elif defined(__linux__) && defined(__x86_64__)
+#define TARGET_ARCHITECTURE "linux64"
+#elif defined(__linux__) && defined(__i386__)
+#define TARGET_ARCHITECTURE "linux32"
+#elif defined(__APPLE__) && defined(__MACH__) && defined(__x86_64__)
+#define TARGET_ARCHITECTURE "macos64"
+#elif defined(__APPLE__) && defined(__MACH__) && defined(__i386__)
+#define TARGET_ARCHITECTURE "macos32"
+#else
+#define TARGET_ARCHITECTURE "unknown"
+#endif

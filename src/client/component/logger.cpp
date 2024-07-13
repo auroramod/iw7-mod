@@ -82,7 +82,7 @@ namespace logger
 
 		void com_init_pre()
 		{
-			console::info("%s %s build %s %s\n", "IW7", VERSION, "win64", __DATE__);
+			console::info("%s %s build %s %s\n", BUILD_NAME, VERSION, TARGET_ARCHITECTURE, __DATE__);
 			console::info("--- Common Initialization ---\n");
 		}
 
