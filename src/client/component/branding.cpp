@@ -53,7 +53,7 @@ namespace branding
 				if (dvars::branding && dvars::branding->current.enabled)
 				{
 #if GIT_DIRTY == 1
-					static const auto font = game::R_RegisterFont("fonts/blender_pro_medium.ttf", 32);
+					const auto font = game::R_RegisterFont("fonts/blender_pro_medium.ttf", 32);
 					if (!font) return;
 
 					static const auto offset_from_corner = 75.0f;
