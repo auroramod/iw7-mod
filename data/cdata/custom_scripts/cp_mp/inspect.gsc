@@ -26,7 +26,6 @@ watchWeaponInspection()
     for (;;)
     {
         self waittill( "weapon_inspection" );
-        self iPrintLnBold("actionslot 8 pressed...");
 
         self startweaponinspection();
         wait 0.05;
