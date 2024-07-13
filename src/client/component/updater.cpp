@@ -116,7 +116,6 @@ namespace updater
 		{
 			static std::vector<std::string> server_urls =
 			{
-				{"https://iw7-mod.alicent.cat/"},
 				{"https://iw7-mod.auroramod.dev/"},
 			};
 
