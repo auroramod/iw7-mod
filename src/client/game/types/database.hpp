@@ -11902,8 +11902,8 @@ namespace database
 
 	enum DBSyncMode : std::int8_t
 	{
-		DB_LOAD_SYNC = 0x0,
-		DB_LOAD_ASYNC = 0x1,
+		DB_LOAD_SYNC = 0x1,
+		DB_LOAD_ASYNC = 0x2,
 	};
 
 	enum DBAllocFlags : std::int32_t
@@ -11923,6 +11923,7 @@ namespace database
 	{
 		const char* name;
 		int allocFlags;
+		int freeFlags;
 	};
 
 	struct DBFile

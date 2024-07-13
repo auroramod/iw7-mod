@@ -43,7 +43,7 @@ namespace branding
 				dvars::branding = game::Dvar_RegisterBool("branding", true, game::DvarFlags::DVAR_FLAG_SAVED, "Show branding");
 			}, scheduler::pipeline::renderer);
 
-#ifdef GIT_DIRTY
+#if GIT_DIRTY == 1
 			static char version_buffer[0x100]{};
 			sprintf_s(version_buffer, sizeof(version_buffer), "%s %s build %s %s %s", BUILD_NAME, VERSION, __DATE__, __TIME__, TARGET_ARCHITECTURE);
 #endif
@@ -52,7 +52,7 @@ namespace branding
 			{
 				if (dvars::branding && dvars::branding->current.enabled)
 				{
-#ifdef GIT_DIRTY
+#if GIT_DIRTY == 1
 					static const auto font = game::R_RegisterFont("fonts/blender_pro_medium.ttf", 32);
 					if (!font) return;
 
