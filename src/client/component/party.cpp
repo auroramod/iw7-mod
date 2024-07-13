@@ -262,7 +262,10 @@ namespace party
 
 		auto* current_mapname = game::Dvar_FindVar("mapname");
 
-		command::execute((dev ? "seta sv_cheats 1" : "seta sv_cheats 0"), true);
+		if (dev)
+		{
+			command::execute("seta sv_cheats 1", true);
+		}
 
 		if (current_mapname && utils::string::to_lower(current_mapname->current.string) ==
 			utils::string::to_lower(mapname) && (game::SV_Loaded() && !game::Com_FrontEndScene_IsActive()))

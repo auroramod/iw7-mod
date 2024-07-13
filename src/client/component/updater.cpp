@@ -233,6 +233,7 @@ namespace updater
 			if (!list.has_value())
 			{
 				console::error("[Updater] Failed to download file list\n");
+				return {};
 			}
 
 			rapidjson::Document j;
@@ -313,7 +314,7 @@ namespace updater
 					}
 				}
 
-				if (!found)
+				if (!found && !std::filesystem::is_directory(file))
 				{
 					console::info("[Updater] Deleting extra file %s\n", file.data());
 					utils::io::remove_file(file);
@@ -324,6 +325,12 @@ namespace updater
 		void run_update()
 		{
 			const auto file_list = get_file_list();
+			if (file_list.empty())
+			{
+				console::info("[Updater] Update aborted\n");
+				return;
+			}
+
 			std::vector<std::thread> download_threads;
 
 			delete_garbage_files(file_list);
@@ -425,4 +432,6 @@ namespace updater
 	};
 }
 
+#ifndef GIT_DIRTY
 REGISTER_COMPONENT(updater::component)
+#endif

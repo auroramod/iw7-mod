@@ -123,7 +123,7 @@ namespace network
 					return a->port == b->port;
 
 				case game::netadrtype_t::NA_IP:
-					return !memcmp(a->ip, b->ip, 4);
+					return memcmp(a->ip, b->ip, 4) == 0;
 				case game::netadrtype_t::NA_BROADCAST:
 					return true;
 				default:
@@ -136,7 +136,7 @@ namespace network
 
 		int net_compare_address(const game::netadr_s* a, const game::netadr_s* b)
 		{
-			return net_compare_base_address(a, b) && a->port == b->port;
+			return net_compare_base_address(a, b) != 0 && (a->port == b->port);
 		}
 
 		void string_to_sockaddr(const char* str, sockaddr_in* address)

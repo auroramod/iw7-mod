@@ -167,7 +167,7 @@ int main()
 	return static_cast<int>(entry_point());
 }
 
-int __stdcall WinMain(HINSTANCE, HINSTANCE, PSTR, int)
+int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ PSTR, _In_ int)
 {
 	return main();
 }

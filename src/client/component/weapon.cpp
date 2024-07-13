@@ -119,8 +119,8 @@ namespace weapon
 		}
 
 		utils::hook::detour BG_MapWeaponAnimStateToAnimIndex_hook;
-		game::weapAnimFiles_t BG_MapWeaponAnimStateToAnimIndex_stub(__int64 a1, game::playerState_s* ps, int animState, __int64* weapon, unsigned __int8 isAlternate,
-			int handIndex, unsigned __int8 pmoveHandler)
+		game::weapAnimFiles_t BG_MapWeaponAnimStateToAnimIndex_stub(__int64 a1, game::playerState_s* ps, int animState, unsigned __int64* weapon, unsigned __int8 isAlternate,
+			int handIndex, unsigned __int64 pmoveHandler)
 		{
 			if (HasAnimState(game::WEAP_INSPECT, animState) && ps->weapState[handIndex].weaponState == WEAP_STATE_INSPECT)
 			{
@@ -200,7 +200,7 @@ namespace weapon
 		}
 
 		utils::hook::detour PM_Weapon_IsInInterruptibleState_hook;
-		bool PM_Weapon_IsInInterruptibleState_stub(__int64 weaponMap, game::playerState_s* ps, unsigned int hand, unsigned __int8 pmoveHandler)
+		bool PM_Weapon_IsInInterruptibleState_stub(__int64 weaponMap, game::playerState_s* ps, unsigned int hand, unsigned __int64 pmoveHandler)
 		{
 			auto result = PM_Weapon_IsInInterruptibleState_hook.invoke<bool>(weaponMap, ps, hand, pmoveHandler);
 
