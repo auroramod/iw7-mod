@@ -298,7 +298,7 @@ namespace arxan
 
 		NTSTATUS NTAPI nt_close_stub(const HANDLE handle)
 		{
-			char info[16];
+			char info[16]{};
 			if (NtQueryObject(handle, OBJECT_INFORMATION_CLASS(4), &info, 2, nullptr) >= 0 && size_t(handle) != 0x12345)
 			{
 				auto* orig = static_cast<decltype(NtClose)*>(nt_close_hook.get_original());
@@ -429,7 +429,7 @@ namespace arxan
 				fake_record.ExceptionAddress = reinterpret_cast<void*>(reinterpret_cast<std::uint64_t>(address) + 3);
 				fake_record.ExceptionCode = exception;
 
-				for (auto handler : handle_handler)
+				for (auto& handler : handle_handler)
 				{
 					if (handler.second)
 					{

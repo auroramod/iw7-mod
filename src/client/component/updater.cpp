@@ -424,9 +424,9 @@ namespace updater
 			run_update();
 		}
 
-		void post_unpack() override
+		component_priority priority() override
 		{
-
+			return component_priority::updater;
 		}
 	};
 }

@@ -19,7 +19,7 @@ namespace ranked
 			{
 				dvars::override::register_bool("xblive_privatematch", false, game::DVAR_FLAG_REPLICATED | game::DVAR_FLAG_WRITE);
 
-				game::Dvar_RegisterBool("onlinegame", true, game::DVAR_FLAG_READ, "Current game is an online game with stats, custom classes, unlocks");
+				dvars::override::register_bool("onlinegame", true, game::DVAR_FLAG_READ);
 
 				// Fix sessionteam always returning none (SV_ClientMP_HasAssignedTeam_Internal)
 				utils::hook::set(0x140C50BC0, 0xC300B0);
@@ -28,11 +28,6 @@ namespace ranked
 			{
 				dvars::override::register_bool("xblive_privatematch", true, game::DVAR_FLAG_REPLICATED);
 			}
-		}
-
-		component_priority priority() override
-		{
-			return component_priority::ranked;
 		}
 	};
 }
