@@ -37,6 +37,7 @@ namespace fastfiles
 		utils::hook::detour db_load_x_zone_hook;
 		utils::hook::detour db_find_xasset_header_hook;
 		utils::hook::detour db_add_xasset_hook;
+		utils::hook::detour sys_createfile_hook;
 
 		void db_try_load_x_file_internal_stub(const char* zone_name, const unsigned int zone_flags,
 			const bool is_base_map, const bool was_paused, const int failure_mode)
@@ -106,6 +107,63 @@ namespace fastfiles
 
 			auto result = db_add_xasset_hook.invoke<game::XAssetHeader>(type, header_ptr);
 			return result;
+		}
+
+		HANDLE sys_create_file_stub(game::Sys_Folder folder, const char* base_filename)
+		{
+			if (base_filename == "mod.ff"s)
+			{
+				auto* fs_basepath = game::Dvar_FindVar("fs_basepath");
+				auto* fs_game = game::Dvar_FindVar("fs_game");
+
+				std::string dir = fs_basepath ? fs_basepath->current.string : "";
+				std::string mod_dir = fs_game ? fs_game->current.string : "";
+
+				if (!mod_dir.empty())
+				{
+					const auto path = utils::string::va("%s\\%s\\%s", dir.data(), mod_dir.data(), base_filename);
+					if (utils::io::file_exists(path))
+					{
+						return CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
+							FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING, nullptr);
+					}
+				}
+				return INVALID_HANDLE_VALUE;
+			}
+
+			return sys_createfile_hook.invoke<HANDLE>(folder, base_filename);
+		}
+
+		template <typename T> inline void merge(std::vector<T>* target, T* source, size_t length)
+		{
+			if (source)
+			{
+				for (size_t i = 0; i < length; ++i)
+				{
+					target->push_back(source[i]);
+				}
+			}
+		}
+
+		template <typename T> inline void merge(std::vector<T>* target, std::vector<T> source)
+		{
+			for (auto& entry : source)
+			{
+				target->push_back(entry);
+			}
+		}
+
+		void load_fastfiles1_stub(game::XZoneInfo* zoneInfo, unsigned int zoneCount, game::DBSyncMode syncMode)
+		{
+			std::vector<game::XZoneInfo> data;
+			merge(&data, zoneInfo, zoneCount);
+
+			if (fastfiles::exists("mod"))
+			{
+				data.push_back({ "mod", game::DB_ZONE_GAME | game::DB_ZONE_CUSTOM, 0 });
+			}
+
+			game::DB_LoadXAssets(data.data(), static_cast<std::uint32_t>(data.size()), syncMode);
 		}
 	}
 
@@ -204,6 +262,12 @@ namespace fastfiles
 
 			// Skip signature validation
 			utils::hook::set(0x1409E6390, 0xC301B0);
+
+			// Add custom zone paths
+			sys_createfile_hook.create(game::Sys_CreateFile, sys_create_file_stub);
+
+			// Add custom zones in fastfiles load (level specific) (mod)
+			utils::hook::call(0x1403B9E9F, load_fastfiles1_stub);
 
 			command::add("loadzone", [](const command::params& params)
 			{

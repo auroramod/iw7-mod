@@ -23,33 +23,127 @@ namespace party
 {
 	namespace
 	{
-		connection_state server_connection_state{};
-		std::optional<discord_information> server_discord_info{};
-
-		/*
-		struct usermap_file
+		/*struct moddl_file
 		{
 			std::string extension;
 			std::string name;
 			bool optional;
 		};
 
-		// snake case these names before release
-		std::vector<usermap_file> usermap_files =
-		{
-			{".ff", "usermap_hash", false},
-			{"_load.ff", "usermap_load_hash", true},
-			{".arena", "usermap_arena_hash", true},
-			{".pak", "usermap_pak_hash", true},
-		};
-
-		std::vector<usermap_file> mod_files =
+		std::vector<moddl_file> mod_files =
 		{
 			{".ff", "mod_hash", false},
-			{"_pre_gfx.ff", "mod_pre_gfx_hash", true},
-			{".pak", "mod_pak_hash", true},
 		};
-		*/
+
+		std::unordered_map<std::string, std::string> hash_cache;
+
+		std::string get_file_hash(const std::string& file)
+		{
+			const auto iter = hash_cache.find(file);
+			if (iter != hash_cache.end())
+			{
+				return iter->second;
+			}
+
+			const auto hash = utils::hash::get_file_hash(file);
+			if (!hash.empty())
+			{
+				hash_cache.insert(std::make_pair(file, hash));
+			}
+
+			return hash;
+		}
+
+		// generate hashes so they are cached
+		void generate_hashes(const std::string& mapname)
+		{
+			// mod
+			const auto fs_game = get_dvar_string("fs_game");
+			if (!fs_game.empty())
+			{
+				for (const auto& file : mod_files)
+				{
+					const auto path = std::format("{}\\mod{}", fs_game, file.extension);
+					get_file_hash(path);
+				}
+			}
+		}
+
+		bool check_download_mod(const utils::info_string& info, std::vector<download::file_t>& files)
+		{
+			static const auto fs_game = game::Dvar_FindVar("fs_game");
+			const auto client_fs_game = utils::string::to_lower(fs_game->current.string);
+			const auto server_fs_game = utils::string::to_lower(info.get("fs_game"));
+
+			if (server_fs_game.empty() && client_fs_game.empty())
+			{
+				return false;
+			}
+
+			if (server_fs_game.empty() && !client_fs_game.empty())
+			{
+				mods::set_mod("");
+				return true;
+			}
+
+			if (!server_fs_game.starts_with("mods/") || server_fs_game.contains('.') || server_fs_game.contains("::"))
+			{
+				throw std::runtime_error(utils::string::va("Invalid server fs_game value '%s'", server_fs_game.data()));
+			}
+
+			auto needs_restart = false;
+			for (const auto& file : mod_files)
+			{
+				const auto source_hash = info.get(file.name);
+				if (source_hash.empty())
+				{
+					if (file.optional)
+					{
+						continue;
+					}
+
+					throw std::runtime_error(
+						utils::string::va("Server '%s' is empty", file.name.data()));
+				}
+
+				const auto file_path = server_fs_game + "/mod" + file.extension;
+				auto has_to_download = !utils::io::file_exists(file_path);
+
+				if (!has_to_download)
+				{
+					const auto hash = get_file_hash(file_path);
+					console::debug("has_to_download = %s != %s\n", source_hash.data(), hash.data());
+					has_to_download = source_hash != hash;
+				}
+
+				if (has_to_download)
+				{
+					// unload mod before downloading it
+					if (client_fs_game == server_fs_game)
+					{
+						mods::set_mod("", true);
+						return true;
+					}
+					else
+					{
+						files.emplace_back(file_path, source_hash);
+					}
+				}
+				else if (client_fs_game != server_fs_game)
+				{
+					mods::set_mod(server_fs_game);
+					needs_restart = true;
+				}
+			}
+
+			return needs_restart;
+		}*/
+	}
+
+	namespace
+	{
+		connection_state server_connection_state{};
+		std::optional<discord_information> server_discord_info{};
 
 		bool preloaded_map = false;
 
@@ -635,18 +729,7 @@ namespace party
 				info.set("sv_discordImageUrl", get_dvar_string("sv_discordImageUrl"));
 				info.set("sv_discordImageText", get_dvar_string("sv_discordImageText"));
 
-				/*
-				if (!fastfiles::is_stock_map(mapname))
-				{
-					for (const auto& file : usermap_files)
-					{
-						const auto path = get_usermap_file_path(mapname, file.extension);
-						const auto hash = get_file_hash(path);
-						info.set(file.name, hash);
-					}
-				}
-
-				const auto fs_game = get_dvar_string("fs_game");
+				/*const auto fs_game = get_dvar_string("fs_game");
 				info.set("fs_game", fs_game);
 
 				if (!fs_game.empty())
@@ -657,8 +740,7 @@ namespace party
 							fs_game.data(), file.extension.data()));
 						info.set(file.name, hash);
 					}
-				}
-				*/
+				}*/
 
 				network::send(target, "infoResponse", info.build(), '\n');
 			});

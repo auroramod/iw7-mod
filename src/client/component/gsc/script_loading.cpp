@@ -312,8 +312,7 @@ namespace gsc
 			{
 				for (const auto& path : filesystem::get_search_paths())
 				{
-					load_scripts(path, "scripts/"); // meant to override stock GSC
-					load_scripts(path, "custom_scripts/"); // for no issues, use custom_scripts/
+					load_scripts(path, "custom_scripts/");
 					load_scripts(path, "custom_scripts/"s + game::Com_GameMode_GetActiveGameModeStr() + "/");
 
 					if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_CP || game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_MP)
