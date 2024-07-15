@@ -7,6 +7,8 @@
 #include "command.hpp"
 #include "console/console.hpp"
 
+#include "filesystem.hpp"
+
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
 #include <utils/concurrency.hpp>
@@ -111,6 +113,12 @@ namespace fastfiles
 
 		HANDLE sys_create_file_stub(game::Sys_Folder folder, const char* base_filename)
 		{
+			const auto create_file_a = [](const std::string& filepath)
+			{
+				return CreateFileA(filepath.data(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
+					FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING, nullptr);
+			};
+
 			if (base_filename == "mod.ff"s)
 			{
 				auto* fs_basepath = game::Dvar_FindVar("fs_basepath");
@@ -124,14 +132,27 @@ namespace fastfiles
 					const auto path = utils::string::va("%s\\%s\\%s", dir.data(), mod_dir.data(), base_filename);
 					if (utils::io::file_exists(path))
 					{
-						return CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
-							FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING, nullptr);
+						return create_file_a(path);
 					}
 				}
 				return INVALID_HANDLE_VALUE;
 			}
 
-			return sys_createfile_hook.invoke<HANDLE>(folder, base_filename);
+			if (auto result = sys_createfile_hook.invoke<HANDLE>(folder, base_filename))
+			{
+				if (result != INVALID_HANDLE_VALUE)
+				{
+					return result;
+				}
+			}
+
+			std::string real_path{};
+			if (filesystem::find_file("zone\\"s + base_filename, &real_path))
+			{
+				return create_file_a(real_path.data());
+			}
+
+			return INVALID_HANDLE_VALUE;
 		}
 
 		template <typename T> inline void merge(std::vector<T>* target, T* source, size_t length)
@@ -158,10 +179,43 @@ namespace fastfiles
 			std::vector<game::XZoneInfo> data;
 			merge(&data, zoneInfo, zoneCount);
 
+			// mod is loaded on map start
+
 			if (fastfiles::exists("mod"))
 			{
 				data.push_back({ "mod", game::DB_ZONE_GAME | game::DB_ZONE_CUSTOM, 0 });
 			}
+
+			game::DB_LoadXAssets(data.data(), static_cast<std::uint32_t>(data.size()), syncMode);
+		}
+
+		void load_fastfiles2_stub(game::XZoneInfo* zoneInfo, unsigned int zoneCount, game::DBSyncMode syncMode)
+		{
+			std::vector<game::XZoneInfo> data;
+			merge(&data, zoneInfo, zoneCount);
+			const auto inuse_flags = game::DB_Zones_GetInUseFlags();
+
+			const auto flags_not_in_use = [&](int flags)
+			{
+				return (inuse_flags & flags) == 0;
+			};
+
+			const auto add_zone = [&](const char* name, const int flags, const int free_flags = 0)
+			{
+				if (flags_not_in_use(flags))
+				{
+					if (fastfiles::exists(name))
+					{
+						data.push_back({ name, flags, free_flags });
+					}
+				}
+			};
+
+			// Don't quote me on this:
+			// TIER1 is MP and CP
+			// TIER2 is mode specific
+
+			add_zone("iw7mod_global_mp", game::DB_ZONE_GLOBAL_TIER1 | game::DB_ZONE_CUSTOM, 1);
 
 			game::DB_LoadXAssets(data.data(), static_cast<std::uint32_t>(data.size()), syncMode);
 		}
@@ -266,8 +320,11 @@ namespace fastfiles
 			// Add custom zone paths
 			sys_createfile_hook.create(game::Sys_CreateFile, sys_create_file_stub);
 
-			// Add custom zones in fastfiles load (level specific) (mod)
+			// Add custom zones in fastfiles load
+			// (level specific) (mod)
 			utils::hook::call(0x1403B9E9F, load_fastfiles1_stub);
+			// (global,common)
+			utils::hook::call(0x1405ADB63, load_fastfiles2_stub);
 
 			command::add("loadzone", [](const command::params& params)
 			{
@@ -287,7 +344,7 @@ namespace fastfiles
 
 				game::XZoneInfo info{};
 				info.name = name;
-				info.allocFlags = game::DB_ZONE_GAME;
+				info.allocFlags = game::DB_ZONE_PERMANENT;
 				info.allocFlags |= game::DB_ZONE_CUSTOM; // skip extra zones with this flag
 
 				game::DB_LoadXAssets(&info, 1, game::DBSyncMode::DB_LOAD_ASYNC);
