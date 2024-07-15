@@ -17,7 +17,6 @@ namespace input
 		utils::hook::detour cl_char_event_hook;
 		utils::hook::detour cl_key_event_hook;
 		utils::hook::detour cl_execute_key_hook;
-		utils::hook::detour key_get_binding_for_key_hook;
 
 		int key_get_binding_for_cmd_stub(const char* command);
 
@@ -125,6 +124,18 @@ namespace input
 			return index;
 		}
 
+		std::optional<std::string*> get_custom_binding_for_key(int key)
+		{
+			key -= get_num_keys();
+
+			if (static_cast<size_t>(key) < custom_binds.size() && !custom_binds[key].empty())
+			{
+				return { &custom_binds[key] };
+			}
+
+			return {};
+		}
+
 		int key_get_binding_for_cmd_stub(const char* command)
 		{
 			// original binds
@@ -140,16 +151,19 @@ namespace input
 			return get_num_keys() + get_binding_for_custom_command(command);
 		}
 
-		std::optional<std::string> get_custom_binding_for_key(int key)
+		const char* key_get_cmd_for_binding_stub(int localClientNum, int keyBinding)
 		{
-			key -= get_num_keys();
-
-			if (static_cast<size_t>(key) < custom_binds.size() && !custom_binds[key].empty())
+			if (keyBinding >= get_num_keys())
 			{
-				return { custom_binds[key] };
+				const auto bind = get_custom_binding_for_key(keyBinding);
+				if (bind.has_value())
+				{
+					return bind.value()->data();
+				}
+				return "";
 			}
 
-			return {};
+			return game::command_whitelist[keyBinding];
 		}
 
 		void cl_execute_key_stub(const int local_client_num, int key, const int down, const unsigned int time)
@@ -162,7 +176,7 @@ namespace input
 					return;
 				}
 
-				return game::Cbuf_AddText(local_client_num, utils::string::va("%s\n", bind.value().data()));
+				return game::Cbuf_AddText(local_client_num, utils::string::va("%s\n", bind.value()->data()));
 			}
 
 			cl_execute_key_hook.invoke<void>(local_client_num, key, down, time);
@@ -190,6 +204,7 @@ namespace input
 
 			// links a custom command to an index
 			utils::hook::jump(0x1409A8EA0, key_get_binding_for_cmd_stub);
+			utils::hook::jump(0x1409A91D0, key_get_cmd_for_binding_stub);
 
 			// execute custom binds
 			cl_execute_key_hook.create(0x14032A3B0, &cl_execute_key_stub);

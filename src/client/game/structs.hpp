@@ -347,7 +347,7 @@ namespace game
 		int overstrikeMode;
 		int anyKeyDown;
 		KeyState keys[256];
-		field_t test;
+		field_t chatField;
 		char __pad0[8];
 	}; static_assert(sizeof(PlayerKeyState) == 0x1128);
 
@@ -897,7 +897,27 @@ namespace game
 			entityState_t s; // 0
 			char __pad0[368 - sizeof(entityState_t)];
 			gclient_s* client; // 368
-			char __pad1[80];
+			void* turret;
+			void* agent;
+			void* sentient;
+			void* vehicle;
+			__int64 physObjId;
+			unsigned __int16 model;
+			unsigned __int8 physicsObject;
+			unsigned __int8 takedamage;
+			unsigned __int8 active;
+			unsigned __int8 handler;
+			unsigned __int8 team;
+			bool freeAfterEvent;
+			unsigned __int16 disconnectedLinks;
+			__int16 padding_short2;
+			scr_string_t classname;
+			scr_string_t script_classname;
+			scr_string_t script_linkName;
+			scr_string_t target;
+			scr_string_t targetname;
+			unsigned int attachIgnoreCollision;
+			int spawnflags;
 			int flags; // 456
 			char __pad3[556];
 		}; static_assert(sizeof(gentity_s) == 1016);

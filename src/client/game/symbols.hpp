@@ -89,6 +89,7 @@ namespace game
 	WEAK symbol<char* (const char* filename, char* buf, int size)> DB_ReadRawFile{ 0x140A79E30 };
 	WEAK symbol<int(const RawFile* rawfile)> DB_GetRawFileLen{ 0x140F20AF0 };
 	WEAK symbol<void(int flags)> DB_UnloadFastfilesByZoneFlags{ 0x140A7BCE0 };
+	WEAK symbol<int()> DB_Zones_GetInUseFlags{ 0x1403BC160 };
 
 	WEAK symbol<const char* (const DDLState* state, int enumValue)> DDL_Lookup_GetEnumString{ 0x140030430 };
 	WEAK symbol<bool(const DDLState* state)> DDL_StateIsLeaf{ 0x14002E3C0 };
@@ -151,7 +152,10 @@ namespace game
 
 	WEAK symbol<char* (char* string)> I_CleanStr{ 0x140CFACC0 };
 
-	WEAK symbol<const char* (int, int, int)> Key_KeynumToString{ 0x1409A95E0 };
+	WEAK symbol<const char* (int keynum, int translate, int gamePadOnly)> Key_KeynumToString{ 0x1409A95E0 };
+	WEAK symbol<int (int localClientNum, int keynum)> Key_GetActiveBinding{ 0x1409A8E80 };
+	WEAK symbol<const char* (int localClientNum, int keyBinding)> Key_GetCmdForBinding{ 0x1409A91D0 };
+	WEAK symbol<const char* (const char* cmd)> Key_GetBindingForCmd{ 0x1409A8EA0 };
 
 	WEAK symbol<bool()> LUI_CoD_InFrontEnd{ 0x140615080 };
 	WEAK symbol<void(bool frontend, bool errorRecovery)> LUI_CoD_Init{ 0x140615090 };

@@ -477,6 +477,11 @@ namespace command
 				game::Com_GameMode_SetDesiredGameMode(game::GAME_MODE_CP);
 			});
 
+			add("bindlist", []()
+			{
+				game::Key_Bindlist_f();
+			});
+
 			add_sv("god", [](const int client_num, const params_sv&)
 			{
 				if (!game::shared::cheats_ok(client_num, true))

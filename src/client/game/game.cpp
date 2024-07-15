@@ -2,6 +2,8 @@
 #include "game.hpp"
 #include "dvars.hpp"
 
+#include "component/console/console.hpp"
+
 #include <utils/flags.hpp>
 #include <utils/string.hpp>
 #include <utils/io.hpp>
@@ -252,6 +254,22 @@ namespace game
 			time % 60 % 10,
 			va_buffer
 		), true);
+	}
+
+	void Key_Bindlist_f()
+	{
+		for (int keynum = 0; keynum < 256; ++keynum)
+		{
+			auto value = game::Key_GetActiveBinding(0, keynum);
+			if (value)
+			{
+				auto* binding = game::Key_GetCmdForBinding(0, value);
+				if (*binding)
+				{
+					console::info("%s \"%s\"\n", game::Key_KeynumToString(keynum, 0, 0), binding);
+				}
+			}
+		}
 	}
 }
 
