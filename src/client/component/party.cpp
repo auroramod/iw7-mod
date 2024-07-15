@@ -369,16 +369,18 @@ namespace party
 			return;
 		}
 
+		command::execute(utils::string::va("seta ui_mapname %s", mapname.data()), true);
+
 		auto* gametype = game::Dvar_FindVar("g_gametype");
 		if (gametype && gametype->current.string)
 		{
-			command::execute(utils::string::va("ui_gametype %s", gametype->current.string), true);
+			command::execute(utils::string::va("seta ui_gametype %s", gametype->current.string), true);
 		}
 
 		auto* hardcore = game::Dvar_FindVar("g_hardcore");
 		if (hardcore)
 		{
-			command::execute(utils::string::va("ui_hardcore %s", hardcore->current.enabled), true);
+			command::execute(utils::string::va("seta ui_hardcore %s", hardcore->current.enabled), true);
 		}
 
 		perform_game_initialization();

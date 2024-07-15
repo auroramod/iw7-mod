@@ -60,6 +60,7 @@ namespace game
 
 	WEAK symbol<void(int localClientNum, void* hostInfo, const netadr_s* addr, const char* mapname, const char* gametype)>
 		CL_MainMP_ConnectAndPreloadMap{ 0x1409AED80 };
+	WEAK symbol<void(int localClientNum, uiClientState_t* state)> CL_GetClientState{ 0x1409BFFF0 };
 
 	WEAK symbol<void(int localClientNum, int andMask)> CL_Keys_RemoveCatcher{ 0x1409A9B00 };
 
@@ -165,6 +166,8 @@ namespace game
 	WEAK symbol<unsigned int(int controllerIndex)> Live_SyncOnlineDataFlags{ 0x140DC5CE0 };
 	WEAK symbol<std::uint64_t(int controllerIndex)> Live_GetXuid{ 0x140D32A20 };
 
+	WEAK symbol<float()> LoadBar_GetLoadedFraction{ 0x1405DE190 };
+
 	WEAK symbol<PartyData* ()> Lobby_GetPartyData{ 0x1409C3E20 };
 
 	WEAK symbol<Material* (const char* material)> Material_RegisterHandle{ 0x140E11CE0 };
@@ -184,12 +187,12 @@ namespace game
 
 	WEAK symbol<GfxFont* (const char* font, int size)> R_RegisterFont{ 0x140DFC670 };
 	WEAK symbol<int(const char* text, int maxChars, GfxFont* font)> R_TextWidth{ 0x140DFC770 };
-	WEAK symbol<int(void* font)> R_GetFontHeight{ 0x1412727B0 };
+	WEAK symbol<int(GfxFont* font)> R_GetFontHeight{ 0x1412727B0 };
 	WEAK symbol<FontGlowStyle* (int style)> R_Font_GetLegacyFontStyle{ 0x140DFBD00 };
 	WEAK symbol<void()> R_SyncRenderThread{ 0x140E27EE0 };
 	WEAK symbol<void(float x, float y, float width, float height, float s0, float t0, float s1, float t1,
 		float* color, Material* material, int unk)> R_AddCmdDrawStretchPic{ 0x140E24DC0 };
-	WEAK symbol<void* (const char* text, int maxChars, void* font, int fontHeight, float x,
+	WEAK symbol<void* (const char* text, int maxChars, GfxFont* font, int fontHeight, float x,
 		float y, float xScale, float yScale, float rotation, float* color,
 		int cursorPos, char cursor, FontGlowStyle* glowStyle, int a14, int a15, int a16, int a17)> AddBaseDrawTextCmd{ 0x140E23D90 };
 #define R_AddCmdDrawText(TXT, MC, F, X, Y, XS, YS, R, C, S) \
@@ -243,6 +246,7 @@ namespace game
 	WEAK symbol<void(const char* str)> Scr_AllocGlobalString{ 0x140C03C70 };
 
 	WEAK symbol<ScreenPlacement* ()> ScrPlace_GetViewPlacement{ 0x1409E4090 };
+	WEAK symbol<ScreenPlacement* ()> ScrPlace_GetActivePlacement{ 0x1409E4060 };
 
 	WEAK symbol<const char* (const StringTable* table, const int comparisonColumn, const char* value, const int valueColumn)> StringTable_Lookup{ 0x140CE7950 };
 	WEAK symbol<const char* (const StringTable* table, const int row, const int column)> StringTable_GetColumnValueForRow{ 0x140CE78E0 };
@@ -283,6 +287,15 @@ namespace game
 	WEAK symbol<const char* (const char*)> UI_GetGameTypeDisplayName{ 0x140CC61C0 };
 	WEAK symbol<void(unsigned int localClientNum, const char** args)> UI_RunMenuScript{ 0x140CC9710 };
 	WEAK symbol<const char* (const char* string)> UI_SafeTranslateString{ 0x140CC9790 };
+	WEAK symbol<const char* (const char* sourceString, int replaceInt)> UI_ReplaceConversionInt{ 0x140CC91A0 };
+	WEAK symbol<GfxFont*(const ScreenPlacement* scrPlace, int fontEnum, float scale)> UI_GetFontHandle{ 0x140CD1240 };
+	WEAK symbol<void(const ScreenPlacement* scrPlace, float x, float y, float width, float height,
+		int horzAlign, int vertAlign, const vec4_t* color)> UI_FillRect{ 0x140CBDE30 };
+	WEAK symbol<void(const ScreenPlacement* scrPlace, float x, float y, float w, float h,
+		int horzAlign, int vertAlign, const vec4_t* color, Material* material)> UI_DrawLoadBar{ 0x140CBDC40 };
+	WEAK symbol<void(const ScreenPlacement* scrPlace, const char* text, int maxChars, GfxFont* font, float x, float y,
+		int horzAlign, int vertAlign, float scale, const vec4_t* color, int style)> UI_DrawText{ 0x140CC5C00 };
+	WEAK symbol<int(const char* text, int maxChars, GfxFont* font, float scale)> UI_TextWidth{ 0x140CC9FA0 };
 
 	WEAK symbol<float(XAnim_s* anims, unsigned int anim)> XAnimGetLengthMsec{ 0x140D761C0 };
 
@@ -364,6 +377,12 @@ namespace game
 	WEAK symbol<WeaponDef*> bg_weaponDefs{ 0x145210120 };
 
 	WEAK symbol<const char*> g_HitLocNames{ 0x14196AAF0 };
+
+	WEAK symbol<bool> cl_serverLoadingMap{ 0x141FE5D74 };
+	WEAK symbol<bool> g_waitingForServer{ 0x14523ED91 };
+
+	WEAK symbol<Material*> whiteMaterial{ 0x141FE5ED0 };
+	WEAK symbol<vec4_t> colorWhite{ 0x141524800 };
 
 	namespace hks
 	{

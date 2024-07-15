@@ -53,14 +53,13 @@ namespace branding
 				if (dvars::branding && dvars::branding->current.enabled)
 				{
 #if GIT_DIRTY == 1
-					const auto font = game::R_RegisterFont("fonts/blender_pro_medium.ttf", 32);
+					const auto* placement = game::ScrPlace_GetViewPlacement();
+					const auto font = game::UI_GetFontHandle(placement, game::FONT_TYPE_HUD_BIG_FONT, 1.0f);
 					if (!font) return;
 
 					static const auto offset_from_corner = 75.0f;
-
 					static float text_color[4] = { 0.4f, 0.69f, 1.0f, 0.69f };
-
-					const auto* placement = game::ScrPlace_GetViewPlacement();
+					
 					const auto x = (placement->realViewportSize[0] - offset_from_corner) - (game::R_TextWidth(version_buffer, std::numeric_limits<int>::max(), font));
 					const auto height = (placement->realViewportSize[1] - offset_from_corner) + 5.0f; // remove some off the offset
 

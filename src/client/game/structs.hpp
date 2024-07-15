@@ -465,6 +465,19 @@ namespace game
 		char __pad0[131112];
 		netadr_s address;
 	};
+	
+	enum FontType
+	{
+		FONT_TYPE_BIG_FONT = 2,
+		FONT_TYPE_SMALL_FONT = 3,
+		FONT_TYPE_BOLD_FONT = 4,
+		FONT_TYPE_CONSOLE_FONT = 5,
+		FONT_TYPE_OBJECTIVE_FONT = 6,
+		FONT_TYPE_TEXT_FONT = 7,
+		FONT_TYPE_EXTRA_BIG_FONT = 8,
+		FONT_TYPE_HUD_BIG_FONT = 9,
+		FONT_TYPE_HUD_SMALL_FONT = 10,
+	};
 
 	struct GfxFont
 	{
@@ -585,6 +598,15 @@ namespace game
 		vec4_t outlineGlowColor;
 	};
 
+	struct ComGameStartupData
+	{
+		int state;
+		char mapname[64];
+		char gameType[64];
+		unsigned int loadTime;
+		bool isServer;
+	};
+
 	namespace entity
 	{
 		enum connstate_t : std::uint32_t
@@ -600,6 +622,14 @@ namespace game
 			CA_PRIMED = 0x8,
 			CA_ACTIVE = 0x9,
 			CA_MAP_RESTART = 0xA,
+		};
+
+		struct uiClientState_t
+		{
+			connstate_t connState;
+			int connectPacketCount;
+			char servername[1024];
+			char messageString[1024];
 		};
 
 		struct clientUIActive_t
