@@ -336,7 +336,7 @@ namespace updater
 					}
 				}
 
-				if (!found && std::filesystem::is_regular_file(file))
+				if (!found && std::filesystem::is_regular_file(file) && !is_dedi_ignore_file(file))
 				{
 					console::info("[Updater] Deleting extra file %s\n", file.data());
 					utils::io::remove_file(file);
