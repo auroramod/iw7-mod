@@ -29,6 +29,24 @@ namespace updater
 {
 	namespace
 	{
+		std::vector<std::string> dedi_ignore =
+		{
+			"zone/iw7mod_ui_mp.ff",
+		};
+
+		bool is_dedi_ignore_file(const std::string& name)
+		{
+			for (auto& ignore_file : dedi_ignore)
+			{
+				if (name == CLIENT_DATA_FOLDER + "/"s + ignore_file)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		constexpr auto override_cache = true;
 
 		struct file_data
@@ -250,6 +268,11 @@ namespace updater
 
 				const auto name = file[0].GetString();
 				const auto sha = file[2].GetString();
+
+				if (is_dedi_ignore_file(name))
+				{
+					continue;
+				}
 
 				console::info("[Updater] Add file \"%s\"\n", name);
 

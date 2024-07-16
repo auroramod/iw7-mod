@@ -217,6 +217,11 @@ namespace fastfiles
 
 			add_zone("iw7mod_global_mp", game::DB_ZONE_GLOBAL_TIER1 | game::DB_ZONE_CUSTOM, 1);
 
+			if (!game::environment::is_dedi())
+			{
+				add_zone("iw7mod_ui_mp", game::DB_ZONE_UI | game::DB_ZONE_CUSTOM, 0);
+			}
+
 			game::DB_LoadXAssets(data.data(), static_cast<std::uint32_t>(data.size()), syncMode);
 		}
 	}
