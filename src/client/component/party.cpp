@@ -380,7 +380,7 @@ namespace party
 		auto* hardcore = game::Dvar_FindVar("g_hardcore");
 		if (hardcore)
 		{
-			command::execute(utils::string::va("seta ui_hardcore %s", hardcore->current.enabled), true);
+			command::execute(utils::string::va("seta ui_hardcore %d", hardcore->current.enabled), true);
 		}
 
 		perform_game_initialization();
