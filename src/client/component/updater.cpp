@@ -31,22 +31,37 @@ namespace updater
 	{
 		std::vector<std::string> dedi_ignore =
 		{
+			"ui_scripts/*",
 			"zone/iw7mod_ui_mp.ff",
 		};
 
 		bool is_dedi_ignore_file(const std::string& name)
 		{
+			const auto cdata_path = CLIENT_DATA_FOLDER + "/"s;
+
 			for (auto& ignore_file : dedi_ignore)
 			{
-				if (name == CLIENT_DATA_FOLDER + "/"s + ignore_file)
+				if (name == cdata_path + ignore_file)
 				{
 					return true;
+				}
+
+				if (ignore_file.ends_with('*'))
+				{
+					std::string ignore_prefix = ignore_file.substr(0, ignore_file.size() - 1); // Remove the last character
+					if (name.starts_with(cdata_path + ignore_prefix))
+					{
+						return true;
+					}
 				}
 			}
 
 			return false;
 		}
+	}
 
+	namespace
+	{
 		constexpr auto override_cache = true;
 
 		struct file_data
