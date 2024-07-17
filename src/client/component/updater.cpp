@@ -37,6 +37,11 @@ namespace updater
 
 		bool is_dedi_ignore_file(const std::string& name)
 		{
+			if (!game::environment::is_dedi())
+			{
+				return false;
+			}
+
 			const auto cdata_path = CLIENT_DATA_FOLDER + "/"s;
 
 			for (auto& ignore_file : dedi_ignore)
@@ -289,6 +294,13 @@ namespace updater
 					continue;
 				}
 
+#if GIT_DIRTY == 1
+				if (name == get_binary_name())
+				{
+					continue;
+				}
+#endif
+
 				console::info("[Updater] Add file \"%s\"\n", name);
 
 				parsed_list.emplace_back(name, sha);
@@ -351,7 +363,8 @@ namespace updater
 					}
 				}
 
-				if (!found && std::filesystem::is_regular_file(file) && !is_dedi_ignore_file(file))
+				const auto file_ = std::string(file.begin() + appdata_folder.generic_string().size() + 1, file.end());
+				if (!found && std::filesystem::is_regular_file(file) && !is_dedi_ignore_file(file_))
 				{
 					console::info("[Updater] Deleting extra file %s\n", file.data());
 					utils::io::remove_file(file);
