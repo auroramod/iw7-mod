@@ -311,6 +311,14 @@ namespace gsc
 
 			utils::hook::jump(0x140C0D0A4, utils::hook::assemble(vm_execute_stub), true);
 
+			scripting::on_shutdown([](bool free_scripts, bool post_shutdown)
+			{
+				if (free_scripts && post_shutdown)
+				{
+					vm_execute_hooks.clear();
+				}
+			});
+
 			function::add("print", [](const function_args& args)
 			{
 				print(args);
