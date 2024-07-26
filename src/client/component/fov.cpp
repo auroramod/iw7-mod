@@ -57,6 +57,10 @@ namespace fov
 			// don't reset our fov
 			utils::hook::set<uint8_t>(0x1408A6160, 0xC3);
 
+			// don't set cg_fov value
+			utils::hook::nop(0x1408B5659, 5);
+			utils::hook::set<uint8_t>(0x1408B5659, 0xC3);
+
 			// disable FOV compensation by default
 			cg_use_fov_comp = game::Dvar_RegisterBool("cg_use_fov_comp", false, game::DVAR_FLAG_SAVED, "Use FOV offset compensation for the viewmodel");
 			cg_view_calc_fov_compensation_hook.create(0x140889B60, cg_view_calc_fov_compensation_stub);
