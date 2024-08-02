@@ -340,29 +340,7 @@ function MPMainMenu( menu, controller )
 	CODLogo:SetAnchorsAndPosition( 0, 0, 0, 0, _1080p * 108, _1080p * -1272, _1080p * 120, _1080p * -825 )
 	self:addElement( CODLogo )
 	self.CODLogo = CODLogo
-	
-	local MenuTitle = nil
-	
-	-- MenuTitle = LUI.UIStyledText.new()
-	-- MenuTitle.id = "MenuTitle"
-	-- MenuTitle:setText( ToUpperCase( Engine.Localize( "Welcome to IW7-Mod" ) ), 0 )
-	-- MenuTitle:SetFontSize( 50 * _1080p )
-	-- MenuTitle:SetFont( FONTS.GetFont( FONTS.MainMedium.File ) )
-	-- MenuTitle:SetAlignment( LUI.Alignment.Left )
-	-- MenuTitle:SetStartupDelay( 1250 )
-	-- MenuTitle:SetLineHoldTime( 400 )
-	-- MenuTitle:SetAnimMoveTime( 300 )
-	-- MenuTitle:SetEndDelay( 1000 )
-	-- MenuTitle:SetCrossfadeTime( 500 )
-	-- MenuTitle:SetAutoScrollStyle( LUI.UIStyledText.AutoScrollStyle.ScrollH )
-	-- MenuTitle:SetMaxVisibleLines( 1 )
-	-- MenuTitle:SetDecodeLetterLength( 25 )
-	-- MenuTitle:SetDecodeMaxRandChars( 3 )
-	-- MenuTitle:SetDecodeUpdatesPerLetter( 4 )
-	-- MenuTitle:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 130, _1080p * 660, _1080p * 296.5, _1080p * 346.5 )
-	-- self:addElement( MenuTitle ) 
-	-- self.MenuTitle = MenuTitle
-		
+			
 	self.addButtonHelperFunction = function ( f12_arg0, f12_arg1 )
 		f12_arg0:AddButtonHelperText( {
 			helper_text = Engine.Localize( "LUA_MENU_SELECT" ),
