@@ -327,6 +327,7 @@ namespace ui_scripting
 		void* hks_package_require_stub(game::hks::lua_State* state)
 		{
 			const auto script = get_current_script();
+			const auto not_stripped = script != std::string("[string \"(*stripped)\"]");
 			const auto root = get_root_script(script);
 			globals.in_require_script = root;
 			return hks_package_require_hook.invoke<void*>(state);
@@ -342,8 +343,10 @@ namespace ui_scripting
 			}
 
 			const auto folder = globals.in_require_script.substr(0, globals.in_require_script.find_last_of("/\\"));
-			const std::string name_ = name;
-			const std::string target_script = folder + "/" + name_ + ".lua";
+			std::string name_ = name;
+			std::string name_noprefix = std::string(name_.begin() + 3, name_.end());
+
+			const std::string target_script = folder + "/" + name_noprefix;
 
 			if (utils::io::file_exists(target_script))
 			{
@@ -416,6 +419,12 @@ namespace ui_scripting
 			}
 
 			return 0;
+		}
+
+		utils::hook::detour LuaCoD_VmLoader_Detour;
+		__int64 LuaCoD_VmLoader_Stub(game::hks::lua_State* state)
+		{
+			return LuaCoD_VmLoader_Detour.invoke<__int64>(state);
 		}
 	}
 
