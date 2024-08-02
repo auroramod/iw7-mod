@@ -1,3 +1,4 @@
+local f0_local0 = "frontEnd.systemLinkMenu.serverBrowser"
 serverBrowserOffsets = {
 	10,
 	240,
