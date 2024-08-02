@@ -381,8 +381,8 @@ namespace profile_infos
 	public:
 		void post_unpack() override
 		{
-			client_connect_hook.create(0xAFFF10_b, client_connect_stub);
-			session_unregister_remote_player_hook.create(0xC73970_b, session_unregister_remote_player_stub);
+			client_connect_hook.create(0x140AFFF10, client_connect_stub);
+			session_unregister_remote_player_hook.create(0x140C73970, session_unregister_remote_player_stub);
 
 			dvars::override::register_int("playercard_cache_validity_life", 5000, 0, 3600000, 0x0); // 5sec
 

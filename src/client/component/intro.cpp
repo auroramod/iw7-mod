@@ -35,7 +35,7 @@ namespace intro
 	public:
 		void post_unpack() override
 		{
-			cinematic_start_playback_hook.create(0xDD6A10_b, cinematic_start_playback);
+			cinematic_start_playback_hook.create(0x140DD6A10, cinematic_start_playback);
 		}
 	};
 }

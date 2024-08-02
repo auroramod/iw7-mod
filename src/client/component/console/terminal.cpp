@@ -342,9 +342,7 @@ namespace terminal
 		component()
 		{
 			printf_hook.create(printf, printf_stub);
-
-			if (!game::environment::is_dedi())
-				ShowWindow(GetConsoleWindow(), SW_HIDE);
+			ShowWindow(GetConsoleWindow(), SW_SHOW);
 		}
 
 		void post_unpack() override

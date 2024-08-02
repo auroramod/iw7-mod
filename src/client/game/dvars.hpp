@@ -21,6 +21,14 @@ namespace dvars
 
 	extern game::dvar_t* cg_draw2D;
 
+	extern game::dvar_t* cg_gun_x;
+	extern game::dvar_t* cg_gun_y;
+	extern game::dvar_t* cg_gun_z;
+
+	extern game::dvar_t* cg_thirdPerson;
+	extern game::dvar_t* cg_thirdPersonRange;
+	extern game::dvar_t* cg_thirdPersonAngle;
+
 	extern game::dvar_t* cg_unlockall_items;
 	extern game::dvar_t* cg_unlockall_loot;
 
@@ -28,6 +36,9 @@ namespace dvars
 
 	extern game::dvar_t* bg_bounces;
 	extern game::dvar_t* bg_playerEjection;
+
+	extern game::dvar_t* logfile;
+	extern game::dvar_t* g_log;
 
 	std::string dvar_get_vector_domain(const int components, const game::DvarLimits& domain);
 	std::string dvar_get_domain(const game::DvarType type, const game::DvarLimits& domain);

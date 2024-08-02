@@ -29,12 +29,15 @@ namespace gsc
 	using script_function = std::function<scripting::script_value(const function_args&)>;
 	using script_method = std::function<scripting::script_value(const game::scr_entref_t, const function_args&)>;
 
-	extern builtin_function func_table[0x1000];
-	extern builtin_method meth_table[0x1000];
+	constexpr size_t func_table_count = 0x1000;
+	constexpr size_t meth_table_count = 0x1000;
+
+	extern builtin_function func_table[func_table_count];
+	extern builtin_method meth_table[meth_table_count];
 
 	extern const game::dvar_t* developer_script;
 
-	void scr_error(const char* error, const bool force_print = false);
+	std::uint16_t get_function_id();
 
 	namespace function
 	{

@@ -7,6 +7,8 @@
 #include "command.hpp"
 #include "console/console.hpp"
 
+#include "filesystem.hpp"
+
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
 #include <utils/concurrency.hpp>
@@ -37,6 +39,7 @@ namespace fastfiles
 		utils::hook::detour db_load_x_zone_hook;
 		utils::hook::detour db_find_xasset_header_hook;
 		utils::hook::detour db_add_xasset_hook;
+		utils::hook::detour sys_createfile_hook;
 
 		void db_try_load_x_file_internal_stub(const char* zone_name, const unsigned int zone_flags,
 			const bool is_base_map, const bool was_paused, const int failure_mode)
@@ -107,6 +110,120 @@ namespace fastfiles
 			auto result = db_add_xasset_hook.invoke<game::XAssetHeader>(type, header_ptr);
 			return result;
 		}
+
+		HANDLE sys_create_file_stub(game::Sys_Folder folder, const char* base_filename)
+		{
+			const auto create_file_a = [](const std::string& filepath)
+			{
+				return CreateFileA(filepath.data(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
+					FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING, nullptr);
+			};
+
+			if (base_filename == "mod.ff"s)
+			{
+				auto* fs_basepath = game::Dvar_FindVar("fs_basepath");
+				auto* fs_game = game::Dvar_FindVar("fs_game");
+
+				std::string dir = fs_basepath ? fs_basepath->current.string : "";
+				std::string mod_dir = fs_game ? fs_game->current.string : "";
+
+				if (!mod_dir.empty())
+				{
+					const auto path = utils::string::va("%s\\%s\\%s", dir.data(), mod_dir.data(), base_filename);
+					if (utils::io::file_exists(path))
+					{
+						return create_file_a(path);
+					}
+				}
+				return INVALID_HANDLE_VALUE;
+			}
+
+			if (auto result = sys_createfile_hook.invoke<HANDLE>(folder, base_filename))
+			{
+				if (result != INVALID_HANDLE_VALUE)
+				{
+					return result;
+				}
+			}
+
+			std::string real_path{};
+			if (filesystem::find_file("zone\\"s + base_filename, &real_path))
+			{
+				return create_file_a(real_path.data());
+			}
+
+			return INVALID_HANDLE_VALUE;
+		}
+
+		template <typename T> inline void merge(std::vector<T>* target, T* source, size_t length)
+		{
+			if (source)
+			{
+				for (size_t i = 0; i < length; ++i)
+				{
+					target->push_back(source[i]);
+				}
+			}
+		}
+
+		template <typename T> inline void merge(std::vector<T>* target, std::vector<T> source)
+		{
+			for (auto& entry : source)
+			{
+				target->push_back(entry);
+			}
+		}
+
+		void load_fastfiles1_stub(game::XZoneInfo* zoneInfo, unsigned int zoneCount, game::DBSyncMode syncMode)
+		{
+			std::vector<game::XZoneInfo> data;
+			merge(&data, zoneInfo, zoneCount);
+
+			// mod is loaded on map start
+
+			if (fastfiles::exists("mod"))
+			{
+				data.push_back({ "mod", game::DB_ZONE_GAME | game::DB_ZONE_CUSTOM, 0 });
+			}
+
+			game::DB_LoadXAssets(data.data(), static_cast<std::uint32_t>(data.size()), syncMode);
+		}
+
+		void load_fastfiles2_stub(game::XZoneInfo* zoneInfo, unsigned int zoneCount, game::DBSyncMode syncMode)
+		{
+			std::vector<game::XZoneInfo> data;
+			merge(&data, zoneInfo, zoneCount);
+			const auto inuse_flags = game::DB_Zones_GetInUseFlags();
+
+			const auto flags_not_in_use = [&](int flags)
+			{
+				return (inuse_flags & flags) == 0;
+			};
+
+			const auto add_zone = [&](const char* name, const int flags, const int free_flags = 0)
+			{
+				if (flags_not_in_use(flags))
+				{
+					if (fastfiles::exists(name))
+					{
+						data.push_back({ name, flags, free_flags });
+					}
+				}
+			};
+
+			// Don't quote me on this:
+			// TIER1 is MP and CP
+			// TIER2 is mode specific
+
+			add_zone("iw7mod_global_mp", game::DB_ZONE_GLOBAL_TIER1 | game::DB_ZONE_CUSTOM, 1);
+
+			if (!game::environment::is_dedi())
+			{
+				add_zone("iw7mod_ui_mp", game::DB_ZONE_UI | game::DB_ZONE_CUSTOM, 0);
+			}
+
+			game::DB_LoadXAssets(data.data(), static_cast<std::uint32_t>(data.size()), syncMode);
+		}
 	}
 
 	namespace zone_loading
@@ -146,17 +263,17 @@ namespace fastfiles
 
 			a.bind(original);
 			//a.popad64();
-			a.call(0x3BC450_b); // strnicmp_ffotd
+			a.call(0x1403BC450); // strnicmp_ffotd
 			a.mov(r12d, edi);
-			a.mov(rdx, 0x1467970_b); // "patch_"
-			a.jmp(0x3BA9C0_b);
+			a.mov(rdx, 0x141467970); // "patch_"
+			a.jmp(0x1403BA9C0);
 
 			a.bind(skip);
 			//a.popad64();
 			a.mov(r12d, game::DB_ZONE_CUSTOM);
 			a.not_(r12d);
 			a.and_(edi, r12d);
-			a.jmp(0x3BAC06_b);
+			a.jmp(0x1403BAC06);
 		}
 	}
 	using namespace zone_loading;
@@ -181,29 +298,38 @@ namespace fastfiles
 	public:
 		void post_unpack() override
 		{
-			db_try_load_x_file_internal_hook.create(0x3BBC40_b, db_try_load_x_file_internal_stub);
+			db_try_load_x_file_internal_hook.create(0x1403BBC40, db_try_load_x_file_internal_stub);
 #if defined(DEBUG) and defined(XFILE_DEBUG)
-			db_init_load_x_file_hook.create(0x9E8D10_b, db_init_load_x_file_stub);
+			db_init_load_x_file_hook.create(0x1409E8D10, db_init_load_x_file_stub);
 #else
-			db_load_x_zone_hook.create(0x3BA920_b, db_load_x_zone_stub);
+			db_load_x_zone_hook.create(0x1403BA920, db_load_x_zone_stub);
 #endif
 
 			db_find_xasset_header_hook.create(game::DB_FindXAssetHeader, db_find_xasset_header_stub);
-			db_add_xasset_hook.create(0xA76520_b, db_add_xasset_stub);
+			db_add_xasset_hook.create(0x140A76520, db_add_xasset_stub);
 
 			g_dump_scripts = game::Dvar_RegisterBool("g_dumpScripts", false, game::DVAR_FLAG_NONE, "Dump GSC scripts");
 
 			// Don't fatal on certain missing zones
-			db_is_patch_hook.create(0x3BC580_b, db_is_patch_stub);
+			db_is_patch_hook.create(0x1403BC580, db_is_patch_stub);
 			// Don't load extra zones with loadzone
-			utils::hook::nop(0x3BA9B1_b, 15);
-			utils::hook::jump(0x3BA9B1_b, utils::hook::assemble(skip_extra_zones_stub), true);
+			utils::hook::nop(0x1403BA9B1, 15);
+			utils::hook::jump(0x1403BA9B1, utils::hook::assemble(skip_extra_zones_stub), true);
 
 			// Allow loading of unsigned fastfiles
-			utils::hook::set<uint8_t>(0x9E8CAE_b, 0xEB); // DB_InflateInit
+			utils::hook::set<uint8_t>(0x1409E8CAE, 0xEB); // DB_InflateInit
 
 			// Skip signature validation
-			utils::hook::set(0x9E6390_b, 0xC301B0);
+			utils::hook::set(0x1409E6390, 0xC301B0);
+
+			// Add custom zone paths
+			sys_createfile_hook.create(game::Sys_CreateFile, sys_create_file_stub);
+
+			// Add custom zones in fastfiles load
+			// (level specific) (mod)
+			utils::hook::call(0x1403B9E9F, load_fastfiles1_stub);
+			// (global,common)
+			utils::hook::call(0x1405ADB63, load_fastfiles2_stub);
 
 			command::add("loadzone", [](const command::params& params)
 			{
@@ -223,7 +349,7 @@ namespace fastfiles
 
 				game::XZoneInfo info{};
 				info.name = name;
-				info.allocFlags = game::DB_ZONE_COMMON;
+				info.allocFlags = game::DB_ZONE_PERMANENT;
 				info.allocFlags |= game::DB_ZONE_CUSTOM; // skip extra zones with this flag
 
 				game::DB_LoadXAssets(&info, 1, game::DBSyncMode::DB_LOAD_ASYNC);

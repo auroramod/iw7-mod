@@ -34,6 +34,6 @@ namespace party
 
 	int get_client_num_by_name(const std::string& name);
 
-	int get_client_count();
-	int get_bot_count();
+	unsigned int get_client_count();
+	unsigned int get_bot_count();
 }

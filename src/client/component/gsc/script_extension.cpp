@@ -19,9 +19,6 @@ namespace gsc
 	std::uint16_t function_id_start = 806;
 	std::uint16_t method_id_start = 1483 + 0x8000;
 
-	constexpr size_t func_table_count = 0x1000;
-	constexpr size_t meth_table_count = 0x1000;
-
 	builtin_function func_table[func_table_count]{};
 	builtin_method meth_table[meth_table_count]{};
 
@@ -31,9 +28,6 @@ namespace gsc
 	{
 		std::unordered_map<std::uint16_t, script_function> functions;
 		std::unordered_map<std::uint16_t, script_method> methods;
-
-		bool force_error_print = false;
-		std::optional<std::string> gsc_error_msg;
 
 		std::unordered_map<const char*, const char*> vm_execute_hooks;
 		const char* target_function = nullptr;
@@ -60,16 +54,6 @@ namespace gsc
 
 			scripting::push_value(value);
 		}
-
-		std::uint16_t get_function_id()
-		{
-			const auto pos = game::scr_function_stack->pos;
-			return *reinterpret_cast<std::uint16_t*>(
-				reinterpret_cast<size_t>(pos - 2));
-		}
-
-		void nullstub_func() {}
-		void nullstub_meth(game::scr_entref_t) {}
 
 		void execute_custom_function(const std::uint16_t id)
 		{
@@ -130,102 +114,45 @@ namespace gsc
 			}
 		}
 
-		void builtin_call_error(const std::string& error)
+		int meth_function_id = 0;
+		void vm_call_builtin_method_internal(game::scr_entref_t ent_ref)
 		{
-			const auto function_id = get_function_id();
-
-			if (function_id > func_table_count)
+			const auto custom_function_id = static_cast<std::uint16_t>(meth_function_id); // cast for gsc-tool & our custom method map
+			const auto custom = methods.contains(custom_function_id);
+			if (custom)
 			{
-				console::warn("in call to builtin method \"%s\"%s", gsc_ctx->meth_name(function_id).data(), error.data());
-			}
-			else
-			{
-				console::warn("in call to builtin function \"%s\"%s", gsc_ctx->func_name(function_id).data(), error.data());
-			}
-		}
-
-		std::optional<std::string> get_opcode_name(const std::uint8_t opcode)
-		{
-			try
-			{
-				const auto index = gsc_ctx->opcode_enum(opcode);
-				return { gsc_ctx->opcode_name(index) };
-			}
-			catch (...)
-			{
-				return {};
-			}
-		}
-
-		void print_callstack()
-		{
-			for (auto frame = game::scr_VmPub->function_frame; frame != game::scr_VmPub->function_frame_start; --frame)
-			{
-				const auto pos = frame == game::scr_VmPub->function_frame ? game::scr_function_stack->pos : frame->fs.pos;
-				const auto function = find_function(frame->fs.pos);
-
-				if (function.has_value())
-				{
-					console::warn("\tat function \"%s\" in file \"%s.gsc\"\n", function.value().first.data(), function.value().second.data());
-				}
-				else
-				{
-					console::warn("\tat unknown location %p\n", pos);
-				}
-			}
-		}
-
-		void vm_error_internal()
-		{
-			const bool dev_script = developer_script ? developer_script->current.enabled : false;
-
-			if (!dev_script && !force_error_print)
-			{
+				execute_custom_method(custom_function_id, ent_ref);
 				return;
 			}
 
-			console::warn("*********** script runtime error *************\n");
-
-			const auto opcode_id = *reinterpret_cast<std::uint8_t*>(0x6B22940_b);
-			const std::string error_str = gsc_error_msg.has_value()
-				? utils::string::va(": %s", gsc_error_msg.value().data())
-				: "";
-
-			if ((opcode_id >= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltin0) && opcode_id <= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltin))
-				|| (opcode_id >= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltinMethod0) && opcode_id <= gsc_ctx->opcode_id(xsk::gsc::opcode::OP_CallBuiltinMethod)))
+			builtin_method meth = meth_table[meth_function_id - 0x8000];
+			if (meth == nullptr)
 			{
-				builtin_call_error(error_str);
-			}
-			else
-			{
-				const auto opcode = get_opcode_name(opcode_id);
-				if (opcode.has_value())
-				{
-					console::warn("while processing instruction %s%s\n", opcode.value().data(), error_str.data());
-				}
-				else
-				{
-					console::warn("while processing instruction 0x%X%s\n", opcode_id, error_str.data());
-				}
+				scr_error(utils::string::va("builtin method \"%s\" doesn't exist", gsc_ctx->meth_name(custom_function_id).data()), true);
+				return;
 			}
 
-			force_error_print = false;
-			gsc_error_msg = {};
-
-			print_callstack();
-			console::warn("**********************************************\n");
+			meth(ent_ref);
 		}
 
-		void vm_error_stub(__int64 mark_pos)
+		void save_meth_func_id([[maybe_unused]] game::scr_entref_t ent_ref, int function_id)
 		{
-			vm_error_internal();
+			meth_function_id = function_id;
+		}
 
-			if (!game::CL_IsGameClientActive(0))
-			{
-				//return game::Com_Error(game::errorParm::ERR_SCRIPT_DROP, gsc_error_msg.has_value() ? gsc_error_msg.value().data() : "Fatal script error");
-			}
+		void vm_call_builtin_method_stub(utils::hook::assembler& a)
+		{
+			a.pushad64();
+			a.push(rdx);
+			a.push(ecx);
+			a.mov(rdx, rdi); // function id is stored in rdi
+			a.mov(ecx, ebx); // ent ref is stored in ebx
+			a.call_aligned(save_meth_func_id);
+			a.pop(rdx);
+			a.pop(ecx);
+			a.popad64();
 
-			utils::hook::invoke<void>(0x510C80_b, mark_pos);
+			a.jmp(0x140C0E8F2);
 		}
 
 		void print(const function_args& args)
@@ -278,7 +205,7 @@ namespace gsc
 			a.inc(rsi);
 			a.mov(dword_ptr(rbp, 0x94), r15d);
 
-			a.jmp(0xC0D0B2_b);
+			a.jmp(0x140C0D0B2);
 
 			a.bind(replace);
 
@@ -287,14 +214,6 @@ namespace gsc
 			a.mov(rsi, rax);
 			a.jmp(end);
 		}
-	}
-
-	void scr_error(const char* error, const bool force_print)
-	{
-		force_error_print = force_print;
-		gsc_error_msg = error;
-
-		game::Scr_ErrorInternal();
 	}
 
 	namespace function
@@ -358,39 +277,11 @@ namespace gsc
 		return {this->values_[index], index};
 	}
 
-	void vm_call_builtin_method_internal(game::scr_entref_t ent_ref, int function_id)
+	std::uint16_t get_function_id()
 	{
-		const auto custom_function_id = static_cast<std::uint16_t>(function_id); // cast for gsc-tool & our custom method map
-		const auto custom = methods.contains(custom_function_id);
-		if (custom)
-		{
-			execute_custom_method(custom_function_id, ent_ref);
-			return;
-		}
-
-		builtin_method meth = meth_table[function_id - 0x8000];
-		if (meth == nullptr)
-		{
-			scr_error(utils::string::va("builtin method \"%s\" doesn't exist", gsc_ctx->meth_name(custom_function_id).data()), true);
-			return;
-		}
-
-		meth(ent_ref);
-	}
-
-	void vm_call_builtin_method_stub(utils::hook::assembler& a)
-	{
-		//a.pushad64();
-		a.push(rdx);
-		a.push(ecx);
-		a.mov(rdx, rdi); // function id is stored in rdi
-		a.mov(ecx, ebx); // ent ref is stored in ebx
-		a.call(vm_call_builtin_method_internal);
-		a.pop(rdx);
-		a.pop(ecx);
-		//a.popad64();
-
-		a.jmp(0xC0E8F9_b);
+		const auto pos = game::scr_function_stack->pos;
+		return *reinterpret_cast<std::uint16_t*>(
+			reinterpret_cast<size_t>(pos - 2));
 	}
 
 	class extension final : public component_interface
@@ -398,35 +289,35 @@ namespace gsc
 	public:
 		void post_unpack() override
 		{
-			developer_script = game::Dvar_RegisterBool("developer_script", true, 0, "Enable developer script comments"); // enable by default for now
+#ifdef DEBUG
+			developer_script = game::Dvar_RegisterBool("developer_script", true, 0, "Enable developer script comments");
+#else
+			developer_script = game::Dvar_RegisterBool("developer_script", false, 0, "Enable developer script comments");
+#endif
 
-			utils::hook::set<uint32_t>(0xBFD16B_b + 1, func_table_count); // change builtin func count
-			utils::hook::set<uint32_t>(0xBFD172_b + 4, static_cast<uint32_t>(reverse_b((&func_table))));
-			utils::hook::inject(0xBFD5A1_b + 3, &func_table);
-			utils::hook::set<uint32_t>(0xBFD595_b + 2, sizeof(func_table));
-			utils::hook::nop(0xC0E5CE_b, 7);
-			utils::hook::call(0xC0E5CE_b, vm_call_builtin_function_internal);
+			utils::hook::set<uint32_t>(0x140BFD16B + 1, func_table_count); // change builtin func count
+			utils::hook::set<uint32_t>(0x140BFD172 + 4, static_cast<uint32_t>(reverse_b((&func_table))));
+			utils::hook::inject(0x140BFD5A1 + 3, &func_table);
+			utils::hook::set<uint32_t>(0x140BFD595 + 2, sizeof(func_table));
+			utils::hook::nop(0x140C0E5CE, 7);
+			utils::hook::call(0x140C0E5CE, vm_call_builtin_function_internal);
 
-			utils::hook::set<uint32_t>(0xBFD182_b + 4, static_cast<uint32_t>(reverse_b((&meth_table))));
-			utils::hook::inject(0xBFD5AF_b + 3, &meth_table);
-			utils::hook::set<uint32_t>(0xBFD5B6_b + 2, sizeof(meth_table));
-			utils::hook::nop(0xC0E8EB_b, 14); // nop the lea & call at the end of call_builtin_method
-			utils::hook::jump(0xC0E8EB_b, utils::hook::assemble(vm_call_builtin_method_stub), true);
+			utils::hook::set<uint32_t>(0x140BFD182 + 4, static_cast<uint32_t>(reverse_b((&meth_table))));
+			utils::hook::inject(0x140BFD5AF + 3, &meth_table);
+			utils::hook::set<uint32_t>(0x140BFD5B6 + 2, sizeof(meth_table));
+			utils::hook::nop(0x140C0E8EB, 14); // nop the lea & call at the end of call_builtin_method
+			utils::hook::jump(0x140C0E8EB, utils::hook::assemble(vm_call_builtin_method_stub));
+			utils::hook::call(0x140C0E8F2, vm_call_builtin_method_internal);
 
-			utils::hook::call(0xC0F8C1_b, vm_error_stub); // LargeLocalResetToMark
+			utils::hook::jump(0x140C0D0A4, utils::hook::assemble(vm_execute_stub), true);
 
-			utils::hook::jump(0xC0D0A4_b, utils::hook::assemble(vm_execute_stub), true);
-
-			/*
-			if (game::environment::is_dedi())
+			scripting::on_shutdown([](bool free_scripts, bool post_shutdown)
 			{
-				function::add("isusingmatchrulesdata", [](const function_args& args)
+				if (free_scripts && post_shutdown)
 				{
-					// return 0 so the game doesn't override the cfg
-					return 0;
-				});
-			}
-			*/
+					vm_execute_hooks.clear();
+				}
+			});
 
 			function::add("print", [](const function_args& args)
 			{
@@ -481,9 +372,14 @@ namespace gsc
 				const auto what = args[0].get_raw();
 				const auto with = args[1].get_raw();
 
-				if (what.type != game::VAR_FUNCTION || with.type != game::VAR_FUNCTION)
+				if (what.type != game::VAR_FUNCTION)
 				{
-					throw std::runtime_error("replacefunc: parameter 1 must be a function");
+					throw std::runtime_error("parameter 1 must be a function");
+				}
+
+				if (with.type != game::VAR_FUNCTION)
+				{
+					throw std::runtime_error("parameter 2 must be a function");
 				}
 
 				vm_execute_hooks[what.u.codePosValue] = with.u.codePosValue;
@@ -496,23 +392,6 @@ namespace gsc
 				const auto string = args[0].as<std::string>();
 				return utils::string::to_upper(string);
 			});
-
-			/*
-			function::add("logprint", [](const function_args& args)
-			{
-				std::string buffer{};
-
-				for (auto i = 0u; i < args.size(); ++i)
-				{
-					const auto string = args[i].as<std::string>();
-					buffer.append(string);
-				}
-
-				game::G_LogPrintf("%s", buffer.data());
-
-				return scripting::script_value{};
-			});
-			*/
 
 			function::add("executecommand", [](const function_args& args)
 			{

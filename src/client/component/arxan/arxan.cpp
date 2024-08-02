@@ -298,7 +298,7 @@ namespace arxan
 
 		NTSTATUS NTAPI nt_close_stub(const HANDLE handle)
 		{
-			char info[16];
+			char info[16]{};
 			if (NtQueryObject(handle, OBJECT_INFORMATION_CLASS(4), &info, 2, nullptr) >= 0 && size_t(handle) != 0x12345)
 			{
 				auto* orig = static_cast<decltype(NtClose)*>(nt_close_hook.get_original());
@@ -429,7 +429,7 @@ namespace arxan
 				fake_record.ExceptionAddress = reinterpret_cast<void*>(reinterpret_cast<std::uint64_t>(address) + 3);
 				fake_record.ExceptionCode = exception;
 
-				for (auto handler : handle_handler)
+				for (auto& handler : handle_handler)
 				{
 					if (handler.second)
 					{
@@ -643,13 +643,17 @@ namespace arxan
 			{
 				return set_thread_context_stub;
 			}
-			else if (function == "AddVectoredExceptionHandler")
+
+			if (!utils::nt::is_wine())
 			{
-				return exceptions::add_vectored_exception_handler_stub;
-			}
-			else if (function == "RemoveVectoredExceptionHandler")
-			{
-				return exceptions::remove_vectored_exception_handler_stub;
+				if (function == "AddVectoredExceptionHandler")
+				{
+					return exceptions::add_vectored_exception_handler_stub;
+				}
+				else if (function == "RemoveVectoredExceptionHandler")
+				{
+					return exceptions::remove_vectored_exception_handler_stub;
+				}
 			}
 
 			return nullptr;
@@ -660,7 +664,10 @@ namespace arxan
 			remove_hardware_breakpoints();
 			hide_being_debugged();
 			scheduler::loop(hide_being_debugged, scheduler::pipeline::async);
-			store_debug_functions();
+			if (!utils::nt::is_wine())
+			{
+				store_debug_functions();
+			}
 
 			const utils::nt::library ntdll("ntdll.dll");
 			nt_close_hook.create(ntdll.get_proc<void*>("NtClose"), nt_close_stub);
@@ -676,7 +683,10 @@ namespace arxan
 		{
 			remove_hardware_breakpoints();
 			search_and_patch_integrity_checks();
-			restore_debug_functions();
+			if (!utils::nt::is_wine())
+			{
+				restore_debug_functions();
+			}
 		}
 
 		component_priority priority() override

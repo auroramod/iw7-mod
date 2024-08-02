@@ -45,7 +45,7 @@ namespace lui
 				"Print LUI DebugPrint to console. (DEV)");
 
 			// LUI_Interface_DebugPrint
-			utils::hook::jump(0x61C430_b, print_debug_lui);
+			utils::hook::jump(0x14061C430, print_debug_lui);
 
 			command::add("luiOpenMenu", [](const command::params& params)
 			{

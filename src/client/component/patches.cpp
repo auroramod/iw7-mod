@@ -21,7 +21,6 @@ namespace patches
 		utils::hook::detour live_get_map_index_hook;
 		utils::hook::detour content_do_we_have_content_pack_hook;
 		utils::hook::detour init_network_dvars_hook;
-		utils::hook::detour g_find_config_string_index_hook;
 
 		std::string get_login_username()
 		{
@@ -39,27 +38,21 @@ namespace patches
 		{
 			game::dvar_t* name_dvar;
 			game::dvar_t* com_maxfps;
-			game::dvar_t* cg_fov;
-			game::dvar_t* cg_fovScale;
 
 			name_dvar = game::Dvar_RegisterString("name", get_login_username().data(), game::DVAR_FLAG_SAVED, "Player name.");
-			com_maxfps = game::Dvar_RegisterInt("com_maxfps", 0, 0, 1000, game::DVAR_FLAG_SAVED, "Cap frames per second");
-			cg_fov = game::Dvar_RegisterFloat("cg_fov", 65.0f, 1.0f, 160.f, game::DVAR_FLAG_SAVED,
-				"The field of view angle in degrees");
-			cg_fovScale = game::Dvar_RegisterFloat("cg_fovScale", 1.0f, 0.1f, 2.0f, game::DVAR_FLAG_SAVED,
-				"Scale applied to the field of view");
 
-			*reinterpret_cast<game::dvar_t**>(0x6005758_b) = com_maxfps;
+			if (game::environment::is_dedi())
+			{
+				com_maxfps = game::Dvar_RegisterInt("com_maxfps", 85, 0, 100, game::DVAR_FLAG_NONE, "Cap frames per second");
+			}
+			else
+			{
+				com_maxfps = game::Dvar_RegisterInt("com_maxfps", 0, 0, 1000, game::DVAR_FLAG_SAVED, "Cap frames per second");
+			}
+
+			*reinterpret_cast<game::dvar_t**>(0x146005758) = com_maxfps;
 			dvars::disable::re_register("com_maxfps");
 			dvars::disable::de_register("com_maxfps");
-
-			*reinterpret_cast<game::dvar_t**>(0x1FA6DA0_b) = cg_fov;
-			dvars::disable::re_register("cg_fov");
-			dvars::disable::de_register("cg_fov");
-
-			*reinterpret_cast<game::dvar_t**>(0x1FA6DB0_b) = cg_fovScale;
-			dvars::disable::re_register("cg_fovScale");
-			dvars::disable::de_register("cg_fovScale");
 
 			return com_register_common_dvars_hook.invoke<void>();
 		}
@@ -171,7 +164,7 @@ namespace patches
 
 			// original code
 			unsigned int index = 0;
-			auto result = utils::hook::invoke<__int64>(0xB7AC60_b, dvar, &index); // NetConstStrings_SV_GetNetworkDvarIndex
+			auto result = utils::hook::invoke<__int64>(0x140B7AC60, dvar, &index); // NetConstStrings_SV_GetNetworkDvarIndex
 			if (result)
 			{
 				std::string index_str = std::to_string(index);
@@ -226,12 +219,6 @@ namespace patches
 		{
 			//init_network_dvars_hook.invoke<void>(dvar);
 		}
-
-		unsigned int g_find_config_string_index_stub(const char* name, unsigned int start, unsigned int max, int create, const char* errormsg)
-		{
-			create = 1;
-			return g_find_config_string_index_hook.invoke<unsigned int>(name, start, max, create, errormsg);
-		}
 	}
 
 	class component final : public component_interface
@@ -239,48 +226,42 @@ namespace patches
 	public:
 		void post_unpack() override
 		{
-			// allows settext method to work with strings that are not localized
-			g_find_config_string_index_hook.create(0x5E9B80_b, g_find_config_string_index_stub);
-
 			// register custom dvars
-			com_register_common_dvars_hook.create(0xBADF30_b, com_register_common_dvars_stub);
+			com_register_common_dvars_hook.create(0x140BADF30, com_register_common_dvars_stub);
 
 			// patch some features
-			com_game_mode_supports_feature_hook.create(0x5AFDE0_b, com_game_mode_supports_feature_stub);
+			com_game_mode_supports_feature_hook.create(game::Com_GameMode_SupportsFeature, com_game_mode_supports_feature_stub);
 
 			// get client name from dvar
-			utils::hook::jump(0xD32770_b, live_get_local_client_name);
+			utils::hook::jump(0x140D32770, live_get_local_client_name);
 
 			// write better config
-			utils::hook::jump(0xBB2A90_b, dvar_write_variables_stub);
+			utils::hook::jump(0x140BB2A90, dvar_write_variables_stub);
 
 			// show missing fastfiles
-			utils::hook::call(0x3BBD4B_b, missing_content_error_stub);
+			utils::hook::call(0x1403BBD4B, missing_content_error_stub);
 
 			// show missing map
 			stored_mapname = nullptr;
-			live_get_map_index_hook.create(0xCE72C0_b, live_get_map_index_stub);
-			content_do_we_have_content_pack_hook.create(0xCE8550_b, content_do_we_have_content_pack_stub);
+			live_get_map_index_hook.create(0x140CE72C0, live_get_map_index_stub);
+			content_do_we_have_content_pack_hook.create(0x140CE8550, content_do_we_have_content_pack_stub);
 
 			// make setclientdvar behave like older games
-			cg_set_client_dvar_from_server_hook.create(0x856D70_b, cg_set_client_dvar_from_server_stub);
-			utils::hook::call(0xB0A9BB_b, get_client_dvar_checksum); // setclientdvar
-			utils::hook::call(0xB0ACD7_b, get_client_dvar_checksum); // setclientdvars
-			utils::hook::call(0xB0A984_b, get_client_dvar); // setclientdvar
-			utils::hook::call(0xB0AC9F_b, get_client_dvar); // setclientdvars
-			utils::hook::set<uint8_t>(0xB0A9AC_b, 0xEB); // setclientdvar
-			utils::hook::set<uint8_t>(0xB0ACC8_b, 0xEB); // setclientdvars
+			cg_set_client_dvar_from_server_hook.create(0x140856D70, cg_set_client_dvar_from_server_stub);
+			utils::hook::call(0x140B0A9BB, get_client_dvar_checksum); // setclientdvar
+			utils::hook::call(0x140B0ACD7, get_client_dvar_checksum); // setclientdvars
+			utils::hook::call(0x140B0A984, get_client_dvar); // setclientdvar
+			utils::hook::call(0x140B0AC9F, get_client_dvar); // setclientdvars
+			utils::hook::set<uint8_t>(0x140B0A9AC, 0xEB); // setclientdvar
+			utils::hook::set<uint8_t>(0x140B0ACC8, 0xEB); // setclientdvars
 
 			// Allow executing custom cfg files with the "exec" command
-			utils::hook::call(0xB7CEF9_b, db_read_raw_file_stub);
+			utils::hook::call(0x140B7CEF9, db_read_raw_file_stub);
 			// Add cheat override to exec
-			utils::hook::call(0xB7CF11_b, cbuf_execute_buffer_internal_stub);
-
-			// don't reset our fov
-			utils::hook::set<uint8_t>(0x8A6160_b, 0xC3);
+			utils::hook::call(0x140B7CF11, cbuf_execute_buffer_internal_stub);
 
 			// don't register every replicated dvar as a network dvar
-			init_network_dvars_hook.create(0xB7A920_b, init_network_dvars_stub);
+			init_network_dvars_hook.create(0x140B7A920, init_network_dvars_stub);
 
 			// some [data validation] anti tamper thing that kills performance
 			dvars::override::register_int("dvl", 0, 0, 0, game::DVAR_FLAG_READ);
@@ -316,12 +297,16 @@ namespace patches
 			dvars::override::register_float("gpad_stick_pressed_hysteresis", 0.1f, 0, 1, game::DVAR_FLAG_SAVED);
 
 			// block changing name in-game
-			utils::hook::set<uint8_t>(0xC4DF90_b, 0xC3);
+			utils::hook::set<uint8_t>(0x140C4DF90, 0xC3);
 
 			// disable host migration
-			utils::hook::set<uint8_t>(0xC5A200_b, 0xC3);
+			utils::hook::set<uint8_t>(0x140C5A200, 0xC3);
 
-			utils::hook::set(0x6D5280_b, 0xC301B0); // NetConstStrings_IsPrecacheAllowed
+			// precache is always allowed
+			utils::hook::set(0x1406D5280, 0xC301B0); // NetConstStrings_IsPrecacheAllowed
+
+			utils::hook::nop(0x140E6A2FB, 2); // don't wait for occlusion query to succeed (forever loop)
+			utils::hook::nop(0x140E6A30C, 2); // ^
 		}
 	};
 }

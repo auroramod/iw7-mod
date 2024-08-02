@@ -40,24 +40,44 @@ namespace branding
 
 			scheduler::once([]()
 			{
-				dvars::branding = game::Dvar_RegisterBool("branding", true, game::DvarFlags::DVAR_FLAG_SAVED, "Show branding in the top left corner");
+				dvars::branding = game::Dvar_RegisterBool("branding", true, game::DvarFlags::DVAR_FLAG_SAVED, "Show branding");
 			}, scheduler::pipeline::renderer);
+
+#if GIT_DIRTY == 1
+			static char version_buffer[0x100]{};
+			sprintf_s(version_buffer, sizeof(version_buffer), "%s %s build %s %s %s", BUILD_NAME, VERSION, __DATE__, __TIME__, TARGET_ARCHITECTURE);
+#endif
 
 			scheduler::loop([]()
 			{
 				if (dvars::branding && dvars::branding->current.enabled)
 				{
-					const auto font = game::R_RegisterFont("fonts/fira_mono_bold.ttf", 15);
-					if (font)
-					{
-						static float text_color[4] = { 0.860f, 0.459f, 0.925f, 0.400f };
-						game::R_AddCmdDrawText("iw7-mod: " VERSION, 0x7FFFFFFF, font, 10.f,
-							5.f + static_cast<float>(font->pixelHeight), 1.f, 1.f, 0.0f, text_color, 0);
-					}
+#if GIT_DIRTY == 1
+					const auto* placement = game::ScrPlace_GetViewPlacement();
+					const auto font = game::UI_GetFontHandle(placement, game::FONT_TYPE_HUD_BIG_FONT, 1.0f);
+					if (!font) return;
+
+					static const auto offset_from_corner = 75.0f;
+					static float text_color[4] = { 0.4f, 0.69f, 1.0f, 0.69f };
+					
+					const auto x = (placement->realViewportSize[0] - offset_from_corner) - (game::R_TextWidth(version_buffer, std::numeric_limits<int>::max(), font));
+					const auto height = (placement->realViewportSize[1] - offset_from_corner) + 5.0f; // remove some off the offset
+
+					game::R_AddCmdDrawText(version_buffer, std::numeric_limits<int>::max(), font, static_cast<float>(x),
+						height + static_cast<float>(font->pixelHeight),
+						1.0f, 1.0f, 0.0f, text_color, game::FONT_STYLE_SHADOW);
+#else
+					const auto font = game::R_RegisterFont("fonts/fira_mono_regular.ttf", 16);
+					if (!font) return;
+
+					static float text_color[4] = { 0.860f, 0.459f, 0.925f, 0.400f };
+					game::R_AddCmdDrawText("iw7-mod: " VERSION, std::numeric_limits<int>::max(), font, 10.f,
+						5.f + static_cast<float>(font->pixelHeight), 1.f, 1.f, 0.0f, text_color, 0);
+#endif
 				}
 			}, scheduler::pipeline::renderer);
 
-			ui_get_formatted_build_number_hook.create(0xCD1170_b, ui_get_formatted_build_number_stub);
+			ui_get_formatted_build_number_hook.create(0x140CD1170, ui_get_formatted_build_number_stub);
 		}
 	};
 }

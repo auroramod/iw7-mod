@@ -72,6 +72,11 @@ namespace discord
 		void update_discord_frontend()
 		{
 			discord_presence.details = game::G_GAME_MODE_STRINGS_FORMATTED[game::Com_GameMode_GetActiveGameMode()];
+			if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_NONE)
+			{
+				discord_presence.details = game::G_GAME_MODE_STRINGS_FORMATTED[game::GAME_MODE_MP];
+			}
+
 			discord_presence.startTimestamp = 0;
 
 			/*
@@ -193,8 +198,8 @@ namespace discord
 			discord_presence.startTimestamp = saved_time;
 
 			//const auto game_initialized = game::client_actives_something[0] == 1; // 196 * client num = resultc
-			const auto game_initialized = false; // TODO: figure out a way to do this
-			if (!game_initialized || game::Com_FrontEndScene_IsActive())
+			//const auto game_initialized = false; // TODO: figure out a way to do this
+			if (/*!game_initialized || */game::Com_FrontEndScene_IsActive())
 			{
 				update_discord_frontend();
 			}

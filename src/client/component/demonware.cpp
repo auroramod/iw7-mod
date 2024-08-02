@@ -501,32 +501,32 @@ namespace demonware
 		void post_unpack() override
 		{
 #ifdef DW_DEBUG
-			//utils::hook::jump(0x1285040_b, bd_logger_stub, true);
+			//utils::hook::jump(0x141285040, bd_logger_stub, true);
 #endif
 
-			utils::hook::set<uint8_t>(0xB5BB96F_b, 0x0);  // CURLOPT_SSL_VERIFYPEER
-			utils::hook::set<uint8_t>(0xB7C6CB1_b, 0xAF); // CURLOPT_SSL_VERIFYHOST
-			utils::hook::set<uint8_t>(0x15E4650_b, 0x0);  // HTTPS -> HTTP
+			utils::hook::set<uint8_t>(0x14B5BB96F, 0x0);  // CURLOPT_SSL_VERIFYPEER
+			utils::hook::set<uint8_t>(0x14B7C6CB1, 0xAF); // CURLOPT_SSL_VERIFYHOST
+			utils::hook::set<uint8_t>(0x1415E4650, 0x0);  // HTTPS -> HTTP
 
-			utils::hook::copy_string(0x15E8010_b, "http://dev.umbrella.demonware.net");
-			utils::hook::copy_string(0x15E8038_b, "http://cert.umbrella.demonware.net");
-			utils::hook::copy_string(0x15E8060_b, "http://prod.umbrella.demonware.net");
-			utils::hook::copy_string(0x15E8418_b, "http://dev.uno.demonware.net/v1.0");
-			utils::hook::copy_string(0x15E8440_b, "http://cert.uno.demonware.net/v1.0");
-			utils::hook::copy_string(0x15E8468_b, "http://prod.uno.demonware.net/v1.0");
-			utils::hook::copy_string(0x15E3600_b, "http://%s:%d/auth/");
+			utils::hook::copy_string(0x1415E8010, "http://dev.umbrella.demonware.net");
+			utils::hook::copy_string(0x1415E8038, "http://cert.umbrella.demonware.net");
+			utils::hook::copy_string(0x1415E8060, "http://prod.umbrella.demonware.net");
+			utils::hook::copy_string(0x1415E8418, "http://dev.uno.demonware.net/v1.0");
+			utils::hook::copy_string(0x1415E8440, "http://cert.uno.demonware.net/v1.0");
+			utils::hook::copy_string(0x1415E8468, "http://prod.uno.demonware.net/v1.0");
+			utils::hook::copy_string(0x1415E3600, "http://%s:%d/auth/");
 
 			// Skip bdAuth::validateResponseSignature
-			utils::hook::set(0x129D200_b, 0xC301B0); // bdRSAKey::importKey
-			utils::hook::set(0x129D360_b, 0xC300000001B8); // bdRSAKey::verifySignatureSHA256
+			utils::hook::set(0x14129D200, 0xC301B0); // bdRSAKey::importKey
+			utils::hook::set(0x14129D360, 0xC300000001B8); // bdRSAKey::verifySignatureSHA256
 
 			// Remove Online_PatchStreamer checks
-			utils::hook::set<uint8_t>(0x52A6D0_b, 0xC3);
-			utils::hook::set(0x52AB60_b, 0xC300000001B8);
-			utils::hook::set(0x52B800_b, 0xC300000001B8);
+			utils::hook::set<uint8_t>(0x14052A6D0, 0xC3);
+			utils::hook::set(0x14052AB60, 0xC300000001B8);
+			utils::hook::set(0x14052B800, 0xC300000001B8);
 
 			// Remove Online_Dailylogin check
-			utils::hook::set(0x533390_b, 0xC300000001B8);
+			utils::hook::set(0x140533390, 0xC300000001B8);
 
 			// Increase Demonware connection timeouts
 			dvars::override::register_int("demonwareConsideredConnectedTime", 300000, 0, 0x7FFFFFFF, 0x0); // 5s -> 5min

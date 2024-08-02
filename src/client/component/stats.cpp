@@ -20,6 +20,8 @@ namespace stats
 		utils::hook::detour is_item_unlocked_hook2;
 		utils::hook::detour item_quantity_hook;
 
+		game::dvar_t* cg_loot_count = nullptr;
+
 		bool is_item_unlocked_stub(__int64 a1, int a2, const char* unlock_table, unsigned __int8* value)
 		{
 			if (dvars::cg_unlockall_items && dvars::cg_unlockall_items->current.enabled)
@@ -47,7 +49,10 @@ namespace stats
 			// 30000 crashes
 			if (id != 30000 && dvars::cg_unlockall_loot && dvars::cg_unlockall_loot->current.enabled)
 			{
-				return 1;
+				if (cg_loot_count)
+				{
+					return cg_loot_count->current.integer;
+				}
 			}
 
 			return result;
@@ -63,7 +68,7 @@ namespace stats
 				{
 				case game::DDL_BYTE_TYPE:
 				case game::DDL_SHORT_TYPE:
-				case game::DDL_UINT_TYPE:
+				case game::DDL_BOOL_TYPE:
 				case game::DDL_INT_TYPE:
 					console::info("%d\n", value.intValue);
 					break;
@@ -357,17 +362,19 @@ namespace stats
 				dvars::cg_unlockall_items = game::Dvar_RegisterBool("cg_unlockall_items", false, game::DVAR_FLAG_SAVED, "Whether items should be locked based on the player's stats or always unlocked.");
 				game::Dvar_RegisterBool("cg_unlockall_classes", false, game::DVAR_FLAG_SAVED, "Whether classes should be locked based on the player's stats or always unlocked."); // TODO: need LUI scripting
 				dvars::cg_unlockall_loot = game::Dvar_RegisterBool("cg_unlockall_loot", false, game::DVAR_FLAG_SAVED, "Whether loot should be locked based on the player's stats or always unlocked.");
+				
+				cg_loot_count = game::Dvar_RegisterInt("cg_loot_count", 1, 1, std::numeric_limits<int>::max(), game::DVAR_FLAG_SAVED, "Amount of loot to give for items");
 			}, scheduler::main);
 
 			// unlockables
-			is_item_unlocked_hook.create(0x34E020_b, is_item_unlocked_stub);
-			is_item_unlocked_hook2.create(0x34CF40_b, is_item_unlocked_stub2);
+			is_item_unlocked_hook.create(0x14034E020, is_item_unlocked_stub);
+			is_item_unlocked_hook2.create(0x14034CF40, is_item_unlocked_stub2);
 
 			// loot
-			item_quantity_hook.create(0x51DBE0_b, item_quantity_stub);
+			item_quantity_hook.create(0x14051DBE0, item_quantity_stub);
 
 			// GetPlayerData print
-			utils::hook::jump(0xB84F00_b, com_ddl_print_state); // Com_DDL_PrintState
+			utils::hook::jump(0x140B84F00, com_ddl_print_state); // Com_DDL_PrintState
 		}
 	};
 }

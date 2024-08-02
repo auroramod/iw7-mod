@@ -107,17 +107,17 @@ namespace dvar_cheats
 
 			// if we get here, we are non-zero source and CANNOT set values
 			a.popad64(); // if I do this before the jz it won't work. for some reason the popad64 is affecting the ZR flag
-			a.jmp(0xCEDBDF_b);
+			a.jmp(0x140CEDBDF);
 
 			// if we get here, we are non-zero source and CAN set values
 			a.bind(can_set_value);
 			a.popad64(); // if I do this before the jz it won't work. for some reason the popad64 is affecting the ZR flag
 			a.cmp(esi, 1);
-			a.jmp(0xCED8EE_b);
+			a.jmp(0x140CED8EE);
 
 			// if we get here, we are zero source and ignore flags
 			a.bind(zero_source);
-			a.jmp(0xCED97A_b);
+			a.jmp(0x140CED97A);
 		});
 	}
 
@@ -126,8 +126,8 @@ namespace dvar_cheats
 	public:
 		void post_unpack() override
 		{
-			utils::hook::nop(0xCED8D4_b, 8); // let our stub handle zero-source sets
-			utils::hook::jump(0xCED8DF_b, get_dvar_flag_checks_stub(), true); // check extra dvar flags when setting values
+			utils::hook::nop(0x140CED8D4, 8); // let our stub handle zero-source sets
+			utils::hook::jump(0x140CED8DF, get_dvar_flag_checks_stub(), true); // check extra dvar flags when setting values
 
 			scheduler::once([]
 			{

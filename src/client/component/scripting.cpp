@@ -188,8 +188,8 @@ namespace scripting
 					console::info("gamename: %s\n", "IW7");
 					console::info("gamedate: %s\n", __DATE__);
 
-					//G_LogPrintf("------------------------------------------------------------\n");
-					//G_LogPrintf("InitGame: %s\n", serverinfo);
+					game::G_LogPrintf("------------------------------------------------------------\n");
+					game::G_LogPrintf("InitGame\n");
 				}
 
 				sv_initgame_vm_hook.invoke<void>(init_settings);
@@ -206,8 +206,8 @@ namespace scripting
 				{
 					console::info("==== ShutdownGame (%d) ====\n", full_clear);
 
-					//G_LogPrintf("ShutdownGame:\n");
-					//G_LogPrintf("------------------------------------------------------------\n");
+					game::G_LogPrintf("ShutdownGame:\n");
+					game::G_LogPrintf("------------------------------------------------------------\n");
 				}
 
 				shutdown_game_pre(full_clear);
@@ -265,18 +265,18 @@ namespace scripting
 	public:
 		void post_unpack() override
 		{
-			vm_notify_hook.create(0xC10460_b, vm_notify_stub);
+			vm_notify_hook.create(0x140C10460, vm_notify_stub);
 
-			scr_add_class_field_hook.create(0xC061F0_b, scr_add_class_field_stub);
+			scr_add_class_field_hook.create(0x140C061F0, scr_add_class_field_stub);
 
-			scr_set_thread_position_hook.create(0xBFD190_b, scr_set_thread_position_stub);
-			process_script_hook.create(0xC09D20_b, process_script_stub);
+			scr_set_thread_position_hook.create(0x140BFD190, scr_set_thread_position_stub);
+			process_script_hook.create(0x140C09D20, process_script_stub);
 			sl_get_canonical_string_hook.create(game::SL_GetCanonicalString, sl_get_canonical_string_stub);
 
-			mp::sv_initgame_vm_hook.create(0xBA3428D_b, mp::sv_initgame_vm_stub);
-			sp::sv_initgame_vm_hook.create(0xBED4A96_b, sp::sv_initgame_vm_stub);
-			mp::sv_shutdowngame_vm_hook.create(0xBB36D86_b, mp::sv_shutdowngame_vm_stub);
-			sp::sv_shutdowngame_vm_hook.create(0x12159B6_b, sp::sv_shutdowngame_vm_stub);
+			mp::sv_initgame_vm_hook.create(0x14BA3428D, mp::sv_initgame_vm_stub);
+			sp::sv_initgame_vm_hook.create(0x14BED4A96, sp::sv_initgame_vm_stub);
+			mp::sv_shutdowngame_vm_hook.create(0x14BB36D86, mp::sv_shutdowngame_vm_stub);
+			sp::sv_shutdowngame_vm_hook.create(0x1412159B6, sp::sv_shutdowngame_vm_stub);
 		}
 	};
 }

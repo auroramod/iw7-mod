@@ -269,8 +269,8 @@ namespace utils::nt
 		GetCurrentDirectoryA(sizeof(current_dir), current_dir);
 		auto* const command_line = GetCommandLineA();
 
-		CreateProcessA(self.get_path().data(), command_line, nullptr, nullptr, false, NULL, nullptr, current_dir,
-			&startup_info, &process_info);
+		CreateProcessA(self.get_path().data(), command_line, nullptr, nullptr, false,
+			CREATE_NEW_CONSOLE, nullptr, current_dir, &startup_info, &process_info);
 
 		if (process_info.hThread && process_info.hThread != INVALID_HANDLE_VALUE) CloseHandle(process_info.hThread);
 		if (process_info.hProcess && process_info.hProcess != INVALID_HANDLE_VALUE) CloseHandle(process_info.hProcess);

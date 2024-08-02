@@ -1,0 +1,102 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+    types: [opened, synchronize, reopened]
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    name: Build binaries
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        configuration:
+          - Debug
+          - Release
+    steps:
+      - name: Check out files
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+          fetch-depth: 0
+          # NOTE - If LFS ever starts getting used during builds, switch this to true!
+          lfs: false
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1.3
+
+      - name: Generate project files
+        run: tools/premake5 vs2022
+
+      - name: Set up problem matching
+        uses: ammaraskar/msvc-problem-matcher@master
+
+      - name: Build ${{matrix.configuration}} binaries
+        run: msbuild /m /v:minimal /p:Configuration=${{matrix.configuration}} /p:Platform=x64 build/iw7-mod.sln
+
+      - name: Upload ${{matrix.configuration}} binaries
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: ${{matrix.configuration}} binaries
+          path: |
+            build/bin/x64/${{matrix.configuration}}/iw7-mod.exe
+            build/bin/x64/${{matrix.configuration}}/iw7-mod.pdb
+            
+      - name: Upload ${{matrix.configuration}} data artifacts
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: ${{matrix.configuration}} data artifacts
+          path: |
+            data/*
+  deploy:
+    name: Deploy artifacts
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    steps:
+      - name: Setup main environment
+        if: github.ref == 'refs/heads/main'
+        run: echo "AURORA_MASTER_PATH=${{ secrets.AURORA_MASTER_SSH_PATH }}" >> $GITHUB_ENV
+
+      - name: Setup develop environment
+        if: github.ref == 'refs/heads/develop'
+        run: echo "AURORA_MASTER_PATH=${{ secrets.AURORA_MASTER_SSH_PATH_DEV }}" >> $GITHUB_ENV
+
+      - name: Download Release binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: Release binaries
+          
+      - name: Download Release data artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: Release data artifacts
+          path: data
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.AURORA_MASTER_SSH_PRIVATE_KEY }}
+          known_hosts: 'just-a-placeholder-so-we-dont-get-errors'
+
+      - name: Add known hosts
+        run: ssh-keyscan -H ${{ secrets.AURORA_MASTER_SSH_ADDRESS }} >> ~/.ssh/known_hosts
+
+      - name: Remove old data files
+        run: ssh ${{ secrets.AURORA_MASTER_SSH_USER }}@${{ secrets.AURORA_MASTER_SSH_ADDRESS }} rm -rf ${{ env.AURORA_MASTER_PATH }}/iw7-mod/*
+
+      - name: Upload iw7-mod binary
+        run: rsync -avz iw7-mod.exe ${{ secrets.AURORA_MASTER_SSH_USER }}@${{ secrets.AURORA_MASTER_SSH_ADDRESS }}:${{ env.AURORA_MASTER_PATH }}/iw7-mod/
+
+      - name: Upload data files
+        run: rsync -avz ./data/ ${{ secrets.AURORA_MASTER_SSH_USER }}@${{ secrets.AURORA_MASTER_SSH_ADDRESS }}:${{ env.AURORA_MASTER_PATH }}/iw7-mod/
+
+      - name: Publish changes
+        run: ssh ${{ secrets.AURORA_MASTER_SSH_USER }}@${{ secrets.AURORA_MASTER_SSH_ADDRESS }} ${{ secrets.AURORA_MASTER_SSH_CHANGE_PUBLISH_COMMAND }}

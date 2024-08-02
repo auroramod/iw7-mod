@@ -14,7 +14,7 @@ namespace scripting
 			return;
 		}
 
-		const auto value = game::scr_VarGlob->childVariableValue[this->id_ + 0xFA00 * (this->parent_id_ & 3)];
+		const auto value = game::scr_VarGlob->childVariableValue[this->id_ + 0xA000 * (this->parent_id_ & 3)];
 		game::VariableValue variable;
 		variable.u = value.u.u;
 		variable.type = value.type;
@@ -31,7 +31,7 @@ namespace scripting
 
 		const auto value = _value.get_raw();
 
-		const auto variable = &game::scr_VarGlob->childVariableValue[this->id_ + 0xFA00 * (this->parent_id_ & 3)];
+		const auto variable = &game::scr_VarGlob->childVariableValue[this->id_ + 0xA000 * (this->parent_id_ & 3)];
 		game::AddRefToValue(value.type, value.u);
 		game::RemoveRefToValue(variable->type, variable->u.u);
 
@@ -131,7 +131,7 @@ namespace scripting
 	{
 		std::vector<script_value> result;
 
-		const auto offset = 0xFA00 * (this->id_ & 3);
+		const auto offset = 0xA000 * (this->id_ & 3);
 		auto current = game::scr_VarGlob->objectVariableChildren[this->id_].firstChild;
 
 		for (auto i = offset + current; current; i = offset + current)
@@ -224,7 +224,7 @@ namespace scripting
 			return {};
 		}
 
-		const auto value = game::scr_VarGlob->childVariableValue[variable_id + 0xFA00 * (this->id_ & 3)];
+		const auto value = game::scr_VarGlob->childVariableValue[variable_id + 0xA000 * (this->id_ & 3)];
 		game::VariableValue variable;
 		variable.u = value.u.u;
 		variable.type = value.type;
@@ -241,7 +241,7 @@ namespace scripting
 			return {};
 		}
 
-		const auto value = game::scr_VarGlob->childVariableValue[variable_id + 0xFA00 * (this->id_ & 3)];
+		const auto value = game::scr_VarGlob->childVariableValue[variable_id + 0xA000 * (this->id_ & 3)];
 		game::VariableValue variable;
 		variable.u = value.u.u;
 		variable.type = value.type;
@@ -271,7 +271,7 @@ namespace scripting
 			return;
 		}
 
-		const auto variable = &game::scr_VarGlob->childVariableValue[variable_id + 0xFA00 * (this->id_ & 3)];
+		const auto variable = &game::scr_VarGlob->childVariableValue[variable_id + 0xA000 * (this->id_ & 3)];
 
 		game::AddRefToValue(value.type, value.u);
 		game::RemoveRefToValue(variable->type, variable->u.u);
@@ -290,7 +290,7 @@ namespace scripting
 			return;
 		}
 
-		const auto variable = &game::scr_VarGlob->childVariableValue[variable_id + 0xFA00 * (this->id_ & 3)];
+		const auto variable = &game::scr_VarGlob->childVariableValue[variable_id + 0xA000 * (this->id_ & 3)];
 
 		game::AddRefToValue(value.type, value.u);
 		game::RemoveRefToValue(variable->type, variable->u.u);

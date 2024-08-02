@@ -82,7 +82,7 @@ namespace logger
 
 		void com_init_pre()
 		{
-			console::info("%s %s build %s %s\n", "IW7", VERSION, "win64", __DATE__);
+			console::info("%s %s build %s %s\n", BUILD_NAME, VERSION, TARGET_ARCHITECTURE, __DATE__);
 			console::info("--- Common Initialization ---\n");
 		}
 
@@ -99,13 +99,13 @@ namespace logger
 			a.call_aligned(com_init_pre);
 			a.popad64();
 
-			a.call(0xB8EF90_b);
+			a.call(0x140B8EF90);
 
 			a.pushad64();
 			a.call_aligned(com_init_post);
 			a.popad64();
 
-			a.jmp(0xD4D8DD_b);
+			a.jmp(0x140D4D8DD);
 		}
 	}
 
@@ -115,20 +115,20 @@ namespace logger
 		void post_unpack() override
 		{
 			// Sys_Print
-			utils::hook::call(0xC6E57A_b, sys_print_stub); // SV_SpawnServer: completed\n
-			utils::hook::call(0xC13641_b, sys_print_stub); // SV_CmdsSP_MapRestart: completed\n
-			utils::hook::jump(0x519772_b, sys_print_stub); // OnlineAutoTest:: Map load success. Server is listen.\n
-			utils::hook::call(0xB712BA_b, sys_print_stub); // G_SaveError
+			utils::hook::call(0x140C6E57A, sys_print_stub); // SV_SpawnServer: completed\n
+			utils::hook::call(0x140C13641, sys_print_stub); // SV_CmdsSP_MapRestart: completed\n
+			utils::hook::jump(0x140519772, sys_print_stub); // OnlineAutoTest:: Map load success. Server is listen.\n
+			utils::hook::call(0x140B712BA, sys_print_stub); // G_SaveError
 
 			// Com_Printf
-			utils::hook::jump(0x343080_b, print_info);
+			utils::hook::jump(0x140343080, print_info);
 
-			utils::hook::jump(0xD4D8D8_b, utils::hook::assemble(com_init_stub), false);
+			utils::hook::jump(0x140D4D8D8, utils::hook::assemble(com_init_stub), false);
 
 			if (!game::environment::is_dedi())
 			{
 				// R_WarnOncePerFrame
-				utils::hook::call(0xE4B121_b, r_warn_once_per_frame_vsnprintf_stub);
+				utils::hook::call(0x140E4B121, r_warn_once_per_frame_vsnprintf_stub);
 			}
 		}
 	};

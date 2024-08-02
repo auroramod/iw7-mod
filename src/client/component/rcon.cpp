@@ -20,6 +20,7 @@ namespace rcon
 		std::atomic_bool is_redirecting_{ false };
 		std::atomic_bool has_redirected_{ false };
 		game::netadr_s redirect_target_ = {};
+		std::string redirect_buffer = {};
 		std::recursive_mutex redirect_lock;
 
 		void setup_redirect(const game::netadr_s& target)
@@ -29,15 +30,19 @@ namespace rcon
 			has_redirected_ = false;
 			is_redirecting_ = true;
 			redirect_target_ = target;
+			redirect_buffer.clear();
 		}
 
 		void clear_redirect()
 		{
 			std::lock_guard<std::recursive_mutex> $(redirect_lock);
 
+			network::send(redirect_target_, "print", redirect_buffer, '\n');
+
 			has_redirected_ = false;
 			is_redirecting_ = false;
 			redirect_target_ = {};
+			redirect_buffer.clear();
 		}
 
 		void send_rcon_command(const std::string& password, const std::string& data)
@@ -69,7 +74,7 @@ namespace rcon
 
 		std::string build_status_buffer()
 		{
-			const auto mapname = game::Dvar_FindVar("mapname");
+			const auto* mapname = game::Dvar_FindVar("mapname");
 
 			std::string buffer{};
 			buffer.append(utils::string::va("map: %s\n", mapname->current.string));
@@ -78,7 +83,7 @@ namespace rcon
 			buffer.append(
 				"--- ----- --- ---- -------------------------------- ---------------- --------------------- -----\n");
 
-			const auto svs_clients = *game::svs_clients;
+			const auto* svs_clients = *game::svs_clients;
 			if (svs_clients == nullptr)
 			{
 				return buffer;
@@ -86,12 +91,12 @@ namespace rcon
 
 			for (auto i = 0u; i < *game::svs_numclients; i++)
 			{
-				const auto client = &svs_clients[i];
+				const auto* client = &svs_clients[i];
 
 				if (client->header.state >= 1 && client->gentity && client->gentity->client)
 				{
 					char clean_name[32] = { 0 };
-					strncpy_s(clean_name, client->gentity->client->name, sizeof(clean_name));
+					strncpy_s(clean_name, client->gentity->client->sess.name, sizeof(clean_name));
 					game::I_CleanStr(clean_name);
 
 					buffer.append(utils::string::va("%3i %5i %3s %s %32s %16s %21s %5i\n",
@@ -122,9 +127,10 @@ namespace rcon
 		if (is_redirecting_)
 		{
 			has_redirected_ = true;
-			network::send(redirect_target_, "print", message, '\n');
+			redirect_buffer.append(message);
 			return true;
 		}
+
 		return false;
 	}
 

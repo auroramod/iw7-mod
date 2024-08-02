@@ -235,12 +235,7 @@ namespace server_list
 
 		bool is_server_list_open()
 		{
-#ifdef DEBUG
-			return false;
-#else
-			// TODO
-			return game::Menu_IsMenuOpenAndVisible(0, "menu_systemlink_join");
-#endif
+			return game::Menu_IsMenuOpenAndVisible(0, "SystemLinkMenu");
 		}
 
 		bool is_scrolling_disabled()
@@ -441,7 +436,7 @@ namespace server_list
 			lui_open_menu_hook.create(game::LUI_OpenMenu, lui_open_menu_stub);
 
 			// replace UI_RunMenuScript call in LUI_CoD_LuaCall_RefreshServerList to our refresh_servers
-			utils::hook::jump(0x69E019_b, utils::hook::assemble([](utils::hook::assembler& a)
+			utils::hook::jump(0x14069E019, utils::hook::assemble([](utils::hook::assembler& a)
 			{
 				a.pushad64();
 				a.call_aligned(refresh_server_list);
@@ -454,7 +449,7 @@ namespace server_list
 				a.ret();
 			}), true);
 
-			utils::hook::jump(0x69E9F7_b, utils::hook::assemble([](utils::hook::assembler& a)
+			utils::hook::jump(0x14069E9F7, utils::hook::assemble([](utils::hook::assembler& a)
 			{
 				a.mov(r8d, edi);
 				a.mov(ecx, eax);
@@ -464,13 +459,13 @@ namespace server_list
 				a.call_aligned(join_server);
 				a.popad64();
 
-				a.jmp(0x69EA03_b);
+				a.jmp(0x14069EA03);
 			}), true);
 
-			utils::hook::nop(0x69EA1D_b, 5);
+			utils::hook::nop(0x14069EA1D, 5);
 
-			utils::hook::call(0x69E45E_b, get_server_count);
-			utils::hook::jump(0xCC5F00_b, ui_feeder_item_text);
+			utils::hook::call(0x14069E45E, get_server_count);
+			utils::hook::jump(0x140CC5F00, ui_feeder_item_text);
 
 			scheduler::loop(do_frame_work, scheduler::pipeline::main);
 			scheduler::loop(check_refresh, scheduler::pipeline::lui, 10ms);

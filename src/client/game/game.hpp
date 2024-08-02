@@ -7,7 +7,6 @@
 namespace game
 {
 	extern uint64_t base_address;
-	void load_base_address();
 
 	template <typename T>
 	class symbol
@@ -20,7 +19,7 @@ namespace game
 
 		T* get() const
 		{
-			return reinterpret_cast<T*>(reinterpret_cast<uint64_t>(address_) + base_address);
+			return reinterpret_cast<T*>(reinterpret_cast<uint64_t>(address_));
 		}
 
 		operator T* () const
@@ -68,9 +67,12 @@ namespace game
 
 	bool SV_ClientIsBot(client_t* client);
 	bool SV_ClientIsBot(unsigned int client_num);
+
+	void G_LogPrintf(const char* fmt, ...);
+
+	void Key_Bindlist_f();
 }
 
-size_t operator"" _b(const size_t ptr);
 size_t reverse_b(const size_t ptr);
 size_t reverse_b(const void* ptr);
 

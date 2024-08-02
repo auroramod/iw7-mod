@@ -79,8 +79,8 @@ namespace command
 			static std::string comand_line_buffer = GetCommandLineA();
 			auto* command_line = comand_line_buffer.data();
 
-			auto& com_num_console_lines = *reinterpret_cast<int*>(0x6006DB0_b);
-			auto* com_console_lines = reinterpret_cast<char**>(0x6006DC0_b);
+			auto& com_num_console_lines = *reinterpret_cast<int*>(0x146006DB0);
+			auto* com_console_lines = reinterpret_cast<char**>(0x146006DC0);
 
 			auto inq = false;
 			com_console_lines[0] = command_line;
@@ -111,8 +111,8 @@ namespace command
 
 		void parse_startup_variables()
 		{
-			auto& com_num_console_lines = *reinterpret_cast<int*>(0x6006DB0_b);
-			auto* com_console_lines = reinterpret_cast<char**>(0x6006DC0_b);
+			auto& com_num_console_lines = *reinterpret_cast<int*>(0x146006DB0);
+			auto* com_console_lines = reinterpret_cast<char**>(0x146006DC0);
 
 			for (int i = 0; i < com_num_console_lines; i++)
 			{
@@ -169,11 +169,11 @@ namespace command
 			{
 				if (args.size() == 1)
 				{
-					const auto current = game::Dvar_ValueToString(dvar, dvar->current);
-					const auto reset = game::Dvar_ValueToString(dvar, dvar->reset);
+					const std::string current = game::Dvar_ValueToString(dvar, dvar->current);
+					const std::string reset = game::Dvar_ValueToString(dvar, dvar->reset);
 
 					console::info("\"%s\" is: \"%s\" default: \"%s\" checksum: %d type: %i\n",
-						dvars::dvar_get_name(dvar).data(), current, reset, dvar->checksum, dvar->type);
+						dvars::dvar_get_name(dvar).data(), current.data(), reset.data(), dvar->checksum, dvar->type);
 
 					const auto dvar_info = dvars::dvar_get_description(dvar);
 
@@ -184,7 +184,7 @@ namespace command
 				}
 				else
 				{
-					char command[0x1000] = { 0 };
+					char command[0x1000]{};
 					game::Dvar_GetCombinedString(command, 1);
 					game::Dvar_SetCommand(args[0], command);
 				}
@@ -249,6 +249,7 @@ namespace command
 				else
 				{
 					player.call("giveweapon", { arg });
+					player.call("switchtoweapon", { arg });
 				}
 			}
 			catch (...)
@@ -434,11 +435,11 @@ namespace command
 	public:
 		void post_unpack() override
 		{
-			utils::hook::jump(0xBB1DC0_b, dvar_command_stub, true);
-			client_command_mp_hook.create(0xB105D0_b, &client_command_mp);
-			client_command_sp_hook.create(0x483130_b, &client_command_sp);
+			utils::hook::jump(0x140BB1DC0, dvar_command_stub, true);
+			client_command_mp_hook.create(0x140B105D0, &client_command_mp);
+			client_command_sp_hook.create(0x140483130, &client_command_sp);
 
-			parse_commandline_hook.create(0xF2F67B_b, parse_commandline);
+			parse_commandline_hook.create(0x140F2F67B, parse_commandline);
 
 			add_commands();
 		}
@@ -474,6 +475,11 @@ namespace command
 			add("cpMode", []()
 			{
 				game::Com_GameMode_SetDesiredGameMode(game::GAME_MODE_CP);
+			});
+
+			add("bindlist", []()
+			{
+				game::Key_Bindlist_f();
 			});
 
 			add_sv("god", [](const int client_num, const params_sv&)

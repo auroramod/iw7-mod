@@ -96,7 +96,7 @@ namespace colors
 			const size_t unk, const size_t unk2)
 		{
 			// CL_GetClientName (CL_GetClientNameAndClantag?)
-			const auto result = utils::hook::invoke<size_t>(0x9BDAF0_b, local_client_num, index, buf, size, unk, unk2);
+			const auto result = utils::hook::invoke<size_t>(0x1409BDAF0, local_client_num, index, buf, size, unk, unk2);
 
 			utils::string::strip(buf, buf, size);
 
@@ -109,11 +109,11 @@ namespace colors
 
 			if (index == '8')
 			{
-				*color = *reinterpret_cast<DWORD*>(0x8B9D284_b);
+				*color = *reinterpret_cast<DWORD*>(0x148B9D284);
 			}
 			else if (index == '9')
 			{
-				*color = *reinterpret_cast<DWORD*>(0x8B9D288_b);
+				*color = *reinterpret_cast<DWORD*>(0x148B9D288);
 			}
 			else if (index == ':')
 			{
@@ -121,7 +121,7 @@ namespace colors
 			}
 			else if (index == ';')
 			{
-				*color = *reinterpret_cast<DWORD*>(0x8B9D290_b);
+				*color = *reinterpret_cast<DWORD*>(0x148B9D290);
 			}
 			else if (index == '<')
 			{
@@ -145,19 +145,19 @@ namespace colors
 			}
 
 			// allows colored name in-game
-			utils::hook::jump(0xCFA700_b, com_clean_name_stub, true);
+			utils::hook::jump(0x140CFA700, com_clean_name_stub, true);
 
 			// don't apply colors to overhead names
-			utils::hook::call(0x6843FE_b, get_client_name_stub);
+			utils::hook::call(0x1406843FE, get_client_name_stub);
 
 			// patch I_CleanStr
-			utils::hook::jump(0xCFACC0_b, i_clean_str_stub, true);
+			utils::hook::jump(0x140CFACC0, i_clean_str_stub, true);
 
 			// force new colors
-			utils::hook::jump(0xE570E0_b, rb_lookup_color_stub, true);
+			utils::hook::jump(0x140E570E0, rb_lookup_color_stub, true);
 
 			// prevent name mismatch check
-			utils::hook::set<uint8_t>(0x805C10_b, 0xC3);
+			utils::hook::set<uint8_t>(0x140805C10, 0xC3);
 
 			// add colors
 			add(0, 0, 0); // 0  - Black

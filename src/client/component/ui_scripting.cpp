@@ -450,14 +450,14 @@ namespace ui_scripting
 				return;
 			}
 
-			utils::hook::call(0x5FC2F7_b, db_find_x_asset_header_stub);
-			utils::hook::call(0x5FC0AB_b, db_find_x_asset_header_stub);
+			utils::hook::call(0x1405FC2F7, db_find_x_asset_header_stub);
+			utils::hook::call(0x1405FC0AB, db_find_x_asset_header_stub);
 
-			hks_load_hook.create(0x11E0B00_b, hks_load_stub);
+			hks_load_hook.create(0x1411E0B00, hks_load_stub);
 
-			hks_package_require_hook.create(0x11C7F00_b, hks_package_require_stub);
-			hks_start_hook.create(0x615090_b, hks_start_stub);
-			hks_shutdown_hook.create(0x6124B0_b, hks_shutdown_stub);
+			hks_package_require_hook.create(0x1411C7F00, hks_package_require_stub);
+			hks_start_hook.create(0x140615090, hks_start_stub);
+			hks_shutdown_hook.create(0x1406124B0, hks_shutdown_stub);
 		}
 	};
 }

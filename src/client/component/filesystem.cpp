@@ -19,75 +19,6 @@ namespace filesystem
 		utils::hook::detour fs_startup_hook;
 		utils::hook::detour fs_build_os_path_hook;
 
-		bool initialized = false;
-
-		std::deque<std::filesystem::path>& get_search_paths_internal()
-		{
-			static std::deque<std::filesystem::path> search_paths{};
-			return search_paths;
-		}
-
-		void fs_display_path()
-		{
-			console::info("Current language: %s\n", game::SEH_GetLanguageName(*reinterpret_cast<int*>(0x74C6420_b)));
-			console::info("Current search paths:\n");
-
-			if (game::fs_searchpaths.get())
-			{
-				for (auto i = game::fs_searchpaths.get()->next; i; i = i->next)
-				{
-					console::info("%s/%s\n", i->dir->path, i->dir->gamedir);
-				}
-			}
-
-			for (auto path : filesystem::get_search_paths())
-			{
-				console::info("%s\n", path.data());
-			}
-		}
-
-		void fs_startup_stub(const char* name)
-		{
-			console::info("----- FS_Startup -----\n");
-
-			initialized = true;
-
-			filesystem::register_path(utils::properties::get_appdata_path() / "cdata"); // CLIENT_DATA_FOLDER
-			filesystem::register_path(L".");
-			filesystem::register_path(L"iw7-mod");
-			filesystem::register_path(L"devraw_shared");
-			filesystem::register_path(L"devraw");
-			filesystem::register_path(L"raw_shared");
-			filesystem::register_path(L"raw");
-			filesystem::register_path(L"main_shared");
-			filesystem::register_path(L"main");
-
-			fs_startup_hook.invoke<void>(name);
-
-			fs_display_path();
-			console::info("----------------------\n");
-		}
-
-		std::vector<std::filesystem::path> get_paths(const std::filesystem::path& path)
-		{
-			std::vector<std::filesystem::path> paths{};
-			paths.push_back(path);
-			return paths;
-		}
-
-		bool can_insert_path(const std::filesystem::path& path)
-		{
-			for (const auto& path_ : get_search_paths_internal())
-			{
-				if (path_ == path)
-				{
-					return false;
-				}
-			}
-
-			return true;
-		}
-
 		const char* sys_default_install_path_stub()
 		{
 			static auto current_path = std::filesystem::current_path().string();
@@ -107,14 +38,71 @@ namespace filesystem
 		}
 	}
 
+	namespace
+	{
+		bool initialized = false;
+
+		std::deque<std::filesystem::path>& get_search_paths_internal()
+		{
+			static std::deque<std::filesystem::path> search_paths{};
+			return search_paths;
+		}
+
+		void fs_display_path()
+		{
+			console::info("Current language: %s\n", game::SEH_GetLanguageName(*reinterpret_cast<int*>(0x1474C6420)));
+			console::info("Current search paths:\n");
+
+			for (auto& path : filesystem::get_search_paths())
+			{
+				console::info("%s\n", path.data());
+			}
+		}
+
+		void fs_startup_stub(const char* name)
+		{
+			console::info("----- FS_Startup -----\n");
+
+			initialized = true;
+
+			filesystem::register_path(utils::properties::get_appdata_path() / "cdata"); // CLIENT_DATA_FOLDER
+			filesystem::register_path(sys_default_install_path_stub() + "/"s + "iw7-mod"s);
+
+			fs_startup_hook.invoke<void>(name);
+
+			fs_display_path();
+			console::info("----------------------\n");
+		}
+
+		std::vector<std::filesystem::path> get_paths(const std::filesystem::path& path)
+		{
+			std::vector<std::filesystem::path> paths{};
+			paths.push_back(path);
+			return paths;
+		}
+
+		bool can_insert_path(const std::filesystem::path& path)
+		{
+			for (const auto& path_ : get_search_paths())
+			{
+				if (path_ == path)
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+	}
+
 	std::string read_file(const std::string& path)
 	{
-		for (const auto& search_path : get_search_paths_internal())
+		for (const auto& search_path : get_search_paths())
 		{
-			const auto path_ = search_path / path;
-			if (utils::io::file_exists(path_.generic_string()))
+			const auto path_ = search_path + "/" + path;
+			if (utils::io::file_exists(path_))
 			{
-				return utils::io::read_file(path_.generic_string());
+				return utils::io::read_file(path_);
 			}
 		}
 
@@ -123,14 +111,14 @@ namespace filesystem
 
 	bool read_file(const std::string& path, std::string* data, std::string* real_path)
 	{
-		for (const auto& search_path : get_search_paths_internal())
+		for (const auto& search_path : get_search_paths())
 		{
-			const auto path_ = search_path / path;
-			if (utils::io::read_file(path_.generic_string(), data))
+			const auto path_ = search_path + "/" + path;
+			if (utils::io::read_file(path_, data))
 			{
 				if (real_path != nullptr)
 				{
-					*real_path = path_.generic_string();
+					*real_path = path_;
 				}
 
 				return true;
@@ -142,12 +130,12 @@ namespace filesystem
 
 	bool find_file(const std::string& path, std::string* real_path)
 	{
-		for (const auto& search_path : get_search_paths_internal())
+		for (const auto& search_path : get_search_paths())
 		{
-			const auto path_ = search_path / path;
-			if (utils::io::file_exists(path_.generic_string()))
+			const auto path_ = search_path + "/" + path;
+			if (utils::io::file_exists(path_))
 			{
-				*real_path = path_.generic_string();
+				*real_path = path_;
 				return true;
 			}
 		}
@@ -157,10 +145,10 @@ namespace filesystem
 
 	bool exists(const std::string& path)
 	{
-		for (const auto& search_path : get_search_paths_internal())
+		for (const auto& search_path : get_search_paths())
 		{
-			const auto path_ = search_path / path;
-			if (utils::io::file_exists(path_.generic_string()))
+			const auto path_ = search_path + "/" + path;
+			if (utils::io::file_exists(path_))
 			{
 				return true;
 			}
@@ -222,17 +210,27 @@ namespace filesystem
 			paths.push_back(path.generic_string());
 		}
 
+		if (game::fs_searchpaths.get())
+		{
+			for (auto i = game::fs_searchpaths.get()->next; i; i = i->next)
+			{
+				paths.push_back(utils::string::va("%s/%s", i->dir->path, i->dir->gamedir));
+			}
+		}
+
+		std::sort(paths.begin(), paths.end());
+
 		return paths;
 	}
 
 	std::vector<std::string> get_search_paths_rev()
 	{
 		std::vector<std::string> paths{};
-		const auto& search_paths = get_search_paths_internal();
 
-		for (auto i = search_paths.rbegin(); i != search_paths.rend(); ++i)
+		auto paths_oridinal = get_search_paths();
+		for (auto i = paths_oridinal.rbegin(); i != paths_oridinal.rend(); ++i)
 		{
-			paths.push_back(i->generic_string());
+			paths.push_back(*i);
 		}
 
 		return paths;
@@ -243,13 +241,13 @@ namespace filesystem
 	public:
 		void post_unpack() override
 		{
-			fs_startup_hook.create(0xCDD800_b, fs_startup_stub);
-			fs_build_os_path_hook.create(0xCDBBF0_b, fs_build_os_path_stub);
+			fs_startup_hook.create(0x140CDD800, fs_startup_stub);
+			fs_build_os_path_hook.create(0x140CDBBF0, fs_build_os_path_stub);
 
-			utils::hook::jump(0xCFE5E0_b, sys_default_install_path_stub);
+			utils::hook::jump(0x140CFE5E0, sys_default_install_path_stub);
 
 			// fs_game flags
-			utils::hook::set<uint32_t>(0xCDD415_b, 0);
+			utils::hook::set<uint32_t>(0x140CDD415, 0);
 		}
 	};
 }

@@ -1,18 +1,16 @@
 #include <std_include.hpp>
 #include "game.hpp"
+#include "dvars.hpp"
+
+#include "component/console/console.hpp"
 
 #include <utils/flags.hpp>
 #include <utils/string.hpp>
+#include <utils/io.hpp>
 
 namespace game
 {
 	uint64_t base_address;
-
-	void load_base_address()
-	{
-		const auto module = GetModuleHandleA(0);
-		base_address = reinterpret_cast<uint64_t>(module);
-	}
 
 	namespace environment
 	{
@@ -87,7 +85,7 @@ namespace game
 
 	const char* G_GAME_MODE_STRINGS_FORMATTED[] =
 	{
-		"Multiplayer", // this is really none, but its for discord presence :P
+		"None",
 		"Singleplayer",
 		"Multiplayer",
 		"Zombies",
@@ -232,11 +230,47 @@ namespace game
 	{
 		return svs_clients[client_num]->remoteAddress.type == NA_BOT;
 	}
-}
 
-size_t operator"" _b(const size_t ptr)
-{
-	return game::base_address + ptr;
+	void G_LogPrintf(const char* fmt, ...)
+	{
+		if (!dvars::logfile->current.enabled)
+		{
+			return;
+		}
+
+		char va_buffer[0x400] = { 0 };
+
+		va_list ap;
+		va_start(ap, fmt);
+		vsprintf_s(va_buffer, fmt, ap);
+		va_end(ap);
+
+		const auto file = dvars::g_log->current.string;
+		const auto time = *game::gameTime / 1000;
+
+		utils::io::write_file(file, utils::string::va("%3i:%i%i %s",
+			time / 60,
+			time % 60 / 10,
+			time % 60 % 10,
+			va_buffer
+		), true);
+	}
+
+	void Key_Bindlist_f()
+	{
+		for (int keynum = 0; keynum < 256; ++keynum)
+		{
+			auto value = game::Key_GetActiveBinding(0, keynum);
+			if (value)
+			{
+				auto* binding = game::Key_GetCmdForBinding(0, value);
+				if (*binding)
+				{
+					console::info("%s \"%s\"\n", game::Key_KeynumToString(keynum, 0, 0), binding);
+				}
+			}
+		}
+	}
 }
 
 size_t reverse_b(const size_t ptr)

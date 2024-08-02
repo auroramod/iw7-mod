@@ -123,7 +123,7 @@ namespace network
 					return a->port == b->port;
 
 				case game::netadrtype_t::NA_IP:
-					return !memcmp(a->ip, b->ip, 4);
+					return memcmp(a->ip, b->ip, 4) == 0;
 				case game::netadrtype_t::NA_BROADCAST:
 					return true;
 				default:
@@ -136,7 +136,7 @@ namespace network
 
 		int net_compare_address(const game::netadr_s* a, const game::netadr_s* b)
 		{
-			return net_compare_base_address(a, b) && a->port == b->port;
+			return net_compare_base_address(a, b) != 0 && (a->port == b->port);
 		}
 
 		void string_to_sockaddr(const char* str, sockaddr_in* address)
@@ -214,7 +214,7 @@ namespace network
 		void net_init_stub()
 		{
 			init_socket();
-			utils::hook::invoke<void>(0xD57A00_b);
+			utils::hook::invoke<void>(0x140D57A00);
 		}
 
 		int get_protocol_version_stub()
@@ -229,6 +229,11 @@ namespace network
 			// We don't want this to do anything. It decides to crash seemingly randomly
 			// Rather than try and let the player in, just tell them they are a duplicate player and reject connection
 			game::NET_OutOfBandPrint(game::NS_SERVER, from, "error\nYou are already connected to the server.");
+		}
+
+		void* memmove_stub(void* dst, void* src, size_t size)
+		{
+			return std::memmove(dst, src, std::min(size, 1262ull));
 		}
 	}
 
@@ -299,78 +304,85 @@ namespace network
 			scheduler::loop(game::fragment_handler::clean, scheduler::async, 5s);
 
 			// redirect dw packet sends to our stub
-			utils::hook::jump(0xD942C0_b, dw_send_to_stub);
+			utils::hook::jump(0x140D942C0, dw_send_to_stub);
 
 			// redirect dw packet receives to our stub
-			utils::hook::jump(0xD93D70_b, dw_recv_from_stub);
+			utils::hook::jump(0x140D93D70, dw_recv_from_stub);
 
 			// intercept command handling
-			cl_dispatch_connectionless_packet_hook.create(0x9B2250_b, cl_dispatch_connectionless_packet_stub);
+			cl_dispatch_connectionless_packet_hook.create(0x1409B2250, cl_dispatch_connectionless_packet_stub);
 
 			// handle xuid without secure connection
-			utils::hook::nop(0xC53315_b, 2);
-			utils::hook::nop(0xC55EC7_b, 6);
+			utils::hook::nop(0x140C53315, 2);
+			utils::hook::nop(0x140C55EC7, 6);
 
 			utils::hook::jump(game::NET_CompareAdr, net_compare_address);
 			utils::hook::jump(game::NET_CompareBaseAdr, net_compare_base_address);
 
 			// don't establish secure conenction
-			utils::hook::set<uint8_t>(0x9DBFDD_b, 0xEB);
-			utils::hook::set<uint8_t>(0x9DC47D_b, 0xEB);
-			utils::hook::set<uint8_t>(0x9DDC79_b, 0xEB);
-			utils::hook::set<uint8_t>(0x9AA9F9_b, 0xEB);
-			utils::hook::set<uint8_t>(0xC56030_b, 0xEB);
-			utils::hook::set<uint8_t>(0xC5341A_b, 0xEB);
-			utils::hook::set<uint8_t>(0xC4FFC6_b, 0xEB);
-			utils::hook::set<uint8_t>(0xC533B4_b, 0xEB);
+			utils::hook::set<uint8_t>(0x1409DBFDD, 0xEB);
+			utils::hook::set<uint8_t>(0x1409DC47D, 0xEB);
+			utils::hook::set<uint8_t>(0x1409DDC79, 0xEB);
+			utils::hook::set<uint8_t>(0x1409AA9F9, 0xEB);
+			utils::hook::set<uint8_t>(0x140C56030, 0xEB);
+			utils::hook::set<uint8_t>(0x140C5341A, 0xEB);
+			utils::hook::set<uint8_t>(0x140C4FFC6, 0xEB);
+			utils::hook::set<uint8_t>(0x140C533B4, 0xEB);
 
 			// ignore unregistered connection
-			utils::hook::jump(0xC4F200_b, 0xC4F1AB_b);
-			utils::hook::jump(0xC4F2F6_b, 0xC4F399_b);
+			utils::hook::jump(0x140C4F200, 0x140C4F1AB);
+			utils::hook::jump(0x140C4F2F6, 0x140C4F399);
 
 			// ignore configstring mismatch
-			utils::hook::set<uint8_t>(0x9B6F91_b, 0xEB);
+			utils::hook::set<uint8_t>(0x1409B6F91, 0xEB);
 
 			// ignore dw handle in SvClientMP::FindClientAtAddress
-			utils::hook::set<uint8_t>(0xC58B2B_b, 0xEB);
+			utils::hook::set<uint8_t>(0x140C58B2B, 0xEB);
 
 			// ignore dw handle in SV_DirectConnect
-			utils::hook::nop(0xC4EE1A_b, 2);
-			utils::hook::nop(0xC4F0FB_b, 6);
+			utils::hook::nop(0x140C4EE1A, 2);
+			utils::hook::nop(0x140C4F0FB, 6);
 
 			// ignore impure client
-			utils::hook::jump(0xC500C8_b, 0xC500DE_b); // maybe add sv_pure dvar?
+			utils::hook::jump(0x140C500C8, 0x140C500DE); // maybe add sv_pure dvar?
 
 			// don't send checksum
-			utils::hook::set<uint8_t>(0xCE6C7C_b, 0x0);
+			utils::hook::set<uint8_t>(0x140CE6C7C, 0x0);
 
 			// don't read checksum
-			utils::hook::set(0xCE6E60_b, 0xC301B0);
+			utils::hook::set(0x140CE6E60, 0xC301B0);
 
 			// don't try to reconnect client
-			utils::hook::call(0xC4F05F_b, reconnect_migratated_client);
-			utils::hook::nop(0xC4F03C_b, 4); // this crashes when reconnecting for some reason
+			utils::hook::call(0x140C4F05F, reconnect_migratated_client);
+			utils::hook::nop(0x140C4F03C, 4); // this crashes when reconnecting for some reason
 
 			// increase allowed packet size
 			const auto max_packet_size = 0x20000;
-			utils::hook::set<int>(0xBB4F01_b, max_packet_size);
-			utils::hook::set<int>(0xBB4F31_b, max_packet_size);
-			utils::hook::set<int>(0xBB4E22_b, max_packet_size);
-			utils::hook::set<int>(0xBB4F31_b, max_packet_size);
+			utils::hook::set<int>(0x140BB4F01, max_packet_size);
+			utils::hook::set<int>(0x140BB4F31, max_packet_size);
+			utils::hook::set<int>(0x140BB4E22, max_packet_size);
+			utils::hook::set<int>(0x140BB4F31, max_packet_size);
+
+			// increase cl_maxpackets
+			dvars::override::register_int("cl_maxpackets", 1000, 1, 1000, game::DVAR_FLAG_NONE);
+
+			// increase snaps
+			dvars::override::register_int("sv_remote_client_snapshot_msec", 33, -1, 100, game::DVAR_FLAG_NONE);
+
+			// disable snapshot default values overriding the actual values every time the server starts
+			utils::hook::set<uint8_t>(0x140C56780, 0xC3); // SV_SnapshotMP_InitRuntime
 
 			// ignore built in "print" oob command and add in our own
-			utils::hook::set<uint8_t>(0x9B0326_b, 0xEB);
-			network::on("print", [](const game::netadr_s&, const std::string_view& data)
-			{
-				const std::string message{ data };
-				console::info(message.data());
-			});
+			utils::hook::set<uint8_t>(0x1409B0326, 0xEB);
 
 			// initialize query_socket
-			utils::hook::jump(0xD57C7E_b, net_init_stub);
+			utils::hook::jump(0x140D57C7E, net_init_stub);
 
 			// use our own protocol version
-			utils::hook::jump(0xCE8290_b, get_protocol_version_stub);
+			utils::hook::jump(0x140CE8290, get_protocol_version_stub);
+
+			// patch buffer overflow
+			utils::hook::call(0x140BB4ABB, memmove_stub); // NET_DeferPacketToClient
 		}
 	};
 }

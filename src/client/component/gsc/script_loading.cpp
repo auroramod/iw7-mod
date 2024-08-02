@@ -19,7 +19,8 @@
 
 namespace gsc
 {
-	std::unique_ptr<xsk::gsc::iw7::context> gsc_ctx = std::make_unique<xsk::gsc::iw7::context>();;
+	std::unique_ptr<xsk::gsc::iw7::context> gsc_ctx = std::make_unique<xsk::gsc::iw7::context>();
+	std::unordered_map<std::string, loaded_script_t> loaded_scripts;
 
 	namespace
 	{
@@ -30,7 +31,6 @@ namespace gsc
 		std::unordered_map<std::string, std::uint32_t> init_handles;
 
 		utils::memory::allocator scriptfile_allocator;
-		std::unordered_map<std::string, game::ScriptFile*> loaded_scripts;
 
 		char* script_mem_buf = nullptr;
 		std::uint64_t script_mem_buf_size = 0;
@@ -105,11 +105,44 @@ namespace gsc
 			return false;
 		}
 
+		std::map<std::uint32_t, col_line_t> parse_devmap(const xsk::gsc::buffer& devmap)
+		{
+			auto data = devmap.data;
+
+			const auto read_32 = [&]()
+			{
+				const auto val = *reinterpret_cast<const std::uint32_t*>(data);
+				data += sizeof(std::uint32_t);
+				return val;
+			};
+
+			const auto read_16 = [&]()
+			{
+				const auto val = *reinterpret_cast<const std::uint16_t*>(data);
+				data += sizeof(std::uint16_t);
+				return val;
+			};
+
+			std::map<std::uint32_t, col_line_t> pos_map;
+
+			const auto devmap_count = read_32();
+			for (auto i = 0u; i < devmap_count; i++)
+			{
+				const auto script_pos = read_32();
+				const auto line = read_16();
+				const auto col = read_16();
+
+				pos_map[script_pos] = { line, col };
+			}
+
+			return pos_map;
+		}
+
 		game::ScriptFile* load_custom_script(const char* file_name, const std::string& real_name)
 		{
 			if (const auto itr = loaded_scripts.find(file_name); itr != loaded_scripts.end())
 			{
-				return itr->second;
+				return itr->second.ptr;
 			}
 
 			if (game::Com_FrontEnd_IsInFrontEnd())
@@ -147,10 +180,7 @@ namespace gsc
 				data.assign(source_buffer.begin(), source_buffer.end());
 
 				const auto assembly_ptr = compiler.compile(real_name, data);
-				const auto output_script = assembler.assemble(*assembly_ptr);
-
-				const auto bytecode = output_script.first;
-				const auto stack = output_script.second;
+				const auto& [bytecode, stack, devmap] = assembler.assemble(*assembly_ptr);
 
 				const auto script_file_ptr = static_cast<game::ScriptFile*>(scriptfile_allocator.allocate(sizeof(game::ScriptFile)));
 				script_file_ptr->name = file_name;
@@ -169,7 +199,10 @@ namespace gsc
 
 				script_file_ptr->compressedLen = 0;
 
-				loaded_scripts[file_name] = script_file_ptr;
+				loaded_script_t loaded_script{};
+				loaded_script.ptr = script_file_ptr;
+				loaded_script.devmap = parse_devmap(devmap);
+				loaded_scripts.insert(std::make_pair(file_name, loaded_script));
 
 				console::debug("Loaded custom gsc '%s.gsc'", real_name.data());
 
@@ -279,9 +312,13 @@ namespace gsc
 			{
 				for (const auto& path : filesystem::get_search_paths())
 				{
-					load_scripts(path, "scripts/"); // meant to override stock GSC
-					load_scripts(path, "custom_scripts/"); // for no issues, use custom_scripts/
+					load_scripts(path, "custom_scripts/");
 					load_scripts(path, "custom_scripts/"s + game::Com_GameMode_GetActiveGameModeStr() + "/");
+
+					if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_CP || game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_MP)
+					{
+						load_scripts(path, "custom_scripts/cp_mp/");
+					}
 				}
 			}
 		}
@@ -293,21 +330,20 @@ namespace gsc
 				xsk::gsc::build::dev :
 				xsk::gsc::build::prod;
 
-			gsc_ctx->init(comp_mode, [](const std::string& include_name)
-				-> std::pair<xsk::gsc::buffer, std::vector<std::uint8_t>>
+			gsc_ctx->init(comp_mode, []([[maybe_unused]] auto const* ctx, const auto& included_path) -> std::pair<xsk::gsc::buffer, std::vector<std::uint8_t>>
 			{
-				const auto real_name = get_raw_script_file_name(include_name);
+				const auto script_name = std::filesystem::path(included_path).replace_extension().string();
 
 				std::string file_buffer;
-				if (!read_raw_script_file(real_name, &file_buffer) || file_buffer.empty())
+				if (!read_raw_script_file(script_name, &file_buffer) || file_buffer.empty())
 				{
-					const auto name = get_script_file_name(include_name);
+					const auto name = get_script_file_name(script_name);
 					if (game::DB_XAssetExists(game::ASSET_TYPE_SCRIPTFILE, name.data()))
 					{
-						return read_compiled_script_file(name, real_name);
+						return read_compiled_script_file(name, script_name);
 					}
 
-					throw std::runtime_error(std::format("Could not load gsc file '{}'", real_name));
+					throw std::runtime_error(std::format("Could not load gsc file '{}'", script_name));
 				}
 
 				std::vector<std::uint8_t> script_data;
@@ -427,35 +463,44 @@ namespace gsc
 		return game::DB_FindXAssetHeader(type, name, allow_create_default).scriptfile;
 	}
 
+	loaded_script_t* get_loaded_script(const std::string& name)
+	{
+		if (loaded_scripts.contains(name))
+		{
+			return &loaded_scripts[name];
+		}
+		return nullptr;
+	}
+
 	class loading final : public component_interface
 	{
 	public:
 		void post_unpack() override
 		{
 			// Allocate script memory (PMem doesn't work)
-			db_alloc_x_zone_memory_internal_hook.create(0xA75450_b, db_alloc_x_zone_memory_internal_stub);
+			db_alloc_x_zone_memory_internal_hook.create(0x140A75450, db_alloc_x_zone_memory_internal_stub);
 
 			// Increase allocated script memory
-			utils::hook::set<uint32_t>(0xA75B5C_b + 1, 0x480000 + static_cast<std::uint32_t>(script_memory.size));
-			utils::hook::set<uint32_t>(0xA75BAA_b + 4, 0x480 + (static_cast<std::uint32_t>(script_memory.size) >> 12));
-			utils::hook::set<uint32_t>(0xA75BBE_b + 6, 0x480 + (static_cast<std::uint32_t>(script_memory.size) >> 12));
+			utils::hook::set<uint32_t>(0x140A75B5C + 1, 0x480000 + static_cast<std::uint32_t>(script_memory.size));
+			utils::hook::set<uint32_t>(0x140A75BAA + 4, 0x480 + (static_cast<std::uint32_t>(script_memory.size) >> 12));
+			utils::hook::set<uint32_t>(0x140A75BBE + 6, 0x480 + (static_cast<std::uint32_t>(script_memory.size) >> 12));
 
 			// Load our scripts with an uncompressed stack
-			utils::hook::call(0xC09DA7_b, db_get_raw_buffer_stub);
+			utils::hook::call(0x140C09DA7, db_get_raw_buffer_stub);
 
 			// Compiler start and cleanup, also loads scripts
-			scr_begin_load_scripts_hook.create(0xBFD500_b, scr_begin_load_scripts_stub);
-			scr_end_load_scripts_hook.create(0xBFD630_b, scr_end_load_scripts_stub);
+			scr_begin_load_scripts_hook.create(0x140BFD500, scr_begin_load_scripts_stub);
+			scr_end_load_scripts_hook.create(0x140BFD630, scr_end_load_scripts_stub);
 
 			// ProcessScript: hook xasset functions to return our own custom scripts
-			utils::hook::call(0xC09D37_b, find_script);
-			utils::hook::call(0xC09D47_b, db_is_x_asset_default);
+			utils::hook::call(0x140C09D37, find_script);
+			utils::hook::call(0x140C09D47, db_is_x_asset_default);
 
 			// execute main handle
-			g_load_structs_hook.create(0x409FB0_b, g_load_structs_stub);
+			g_load_structs_hook.create(0x140409FB0, g_load_structs_stub);
 
 			// execute init handle
-			scr_load_level_hook.create(0xB51B40_b, scr_load_level_stub);
+			scr_load_level_hook.create(0x140B51B40, scr_load_level_stub);
 
 			scripting::on_shutdown([](bool free_scripts, bool post_shutdown)
 			{

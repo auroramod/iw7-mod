@@ -5,7 +5,6 @@
 
 #include "game.hpp"
 #include "dvars.hpp"
-#include <utils/hook.hpp>
 
 namespace dvars
 {
@@ -25,6 +24,14 @@ namespace dvars
 
 	game::dvar_t* cg_draw2D = nullptr;
 
+	game::dvar_t* cg_gun_x = nullptr;
+	game::dvar_t* cg_gun_y = nullptr;
+	game::dvar_t* cg_gun_z = nullptr;
+
+	game::dvar_t* cg_thirdPerson = nullptr;
+	game::dvar_t* cg_thirdPersonRange = nullptr;
+	game::dvar_t* cg_thirdPersonAngle = nullptr;
+
 	game::dvar_t* cg_unlockall_items = nullptr;
 	game::dvar_t* cg_unlockall_loot = nullptr;
 
@@ -32,6 +39,9 @@ namespace dvars
 
 	game::dvar_t* bg_bounces = nullptr;
 	game::dvar_t* bg_playerEjection = nullptr;
+
+	game::dvar_t* logfile = nullptr;
+	game::dvar_t* g_log = nullptr;
 
 	std::string dvar_get_vector_domain(const int components, const game::DvarLimits& domain)
 	{

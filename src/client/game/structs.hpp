@@ -347,7 +347,7 @@ namespace game
 		int overstrikeMode;
 		int anyKeyDown;
 		KeyState keys[256];
-		field_t test;
+		field_t chatField;
 		char __pad0[8];
 	}; static_assert(sizeof(PlayerKeyState) == 0x1128);
 
@@ -465,6 +465,147 @@ namespace game
 		char __pad0[131112];
 		netadr_s address;
 	};
+	
+	enum FontType
+	{
+		FONT_TYPE_BIG_FONT = 2,
+		FONT_TYPE_SMALL_FONT = 3,
+		FONT_TYPE_BOLD_FONT = 4,
+		FONT_TYPE_CONSOLE_FONT = 5,
+		FONT_TYPE_OBJECTIVE_FONT = 6,
+		FONT_TYPE_TEXT_FONT = 7,
+		FONT_TYPE_EXTRA_BIG_FONT = 8,
+		FONT_TYPE_HUD_BIG_FONT = 9,
+		FONT_TYPE_HUD_SMALL_FONT = 10,
+	};
+
+	struct GfxFont
+	{
+		const char* fontName;
+		int pixelHeight;
+		TTFDef* ttfDef;
+	};
+
+	enum GfxDrawSceneMethod
+	{
+		GFX_DRAW_SCENE_STANDARD = 0x1,
+	};
+
+	struct GfxDrawMethod
+	{
+		int drawScene;
+		int baseTechType;
+		int emissiveTechType;
+		int forceTechType;
+	};
+
+	struct directory_t
+	{
+		char path[256];
+		char gamedir[256];
+	};
+
+	struct searchpath_s
+	{
+		searchpath_s* next;
+		directory_t* dir;
+		int bLocalized;
+		int playersFolder;
+		int language;
+		int pad;
+	};
+
+	enum PLAYERCARD_CACHE_TASK_STAGE
+	{
+		PLAYERCARD_CACHE_TASK_STAGE_WAITING = 0x0,
+		PLAYERCARD_CACHE_TASK_STAGE_WORKING = 0x1,
+		PLAYERCARD_CACHE_TASK_STAGE_ALL_DONE = 0x2,
+	};
+
+	struct CachedPlayerProfile
+	{
+		bool has_data;
+		XUID userID;
+		char profile[2201];
+		int time;
+	};
+
+	struct XAnimParent
+	{
+		unsigned __int16 flags;
+		unsigned __int16 children;
+	};
+
+	union $1A6660B292B883AB62F4E15A2C35B0BF
+	{
+		game::XAnimParts* parts;
+		XAnimParent animParent;
+	};
+
+	struct XAnimEntry
+	{
+		char nodeType[1];
+		char lod;
+		unsigned __int16 numAnims;
+		unsigned __int16 parent;
+		unsigned __int16 bindingIndex;
+		$1A6660B292B883AB62F4E15A2C35B0BF ___u2;
+	};
+
+	struct XAnim_s
+	{
+		unsigned int size;
+		bool initialized;
+		bool dirtyBindings;
+		unsigned __int16 numGameParameters;
+		unsigned __int16 maxGameParameters;
+		unsigned __int16 numBindings;
+		unsigned __int16 maxBindings;
+		const void** gameParameterNames;
+		void* bindings;
+		XAnimEntry entries[1];
+	};
+
+	enum SayModes
+	{
+		SAY_ALL = 0x0,
+		SAY_TEAM = 0x1,
+		SAY_TELL = 0x2,
+	};
+
+	enum ConfigString : std::int32_t
+	{
+		CS_TIMESCALE = 3464,
+	};
+
+	enum FontStyle
+	{
+		FONT_STYLE_NONE = 0,
+		FONT_STYLE_SHADOW = 3,
+		FONT_STYLE_STRONG_SHADOW = 6,
+		FONT_STYLE_OUTLINE = 7,
+		FONT_STYLE_STRONG_OUTLINE = 8,
+	};
+
+	struct FontGlowStyle
+	{
+		float glowMinDistance;
+		float glowMaxDistance;
+		vec2_t glowUVOffset;
+		vec4_t glowColor;
+		float outlineGlowMinDistance;
+		float outlineGlowMaxDistance;
+		vec4_t outlineGlowColor;
+	};
+
+	struct ComGameStartupData
+	{
+		int state;
+		char mapname[64];
+		char gameType[64];
+		unsigned int loadTime;
+		bool isServer;
+	};
 
 	namespace entity
 	{
@@ -481,6 +622,14 @@ namespace game
 			CA_PRIMED = 0x8,
 			CA_ACTIVE = 0x9,
 			CA_MAP_RESTART = 0xA,
+		};
+
+		struct uiClientState_t
+		{
+			connstate_t connState;
+			int connectPacketCount;
+			char servername[1024];
+			char messageString[1024];
 		};
 
 		struct clientUIActive_t
@@ -509,15 +658,237 @@ namespace game
 
 		assert_offsetof(entityState_t, clientNum, 156);
 
+		enum weaponstate_t : std::int32_t
+		{
+			WEAPON_READY = 0,
+			WEAPON_RAISING = 1,
+			WEAPON_RAISING_ALTSWITCH = 2,
+			WEAPON_RAISING_ALTSWITCH_ADS = 3,
+		};
+
+		enum WeaponAnimNumber : std::int32_t
+		{
+			WEAP_IDLE = 0,
+			WEAP_FORCE_IDLE = 1,
+			WEAP_ATTACK = 2,
+			WEAP_ATTACK_LASTSHOT = 3,
+			WEAP_RECHAMBER = 4,
+			WEAP_ADS_ATTACK = 5,
+			WEAP_ADS_ATTACK_LASTSHOT = 6,
+			WEAP_ADS_RECHAMBER = 7,
+			WEAP_GRENADE_PRIME = 8,
+			WEAP_GRENADE_PRIME_READY_TO_THROW = 9,
+			WEAP_MELEE_SWIPE = 10,
+			WEAP_MELEE_HIT = 11,
+			WEAP_MELEE_FATAL = 12,
+			WEAP_MELEE_MISS = 13,
+			WEAP_MELEE_VICTIM_CROUCHING_HIT = 14,
+			WEAP_MELEE_VICTIM_CROUCHING_FATAL = 15,
+			WEAP_MELEE_VICTIM_CROUCHING_MISS = 16,
+			WEAP_DROP = 17,
+			WEAP_RAISE = 18,
+			WEAP_FIRST_RAISE = 19,
+			WEAP_RELOAD = 20,
+			WEAP_RELOAD_EMPTY = 21,
+			WEAP_RELOAD_START = 22,
+			WEAP_RELOAD_END = 23,
+			WEAP_ALTSWITCHFROM = 24,
+			WEAP_ALTSWITCHFROM_ADS = 25,
+			WEAP_ALTSWITCHFROM_AKIMBO = 26,
+			WEAP_ALTSWITCHTO = 27,
+			WEAP_ALTSWITCHTO_ADS = 28,
+			WEAP_ALTSWITCHTO_AKIMBO = 29,
+			WEAP_QUICK_DROP = 30,
+			WEAP_QUICK_RAISE = 31,
+			WEAP_EMPTY_DROP = 32,
+			WEAP_EMPTY_RAISE = 33,
+			WEAP_SPRINT_IN = 34,
+			WEAP_SPRINT_IN_CANCEL = 35,
+			WEAP_SPRINT_LOOP = 36,
+			WEAP_SPRINT_OUT = 37,
+			WEAP_STUNNED_START = 38,
+			WEAP_STUNNED_LOOP = 39,
+			WEAP_STUNNED_END = 40,
+			WEAP_HOLD_FIRE = 41,
+			WEAP_DETONATE = 42,
+			WEAP_NIGHTVISION_WEAR = 43,
+			WEAP_NIGHTVISION_REMOVE = 44,
+			WEAP_BLAST_IMPACT_FRONT = 45,
+			WEAP_BLAST_IMPACT_LEFT = 46,
+			WEAP_BLAST_IMPACT_BACK = 47,
+			WEAP_BLAST_IMPACT_RIGHT = 48,
+			WEAP_SLIDE = 49,
+			WEAP_SWIM_LOOP = 50,
+			WEAP_DODGE = 51,
+			WEAP_LEAP_IN = 52,
+			WEAP_LEAP_LOOP = 53,
+			WEAP_LEAP_OUT = 54,
+			WEAP_LEAP_CANCEL = 55,
+			WEAP_CHARGE_INT = 56,
+			WEAP_CHARGE_LOOP = 57,
+			WEAP_CHARGE_OUT = 58,
+			WEAP_ADS_CHARGE_INT = 59,
+			WEAP_ADS_CHARGE_LOOP = 60,
+			WEAP_ADS_CHARGE_OUT = 61,
+			WEAP_WALLRUN = 62,
+			WEAP_INSPECT = 100, // custom added
+		};
+
+		struct PlayerActiveWeaponState
+		{
+			int weapAnim;
+			int weaponTime;
+			int weaponDelay;
+			int weaponRestrictKickTime;
+			int weaponState;
+			char __pad0[32];
+		}; 
+		assert_sizeof(PlayerActiveWeaponState, 52);
+		assert_offsetof(PlayerActiveWeaponState, weapAnim, 0);
+		assert_offsetof(PlayerActiveWeaponState, weaponTime, 4);
+		assert_offsetof(PlayerActiveWeaponState, weaponDelay, 8);
+		assert_offsetof(PlayerActiveWeaponState, weaponState, 16);
+
+		enum pmtype_t : std::int32_t
+		{
+			PM_NORMAL = 0x0,
+			PM_NORMAL_LINKED = 0x1,
+			PM_NOCLIP = 0x2,
+			PM_UFO = 0x3,
+			PM_MPVIEWER = 0x4,
+			PM_SPECTATOR = 0x5,
+			PM_INTERMISSION = 0x6,
+			PM_DEAD = 0x7,
+			PM_DEAD_LINKED = 0x8,
+		};
+
+		enum PMoveFlagsCommon : std::uint64_t;
+		enum PMoveFlagsSP : std::uint64_t;
+		enum PMoveFlagsMP : std::uint64_t;
+
+		enum POtherFlagsCommon : std::uint64_t;
+		enum POtherFlagsSP : std::uint64_t;
+		enum POtherFlagsMP : std::uint64_t;
+
+		enum PLinkFlagsCommon : std::uint32_t;
+		enum PLinkFlagsSP : std::uint32_t;
+		enum PLinkFlagsMP : std::uint32_t;
+
+		enum EntityStateFlagsCommon : std::uint32_t;
+		enum EntityStateFlagsSP : std::uint32_t;
+		enum EntityStateFlagsMP : std::uint32_t;
+
+		enum PWeaponFlagsCommon : std::uint64_t;
+		enum PWeaponFlagsSP : std::uint64_t;
+		enum PWeaponFlagsMP : std::uint64_t;
+
+		template<typename CommonE, typename spE, typename mpE, int bitSize>
+		struct GameModeFlagContainer
+		{
+			static_assert(bitSize % sizeof(unsigned int) * CHAR_BIT == 0, "bitSize must be divisible by sizeof(unsigned int) * CHAR_BIT");
+			unsigned int m_flags[bitSize >> (sizeof(unsigned int) + 1)];
+		};
+
+		struct playerState_s
+		{
+			int commandTime;
+			int pm_type;
+			int pm_time;
+			GameModeFlagContainer<PMoveFlagsCommon, PMoveFlagsSP, PMoveFlagsMP, 64> pm_flags;
+			GameModeFlagContainer<POtherFlagsCommon, POtherFlagsSP, POtherFlagsMP, 64> otherFlags;
+			GameModeFlagContainer<PLinkFlagsCommon, PLinkFlagsSP, PLinkFlagsMP, 32> linkFlags;
+			char __pad0[312];
+			GameModeFlagContainer<EntityStateFlagsCommon, EntityStateFlagsSP, EntityStateFlagsMP, 32> eFlags;
+			char __pad1[1272];
+			PlayerActiveWeaponState weapState[2];
+			char __pad2[464];
+			GameModeFlagContainer<PWeaponFlagsCommon, PWeaponFlagsSP, PWeaponFlagsMP, 64> weapFlags;
+			float fWeaponPosFrac;
+			char __pad3[0x4000];
+		}; // unk size
+		assert_offsetof(playerState_s, pm_type, 4);
+		assert_offsetof(playerState_s, eFlags, 344);
+		assert_offsetof(playerState_s, weapState, 1620);
+		assert_offsetof(playerState_s, weapFlags, 2188);
+
+		struct pmove_t
+		{
+			void* unk;
+			playerState_s* ps;
+			char __pad0[560];
+			unsigned char handler;
+		};
+		assert_offsetof(pmove_t, handler, 576);
+
+		struct pml_t
+		{
+			float forward[3];
+			float right[3];
+			float up[3];
+			float frametime;
+			int msec;
+		};
+		assert_offsetof(pml_t, msec, 40);
+
+		enum clientConnected_t
+		{
+			CON_DISCONNECTED = 0x0,
+			CON_CONNECTING = 0x1,
+			CON_CONNECTED = 0x2,
+		};
+
+		enum sessionState_t
+		{
+			SESS_STATE_PLAYING = 0x0,
+			SESS_STATE_DEAD = 0x1,
+			SESS_STATE_SPECTATOR = 0x2,
+			SESS_STATE_INTERMISSION = 0x3,
+		};
+
+		enum team_t : std::int32_t
+		{
+			TEAM_FREE = 0x0,
+			TEAM_BAD = 0x0,
+			TEAM_AXIS = 0x1,
+			TEAM_ALLIES = 0x2,
+			TEAM_SPECTATOR = 0x3,
+			TEAM_NUM_TEAMS = 0x4,
+		};
+
+		struct clientState_s
+		{
+			int clientIndex;
+			team_t team;
+			char __pad0[108];
+			char name[32];
+		};
+
+		struct clientSession_t
+		{
+			clientConnected_t connected;
+			sessionState_t sessionState;
+			char __pad0[280];
+			char name[32];
+			char __pad1[12];
+			clientState_s cs;
+		}; // unk size
+
 		struct gclient_s
 		{
-			char __pad0[19376];
-			char name[32]; // 19376
-			char __pad1[1516];
+			playerState_s ps;
+			char __pad0[19088 - sizeof(playerState_s)];
+			clientSession_t sess; // 19088
+			char __pad1[20924 - sizeof(clientSession_t) - 19088];
 			int flags; // 20924
 		}; // sizeof = 29208?
 
-		static_assert(offsetof(gclient_s, name) == 19376);
+		assert_offsetof(gclient_s, sess.sessionState, 19092);
+		assert_offsetof(gclient_s, sess.name, 19376);
+
+		assert_offsetof(gclient_s, sess.cs, 19420);
+		assert_offsetof(gclient_s, sess.cs.team, 19424);
+		assert_offsetof(gclient_s, sess.cs.name, 19536);
+
 		static_assert(offsetof(gclient_s, flags) == 20924);
 
 #pragma pack(push, 1)
@@ -526,7 +897,27 @@ namespace game
 			entityState_t s; // 0
 			char __pad0[368 - sizeof(entityState_t)];
 			gclient_s* client; // 368
-			char __pad1[80];
+			void* turret;
+			void* agent;
+			void* sentient;
+			void* vehicle;
+			__int64 physObjId;
+			unsigned __int16 model;
+			unsigned __int8 physicsObject;
+			unsigned __int8 takedamage;
+			unsigned __int8 active;
+			unsigned __int8 handler;
+			unsigned __int8 team;
+			bool freeAfterEvent;
+			unsigned __int16 disconnectedLinks;
+			__int16 padding_short2;
+			scr_string_t classname;
+			scr_string_t script_classname;
+			scr_string_t script_linkName;
+			scr_string_t target;
+			scr_string_t targetname;
+			unsigned int attachIgnoreCollision;
+			int spawnflags;
 			int flags; // 456
 			char __pad3[556];
 		}; static_assert(sizeof(gentity_s) == 1016);
@@ -575,262 +966,241 @@ namespace game
 	}
 	using namespace entity;
 
-	struct GfxFont
+	enum CubemapShot
 	{
-		const char* fontName;
-		int pixelHeight;
-		TTFDef* ttfDef;
+		CUBEMAPSHOT_NONE = 0x0,
+		CUBEMAPSHOT_RIGHT = 0x1,
+		CUBEMAPSHOT_LEFT = 0x2,
+		CUBEMAPSHOT_BACK = 0x3,
+		CUBEMAPSHOT_FRONT = 0x4,
+		CUBEMAPSHOT_UP = 0x5,
+		CUBEMAPSHOT_DOWN = 0x6,
+		CUBEMAPSHOT_COUNT = 0x7,
 	};
 
-	enum GfxDrawSceneMethod
+	struct cg_s
 	{
-		GFX_DRAW_SCENE_STANDARD = 0x1,
-	};
+		void* dummy;
+		playerState_s predictedPlayerState;
+		char __pad0[19160 - sizeof(playerState_s) - 8];
+		CubemapShot cubemapShot;
+		int cubemapSize;
+		char __pad1[305200];
+		float viewModelAxis[4][3];
+		char __pad2[168476];
+		int renderScreen;
+		int latestSnapshotNum;
+		int latestSnapshotTime;
+		int mapRestart;
+		int spectatingThirdPerson;
+		int renderingThirdPerson;
+		char __pad3[60792];
+		bool m_deathCameraFailsafeLock;
+		char __pad4[3];
+		char __pad5[486328];
+	}; static_assert(sizeof(cg_s) == 1040040);
+	static_assert(offsetof(cg_s, cubemapShot) == 19160);
+	static_assert(offsetof(cg_s, cubemapSize) == 19164);
+	static_assert(offsetof(cg_s, viewModelAxis) == 324368);
+	static_assert(offsetof(cg_s, renderScreen) == 492892);
+	static_assert(offsetof(cg_s, spectatingThirdPerson) == 492908);
+	static_assert(offsetof(cg_s, renderingThirdPerson) == 492912);
+	static_assert(offsetof(cg_s, m_deathCameraFailsafeLock) == 553708);
 
-	struct GfxDrawMethod
+	namespace scripting
 	{
-		int drawScene;
-		int baseTechType;
-		int emissiveTechType;
-		int forceTechType;
-	};
+		enum VariableType
+		{
+			VAR_UNDEFINED = 0x0,
+			VAR_BEGIN_REF = 0x1,
+			VAR_POINTER = 0x1,
+			VAR_STRING = 0x2,
+			VAR_ISTRING = 0x3,
+			VAR_VECTOR = 0x4,
+			VAR_END_REF = 0x5,
+			VAR_FLOAT = 0x5,
+			VAR_INTEGER = 0x6,
+			VAR_CODEPOS = 0x7,
+			VAR_PRECODEPOS = 0x8,
+			VAR_FUNCTION = 0x9,
+			VAR_BUILTIN_FUNCTION = 0xA,
+			VAR_BUILTIN_METHOD = 0xB,
+			VAR_STACK = 0xC,
+			VAR_ANIMATION = 0xD,
+			VAR_PRE_ANIMATION = 0xE,
+			VAR_THREAD = 0xF,
+			VAR_NOTIFY_THREAD = 0x10,
+			VAR_TIME_THREAD = 0x11,
+			VAR_CHILD_THREAD = 0x12,
+			VAR_OBJECT = 0x13,
+			VAR_DEAD_ENTITY = 0x14,
+			VAR_ENTITY = 0x15,
+			VAR_ARRAY = 0x16,
+			VAR_DEAD_THREAD = 0x17,
+			VAR_COUNT = 0x18,
+			VAR_FREE = 0x18,
+			VAR_THREAD_LIST = 0x19,
+			VAR_ENDON_LIST = 0x1A,
+			VAR_TOTAL_COUNT = 0x1B,
+		};
 
-	struct directory_t
-	{
-		char path[256];
-		char gamedir[256];
-	};
+		struct scr_entref_t
+		{
+			unsigned short entnum;
+			unsigned short classnum;
+		};
 
-	struct searchpath_s
-	{
-		searchpath_s* next;
-		directory_t* dir;
-		int bLocalized;
-		int playersFolder;
-		int language;
-		int pad;
-	};
+		struct VariableStackBuffer
+		{
+			const char* pos;
+			unsigned __int16 size;
+			unsigned __int16 bufLen;
+			unsigned __int16 localId;
+			char time;
+			char buf[1];
+		};
 
-	enum VariableType
-	{
-		VAR_UNDEFINED = 0x0,
-		VAR_BEGIN_REF = 0x1,
-		VAR_POINTER = 0x1,
-		VAR_STRING = 0x2,
-		VAR_ISTRING = 0x3,
-		VAR_VECTOR = 0x4,
-		VAR_END_REF = 0x5,
-		VAR_FLOAT = 0x5,
-		VAR_INTEGER = 0x6,
-		VAR_CODEPOS = 0x7,
-		VAR_PRECODEPOS = 0x8,
-		VAR_FUNCTION = 0x9,
-		VAR_BUILTIN_FUNCTION = 0xA,
-		VAR_BUILTIN_METHOD = 0xB,
-		VAR_STACK = 0xC,
-		VAR_ANIMATION = 0xD,
-		VAR_PRE_ANIMATION = 0xE,
-		VAR_THREAD = 0xF,
-		VAR_NOTIFY_THREAD = 0x10,
-		VAR_TIME_THREAD = 0x11,
-		VAR_CHILD_THREAD = 0x12,
-		VAR_OBJECT = 0x13,
-		VAR_DEAD_ENTITY = 0x14,
-		VAR_ENTITY = 0x15,
-		VAR_ARRAY = 0x16,
-		VAR_DEAD_THREAD = 0x17,
-		VAR_COUNT = 0x18,
-		VAR_FREE = 0x18,
-		VAR_THREAD_LIST = 0x19,
-		VAR_ENDON_LIST = 0x1A,
-		VAR_TOTAL_COUNT = 0x1B,
-	};
+		union VariableUnion
+		{
+			int intValue;
+			unsigned int uintValue;
+			float floatValue;
+			unsigned int stringValue;
+			const float* vectorValue;
+			const char* codePosValue;
+			unsigned int pointerValue;
+			VariableStackBuffer* stackValue;
+			unsigned int entityOffset;
+		};
 
-	struct scr_entref_t
-	{
-		unsigned short entnum;
-		unsigned short classnum;
-	};
+		struct VariableValue
+		{
+			VariableUnion u;
+			int type;
+		};
 
-	struct VariableStackBuffer
-	{
-		const char* pos;
-		unsigned __int16 size;
-		unsigned __int16 bufLen;
-		unsigned __int16 localId;
-		char time;
-		char buf[1];
-	};
+		struct function_stack_t
+		{
+			const char* pos;
+			unsigned int localId;
+			unsigned int localVarCount;
+			VariableValue* top;
+			VariableValue* startTop;
+		};
 
-	union VariableUnion
-	{
-		int intValue;
-		unsigned int uintValue;
-		float floatValue;
-		unsigned int stringValue;
-		const float* vectorValue;
-		const char* codePosValue;
-		unsigned int pointerValue;
-		VariableStackBuffer* stackValue;
-		unsigned int entityOffset;
-	};
+		struct function_frame_t
+		{
+			function_stack_t fs;
+			int topType;
+		};
 
-	struct VariableValue
-	{
-		VariableUnion u;
-		int type;
-	};
+		struct scrVmPub_t
+		{
+			unsigned int* localVars;
+			VariableValue* maxstack;
+			int function_count;
+			function_frame_t* function_frame;
+			VariableValue* top;
+			unsigned int inparamcount;
+			unsigned int outparamcount;
+			function_frame_t function_frame_start[32];
+			VariableValue stack[2048];
+		};
 
-	struct function_stack_t
-	{
-		const char* pos;
-		unsigned int localId;
-		unsigned int localVarCount;
-		VariableValue* top;
-		VariableValue* startTop;
-	};
+		struct ObjectVariableChildren
+		{
+			unsigned __int16 firstChild;
+			unsigned __int16 lastChild;
+		};
 
-	struct function_frame_t
-	{
-		function_stack_t fs;
-		int topType;
-	};
+		struct ObjectVariableValue_u_f
+		{
+			unsigned __int16 prev;
+			unsigned __int16 next;
+		};
 
-	struct scrVmPub_t
-	{
-		unsigned int* localVars;
-		VariableValue* maxstack;
-		int function_count;
-		function_frame_t* function_frame;
-		VariableValue* top;
-		unsigned int inparamcount;
-		unsigned int outparamcount;
-		function_frame_t function_frame_start[32];
-		VariableValue stack[2048];
-	};
+		union ObjectVariableValue_u_o_u
+		{
+			unsigned __int16 size;
+			unsigned __int16 entnum;
+			unsigned __int16 nextEntId;
+			unsigned __int16 self;
+		};
 
-	struct ObjectVariableChildren
-	{
-		unsigned __int16 firstChild;
-		unsigned __int16 lastChild;
-	};
+		struct	ObjectVariableValue_u_o
+		{
+			unsigned __int16 refCount;
+			ObjectVariableValue_u_o_u u;
+		};
 
-	struct ObjectVariableValue_u_f
-	{
-		unsigned __int16 prev;
-		unsigned __int16 next;
-	};
+		union ObjectVariableValue_w
+		{
+			unsigned int type;
+			unsigned int classnum;
+			unsigned int notifyName;
+			unsigned int waitTime;
+			unsigned int parentLocalId;
+		};
 
-	union ObjectVariableValue_u_o_u
-	{
-		unsigned __int16 size;
-		unsigned __int16 entnum;
-		unsigned __int16 nextEntId;
-		unsigned __int16 self;
-	};
+		struct ChildVariableValue_u_f
+		{
+			unsigned __int16 prev;
+			unsigned __int16 next;
+		};
 
-	struct	ObjectVariableValue_u_o
-	{
-		unsigned __int16 refCount;
-		ObjectVariableValue_u_o_u u;
-	};
+		union ChildVariableValue_u
+		{
+			ChildVariableValue_u_f f;
+			VariableUnion u;
+		};
 
-	union ObjectVariableValue_w
-	{
-		unsigned int type;
-		unsigned int classnum;
-		unsigned int notifyName;
-		unsigned int waitTime;
-		unsigned int parentLocalId;
-	};
+		struct ChildBucketMatchKeys_keys
+		{
+			unsigned __int16 name_hi;
+			unsigned __int16 parentId;
+		};
 
-	struct ChildVariableValue_u_f
-	{
-		unsigned __int16 prev;
-		unsigned __int16 next;
-	};
+		union ChildBucketMatchKeys
+		{
+			ChildBucketMatchKeys_keys keys;
+			unsigned int match;
+		};
 
-	union ChildVariableValue_u
-	{
-		ChildVariableValue_u_f f;
-		VariableUnion u;
-	};
+		struct ChildVariableValue
+		{
+			ChildVariableValue_u u;
+			unsigned __int16 next;
+			char type;
+			char name_lo;
+			ChildBucketMatchKeys k;
+			unsigned __int16 nextSibling;
+			unsigned __int16 prevSibling;
+		};
 
-	struct ChildBucketMatchKeys_keys
-	{
-		unsigned __int16 name_hi;
-		unsigned __int16 parentId;
-	};
+		union ObjectVariableValue_u
+		{
+			ObjectVariableValue_u_f f;
+			ObjectVariableValue_u_o o;
+		};
 
-	union ChildBucketMatchKeys
-	{
-		ChildBucketMatchKeys_keys keys;
-		unsigned int match;
-	};
+		struct ObjectVariableValue
+		{
+			ObjectVariableValue_u u;
+			ObjectVariableValue_w w;
+		};
 
-	struct ChildVariableValue
-	{
-		ChildVariableValue_u u;
-		unsigned __int16 next;
-		char type;
-		char name_lo;
-		ChildBucketMatchKeys k;
-		unsigned __int16 nextSibling;
-		unsigned __int16 prevSibling;
-	};
-
-	union ObjectVariableValue_u
-	{
-		ObjectVariableValue_u_f f;
-		ObjectVariableValue_u_o o;
-	};
-
-	struct ObjectVariableValue
-	{
-		ObjectVariableValue_u u;
-		ObjectVariableValue_w w;
-	};
-
-	struct scrVarGlob_t
-	{
-		ObjectVariableValue objectVariableValue[40960];
-		ObjectVariableChildren objectVariableChildren[40960];
-		unsigned __int16 childVariableBucket[65536];
-		ChildVariableValue childVariableValue[384000];
-	};
-
-	enum PLAYERCARD_CACHE_TASK_STAGE
-	{
-		PLAYERCARD_CACHE_TASK_STAGE_WAITING = 0x0,
-		PLAYERCARD_CACHE_TASK_STAGE_WORKING = 0x1,
-		PLAYERCARD_CACHE_TASK_STAGE_ALL_DONE = 0x2,
-	};
-
-	struct CachedPlayerProfile
-	{
-		bool has_data;
-		XUID userID;
-		char profile[2201];
-		int time;
-	};
+		struct scrVarGlob_t
+		{
+			ObjectVariableValue objectVariableValue[40960];
+			ObjectVariableChildren objectVariableChildren[40960];
+			unsigned __int16 childVariableBucket[65536];
+			ChildVariableValue childVariableValue[384000];
+		};
+	}
+	using namespace scripting;
 
 	namespace ddl
 	{
-		enum DDLType
-		{
-			DDL_INVALID_TYPE = 0xFFFFFFFF,
-			DDL_BYTE_TYPE = 0x0,
-			DDL_SHORT_TYPE = 0x1,
-			DDL_UINT_TYPE = 0x2,
-			DDL_INT_TYPE = 0x3,
-			DDL_UINT64_TYPE = 0x4,
-			DDL_FLOAT_TYPE = 0x5,
-			DDL_FIXEDPOINT_TYPE = 0x6,
-			DDL_STRING_TYPE = 0x7,
-			DDL_STRUCT_TYPE = 0x8,
-			DDL_ENUM_TYPE = 0x9,
-		};
-
 		union DDLValue
 		{
 			int intValue;
@@ -841,28 +1211,13 @@ namespace game
 			const char* stringPtr;
 		};
 
-		struct DDLMember
-		{
-			const char* name;
-			int index;
-			int bitSize;
-			int limitSize;
-			int offset;
-			int type;
-			int externalIndex;
-			unsigned int rangeLimit;
-			bool isArray;
-			int arraySize;
-			int enumIndex;
-		};
-
 		struct DDLState
 		{
 			bool isValid;
 			int offset;
 			int arrayIndex;
 			DDLMember* member;
-			//const DDLDef* ddlDef;
+			const DDLDef* ddlDef;
 		};
 
 		struct DDLContext
@@ -1047,8 +1402,9 @@ namespace game
 			PhysicalMemoryPrim prim[2];
 		};
 	}
-  
-  namespace hks
+	using namespace pmem;
+
+	namespace hks
 	{
 		struct lua_State;
 		struct HashTable;
@@ -1470,6 +1826,4 @@ namespace game
 			HksError m_error;
 		};
 	}
-
-	using namespace pmem;
 }
