@@ -1,0 +1,2 @@
+require("MPMainMenu")
+require("CPMainMenu")
