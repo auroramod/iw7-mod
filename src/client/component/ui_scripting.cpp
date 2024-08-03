@@ -342,8 +342,10 @@ namespace ui_scripting
 			}
 
 			const auto folder = globals.in_require_script.substr(0, globals.in_require_script.find_last_of("/\\"));
-			const std::string name_ = name;
-			const std::string target_script = folder + "/" + name_ + ".lua";
+			std::string name_ = name;
+			std::string name_noprefix = std::string(name_.begin() + 3, name_.end());
+
+			const std::string target_script = folder + "/" + name_noprefix;
 
 			if (utils::io::file_exists(target_script))
 			{
