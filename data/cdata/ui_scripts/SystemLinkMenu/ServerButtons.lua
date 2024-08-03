@@ -53,6 +53,8 @@ function SystemLinkMenuButtons( menu, controller )
 	if CONDITIONS.IsCoreMultiplayer( self ) then
 		f1_local5:addEventHandler( "button_action", function ( f2_arg0, f2_arg1 )
 			local f2_local0 = f2_arg1.controller or f1_local1
+			ClientWeapon.SetWeaponVisible( 0, true )
+			ClientCharacter.SetCharacterVisible( 0, true )
 			ACTIONS.OpenCreateAClass( self, f2_arg1 )
 		end )
 	end

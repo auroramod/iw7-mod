@@ -5,7 +5,6 @@ local f0_local0 = function ( f1_arg0, f1_arg1 )
 end
 
 local f0_local1 = function ( f2_arg0, f2_arg1 )
-	print ("Are we running?!?")
 	f0_local0( f2_arg0, f2_arg1 )
 end
 
@@ -182,5 +181,17 @@ function CPMainMenuButtons( menu, controller )
 	f0_local4( VNavigator, f14_local1, controller )
 	return VNavigator
 end
+
+CPMainMenu_original = MenuBuilder.m_types["CPMainMenu"]
+function CPMainMenuStub( menu, controller )
+	ret = CPMainMenu_original( menu, controller )
+	
+	-- play music immediately
+	Engine.PlayMusic( CoD.Music.MainCPMusic )
+
+	return ret
+end
+
+MenuBuilder.m_types["CPMainMenu"] = CPMainMenuStub
 
 MenuBuilder.m_types["CPMainMenuButtons"] = CPMainMenuButtons

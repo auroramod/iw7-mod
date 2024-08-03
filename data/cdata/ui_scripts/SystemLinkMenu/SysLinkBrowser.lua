@@ -7,10 +7,7 @@ serverBrowserOffsets = {
 }
 
 local f0_local4 = function ( f5_arg0, f5_arg1 )
-	Engine.ExecNow( "xstopprivateparty", f5_arg1.controller )
-	Engine.SetDvarBool( "systemlink", false )
-	Engine.SetDvarBool( "systemlink_host", false )
-	Engine.StopGameMode()
+	--Engine.StopGameMode()
 	LUI.FlowManager.RequestLeaveMenu( f5_arg0, true )
 end
 
@@ -58,9 +55,6 @@ local f0_local7 = function ( f11_arg0, f11_arg1, f11_arg2 )
 	else
 		Engine.ExecNow( MPConfig.default_systemlink, f11_arg1 )
 	end
-	if not Lobby.IsInPrivateParty() then
-		Engine.ExecNow( "xstartprivateparty", f11_arg1 )
-	end
 
 	Engine.Exec( MPConfig.default_dvars )
 
@@ -99,26 +93,11 @@ local f0_local7 = function ( f11_arg0, f11_arg1, f11_arg2 )
 			end
 		end
 	end )
-
 	
 	Engine.PLMRefreshData()
 	if Engine.IsCoreMode() then
-		FrontEndScene.CurrentMissionTeam = MissionDirector.InvalidTeamID
-		FrontEndScene.SetScene( "private_lobby_menu" )
-		ClientCharacter.SetCharacterVisible( FrontEndScene.ClientCharacters.Self, true )
-		if Fences.OfflineDataFetched( f11_arg1 ) then
-			local f11_local1 = CoD.GetPrivateLoadoutDataSource()
-			local f11_local2 = f11_local1.squadMembers.head:GetValue( f11_arg1 )
-			local f11_local3 = f11_local1.squadMembers.body:GetValue( f11_arg1 )
-			local f11_local4 = f11_local1.squadMembers.archetype:GetValue( f11_arg1 )
-			local f11_local5 = f11_local1.squadMembers.archetypeSuper:GetValue( f11_arg1 )
-			FrontEndScene.SetCharacterModelsByIndex( FrontEndScene.ClientCharacters.Self, f11_local3, f11_local2 )
-			FrontEndScene.SetWeaponForSuper( FrontEndScene.ClientCharacters.Self, f11_local5, f11_local4 )
-			FrontEndScene.PlayIdleForSuper( FrontEndScene.ClientCharacters.Self, f11_local5, f11_local4 )
-			ClientWeapon.SetWeaponIsViewModel( 0, true )
-			ClientWeapon.SetWeaponVisible( 0, false )
-			ClientCharacter.SetCharacterVisible( 0, true )
-		end
+		ClientWeapon.SetWeaponVisible( 0, false )
+		ClientCharacter.SetCharacterVisible( 0, false )
 	end
 	Lobby.SetPartyUIRoot( PartyUIRoot.SYSTEM_LINK )
 	local f11_local1 = LUI.FlowManager.GetScopedData( f11_arg0 )
@@ -842,6 +821,11 @@ MenuBuilder.m_types["SystemLinkMenu"] = function ( menu, controller )
 	end
 
 	return self
+end
+
+local f0_local3 = function ()
+	clearMatchData()
+	WipeGlobalModelsAtPath( f0_local0 )
 end
 
 LUI.FlowManager.RegisterStackPushBehaviour( "SystemLinkMenu", PushFunc )
