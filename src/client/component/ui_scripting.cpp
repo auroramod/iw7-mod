@@ -327,7 +327,6 @@ namespace ui_scripting
 		void* hks_package_require_stub(game::hks::lua_State* state)
 		{
 			const auto script = get_current_script();
-			const auto not_stripped = script != std::string("[string \"(*stripped)\"]");
 			const auto root = get_root_script(script);
 			globals.in_require_script = root;
 			return hks_package_require_hook.invoke<void*>(state);
@@ -419,12 +418,6 @@ namespace ui_scripting
 			}
 
 			return 0;
-		}
-
-		utils::hook::detour LuaCoD_VmLoader_Detour;
-		__int64 LuaCoD_VmLoader_Stub(game::hks::lua_State* state)
-		{
-			return LuaCoD_VmLoader_Detour.invoke<__int64>(state);
 		}
 	}
 
