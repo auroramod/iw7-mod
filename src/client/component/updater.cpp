@@ -35,16 +35,19 @@ namespace updater
 			"zone/iw7mod_ui_mp.ff",
 		};
 
-		bool is_dedi_ignore_file(const std::string& name)
+		std::vector<std::string> client_ignore =
 		{
-			if (!game::environment::is_dedi())
-			{
-				return false;
-			}
+			"sounddata/*",
+		};
+
+		bool is_ignore_file(const std::string& name)
+		{
+			const auto is_dedi = game::environment::is_dedi();
 
 			const auto cdata_path = CLIENT_DATA_FOLDER + "/"s;
 
-			for (auto& ignore_file : dedi_ignore)
+			const auto& ignore_files = is_dedi ? dedi_ignore : client_ignore;
+			for (auto& ignore_file : ignore_files)
 			{
 				if (name == cdata_path + ignore_file)
 				{
@@ -289,7 +292,7 @@ namespace updater
 				const auto name = file[0].GetString();
 				const auto sha = file[2].GetString();
 
-				if (is_dedi_ignore_file(name))
+				if (is_ignore_file(name))
 				{
 					continue;
 				}
@@ -364,7 +367,7 @@ namespace updater
 				}
 
 				const auto file_ = std::string(file.begin() + appdata_folder.generic_string().size() + 1, file.end());
-				if (!found && std::filesystem::is_regular_file(file) && !is_dedi_ignore_file(file_))
+				if (!found && std::filesystem::is_regular_file(file) && !is_ignore_file(file_))
 				{
 					console::info("[Updater] Deleting extra file %s\n", file.data());
 					utils::io::remove_file(file);
