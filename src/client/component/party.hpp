@@ -10,7 +10,7 @@ namespace party
 		bool hostDefined;
 		std::string motd;
 		int max_clients;
-		std::string base_url; // yk, for when we need it ;)
+		std::string base_url;
 	};
 
 	struct discord_information

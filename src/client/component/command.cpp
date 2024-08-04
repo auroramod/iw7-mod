@@ -439,7 +439,7 @@ namespace command
 			client_command_mp_hook.create(0x140B105D0, &client_command_mp);
 			client_command_sp_hook.create(0x140483130, &client_command_sp);
 
-			parse_commandline_hook.create(0x140F2F67B, parse_commandline);
+			parse_commandline_hook.create(0x140C039F0, parse_commandline); // SL_Init
 
 			add_commands();
 		}

@@ -13,24 +13,72 @@
 #include "profile_infos.hpp"
 #include "scheduler.hpp"
 #include "server_list.hpp"
+#include "download.hpp"
+
+#include "utils/hash.hpp"
 
 #include <utils/string.hpp>
 #include <utils/info_string.hpp>
 #include <utils/hook.hpp>
 #include <utils/cryptography.hpp>
+#include <utils/io.hpp>
 
 namespace party
 {
 	namespace
 	{
-		/*struct moddl_file
+		std::string get_dvar_string(const std::string& dvar)
+		{
+			auto* dvar_value = game::Dvar_FindVar(dvar.data());
+			if (dvar_value && dvar_value->current.string)
+			{
+				return dvar_value->current.string;
+			}
+
+			return {};
+		}
+
+		int get_dvar_int(const std::string& dvar)
+		{
+			auto* dvar_value = game::Dvar_FindVar(dvar.data());
+			if (dvar_value && dvar_value->current.integer)
+			{
+				return dvar_value->current.integer;
+			}
+
+			return -1;
+		}
+
+		bool get_dvar_bool(const std::string& dvar)
+		{
+			auto* dvar_value = game::Dvar_FindVar(dvar.data());
+			if (dvar_value && dvar_value->current.enabled)
+			{
+				return dvar_value->current.enabled;
+			}
+
+			return false;
+		}
+	}
+
+	namespace mods
+	{
+		void set_mod(const std::string& path, bool [[maybe_unused]] change_fs_game = false)
+		{
+			game::Dvar_SetFromStringByName("fs_game", path.data(), game::DvarSetSource::DVAR_SOURCE_INTERNAL);
+		}
+	}
+
+	namespace
+	{
+		struct fastdl_file
 		{
 			std::string extension;
 			std::string name;
 			bool optional;
 		};
 
-		std::vector<moddl_file> mod_files =
+		std::vector<fastdl_file> mod_files =
 		{
 			{".ff", "mod_hash", false},
 		};
@@ -137,7 +185,107 @@ namespace party
 			}
 
 			return needs_restart;
+		}
+
+		/*std::string get_whitelist_json_path()
+		{
+			return (utils::properties::get_appdata_path() / "whitelist.json").generic_string();
+		}
+
+		nlohmann::json get_whitelist_json_object()
+		{
+			std::string data;
+			if (!utils::io::read_file(get_whitelist_json_path(), &data))
+			{
+				return nullptr;
+			}
+
+			nlohmann::json obj;
+			try
+			{
+				obj = nlohmann::json::parse(data.data());
+			}
+			catch (const nlohmann::json::parse_error& ex)
+			{
+				game::shared::menu_error(utils::string::va("%s\n", ex.what()));
+				return nullptr;
+			}
+
+			return obj;
+		}
+
+		std::string target_ip_to_string(const game::netadr_s& target)
+		{
+			return utils::string::va("%i.%i.%i.%i",
+				static_cast<int>(saved_info_response.host.ip[0]),
+				static_cast<int>(saved_info_response.host.ip[1]),
+				static_cast<int>(saved_info_response.host.ip[2]),
+				static_cast<int>(saved_info_response.host.ip[3]));
+		}
+
+		bool should_user_confirm(const game::netadr_s& target)
+		{
+			nlohmann::json obj = get_whitelist_json_object();
+			if (obj != nullptr)
+			{
+				const auto target_ip = target_ip_to_string(target);
+				for (const auto& [key, value] : obj.items())
+				{
+					if (value.is_string() && value.get<std::string>() == target_ip)
+					{
+						return false;
+					}
+				}
+			}
+
+			//close_joining_popups();
+			command::execute("lui_open_popup popup_confirmdownload", false);
+
+			return true;
 		}*/
+
+		bool needs_vid_restart = false;
+
+		bool download_files(const game::netadr_s& target, const utils::info_string& info, bool allow_download)
+		{
+			try
+			{
+				std::vector<download::file_t> files{};
+
+				const auto needs_restart = check_download_mod(info, files);
+				needs_vid_restart = needs_vid_restart || needs_restart;
+
+				if (files.size() > 0)
+				{
+					if (!allow_download/* && should_user_confirm(target)*/)
+					{
+						return true;
+					}
+
+					download::stop_download();
+					download::start_download(target, info, files);
+					return true;
+				}
+				else if (needs_restart || needs_vid_restart)
+				{
+					command::execute("vid_restart");
+					needs_vid_restart = false;
+					scheduler::once([=]()
+					{
+						//mods::read_stats();
+						connect(target);
+					}, scheduler::pipeline::main);
+					return true;
+				}
+			}
+			catch (const std::exception& e)
+			{
+				game::shared::menu_error(e.what());
+				return true;
+			}
+
+			return false;
+		}
 	}
 
 	namespace
@@ -215,39 +363,6 @@ namespace party
 				hardcore->current.enabled,
 				false,
 				false);
-		}
-
-		std::string get_dvar_string(const std::string& dvar)
-		{
-			auto* dvar_value = game::Dvar_FindVar(dvar.data());
-			if (dvar_value && dvar_value->current.string)
-			{
-				return dvar_value->current.string;
-			}
-
-			return {};
-		}
-
-		int get_dvar_int(const std::string& dvar)
-		{
-			auto* dvar_value = game::Dvar_FindVar(dvar.data());
-			if (dvar_value && dvar_value->current.integer)
-			{
-				return dvar_value->current.integer;
-			}
-
-			return -1;
-		}
-
-		bool get_dvar_bool(const std::string& dvar)
-		{
-			auto* dvar_value = game::Dvar_FindVar(dvar.data());
-			if (dvar_value && dvar_value->current.enabled)
-			{
-				return dvar_value->current.enabled;
-			}
-
-			return false;
 		}
 
 		void com_gamestart_beginclient_stub(const char* mapname, const char* gametype, char a3)
@@ -448,7 +563,7 @@ namespace party
 
 	void connect(const game::netadr_s& target)
 	{
-		command::execute("luiOpenPopup AcceptingInvite", false);
+		command::execute("luiOpenPopup AcceptingInvite", true);
 
 		profile_infos::xuid::clear_xuids();
 		profile_infos::clear_profile_infos();
@@ -462,9 +577,14 @@ namespace party
 
 	void info_response_error(const std::string& error)
 	{
-		console::error("%s\n", error.data());
-		command::execute("luiLeaveMenu AcceptingInvite", false);
-		game::Com_SetLocalizedErrorMessage(error.data(), "MENU_NOTICE");
+		command::execute("luiLeaveMenu AcceptingInvite", true);
+
+		game::shared::menu_error(error);
+	}
+
+	void clear_sv_motd()
+	{
+		server_connection_state.motd.clear();
 	}
 
 	connection_state get_server_connection_state()
@@ -819,12 +939,11 @@ namespace party
 				}
 
 				server_connection_state.base_url = info.get("sv_wwwBaseUrl");
-				/*
+
 				if (download_files(target, info, false))
 				{
 					return;
 				}
-				*/
 
 				server_connection_state.motd = info.get("sv_motd");
 				server_connection_state.max_clients = std::stoi(sv_maxclients_str);

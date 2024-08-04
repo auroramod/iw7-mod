@@ -181,10 +181,10 @@ namespace fastfiles
 
 			// mod is loaded on map start
 
-			if (fastfiles::exists("mod"))
-			{
-				data.push_back({ "mod", game::DB_ZONE_GAME | game::DB_ZONE_CUSTOM, 0 });
-			}
+			//if (fastfiles::exists("mod"))
+			//{
+			//	data.push_back({ "mod", game::DB_ZONE_GAME | game::DB_ZONE_CUSTOM, 0 });
+			//}
 
 			game::DB_LoadXAssets(data.data(), static_cast<std::uint32_t>(data.size()), syncMode);
 		}
@@ -221,6 +221,8 @@ namespace fastfiles
 			{
 				add_zone("iw7mod_ui_mp", game::DB_ZONE_UI | game::DB_ZONE_CUSTOM, 0);
 			}
+
+			add_zone("mod", game::DB_ZONE_GLOBAL_TIER1 | game::DB_ZONE_CUSTOM, 1);
 
 			game::DB_LoadXAssets(data.data(), static_cast<std::uint32_t>(data.size()), syncMode);
 		}
