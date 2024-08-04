@@ -1936,9 +1936,9 @@ namespace gsc
 		{0x14049cabb,""},
 		{0x14049cac5,""},
 		//sub_14049CB20
-		{0x14049cc14,""},
-		{0x14049cc29,""},
-		{0x14049cc3c,""},
+		{0x14049cc14,"Dvar %s has an invalid dvar name"},
+		{0x14049cc29,"SetSavedDvar(): The dvar \"%s\" does not exist."},
+		{0x14049cc3c,"SetSavedDvar can only be called on dvars with the SAVED flag set"},
 		//sub_14049CC70
 		{0x14049cc8c,""},
 		{0x14049ccac,""},
