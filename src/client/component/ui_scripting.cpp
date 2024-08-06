@@ -30,6 +30,19 @@
 
 namespace ui_scripting
 {
+	namespace lua_calls
+	{
+		int64_t is_development_build_stub([[maybe_unused]] game::hks::lua_State* luaVM)
+		{
+#if defined(DEV_BUILD) || defined(DEBUG)
+			ui_scripting::push_value(true);
+#else
+			ui_scripting::push_value(false);
+#endif
+			return 1;
+		}
+	}
+
 	namespace
 	{
 		std::unordered_map<game::hks::cclosure*, std::function<arguments(const function_arguments& args)>> converted_functions;
@@ -311,10 +324,14 @@ namespace ui_scripting
 			}
 		}
 
-		void* hks_start_stub(char a1, char a2)
+		int hks_start_stub()
 		{
-			const auto _0 = gsl::finally(&try_start);
-			return hks_start_hook.invoke<void*>(a1, a2);
+			auto result = hks_start_hook.invoke<int>();
+			if (result)
+			{
+				try_start();
+			}
+			return result;
 		}
 
 		void hks_shutdown_stub()
@@ -458,8 +475,11 @@ namespace ui_scripting
 			hks_load_hook.create(0x1411E0B00, hks_load_stub);
 
 			hks_package_require_hook.create(0x1411C7F00, hks_package_require_stub);
-			hks_start_hook.create(0x140615090, hks_start_stub);
+			hks_start_hook.create(0x1406023A0, hks_start_stub);
 			hks_shutdown_hook.create(0x1406124B0, hks_shutdown_stub);
+
+			// replace LUA engine calls
+			utils::hook::set(0x1414B4D98, lua_calls::is_development_build_stub); // IsDevelopmentBuild
 		}
 	};
 }
