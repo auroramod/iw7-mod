@@ -948,7 +948,7 @@ namespace party
 
 				server_connection_state.base_url = info.get("sv_wwwBaseUrl");
 
-				if (download_files(target, info, false))
+				if (download_files(target, info, true))
 				{
 					return;
 				}
