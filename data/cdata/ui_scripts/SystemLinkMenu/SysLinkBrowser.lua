@@ -1,5 +1,4 @@
 local serverBrowserPath = "frontEnd.systemLinkMenu.serverBrowser"
-local serverBrowserOffsets = {10, 240, 360, 450}
 
 local leaveMenuHandler = function(menu, controller)
     -- Engine.StopGameMode()

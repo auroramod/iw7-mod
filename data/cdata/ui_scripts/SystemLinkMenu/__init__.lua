@@ -4,3 +4,5 @@ end
 
 require("ServerButtons")
 require("SysLinkBrowser")
+require("SystemLinkJoinMenuRow")
+require("SystemLinkJoinMenuTitleRow")
