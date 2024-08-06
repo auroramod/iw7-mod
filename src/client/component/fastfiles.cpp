@@ -178,21 +178,6 @@ namespace fastfiles
 		{
 			std::vector<game::XZoneInfo> data;
 			merge(&data, zoneInfo, zoneCount);
-
-			// mod is loaded on map start
-
-			if (fastfiles::exists("mod"))
-			{
-				data.push_back({ "mod", game::DB_ZONE_GAME | game::DB_ZONE_CUSTOM, 0 });
-			}
-
-			game::DB_LoadXAssets(data.data(), static_cast<std::uint32_t>(data.size()), syncMode);
-		}
-
-		void load_fastfiles2_stub(game::XZoneInfo* zoneInfo, unsigned int zoneCount, game::DBSyncMode syncMode)
-		{
-			std::vector<game::XZoneInfo> data;
-			merge(&data, zoneInfo, zoneCount);
 			const auto inuse_flags = game::DB_Zones_GetInUseFlags();
 
 			const auto flags_not_in_use = [&](int flags)
@@ -221,6 +206,26 @@ namespace fastfiles
 			{
 				add_zone("iw7mod_ui_mp", game::DB_ZONE_UI | game::DB_ZONE_CUSTOM, 0);
 			}
+
+			add_zone("mod", game::DB_ZONE_GLOBAL_TIER1 | game::DB_ZONE_CUSTOM, 1);
+
+			game::DB_LoadXAssets(data.data(), static_cast<std::uint32_t>(data.size()), syncMode);
+		}
+
+		void load_fastfiles2_stub(game::XZoneInfo* zoneInfo, unsigned int zoneCount, game::DBSyncMode syncMode)
+		{
+			std::vector<game::XZoneInfo> data;
+			merge(&data, zoneInfo, zoneCount);
+
+			const auto add_zone = [&](const char* name)
+			{
+				if (fastfiles::exists(name))
+				{
+					data.push_back({ name, game::DB_ZONE_PERMANENT | game::DB_ZONE_CUSTOM, 0 });
+				}
+			};
+
+			add_zone("iw7mod_code_post_gfx");
 
 			game::DB_LoadXAssets(data.data(), static_cast<std::uint32_t>(data.size()), syncMode);
 		}
@@ -326,10 +331,10 @@ namespace fastfiles
 			sys_createfile_hook.create(game::Sys_CreateFile, sys_create_file_stub);
 
 			// Add custom zones in fastfiles load
-			// (level specific) (mod)
-			utils::hook::call(0x1403B9E9F, load_fastfiles1_stub);
 			// (global,common)
-			utils::hook::call(0x1405ADB63, load_fastfiles2_stub);
+			utils::hook::call(0x1405ADB63, load_fastfiles1_stub);
+			// (code_post_gfx)
+			utils::hook::call(0x140E0624B, load_fastfiles2_stub);
 
 			command::add("loadzone", [](const command::params& params)
 			{

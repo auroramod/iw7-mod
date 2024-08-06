@@ -4,7 +4,6 @@
 #include "game/game.hpp"
 #include "game/dvars.hpp"
 
-
 #include "command.hpp"
 #include "console/console.hpp"
 #include "fastfiles.hpp"
@@ -15,6 +14,7 @@
 #include "scheduler.hpp"
 #include "scripting.hpp"
 #include "server_list.hpp"
+#include "download.hpp"
 
 #include "game/ui_scripting/execution.hpp"
 //#include "game/scripting/execution.hpp"
@@ -30,6 +30,19 @@
 
 namespace ui_scripting
 {
+	namespace lua_calls
+	{
+		int64_t is_development_build_stub([[maybe_unused]] game::hks::lua_State* luaVM)
+		{
+#if defined(DEV_BUILD) || defined(DEBUG)
+			ui_scripting::push_value(true);
+#else
+			ui_scripting::push_value(false);
+#endif
+			return 1;
+		}
+	}
+
 	namespace
 	{
 		std::unordered_map<game::hks::cclosure*, std::function<arguments(const function_arguments& args)>> converted_functions;
@@ -170,60 +183,6 @@ namespace ui_scripting
 			};
 			*/
 
-			game_type["sharedset"] = [](const game&, const std::string& key, const std::string& value)
-			{
-				scripting::shared_table.access([key, value](scripting::shared_table_t& table)
-				{
-					table[key] = value;
-				});
-			};
-
-			game_type["sharedget"] = [](const game&, const std::string& key)
-			{
-				std::string result;
-				scripting::shared_table.access([key, &result](scripting::shared_table_t& table)
-				{
-					result = table[key];
-				});
-				return result;
-			};
-
-			game_type["sharedclear"] = [](const game&)
-			{
-				scripting::shared_table.access([](scripting::shared_table_t& table)
-				{
-					table.clear();
-				});
-			};
-
-			/*
-			game_type["assetlist"] = [](const game&, const std::string& type_string)
-			{
-				auto table_ = table();
-				auto index = 1;
-				auto type_index = -1;
-				for (auto i = 0; i < ::game::XAssetType::ASSET_TYPE_COUNT; i++)
-				{
-					if (type_string == ::game::g_assetNames[i])
-					{
-						type_index = i;
-					}
-				}
-				if (type_index == -1)
-				{
-					throw std::runtime_error("Asset type does not exist");
-				}
-				const auto type = static_cast<::game::XAssetType>(type_index);
-				fastfiles::enum_assets(type, [type, &table_, &index](const ::game::XAssetHeader header)
-				{
-					const auto asset = ::game::XAsset{type, header};
-					const std::string asset_name = ::game::DB_GetXAssetName(&asset);
-					table_[index++] = asset_name;
-				}, true);
-				return table_;
-			};
-			*/
-
 			game_type["getcurrentgamelanguage"] = [](const game&)
 			{
 				return steam::SteamApps()->GetCurrentGameLanguage();
@@ -235,11 +194,35 @@ namespace ui_scripting
 					material.data()));
 			};
 
+			auto scheduler = table();
+			lua["scheduler"] = scheduler;
+
+			scheduler["once"] = [](const function_argument& args)
+			{
+				scheduler::once([args]()
+				{
+					auto func = args.as<function>();
+					func();
+				}, scheduler::lui);
+			};
+
 			auto server_list_table = table();
 			lua["serverlist"] = server_list_table;
 
 			server_list_table["getplayercount"] = server_list::get_player_count;
 			server_list_table["getservercount"] = server_list::get_server_count;
+
+			auto download_table = table();
+			lua["download"] = download_table;
+
+			download_table["abort"] = download::stop_download;
+
+			//download_table["userdownloadresponse"] = party::user_download_response;
+			//download_table["getwwwurl"] = []
+			//{
+			//	const auto state = party::get_server_connection_state();
+			//	return state.base_url;
+			//};
 		}
 
 		void enable_globals()
@@ -311,10 +294,14 @@ namespace ui_scripting
 			}
 		}
 
-		void* hks_start_stub(char a1, char a2)
+		int hks_start_stub()
 		{
-			const auto _0 = gsl::finally(&try_start);
-			return hks_start_hook.invoke<void*>(a1, a2);
+			auto result = hks_start_hook.invoke<int>();
+			if (result)
+			{
+				try_start();
+			}
+			return result;
 		}
 
 		void hks_shutdown_stub()
@@ -458,8 +445,11 @@ namespace ui_scripting
 			hks_load_hook.create(0x1411E0B00, hks_load_stub);
 
 			hks_package_require_hook.create(0x1411C7F00, hks_package_require_stub);
-			hks_start_hook.create(0x140615090, hks_start_stub);
+			hks_start_hook.create(0x1406023A0, hks_start_stub);
 			hks_shutdown_hook.create(0x1406124B0, hks_shutdown_stub);
+
+			// replace LUA engine calls
+			utils::hook::set(0x1414B4D98, lua_calls::is_development_build_stub); // IsDevelopmentBuild
 		}
 	};
 }

@@ -1,2 +1,5 @@
-require("MPMainMenu")
+require("CampaignMenuButtons")
 require("CPMainMenu")
+require("CPMainMenuButtons")
+require("MissionsVerticalLayout")
+require("MPMainMenuButtons")

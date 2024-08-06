@@ -133,7 +133,14 @@ namespace demonware
 
 	std::string bdStorage::get_user_file_path(const std::string& name)
 	{
-		return "iw7-mod/players2/user/" + name;
+		const auto regular_path = "iw7-mod/players2/user/"s;
+		static const auto fs_game = game::Dvar_FindVar("fs_game");
+		if (fs_game && fs_game->current.string && *fs_game->current.string)
+		{
+			return regular_path + fs_game->current.string + "/" + name;
+		}
+
+		return regular_path + name;
 	}
 
 	void bdStorage::uploadAndValidateFiles(service_server* server, byte_buffer* buffer) const
