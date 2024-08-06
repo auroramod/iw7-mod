@@ -50,23 +50,8 @@ namespace server_list
 		std::mutex mutex;
 		std::vector<server_info> servers;
 
-		size_t server_list_page = 0;
-		volatile bool update_server_list = false;
-		std::chrono::high_resolution_clock::time_point last_scroll{};
-
 		game::dvar_t* master_server_ip;
 		game::dvar_t* master_server_port;
-
-		size_t get_page_count()
-		{
-			const auto count = servers.size() / server_limit;
-			return count + (servers.size() % server_limit > 0);
-		}
-
-		size_t get_page_base_index()
-		{
-			return server_list_page * server_limit;
-		}
 
 		void refresh_server_list()
 		{
@@ -74,7 +59,6 @@ namespace server_list
 				std::lock_guard<std::mutex> _(mutex);
 				servers.clear();
 				master_state.queued_servers.clear();
-				server_list_page = 0;
 			}
 
 			party::reset_server_connection_state();
@@ -90,7 +74,7 @@ namespace server_list
 		{
 			std::lock_guard<std::mutex> _(mutex);
 
-			const auto i = static_cast<size_t>(index) + get_page_base_index();
+			const auto i = static_cast<size_t>(index);
 			if (i < servers.size())
 			{
 				static auto last_index = ~0ull;
@@ -105,17 +89,11 @@ namespace server_list
 			}
 		}
 
-		void trigger_refresh()
-		{
-			update_server_list = true;
-		}
-
-
 		const char* ui_feeder_item_text(int arg0, int arg1, const int index, const int column, char* name)
 		{
 			std::lock_guard<std::mutex> _(mutex);
 
-			const auto i = get_page_base_index() + index;
+			const auto i = index;
 			if (i >= servers.size())
 			{
 				return "";
@@ -134,7 +112,7 @@ namespace server_list
 				}
 
 				auto map_display_name = game::UI_GetMapDisplayName(map_name.data());
-				if (!fastfiles::exists(map_name)) // TODO: add "false" 2nd parameter if usermaps come
+				if (!fastfiles::exists(map_name))
 				{
 					map_display_name = utils::string::va("^1%s", map_display_name);
 				}
@@ -196,7 +174,6 @@ namespace server_list
 			std::lock_guard<std::mutex> _(mutex);
 			servers.emplace_back(std::move(server));
 			sort_serverlist();
-			trigger_refresh();
 		}
 
 		void do_frame_work()
@@ -238,45 +215,6 @@ namespace server_list
 			return game::Menu_IsMenuOpenAndVisible(0, "SystemLinkMenu");
 		}
 
-		bool is_scrolling_disabled()
-		{
-			return update_server_list || (std::chrono::high_resolution_clock::now() - last_scroll) < 500ms;
-		}
-
-		bool scroll_down()
-		{
-			if (!is_server_list_open())
-			{
-				return false;
-			}
-
-			if (!is_scrolling_disabled() && server_list_page + 1 < get_page_count())
-			{
-				last_scroll = std::chrono::high_resolution_clock::now();
-				++server_list_page;
-				trigger_refresh();
-			}
-
-			return true;
-		}
-
-		bool scroll_up()
-		{
-			if (!is_server_list_open())
-			{
-				return false;
-			}
-
-			if (!is_scrolling_disabled() && server_list_page > 0)
-			{
-				last_scroll = std::chrono::high_resolution_clock::now();
-				--server_list_page;
-				trigger_refresh();
-			}
-
-			return true;
-		}
-
 		utils::hook::detour lui_open_menu_hook;
 
 		void lui_open_menu_stub(int controllerIndex, const char* menuName, int isPopup, int isModal, unsigned int isExclusive)
@@ -288,33 +226,6 @@ namespace server_list
 
 			lui_open_menu_hook.invoke<void>(controllerIndex, menuName, isPopup, isModal, isExclusive);
 		}
-
-		void check_refresh()
-		{
-			if (update_server_list)
-			{
-				update_server_list = false;
-				ui_scripting::notify("updateGameList", {});
-			}
-		}
-	}
-
-	bool sl_key_event(const int key, const int down)
-	{
-		if (down)
-		{
-			if (key == game::keyNum_t::K_MWHEELUP)
-			{
-				return !scroll_up();
-			}
-
-			if (key == game::keyNum_t::K_MWHEELDOWN)
-			{
-				return !scroll_down();
-			}
-		}
-
-		return true;
 	}
 
 	bool get_master_server(game::netadr_s& address)
@@ -377,7 +288,7 @@ namespace server_list
 		server_info server{};
 		server.address = address;
 		server.host_name = info.get("hostname");
-		server.map_name = info.get("mapname"); // UI_GetMapDisplayName?
+		server.map_name = info.get("mapname");
 		server.game_type = game::UI_GetGameTypeDisplayName(info.get("gametype").data());
 		server.mod_name = info.get("fs_game");
 		server.play_mode = playmode;
@@ -468,7 +379,6 @@ namespace server_list
 			utils::hook::jump(0x140CC5F00, ui_feeder_item_text);
 
 			scheduler::loop(do_frame_work, scheduler::pipeline::main);
-			scheduler::loop(check_refresh, scheduler::pipeline::lui, 10ms);
 
 			network::on("getServersResponse", [](const game::netadr_s& target, const std::string_view& data)
 			{
