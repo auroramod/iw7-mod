@@ -88,7 +88,7 @@ namespace download
 				}, scheduler::pipeline::lui);
 			}
 
-			//console::debug("Download progress: %lli/%lli\n", progress, total);
+			console::debug("Download progress: %lli/%lli\n", progress, total);
 			if (download_aborted())
 			{
 				return -1;
@@ -99,10 +99,7 @@ namespace download
 
 		void menu_error(const std::string& error)
 		{
-			scheduler::once([=]
-			{
-				game::shared::menu_error(error);
-			}, scheduler::pipeline::lui);
+			throw std::runtime_error(error);
 		}
 	}
 

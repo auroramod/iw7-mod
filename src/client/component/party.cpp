@@ -280,6 +280,7 @@ namespace party
 			}
 			catch (const std::exception& e)
 			{
+				command::execute("luiLeaveMenu AcceptingInvite", true);
 				game::shared::menu_error(e.what());
 				return true;
 			}
@@ -398,6 +399,13 @@ namespace party
 			bool map_is_preloaded, bool migrate)
 		{
 			profile_infos::xuid::clear_xuids();
+
+			hash_cache.clear();
+
+			if (game::environment::is_dedi())
+			{
+				generate_hashes(map);
+			}
 
 			preloaded_map = map_is_preloaded;
 			sv_start_map_for_party_hook.invoke<void>(map, game_type, client_count, agent_count, hardcore, map_is_preloaded, migrate);
@@ -851,7 +859,7 @@ namespace party
 				info.set("sv_discordImageUrl", get_dvar_string("sv_discordImageUrl"));
 				info.set("sv_discordImageText", get_dvar_string("sv_discordImageText"));
 
-				/*const auto fs_game = get_dvar_string("fs_game");
+				const auto fs_game = get_dvar_string("fs_game");
 				info.set("fs_game", fs_game);
 
 				if (!fs_game.empty())
@@ -862,7 +870,7 @@ namespace party
 							fs_game.data(), file.extension.data()));
 						info.set(file.name, hash);
 					}
-				}*/
+				}
 
 				network::send(target, "infoResponse", info.build(), '\n');
 			});
