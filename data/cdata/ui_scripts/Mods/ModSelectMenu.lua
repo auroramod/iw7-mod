@@ -1,317 +1,316 @@
-local f0_local0 = "frontEnd.ModSelect"
-f0_local1 = function ()
-	WipeGlobalModelsAtPath( f0_local0 )
+local modSelectPath = "frontEnd.ModSelect"
+
+modSelectPathCleanup = function()
+    WipeGlobalModelsAtPath(modSelectPath)
 end
 
-local function getmodname(path)
-    local name = path
-    local desc = Engine.Localize("LUA_MENU_MOD_DESC_DEFAULT", name)
+local function getModName(path)
+    local modName = path
+    local modDesc = Engine.Localize("LUA_MENU_MOD_DESC_DEFAULT", modName)
 
-    return name, desc
+    return modName, modDesc
 end
 
-local function set_mod( modname )
-	Engine.SetDvarString( "fs_game", modname )
-	Engine.Exec( "vid_restart" )
+local function setMod(modName)
+    Engine.SetDvarString("fs_game", modName)
+    Engine.Exec("vid_restart")
 end
 
-local unload_mod = function( arg0, arg1 )
-	set_mod( "" )
+local unloadMod = function(buttonElement, controllerIndex)
+    setMod("")
 end
 
-local f0_local4 = function ( f4_arg0, f4_arg1 )
-	LUI.FlowManager.RequestLeaveMenu( f4_arg0 )
+local leaveMenu = function(menuElement, controllerIndex)
+    LUI.FlowManager.RequestLeaveMenu(menuElement)
 end
 
-local f0_local8 = function ( f8_arg0, f8_arg1 )
-	local f8_local0 = LUI.FlowManager.GetScopedData( f8_arg0 )
-	if not f8_local0.currentLabel then
-		f8_local0.currentLabel = ""
-	end
-	if not f8_local0.currentDesc then
-		f8_local0.currentDesc = ""
-	end
-	f8_arg0:processEvent( {
-		name = "menu_refresh"
-	} )
-	local f8_local2 = f8_arg0:GetCurrentMenu()
-	assert( f8_local2.ModInfoTitle )
-	f8_local2.ModInfoTitle:setText( f8_local0.currentLabel )
-    assert( f8_local2.ModInfoText )
-	f8_local2.ModInfoText:setText( f8_local0.currentDesc )
+local updateModInfo = function(menuElement, controllerIndex)
+    local scopedData = LUI.FlowManager.GetScopedData(menuElement)
+    if not scopedData.currentLabel then
+        scopedData.currentLabel = ""
+    end
+    if not scopedData.currentDesc then
+        scopedData.currentDesc = ""
+    end
+    menuElement:processEvent({
+        name = "menu_refresh"
+    })
+    local currentMenu = menuElement:GetCurrentMenu()
+    assert(currentMenu.ModInfoTitle)
+    currentMenu.ModInfoTitle:setText(scopedData.currentLabel)
+    assert(currentMenu.ModInfoText)
+    currentMenu.ModInfoText:setText(scopedData.currentDesc)
 end
 
-local f0_local9 = function ( f9_arg0, f9_arg1, f9_arg2 )
-	set_mod( f9_arg2 )
+local applyMod = function(buttonElement, controllerIndex, modName)
+    setMod(modName)
 end
 
-local f0_local10 = function ( f11_arg0, f11_arg1, f11_arg2 )
-	local f11_local0 = LUI.FlowManager.GetScopedData( f11_arg0 )
-    f11_local0.currentLabel = f11_arg2.buttonLabel
-	f11_local0.currentName = f11_arg2.modName
-    f11_local0.currentDesc = f11_arg2.objectiveText
-    f0_local8( f11_arg0, f11_arg1 )
-	Engine.PlaySound( CoD.SFX.SPMinimap )
+local updateModSelection = function(menuElement, controllerIndex, modData)
+    local scopedData = LUI.FlowManager.GetScopedData(menuElement)
+    scopedData.currentLabel = modData.buttonLabel
+    scopedData.currentName = modData.modName
+    scopedData.currentDesc = modData.objectiveText
+    updateModInfo(menuElement, controllerIndex)
+    Engine.PlaySound(CoD.SFX.SPMinimap)
 end
 
-local f0_local12 = function ( f13_arg0, f13_arg1 )
-	local f13_local0 = {}
+local populateModList = function(menuElement, controllerIndex)
+    local modList = {}
     local mods = io.listfiles("mods/")
-	for i = 1, #mods do
-		local name, desc = getmodname(mods[i])
-		f13_local0[#f13_local0 + 1] = {
+    for i = 1, #mods do
+        local name, desc = getModName(mods[i])
+        modList[#modList + 1] = {
             buttonLabel = ToUpperCase(name),
             modName = name,
-            objectiveText = desc,
+            objectiveText = desc
         }
-	end
-	local f13_local1 = LUI.DataSourceFromList.new( #f13_local0 )
-	f13_local1.MakeDataSourceAtIndex = function ( f14_arg0, f14_arg1, f14_arg2 )
-		return {
-			buttonLabel = LUI.DataSourceInGlobalModel.new( f0_local0 .. ".mods." .. f14_arg1, f13_local0[f14_arg1 + 1].buttonLabel ),
-			buttonOnClickFunction = function ( f15_arg0, f15_arg1 )
-				f0_local9( f15_arg0, f15_arg1, f13_local0[f14_arg1 + 1].modName )
-			end
-			,
-			buttonOnHoverFunction = function ( f16_arg0, f16_arg1 )
-				f0_local10( f16_arg0, f16_arg1, f13_local0[f14_arg1 + 1] )
-			end
-			,
-			modName = f13_local0[f14_arg1 + 1].modName
-		}
-	end
+    end
+    local dataSource = LUI.DataSourceFromList.new(#modList)
+    dataSource.MakeDataSourceAtIndex = function(dataSource, index, controllerIndex)
+        return {
+            buttonLabel = LUI.DataSourceInGlobalModel.new(modSelectPath .. ".mods." .. index,
+                modList[index + 1].buttonLabel),
+            buttonOnClickFunction = function(buttonElement, controllerIndex)
+                applyMod(buttonElement, controllerIndex, modList[index + 1].modName)
+            end,
+            buttonOnHoverFunction = function(buttonElement, controllerIndex)
+                updateModSelection(buttonElement, controllerIndex, modList[index + 1])
+            end,
+            modName = modList[index + 1].modName
+        }
+    end
 
-	assert( f13_arg0.ModSelectionList )
-	f13_arg0.ModSelectionList:SetGridDataSource( f13_local1, f13_arg1 )
+    assert(menuElement.ModSelectionList)
+    menuElement.ModSelectionList:SetGridDataSource(dataSource, controllerIndex)
 end
 
-local function PostLoadFunc( f17_arg0, f17_arg1, f17_arg2 )
-	assert( f17_arg0.bindButton )
-	f17_arg0.bindButton:addEventHandler( "button_secondary", f0_local4 )
+local function postLoadFunction(menuElement, controllerIndex, controller)
+    assert(menuElement.bindButton)
+    menuElement.bindButton:addEventHandler("button_secondary", leaveMenu)
 
-	local fs_game = Engine.GetDvarString( "fs_game" )
-	if fs_game ~= "" then
-		f17_arg0.LoadedModName:setText( "^3Loaded mod^7: " .. fs_game )
-		f17_arg0.bindButton:addEventHandler( "button_alt2", unload_mod )
-	else
-		f17_arg0.LoadedModName:setText( "" )
-	end
+    local fsGame = Engine.GetDvarString("fs_game")
+    if fsGame ~= "" then
+        menuElement.LoadedModName:setText("^3Loaded mod^7: " .. fsGame)
+        menuElement.bindButton:addEventHandler("button_alt2", unloadMod)
+    else
+        menuElement.LoadedModName:setText("")
+    end
 
-	--f17_arg0:addEventHandler( "menu_create", f0_local3 )
-	f0_local12( f17_arg0, f17_arg1 )
-	f17_arg0:addEventHandler( "gain_focus", function ( f18_arg0, f18_arg1 )
-		local f18_local0 = f18_arg0.ModSelectionList
-		local f18_local1 = f18_local0:GetContentOffset( LUI.DIRECTION.vertical )
-		f18_local0:SetFocusedPosition( {
-			x = 0,
-			y = f18_local1
-		}, true )
-		local f18_local2 = f18_local0:GetElementAtPosition( 0, f18_local1 )
-		if f18_local2 then
-			f18_local2:processEvent( {
-				name = "gain_focus",
-				controllerIndex = f17_arg1
-			} )
-		end
-	end )
+    -- menuElement:addEventHandler("menu_create", f0_local3)
+    populateModList(menuElement, controllerIndex)
+    menuElement:addEventHandler("gain_focus", function(focusElement, controllerIndex)
+        local modSelectionList = focusElement.ModSelectionList
+        local contentOffset = modSelectionList:GetContentOffset(LUI.DIRECTION.vertical)
+        modSelectionList:SetFocusedPosition({
+            x = 0,
+            y = contentOffset
+        }, true)
+        local focusedElement = modSelectionList:GetElementAtPosition(0, contentOffset)
+        if focusedElement then
+            focusedElement:processEvent({
+                name = "gain_focus",
+                controllerIndex = controllerIndex
+            })
+        end
+    end)
 end
 
-function ModSelectMenu( menu, controller )
-    local self = LUI.UIElement.new()
-	self.id = "ModSelectMenu"
+function ModSelectMenu(menu, controller)
+    local menuElement = LUI.UIElement.new()
+    menuElement.id = "ModSelectMenu"
 
-    local f20_local1 = controller and controller.controllerIndex
-	if not f20_local1 and not Engine.InFrontend() then
-		f20_local1 = self:getRootController()
-	end
-	assert( f20_local1 )
+    local controllerIndex = controller and controller.controllerIndex
+    if not controllerIndex and not Engine.InFrontend() then
+        controllerIndex = menuElement:getRootController()
+    end
+    assert(controllerIndex)
 
-    self:playSound( "menu_open" )
+    menuElement:playSound("menu_open")
 
-	if Engine.IsSingleplayer() then
-		local Background = nil
-	
-		Background = LUI.UIImage.new()
-		Background.id = "Background"
-		Background:setImage( RegisterMaterial( "sp_frontend_bink_background" ), 0 )
-		self:addElement( Background )
-		self.Background = Background
-		
-		local Bink = nil
-		
-		Bink = LUI.UIImage.new()
-		Bink.id = "Bink"
-		Bink:setImage( RegisterMaterial( "cinematic" ), 0 )
-		self:addElement( Bink )
-		self.Bink = Bink
-	end
+    if Engine.IsSingleplayer() then
+        local backgroundImage = nil
 
-    local ButtonHelperBar = nil
-	
-	ButtonHelperBar = MenuBuilder.BuildRegisteredType( "ButtonHelperBar", {
-		controllerIndex = f61_local1
-	} )
-	ButtonHelperBar.id = "ButtonHelperBar"
-	ButtonHelperBar:SetAnchorsAndPosition( 0, 0, 1, 0, 0, 0, _1080p * -85, 0 )
-	self:addElement( ButtonHelperBar )
-	self.ButtonHelperBar = ButtonHelperBar
+        backgroundImage = LUI.UIImage.new()
+        backgroundImage.id = "Background"
+        backgroundImage:setImage(RegisterMaterial("sp_frontend_bink_background"), 0)
+        menuElement:addElement(backgroundImage)
+        menuElement.Background = backgroundImage
 
-    MenuTitle = MenuBuilder.BuildRegisteredType( "MenuTitle", {
-        controllerIndex = f61_local1
-    } )
-    MenuTitle.id = "MenuTitle"
-    MenuTitle.MenuTitle:setText( ToUpperCase( Engine.Localize( "LUA_MENU_MODS" ) ), 0 )
-	--MenuTitle.MenuTitle:setText( ToUpperCase( "Mods" ), 0 )
-    MenuTitle.MenuBreadcrumbs:setText( ToUpperCase( "" ), 0 )
-    MenuTitle.Icon:SetTop( _1080p * -28.5, 0 )
-    MenuTitle.Icon:SetBottom( _1080p * 61.5, 0 )
-    MenuTitle:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 96, _1080p * 1056, _1080p * 54, _1080p * 134 )
-    self:addElement( MenuTitle )
-    self.MenuTitle = MenuTitle
+        local binkImage = nil
 
-    local ModInfoTitle = nil
-	
-	ModInfoTitle = LUI.UIStyledText.new()
-	ModInfoTitle.id = "ModInfoTitle"
-	ModInfoTitle:setText( "", 0 )
-	ModInfoTitle:SetFontSize( 30 * _1080p )
-	ModInfoTitle:SetFont( FONTS.GetFont( FONTS.MainMedium.File ) )
-	ModInfoTitle:SetAlignment( LUI.Alignment.Left )
-	ModInfoTitle:SetStartupDelay( 2000 )
-	ModInfoTitle:SetLineHoldTime( 400 )
-	ModInfoTitle:SetAnimMoveTime( 300 )
-	ModInfoTitle:SetEndDelay( 1500 )
-	ModInfoTitle:SetCrossfadeTime( 750 )
-	ModInfoTitle:SetAutoScrollStyle( LUI.UIStyledText.AutoScrollStyle.ScrollH )
-	ModInfoTitle:SetMaxVisibleLines( 1 )
-	ModInfoTitle:SetDecodeLetterLength( 15 )
-	ModInfoTitle:SetDecodeMaxRandChars( 6 )
-	ModInfoTitle:SetDecodeUpdatesPerLetter( 4 )
-	ModInfoTitle:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 1254, _1080p * 1824, _1080p * 216, _1080p * 246 )
-	self:addElement( ModInfoTitle )
-	self.ModInfoTitle = ModInfoTitle
-	
-	local ModInfoText = nil
-	
-	ModInfoText = LUI.UIStyledText.new()
-	ModInfoText.id = "ModInfoText"
-	ModInfoText:setText( "", 0 )
-	ModInfoText:SetFontSize( 20 * _1080p )
-	ModInfoText:SetFont( FONTS.GetFont( FONTS.MainCondensed.File ) )
-	ModInfoText:SetAlignment( LUI.Alignment.Left )
-	ModInfoText:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 1254, _1080p * 1824, _1080p * 248, _1080p * 268 )
-	self:addElement( ModInfoText )
-	self.ModInfoText = ModInfoText
+        binkImage = LUI.UIImage.new()
+        binkImage.id = "Bink"
+        binkImage:setImage(RegisterMaterial("cinematic"), 0)
+        menuElement:addElement(binkImage)
+        menuElement.Bink = binkImage
+    end
 
-    local ModSelectionList = nil
-	
-	ModSelectionList = LUI.UIDataSourceGrid.new( nil, {
-		maxVisibleColumns = 1,
-		maxVisibleRows = 17,
-		controllerIndex = f20_local1,
-		buildChild = function ()
-			return MenuBuilder.BuildRegisteredType( "ModSelectButton", {
-				controllerIndex = f20_local1
-			} )
-		end,
-		wrapX = true,
-		wrapY = true,
-		spacingX = _1080p * 10,
-		spacingY = _1080p * 10,
-		columnWidth = _1080p * 500,
-		rowHeight = _1080p * 30,
-		scrollingThresholdX = 1,
-		scrollingThresholdY = 1,
-		adjustSizeToContent = false,
-		horizontalAlignment = LUI.Alignment.Left,
-		verticalAlignment = LUI.Alignment.Top,
-		springCoefficient = 600,
-		maxVelocity = 5000
-	} )
-	ModSelectionList.id = "ModSelectionList"
-	ModSelectionList:setUseStencil( false )
-	ModSelectionList:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 130, _1080p * 630, _1080p * 216, _1080p * 886 )
-	self:addElement( ModSelectionList )
-	self.ModSelectionList = ModSelectionList
+    local buttonHelperBar = nil
 
-    local ArrowUp = nil
-	
-	ArrowUp = MenuBuilder.BuildRegisteredType( "ArrowUp", {
-		controllerIndex = f20_local1
-	} )
-	ArrowUp.id = "ArrowUp"
-	ArrowUp:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 452.5, _1080p * 472.5, _1080p * 887, _1080p * 927 )
-	self:addElement( ArrowUp )
-	self.ArrowUp = ArrowUp
-	
-	local ArrowDown = nil
-	
-	ArrowDown = MenuBuilder.BuildRegisteredType( "ArrowDown", {
-		controllerIndex = f20_local1
-	} )
-	ArrowDown.id = "ArrowDown"
-	ArrowDown:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 287.5, _1080p * 307.5, _1080p * 886, _1080p * 926 )
-	self:addElement( ArrowDown )
-	self.ArrowDown = ArrowDown
-	
-	local ListCount = nil
-	
-	ListCount = LUI.UIText.new()
-	ListCount.id = "ListCount"
-	ListCount:setText( "1/15", 0 )
-	ListCount:SetFontSize( 24 * _1080p )
-	ListCount:SetFont( FONTS.GetFont( FONTS.MainMedium.File ) )
-	ListCount:SetAlignment( LUI.Alignment.Center )
-	ListCount:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 307.5, _1080p * 452.5, _1080p * 894, _1080p * 918 )
-	self:addElement( ListCount )
-	self.ListCount = ListCount
+    buttonHelperBar = MenuBuilder.BuildRegisteredType("ButtonHelperBar", {
+        controllerIndex = controllerIndex
+    })
+    buttonHelperBar.id = "ButtonHelperBar"
+    buttonHelperBar:SetAnchorsAndPosition(0, 0, 1, 0, 0, 0, _1080p * -85, 0)
+    menuElement:addElement(buttonHelperBar)
+    menuElement.ButtonHelperBar = buttonHelperBar
 
-	local LoadedModName = nil
-	
-	LoadedModName = LUI.UIText.new()
-	LoadedModName.id = "LoadedModName"
-	LoadedModName:setText( "LOADED MOD NAME", 0 )
-	LoadedModName:SetFontSize( 20 * _1080p )
-	LoadedModName:SetFont( FONTS.GetFont( FONTS.MainBold.File ) )
-	LoadedModName:SetAlignment( LUI.Alignment.Left )
-	LoadedModName:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 130, _1080p * 630, _1080p * 942, _1080p * 966 )
-	self:addElement( LoadedModName )
-	self.LoadedModName = LoadedModName
+    local menuTitle = MenuBuilder.BuildRegisteredType("MenuTitle", {
+        controllerIndex = controllerIndex
+    })
+    menuTitle.id = "MenuTitle"
+    menuTitle.MenuTitle:setText(ToUpperCase(Engine.Localize("LUA_MENU_MODS")), 0)
+    menuTitle.MenuBreadcrumbs:setText(ToUpperCase(""), 0)
+    menuTitle.Icon:SetTop(_1080p * -28.5, 0)
+    menuTitle.Icon:SetBottom(_1080p * 61.5, 0)
+    menuTitle:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 96, _1080p * 1056, _1080p * 54, _1080p * 134)
+    menuElement:addElement(menuTitle)
+    menuElement.MenuTitle = menuTitle
 
-    ModSelectionList:AddArrow( ArrowUp )
-	ModSelectionList:AddArrow( ArrowDown )
-	ModSelectionList:AddItemNumbers( ListCount )
+    local modInfoTitle = nil
 
-    self.addButtonHelperFunction = function ( arg0, arg1 )
-		arg0:AddButtonHelperText( {
-			helper_text = Engine.Localize( "MENU_BACK" ),
-			button_ref = "button_secondary",
-			side = "left",
-			clickable = true
-		} )
-		local fs_game = Engine.GetDvarString( "fs_game" )
-		if fs_game ~= "" then
-			arg0:AddButtonHelperText( {
-				helper_text = Engine.Localize( "LUA_MENU_UNLOAD" ),
-				button_ref = "button_alt2",
-				side = "left",
-				clickable = true
-			} )
-		end
-	end
-	
-	self:addEventHandler( "menu_create", self.addButtonHelperFunction )
+    modInfoTitle = LUI.UIStyledText.new()
+    modInfoTitle.id = "ModInfoTitle"
+    modInfoTitle:setText("", 0)
+    modInfoTitle:SetFontSize(30 * _1080p)
+    modInfoTitle:SetFont(FONTS.GetFont(FONTS.MainMedium.File))
+    modInfoTitle:SetAlignment(LUI.Alignment.Left)
+    modInfoTitle:SetStartupDelay(2000)
+    modInfoTitle:SetLineHoldTime(400)
+    modInfoTitle:SetAnimMoveTime(300)
+    modInfoTitle:SetEndDelay(1500)
+    modInfoTitle:SetCrossfadeTime(750)
+    modInfoTitle:SetAutoScrollStyle(LUI.UIStyledText.AutoScrollStyle.ScrollH)
+    modInfoTitle:SetMaxVisibleLines(1)
+    modInfoTitle:SetDecodeLetterLength(15)
+    modInfoTitle:SetDecodeMaxRandChars(6)
+    modInfoTitle:SetDecodeUpdatesPerLetter(4)
+    modInfoTitle:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 1254, _1080p * 1824, _1080p * 216, _1080p * 246)
+    menuElement:addElement(modInfoTitle)
+    menuElement.ModInfoTitle = modInfoTitle
+
+    local modInfoText = nil
+
+    modInfoText = LUI.UIStyledText.new()
+    modInfoText.id = "ModInfoText"
+    modInfoText:setText("", 0)
+    modInfoText:SetFontSize(20 * _1080p)
+    modInfoText:SetFont(FONTS.GetFont(FONTS.MainCondensed.File))
+    modInfoText:SetAlignment(LUI.Alignment.Left)
+    modInfoText:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 1254, _1080p * 1824, _1080p * 248, _1080p * 268)
+    menuElement:addElement(modInfoText)
+    menuElement.ModInfoText = modInfoText
+
+    local modSelectionList = nil
+
+    modSelectionList = LUI.UIDataSourceGrid.new(nil, {
+        maxVisibleColumns = 1,
+        maxVisibleRows = 17,
+        controllerIndex = controllerIndex,
+        buildChild = function()
+            return MenuBuilder.BuildRegisteredType("ModSelectButton", {
+                controllerIndex = controllerIndex
+            })
+        end,
+        wrapX = true,
+        wrapY = true,
+        spacingX = _1080p * 10,
+        spacingY = _1080p * 10,
+        columnWidth = _1080p * 500,
+        rowHeight = _1080p * 30,
+        scrollingThresholdX = 1,
+        scrollingThresholdY = 1,
+        adjustSizeToContent = false,
+        horizontalAlignment = LUI.Alignment.Left,
+        verticalAlignment = LUI.Alignment.Top,
+        springCoefficient = 600,
+        maxVelocity = 5000
+    })
+    modSelectionList.id = "ModSelectionList"
+    modSelectionList:setUseStencil(false)
+    modSelectionList:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 130, _1080p * 630, _1080p * 216, _1080p * 886)
+    menuElement:addElement(modSelectionList)
+    menuElement.ModSelectionList = modSelectionList
+
+    local arrowUp = nil
+
+    arrowUp = MenuBuilder.BuildRegisteredType("ArrowUp", {
+        controllerIndex = controllerIndex
+    })
+    arrowUp.id = "ArrowUp"
+    arrowUp:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 452.5, _1080p * 472.5, _1080p * 887, _1080p * 927)
+    menuElement:addElement(arrowUp)
+    menuElement.ArrowUp = arrowUp
+
+    local arrowDown = nil
+
+    arrowDown = MenuBuilder.BuildRegisteredType("ArrowDown", {
+        controllerIndex = controllerIndex
+    })
+    arrowDown.id = "ArrowDown"
+    arrowDown:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 287.5, _1080p * 307.5, _1080p * 886, _1080p * 926)
+    menuElement:addElement(arrowDown)
+    menuElement.ArrowDown = arrowDown
+
+    local listCount = nil
+
+    listCount = LUI.UIText.new()
+    listCount.id = "ListCount"
+    listCount:setText("1/15", 0)
+    listCount:SetFontSize(24 * _1080p)
+    listCount:SetFont(FONTS.GetFont(FONTS.MainMedium.File))
+    listCount:SetAlignment(LUI.Alignment.Center)
+    listCount:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 307.5, _1080p * 452.5, _1080p * 894, _1080p * 918)
+    menuElement:addElement(listCount)
+    menuElement.ListCount = listCount
+
+    local loadedModName = nil
+
+    loadedModName = LUI.UIText.new()
+    loadedModName.id = "LoadedModName"
+    loadedModName:setText("LOADED MOD NAME", 0)
+    loadedModName:SetFontSize(20 * _1080p)
+    loadedModName:SetFont(FONTS.GetFont(FONTS.MainBold.File))
+    loadedModName:SetAlignment(LUI.Alignment.Left)
+    loadedModName:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 130, _1080p * 630, _1080p * 942, _1080p * 966)
+    menuElement:addElement(loadedModName)
+    menuElement.LoadedModName = loadedModName
+
+    modSelectionList:AddArrow(arrowUp)
+    modSelectionList:AddArrow(arrowDown)
+    modSelectionList:AddItemNumbers(listCount)
+
+    menuElement.addButtonHelperFunction = function(arg0, arg1)
+        arg0:AddButtonHelperText({
+            helper_text = Engine.Localize("MENU_BACK"),
+            button_ref = "button_secondary",
+            side = "left",
+            clickable = true
+        })
+        local fsGame = Engine.GetDvarString("fs_game")
+        if fsGame ~= "" then
+            arg0:AddButtonHelperText({
+                helper_text = Engine.Localize("LUA_MENU_UNLOAD"),
+                button_ref = "button_alt2",
+                side = "left",
+                clickable = true
+            })
+        end
+    end
+
+    menuElement:addEventHandler("menu_create", menuElement.addButtonHelperFunction)
 
     local bindButton = LUI.UIBindButton.new()
-	bindButton.id = "selfBindButton"
-	self:addElement( bindButton )
-	self.bindButton = bindButton
+    bindButton.id = "selfBindButton"
+    menuElement:addElement(bindButton)
+    menuElement.bindButton = bindButton
 
-    PostLoadFunc( self, f20_local1, controller )
+    postLoadFunction(menuElement, controllerIndex, controller)
 
-    return self
+    return menuElement
 end
 
-MenuBuilder.registerType( "ModSelectMenu", ModSelectMenu )
-LUI.FlowManager.RegisterStackPushBehaviour( "ModSelectMenu", PushFunc )
-LUI.FlowManager.RegisterStackPopBehaviour( "ModSelectMenu", f0_local1 )
+MenuBuilder.registerType("ModSelectMenu", ModSelectMenu)
+LUI.FlowManager.RegisterStackPushBehaviour("ModSelectMenu", PushFunc)
+LUI.FlowManager.RegisterStackPopBehaviour("ModSelectMenu", modSelectPathCleanup)

@@ -1,15 +1,15 @@
-function ModDownloadCancel( arg0, arg1 )
-	download.abort()
-	LUI.FlowManager.RequestLeaveMenu( arg0 )
+function ModDownloadCancel(arg0, arg1)
+    download.abort()
+    LUI.FlowManager.RequestLeaveMenu(arg0)
 end
 
-function ModDownloadPopup( arg0, arg1 )
-	local popup = MenuBuilder.BuildRegisteredType( "FenceDialogPopup", {
-		message = "Downloading files...",
-		controllerIndex = arg1.controllerIndex,
-		onCancel = ModDownloadCancel
-	} )
-	popup.id = "ModDownloadPopup"
+function ModDownloadPopup(arg0, arg1)
+    local popup = MenuBuilder.BuildRegisteredType("FenceDialogPopup", {
+        message = "Downloading files...",
+        controllerIndex = arg1.controllerIndex,
+        onCancel = ModDownloadCancel
+    })
+    popup.id = "ModDownloadPopup"
 
     local file = ""
 
@@ -26,14 +26,14 @@ function ModDownloadPopup( arg0, arg1 )
         LUI.FlowManager.RequestLeaveMenu(popup)
     end)
 
-	return popup
+    return popup
 end
 
-MenuBuilder.registerType( "ModDownloadPopup", ModDownloadPopup )
+MenuBuilder.registerType("ModDownloadPopup", ModDownloadPopup)
 
 local function reg_func()
     Engine.GetLuiRoot():registerEventHandler("mod_download_start", function(element, event)
-        LUI.FlowManager.RequestPopupMenu( element, "ModDownloadPopup", true, event.controller, false )
+        LUI.FlowManager.RequestPopupMenu(element, "ModDownloadPopup", true, event.controller, false)
     end)
 end
 

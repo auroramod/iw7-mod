@@ -1,5 +1,5 @@
-require( "ModSelectButton" )
-require( "ModSelectMenu" )
+require("ModSelectButton")
+require("ModSelectMenu")
 
 if (Engine.InFrontend()) then
     require("ModDownload")
