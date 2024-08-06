@@ -251,7 +251,7 @@ MenuBuilder.m_types["SystemLinkMenu"] = function(menu, controller)
 
     local LobbyMembers = nil
     if CONDITIONS.IsThirdGameMode(self) then
-        f22_local9 = MenuBuilder.BuildRegisteredType("LobbyMembers", {
+        LobbyMembers = MenuBuilder.BuildRegisteredType("LobbyMembers", {
             controllerIndex = controllerIndex
         })
         LobbyMembers.id = "LobbyMembers"
@@ -383,7 +383,7 @@ MenuBuilder.m_types["SystemLinkMenu"] = function(menu, controller)
         end
 
         if CONDITIONS.IsThirdGameMode(self) then
-            CPMenuOuterMask:RegisterAnimationSequence("Intro", {{function()
+            OuterMaskTop:RegisterAnimationSequence("Intro", {{function()
                 return self.OuterMaskTop:SetAlpha(0, 0)
             end, function()
                 return self.OuterMaskTop:SetAlpha(0.6, 500, LUI.EASING.outBack)
@@ -408,7 +408,7 @@ MenuBuilder.m_types["SystemLinkMenu"] = function(menu, controller)
             end}})
         end
         if CONDITIONS.IsThirdGameMode(self) then
-            f22_local4:RegisterAnimationSequence("Intro", {{function()
+            OuterMaskBottom:RegisterAnimationSequence("Intro", {{function()
                 return self.OuterMaskBottom:SetAlpha(0, 0)
             end, function()
                 return self.OuterMaskBottom:SetAlpha(0.6, 500, LUI.EASING.outBack)
@@ -443,7 +443,7 @@ MenuBuilder.m_types["SystemLinkMenu"] = function(menu, controller)
                 _1080p * 406, _1080p * 628, 0)
         end}})
         if CONDITIONS.IsThirdGameMode(self) then
-            f22_local9:RegisterAnimationSequence("Intro", {{function()
+            LobbyMembers:RegisterAnimationSequence("Intro", {{function()
                 return self.LobbyMembers:SetAlpha(0, 0)
             end, function()
                 return self.LobbyMembers:SetAlpha(0, 2000)
@@ -456,7 +456,7 @@ MenuBuilder.m_types["SystemLinkMenu"] = function(menu, controller)
                 _1080p * 802, 0)
         end}})
         if CONDITIONS.IsThirdGameMode(self) then
-            controllerIndex1:RegisterAnimationSequence("Intro", {{function()
+            BloodSplat:RegisterAnimationSequence("Intro", {{function()
                 return self.BloodSplat:SetAlpha(0, 0)
             end, function()
                 return self.BloodSplat:SetAlpha(0, 1000)
@@ -488,7 +488,7 @@ MenuBuilder.m_types["SystemLinkMenu"] = function(menu, controller)
             end}})
         end
         if CONDITIONS.IsThirdGameMode(self) then
-            controllerIndex2:RegisterAnimationSequence("Intro", {{function()
+            ZombiesLogo:RegisterAnimationSequence("Intro", {{function()
                 return self.ZombiesLogo:SetAlpha(0, 0)
             end, function()
                 return self.ZombiesLogo:SetAlpha(0, 1000)
@@ -551,7 +551,7 @@ MenuBuilder.m_types["SystemLinkMenu"] = function(menu, controller)
             end}})
         end
         if CONDITIONS.IsThirdGameMode(self) then
-            controllerIndex3:RegisterAnimationSequence("Intro", {{function()
+            ZomLanPartyShadow:RegisterAnimationSequence("Intro", {{function()
                 return self.ZomLanPartyShadow:SetAlpha(0, 0)
             end, function()
                 return self.ZomLanPartyShadow:SetAlpha(0, 1710)
@@ -560,7 +560,7 @@ MenuBuilder.m_types["SystemLinkMenu"] = function(menu, controller)
             end}})
         end
         if CONDITIONS.IsThirdGameMode(self) then
-            controllerIndex4:RegisterAnimationSequence("Intro", {{function()
+            ZomLanParty:RegisterAnimationSequence("Intro", {{function()
                 return self.ZomLanParty:SetAlpha(0, 0)
             end, function()
                 return self.ZomLanParty:SetAlpha(0, 1220)
@@ -593,27 +593,27 @@ MenuBuilder.m_types["SystemLinkMenu"] = function(menu, controller)
         end}})
         self._sequences.Intro = function()
             if CONDITIONS.IsThirdGameMode(self) then
-                CPMenuOuterMask:AnimateSequence("Intro")
+                OuterMaskTop:AnimateSequence("Intro")
             end
             if CONDITIONS.IsThirdGameMode(self) then
-                f22_local4:AnimateSequence("Intro")
+                OuterMaskBottom:AnimateSequence("Intro")
             end
             SystemLinkMenuButtons:AnimateSequence("Intro")
             if CONDITIONS.IsThirdGameMode(self) then
-                f22_local9:AnimateSequence("Intro")
+                LobbyMembers:AnimateSequence("Intro")
             end
             ServerBrowser:AnimateSequence("Intro")
             if CONDITIONS.IsThirdGameMode(self) then
-                controllerIndex1:AnimateSequence("Intro")
+                BloodSplat:AnimateSequence("Intro")
             end
             if CONDITIONS.IsThirdGameMode(self) then
-                controllerIndex2:AnimateSequence("Intro")
+                ZombiesLogo:AnimateSequence("Intro")
             end
             if CONDITIONS.IsThirdGameMode(self) then
-                controllerIndex3:AnimateSequence("Intro")
+                ZomLanPartyShadow:AnimateSequence("Intro")
             end
             if CONDITIONS.IsThirdGameMode(self) then
-                controllerIndex4:AnimateSequence("Intro")
+                ZomLanParty:AnimateSequence("Intro")
             end
             MPLobbyMembersPlayercards:AnimateSequence("Intro")
             ButtonDescriptionText:AnimateSequence("Intro")
@@ -689,7 +689,7 @@ end
 
 local PopFunc = function()
     clearMatchData()
-    WipeGlobalModelsAtPath(f0_local0)
+    WipeGlobalModelsAtPath(serverBrowserPath)
 end
 
 LUI.FlowManager.RegisterStackPushBehaviour("SystemLinkMenu", PushFunc)

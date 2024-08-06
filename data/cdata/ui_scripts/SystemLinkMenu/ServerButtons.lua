@@ -11,21 +11,21 @@ function SystemLinkMenuButtons(menu, controller)
     
     SystemLinkMenuButtons:SetSpacing(10 * _1080p)
 
-    local casButton = nil
+    local CASButton = nil
     if CONDITIONS.IsCoreMultiplayer(SystemLinkMenuButtons) then
-        casButton = MenuBuilder.BuildRegisteredType("MenuButton", {
+        CASButton = MenuBuilder.BuildRegisteredType("MenuButton", {
             controllerIndex = controllerIndex
         })
-        casButton.id = "CASButton"
+        CASButton.id = "CASButton"
         
         if CONDITIONS.IsCoreMultiplayer(SystemLinkMenuButtons) then
-            casButton.buttonDescription = Engine.Localize("LUA_MENU_DESC_CREATE_A_CLASS")
+            CASButton.buttonDescription = Engine.Localize("LUA_MENU_DESC_CREATE_A_CLASS")
         end
         
-        casButton.Text:setText(ToUpperCase(Engine.Localize("LUA_MENU_CREATE_A_CLASS")), 0)
-        casButton:SetAnchorsAndPosition(0, 1, 0, 1, 0, _1080p * 500, _1080p * 80, _1080p * 110)
-        SystemLinkMenuButtons:addElement(casButton)
-        SystemLinkMenuButtons.CASButton = casButton
+        CASButton.Text:setText(ToUpperCase(Engine.Localize("LUA_MENU_CREATE_A_CLASS")), 0)
+        CASButton:SetAnchorsAndPosition(0, 1, 0, 1, 0, _1080p * 500, _1080p * 80, _1080p * 110)
+        SystemLinkMenuButtons:addElement(CASButton)
+        SystemLinkMenuButtons.CASButton = CASButton
     end
     
     local LoadoutButton = nil
@@ -46,7 +46,7 @@ function SystemLinkMenuButtons(menu, controller)
     end
 
     if CONDITIONS.IsCoreMultiplayer(SystemLinkMenuButtons) then
-        casButton:addEventHandler("button_action", function(button, event)
+        CASButton:addEventHandler("button_action", function(button, event)
             local currentControllerIndex = event.controller or controllerIndex
             ClientWeapon.SetWeaponVisible(0, true)
             ClientCharacter.SetCharacterVisible(0, true)
@@ -55,7 +55,7 @@ function SystemLinkMenuButtons(menu, controller)
     end
     
     if CONDITIONS.IsThirdGameMode(SystemLinkMenuButtons) then
-        loadoutButton:addEventHandler("button_action", function(button, event)
+        LoadoutButton:addEventHandler("button_action", function(button, event)
             ACTIONS.OpenMenu("CPLoadoutMenu", true, event.controller or controllerIndex)
         end)
     end
