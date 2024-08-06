@@ -2,7 +2,8 @@ if not Engine.InFrontend() then
     return
 end
 
-require("ServerButtons")
-require("SysLinkBrowser")
+require("ServerBrowser")
+require("SystemLinkMenuButtons")
+require("SystemLinkMenu")
 require("SystemLinkJoinMenuRow")
 require("SystemLinkJoinMenuTitleRow")

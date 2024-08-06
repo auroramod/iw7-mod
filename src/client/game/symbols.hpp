@@ -166,6 +166,8 @@ namespace game
 	WEAK symbol<void(const char* fmt, ...)> LUI_Interface_DebugPrint{ 0x14061C43F };
 	WEAK symbol<void()> LUI_EnterCriticalSection{ 0x140600080 };
 	WEAK symbol<void()> LUI_LeaveCriticalSection{ 0x140602280 };
+	WEAK symbol<unsigned short(const unsigned short parentNodeIndex, const char* path)> LUI_Model_CreateModelFromPath{ 0x1404EBF30 };
+	WEAK symbol<void(const unsigned short nodeIndex, const char* newValue)> LUI_Model_SetString{ 0x1404ECE90 };
 
 	WEAK symbol<unsigned int(int controllerIndex)> Live_SyncOnlineDataFlags{ 0x140DC5CE0 };
 	WEAK symbol<std::uint64_t(int controllerIndex)> Live_GetXuid{ 0x140D32A20 };

@@ -22,7 +22,7 @@ namespace server_list
 {
 	namespace
 	{
-		const int server_limit = 100;
+		const int server_limit = 128;
 
 		struct server_info
 		{
@@ -89,10 +89,11 @@ namespace server_list
 			}
 		}
 
-		const char* ui_feeder_item_text(int arg0, int arg1, const int index, const int column, char* name)
-		{
-			std::lock_guard<std::mutex> _(mutex);
+		unsigned short node_index = 0;
 
+		const char* ui_feeder_item_text(int localClientNum, int feederID, const int index, const int column, 
+			float* s0, float* t0, float* s1, float* t1, game::Material** material)
+		{
 			const auto i = index;
 			if (i >= servers.size())
 			{
@@ -102,7 +103,9 @@ namespace server_list
 			switch (column)
 			{
 			case 2:
+			{
 				return servers[i].host_name.empty() ? "" : servers[i].host_name.data();
+			}
 			case 3:
 			{
 				const auto& map_name = servers[i].map_name;
@@ -125,27 +128,61 @@ namespace server_list
 					servers[i].clients);
 			}
 			case 5:
+			{
 				return servers[i].game_type.empty() ? "" : servers[i].game_type.data();
-			//case 10:
-			//{
-			//	const auto ping = servers[i].ping ? servers[i].ping : 999;
-			//	if (ping < 75)
-			//	{
-			//		return utils::string::va("^2%d", ping);
-			//	}
-			//	else if (ping < 150)
-			//	{
-			//		return utils::string::va("^3%d", ping);
-			//	}
-			//	return utils::string::va("^1%d", ping);
-			//}
+			}
+			case 6:
+			{
+				return servers[i].mod_name.empty() ? "" : servers[i].mod_name.data();
+			}
+			case 7:
+			{
+				const auto ping = servers[i].ping ? servers[i].ping : 999;
+				if (ping < 75)
+				{
+					return utils::string::va("^2%d", ping);
+				}
+				else if (ping < 150)
+				{
+					return utils::string::va("^3%d", ping);
+				}
+				return utils::string::va("^1%d", ping);
+			}
+			case 8:
+			{
+				return servers[i].is_private ? "Yes" : "No";
+			}
 			case 10:
+			{
+				// add custom feeder values here
+				game::Material* material_[2];
+				
+				const char* val = nullptr;
+				unsigned short n_index = 0;
+
+				val = ui_feeder_item_text(0, 0, i, 6, 0, 0, 0, 0, material_);
+				n_index = game::LUI_Model_CreateModelFromPath(node_index, "mod");
+				game::LUI_Model_SetString(n_index, val);
+
+				val = ui_feeder_item_text(0, 0, i, 7, 0, 0, 0, 0, material_);
+				n_index = game::LUI_Model_CreateModelFromPath(node_index, "ping");
+				game::LUI_Model_SetString(n_index, val);
+
+				val = ui_feeder_item_text(0, 0, i, 8, 0, 0, 0, 0, material_);
+				n_index = game::LUI_Model_CreateModelFromPath(node_index, "priv");
+				game::LUI_Model_SetString(n_index, val);
+
 				return servers[i].in_game ? "0" : "1";
-			//case 6:
-			//	return servers[i].mod_name.empty() ? "" : servers[i].mod_name.data();
+			}
 			default:
 				return "";
 			}
+		}
+
+		unsigned short lui_model_create_model_from_path_stub(const unsigned short parentNodeIndex, const char* path)
+		{
+			node_index = game::LUI_Model_CreateModelFromPath(parentNodeIndex, path);
+			return node_index;
 		}
 
 		void sort_serverlist()
@@ -377,6 +414,7 @@ namespace server_list
 
 			utils::hook::call(0x14069E45E, get_server_count);
 			utils::hook::jump(0x140CC5F00, ui_feeder_item_text);
+			utils::hook::call(0x14069E4D7, lui_model_create_model_from_path_stub);
 
 			scheduler::loop(do_frame_work, scheduler::pipeline::main);
 
