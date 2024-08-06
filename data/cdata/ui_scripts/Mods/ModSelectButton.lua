@@ -10,14 +10,14 @@ local function PostLoadFunc(buttonElement, controllerIndex, controller)
         local dataSource = buttonElement:GetDataSource()
         dataSource.buttonOnHoverFunction(hoveredElement, eventArgs)
         dataSource = buttonElement:GetDataSource()
-        dataSource = dataSource.levelName
+        dataSource = dataSource.modName
     end)
     
     buttonElement.GenericButton:addEventHandler("button_up", function(unhoveredElement, eventArgs)
         local dataSource = buttonElement:GetDataSource()
         dataSource.buttonOnHoverFunction(unhoveredElement, eventArgs)
         dataSource = buttonElement:GetDataSource()
-        dataSource = dataSource.levelName
+        dataSource = dataSource.modName
     end)
     
     buttonElement:registerEventHandler("grid_anim", function(element, event)
@@ -26,7 +26,7 @@ local function PostLoadFunc(buttonElement, controllerIndex, controller)
     
     buttonElement:SubscribeToDataSourceThroughElement(buttonElement, nil, function()
         local dataSource = buttonElement:GetDataSource()
-        dataSource = dataSource.levelName
+        dataSource = dataSource.modName
     end)
 end
 

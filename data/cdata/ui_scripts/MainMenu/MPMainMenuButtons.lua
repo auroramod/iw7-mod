@@ -127,15 +127,15 @@ function MPMainMenuButtons(menu, controller)
     local self = LUI.UIVerticalNavigator.new()
     self:SetAnchorsAndPosition(0, 1, 0, 1, 0, 500 * _1080p, 0, 190 * _1080p)
     self.id = "MPMainMenuButtons"
-    local f11_local1 = controller and controller.controllerIndex
-    if not f11_local1 and not Engine.InFrontend() then
-        f11_local1 = self:getRootController()
+    local controllerIndex = controller and controller.controllerIndex
+    if not controllerIndex and not Engine.InFrontend() then
+        controllerIndex = self:getRootController()
     end
-    assert(f11_local1)
+    assert(controllerIndex)
     local ConquestButton = nil
 
     ConquestButton = MenuBuilder.BuildRegisteredType("MenuButton", {
-        controllerIndex = f11_local1
+        controllerIndex = controllerIndex
     })
     ConquestButton.id = "ConquestButton"
     ConquestButton.buttonDescription = Engine.Localize("LUA_MENU_PUBLIC_MATCH_DESC")
@@ -147,7 +147,7 @@ function MPMainMenuButtons(menu, controller)
     local MLGGameBattlesButton = nil
     if CONDITIONS.IsGameBattlesAllowed(self) then
         MLGGameBattlesButton = MenuBuilder.BuildRegisteredType("MenuButton", {
-            controllerIndex = f11_local1
+            controllerIndex = controllerIndex
         })
         MLGGameBattlesButton.id = "MLGGameBattlesButton"
         if CONDITIONS.IsGameBattlesAllowed(self) then
@@ -167,7 +167,7 @@ function MPMainMenuButtons(menu, controller)
     local CustomGameButton = nil
 
     CustomGameButton = MenuBuilder.BuildRegisteredType("MenuButton", {
-        controllerIndex = f11_local1
+        controllerIndex = controllerIndex
     })
     CustomGameButton.id = "CustomGameButton"
     CustomGameButton.buttonDescription = Engine.Localize("LUA_MENU_CUSTOM_GAME_DESC")
@@ -179,7 +179,7 @@ function MPMainMenuButtons(menu, controller)
     local ModsButton = nil
 
     ModsButton = MenuBuilder.BuildRegisteredType("MenuButton", {
-        controllerIndex = f11_local1
+        controllerIndex = controllerIndex
     })
     ModsButton.id = "ModsButton"
     ModsButton.buttonDescription = Engine.Localize("LUA_MENU_MODS_DESC")
@@ -188,20 +188,20 @@ function MPMainMenuButtons(menu, controller)
     self:addElement(ModsButton)
     self.ModsButton = ModsButton
 
-    local f11_local6 = nil
+    local StoreButton = nil
     if CONDITIONS.IsStoreAllowed(self) then
-        f11_local6 = MenuBuilder.BuildRegisteredType("MenuButton", {
-            controllerIndex = f11_local1
+        StoreButton = MenuBuilder.BuildRegisteredType("MenuButton", {
+            controllerIndex = controllerIndex
         })
-        f11_local6.id = "StoreButton"
-        f11_local6.buttonDescription = Engine.Localize("LUA_MENU_STORE_DESC")
-        f11_local6.Text:setText(Engine.Localize("LUA_MENU_STORE_CAPS"), 0)
-        f11_local6:SetAnchorsAndPosition(0, 1, 0, 1, 0, _1080p * 500, _1080p * 160, _1080p * 190)
-        self:addElement(f11_local6)
-        self.StoreButton = f11_local6
+        StoreButton.id = "StoreButton"
+        StoreButton.buttonDescription = Engine.Localize("LUA_MENU_STORE_DESC")
+        StoreButton.Text:setText(Engine.Localize("LUA_MENU_STORE_CAPS"), 0)
+        StoreButton:SetAnchorsAndPosition(0, 1, 0, 1, 0, _1080p * 500, _1080p * 160, _1080p * 190)
+        self:addElement(StoreButton)
+        self.StoreButton = StoreButton
     end
 
-    f0_local3(self, f11_local1, controller)
+    f0_local3(self, controllerIndex, controller)
     return self
 end
 

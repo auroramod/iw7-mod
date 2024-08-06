@@ -92,7 +92,7 @@ local function postLoadFunction(menuElement, controllerIndex, controller)
     local fsGame = Engine.GetDvarString("fs_game")
     if fsGame ~= "" then
         menuElement.LoadedModName:setText("^3Loaded mod^7: " .. fsGame)
-        menuElement.bindButton:addEventHandler("button_alt2", unloadMod)
+        menuElement.bindButton:addEventHandler("button_alt1", unloadMod)
     else
         menuElement.LoadedModName:setText("")
     end
@@ -116,7 +116,7 @@ local function postLoadFunction(menuElement, controllerIndex, controller)
     end)
 end
 
-function ModSelectMenu(menu, controller)
+function ModSelectMenu(arg0, controller)
     local menuElement = LUI.UIElement.new()
     menuElement.id = "ModSelectMenu"
 
@@ -292,7 +292,7 @@ function ModSelectMenu(menu, controller)
         if fsGame ~= "" then
             arg0:AddButtonHelperText({
                 helper_text = Engine.Localize("LUA_MENU_UNLOAD"),
-                button_ref = "button_alt2",
+                button_ref = "button_alt1",
                 side = "left",
                 clickable = true
             })

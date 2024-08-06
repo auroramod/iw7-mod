@@ -1,40 +1,40 @@
-local f0_local0 = function(f1_arg0, f1_arg1)
+local f0_local0 = function(arg0, arg1)
     Engine.Exec("xblive_privatematch 0")
-    utils.cp.AliensUtils.AliensRunConfig(f1_arg1.controller)
-    LUI.FlowManager.RequestAddMenu("SystemLinkMenu", false, f1_arg1.controller, false, {}, true)
+    utils.cp.AliensUtils.AliensRunConfig(arg1.controller)
+    LUI.FlowManager.RequestAddMenu("SystemLinkMenu", false, arg1.controller, false, {}, true)
 end
 
-local f0_local1 = function(f2_arg0, f2_arg1)
-    f0_local0(f2_arg0, f2_arg1)
+local f0_local1 = function(arg0, arg1)
+    f0_local0(arg0, arg1)
 end
 
-local f0_local2 = function(f3_arg0, f3_arg1)
-    Engine.Exec(MPConfig.default_xboxlive, f3_arg1.controller)
+local f0_local2 = function(arg0, arg1)
+    Engine.Exec(MPConfig.default_xboxlive, arg1.controller)
     Engine.SetDvarBool("xblive_privatematch", true)
     SetIsAliensSolo(true)
     Engine.SetDvarInt("party_maxplayers", 1)
     Engine.Exec("xstartprivatematch")
-    LUI.FlowManager.RequestAddMenu("CPPrivateMatchMenu", false, f3_arg1.controller, false, {
+    LUI.FlowManager.RequestAddMenu("CPPrivateMatchMenu", false, arg1.controller, false, {
         showPlayNowButton = true,
         isPublicMatch = false
     })
 end
 
-local f0_local3 = function(f4_arg0, f4_arg1)
-    Engine.Exec(MPConfig.default_xboxlive, f4_arg1.controller)
+local f0_local3 = function(arg0, arg1)
+    Engine.Exec(MPConfig.default_xboxlive, arg1.controller)
     Engine.SetDvarBool("xblive_privatematch", true)
     SetIsAliensSolo(false)
     Engine.Exec("xstartprivatematch")
-    LUI.FlowManager.RequestAddMenu("CPPrivateMatchMenu", false, f4_arg1.controller, false, {
+    LUI.FlowManager.RequestAddMenu("CPPrivateMatchMenu", false, arg1.controller, false, {
         showPlayNowButton = true,
         isPublicMatch = false
     })
 end
 
-local f0_local4 = function(f5_arg0, f5_arg1, f5_arg2)
-    assert(f5_arg0.PublicMatch)
-    assert(f5_arg0.SoloMatch)
-    assert(f5_arg0.CustomMatch)
+local f0_local4 = function(arg0, arg1, arg2)
+    assert(arg0.PublicMatch)
+    assert(arg0.SoloMatch)
+    assert(arg0.CustomMatch)
     local f5_local0 = LUI.DataSourceInGlobalModel.new("frontEnd.lobby.areWeGameHost")
     local f5_local1 = DataSources.frontEnd.lobby.memberCount
     local f5_local2 = function()
@@ -43,37 +43,37 @@ local f0_local4 = function(f5_arg0, f5_arg1, f5_arg2)
 
     local f5_local3 = function()
         local f7_local0 = f5_local2()
-        f5_arg0.PublicMatch:SetButtonDisabled(f7_local0)
-        f5_arg0.CustomMatch:SetButtonDisabled(f7_local0)
+        arg0.PublicMatch:SetButtonDisabled(f7_local0)
+        arg0.CustomMatch:SetButtonDisabled(f7_local0)
     end
 
-    f5_arg0:SubscribeToModel(f5_local0:GetModel(f5_arg1), f5_local3)
-    f5_arg0:SubscribeToModel(f5_local1:GetModel(f5_arg1), f5_local3)
-    f5_arg0:SubscribeToModel(DataSources.frontEnd.lobby.isSolo:GetModel(f5_arg1), function()
-        local f8_local0 = DataSources.frontEnd.lobby.isSolo:GetValue(f5_arg1)
+    arg0:SubscribeToModel(f5_local0:GetModel(arg1), f5_local3)
+    arg0:SubscribeToModel(f5_local1:GetModel(arg1), f5_local3)
+    arg0:SubscribeToModel(DataSources.frontEnd.lobby.isSolo:GetModel(arg1), function()
+        local f8_local0 = DataSources.frontEnd.lobby.isSolo:GetValue(arg1)
         if f8_local0 ~= nil then
-            f5_arg0.SoloMatch:SetButtonDisabled(not f8_local0)
+            arg0.SoloMatch:SetButtonDisabled(not f8_local0)
         end
     end)
-    f5_arg0.PublicMatch:addEventHandler("button_action", f0_local1)
-    f5_arg0.SoloMatch:addEventHandler("button_action", f0_local2)
-    f5_arg0.Loadout:addEventHandler("button_action", function(f9_arg0, f9_arg1)
+    arg0.PublicMatch:addEventHandler("button_action", f0_local1)
+    arg0.SoloMatch:addEventHandler("button_action", f0_local2)
+    arg0.Loadout:addEventHandler("button_action", function(f9_arg0, f9_arg1)
         LUI.FlowManager.RequestAddMenu("CPLoadoutMenu", true, f9_arg1.controller)
     end)
-    f5_arg0.Barracks:addEventHandler("button_action", function(f10_arg0, f10_arg1)
+    arg0.Barracks:addEventHandler("button_action", function(f10_arg0, f10_arg1)
         LUI.FlowManager.RequestAddMenu("Headquarters", true, f10_arg1.controller)
     end)
-    f5_arg0.Armory:addEventHandler("button_action", function(f11_arg0, f11_arg1)
+    arg0.Armory:addEventHandler("button_action", function(f11_arg0, f11_arg1)
         if not Engine.IsUserAGuest(f11_arg1.controller) then
             ACTIONS.OpenMenu("Armory", true, f11_arg1.controller)
         end
     end)
-    f5_arg0.CustomMatch:addEventHandler("button_action", f0_local3)
-    f5_arg0.ContractsButton:addEventHandler("button_action", function(f12_arg0, f12_arg1)
-        ACTIONS.OpenMenu("ContractMenu", true, f12_arg1.controller or f5_arg1)
+    arg0.CustomMatch:addEventHandler("button_action", f0_local3)
+    arg0.ContractsButton:addEventHandler("button_action", function(f12_arg0, f12_arg1)
+        ACTIONS.OpenMenu("ContractMenu", true, f12_arg1.controller or arg1)
     end)
 
-    f5_arg0.ModsButton:addEventHandler("button_action", function(arg0, arg1)
+    arg0.ModsButton:addEventHandler("button_action", function(arg0, arg1)
         LUI.FlowManager.RequestAddMenu("ModSelectMenu", true, arg1.controller, false)
     end)
 end
@@ -82,16 +82,16 @@ function CPMainMenuButtons(menu, controller)
     local VNavigator = LUI.UIVerticalNavigator.new()
     VNavigator:SetAnchorsAndPosition(0, 1, 0, 1, 0, 500 * _1080p, 0, 400 * _1080p)
     VNavigator.id = "CPMainMenuButtons"
-    local f14_local1 = controller and controller.controllerIndex
-    if not f14_local1 and not Engine.InFrontend() then
-        f14_local1 = VNavigator:getRootController()
+    local controllerIndex = controller and controller.controllerIndex
+    if not controllerIndex and not Engine.InFrontend() then
+        controllerIndex = VNavigator:getRootController()
     end
-    assert(f14_local1)
-    local f14_local2 = VNavigator
+    assert(controllerIndex)
+    
     local ButtonDescription = nil
 
     ButtonDescription = MenuBuilder.BuildRegisteredType("ButtonDescriptionText", {
-        controllerIndex = f14_local1
+        controllerIndex = controllerIndex
     })
     ButtonDescription.id = "ButtonDescription"
     ButtonDescription:SetRGBFromTable(SWATCHES.genericButton.textDisabled, 0)
@@ -103,7 +103,7 @@ function CPMainMenuButtons(menu, controller)
     local PublicMatch = nil
 
     PublicMatch = MenuBuilder.BuildRegisteredType("MenuButton", {
-        controllerIndex = f14_local1
+        controllerIndex = controllerIndex
     })
     PublicMatch.id = "PublicMatch"
     PublicMatch.buttonDescription = "Browse for Custom Servers"
@@ -115,7 +115,7 @@ function CPMainMenuButtons(menu, controller)
     local SoloMatch = nil
 
     SoloMatch = MenuBuilder.BuildRegisteredType("MenuButton", {
-        controllerIndex = f14_local1
+        controllerIndex = controllerIndex
     })
     SoloMatch.id = "SoloMatch"
     SoloMatch.buttonDescription = Engine.Localize("LUA_MENU_ZM_SOLO_MATCH_DESC")
@@ -127,7 +127,7 @@ function CPMainMenuButtons(menu, controller)
     local CustomMatch = nil
 
     CustomMatch = MenuBuilder.BuildRegisteredType("MenuButton", {
-        controllerIndex = f14_local1
+        controllerIndex = controllerIndex
     })
     CustomMatch.id = "CustomMatch"
     CustomMatch.buttonDescription = Engine.Localize("LUA_MENU_ZM_CUSTOM_MATCH_DESC")
@@ -139,7 +139,7 @@ function CPMainMenuButtons(menu, controller)
     local Loadout = nil
 
     Loadout = MenuBuilder.BuildRegisteredType("MenuButton", {
-        controllerIndex = f14_local1
+        controllerIndex = controllerIndex
     })
     Loadout.id = "Loadout"
     Loadout.buttonDescription = Engine.Localize("LUA_MENU_ZM_LOADOUT_DESC")
@@ -151,7 +151,7 @@ function CPMainMenuButtons(menu, controller)
     local Barracks = nil
 
     Barracks = MenuBuilder.BuildRegisteredType("MenuButton", {
-        controllerIndex = f14_local1
+        controllerIndex = controllerIndex
     })
     Barracks.id = "Barracks"
     Barracks.buttonDescription = Engine.Localize("LUA_MENU_ZM_BARRACKS_DESC")
@@ -163,7 +163,7 @@ function CPMainMenuButtons(menu, controller)
     local Armory = nil
 
     Armory = MenuBuilder.BuildRegisteredType("MenuButton", {
-        controllerIndex = f14_local1
+        controllerIndex = controllerIndex
     })
     Armory.id = "Armory"
     Armory.buttonDescription = Engine.Localize("LUA_MENU_ZM_SURVIVAL_DEPOT_DESC")
@@ -175,7 +175,7 @@ function CPMainMenuButtons(menu, controller)
     local ModsButton = nil
 
     ModsButton = MenuBuilder.BuildRegisteredType("MenuButton", {
-        controllerIndex = f14_local1
+        controllerIndex = controllerIndex
     })
     ModsButton.id = "ModsButton"
     ModsButton.buttonDescription = Engine.Localize("LUA_MENU_MODS_DESC")
@@ -187,14 +187,14 @@ function CPMainMenuButtons(menu, controller)
     local ContractsButton = nil
 
     ContractsButton = MenuBuilder.BuildRegisteredType("ContractsButtonCP", {
-        controllerIndex = f14_local1
+        controllerIndex = controllerIndex
     })
     ContractsButton.id = "ContractsButton"
     ContractsButton:SetAnchorsAndPosition(0, 1, 0, 1, 0, _1080p * 340, _1080p * 280, _1080p * 340)
     VNavigator:addElement(ContractsButton)
     VNavigator.ContractsButton = ContractsButton
 
-    f0_local4(VNavigator, f14_local1, controller)
+    f0_local4(VNavigator, controllerIndex, controller)
     return VNavigator
 end
 
