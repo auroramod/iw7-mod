@@ -74,7 +74,7 @@ function ServerBrowser( menu, controller )
 		controllerIndex = controllerIndex
 	} )
 	ArrowUp.id = "ArrowUp"
-	ArrowUp:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 638, _1080p * 658, _1080p * 676, _1080p * 716 )
+	ArrowUp:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 878, _1080p * 898, _1080p * 676, _1080p * 716 )
 	self:addElement( ArrowUp )
 	self.ArrowUp = ArrowUp
 	
@@ -84,7 +84,7 @@ function ServerBrowser( menu, controller )
 		controllerIndex = controllerIndex
 	} )
 	ArrowDown.id = "ArrowDown"
-	ArrowDown:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 473, _1080p * 493, _1080p * 675, _1080p * 715 )
+	ArrowDown:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 713, _1080p * 733, _1080p * 675, _1080p * 715 )
 	self:addElement( ArrowDown )
 	self.ArrowDown = ArrowDown
 	
@@ -96,7 +96,7 @@ function ServerBrowser( menu, controller )
 	ListCount:SetFontSize( 24 * _1080p )
 	ListCount:SetFont( FONTS.GetFont( FONTS.MainMedium.File ) )
 	ListCount:SetAlignment( LUI.Alignment.Center )
-	ListCount:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 493, _1080p * 638, _1080p * 683, _1080p * 707 )
+	ListCount:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 733, _1080p * 878, _1080p * 683, _1080p * 707 )
 	self:addElement( ListCount )
 	self.ListCount = ListCount
 	
