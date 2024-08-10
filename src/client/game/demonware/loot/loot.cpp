@@ -508,7 +508,7 @@ namespace demonware
 			case 70005: // ZombieRareCardPack
 				return get_random_loot_ZombieRareCardPack();
 			default:
-				printf("[DW]: Missing LootCrate logic for %d, using CommonCrate\n", lootbox_id);
+				printf("[DW]: Missing LootCrate logic for %d\n", lootbox_id);
 				return {};
 			}
 		}
@@ -537,18 +537,6 @@ namespace demonware
 		template <typename T> void json_put(nlohmann::json& field, T value)
 		{
 			field = value;
-		}
-
-		template <typename T> void json_add(nlohmann::json& field, T value)
-		{
-			if (!field.is_null())
-			{
-				field = field.get<T>();
-			}
-			else
-			{
-				field = value;
-			}
 		}
 
 		template <typename T> T json_read(nlohmann::json& field)

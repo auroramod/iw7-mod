@@ -171,11 +171,6 @@ namespace demonware
 			this->objects_.emplace_back(std::move(object));
 		}
 
-		void set_error(uint32_t err)
-		{
-			this->error_ = err;
-		}
-
 	private:
 		uint8_t type_;
 		uint32_t error_;

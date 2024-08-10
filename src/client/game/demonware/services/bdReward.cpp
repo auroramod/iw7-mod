@@ -51,6 +51,7 @@ namespace demonware
 		buffer->read_uint16(&numEvents);
 		buffer->read_int32(&rewardEventType); // none 0, json 1
 
+		assert(rewardEventType == 1);
 		assert(numEvents == 1);
 
 		buffer->read_string(&json_buffer);
@@ -205,7 +206,7 @@ namespace demonware
 
 			send(json_reply);
 		}
-		else if (action == "StartMission")
+		/*else if (action == "StartMission")
 		{
 			printf("%s\n", json_buffer.data());
 			//const auto match_id = json["MatchId"].get<int>();
@@ -227,10 +228,10 @@ namespace demonware
 		else if (action == "ResetMissions")
 		{
 			printf("%s\n", json_buffer.data());
-		}
+		}*/
 		else
 		{
-			printf("[DW]: unhandled reward action \"%s\"...\n", action.data());
+			//printf("[DW]: unhandled reward action \"%s\"...\n", action.data());
 		}
 
 		server->create_reply(this->task_id(), BD_NO_ERROR).send();
