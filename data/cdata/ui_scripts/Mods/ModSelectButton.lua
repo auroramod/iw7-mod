@@ -31,163 +31,163 @@ local function PostLoadFunc(buttonElement, controllerIndex, controller)
 end
 
 function ModSelectButton(menu, controller)
-    local modSelectButton = LUI.UIButton.new()
-    modSelectButton:SetAnchorsAndPosition(0, 1, 0, 1, 0, 500 * _1080p, 0, 30 * _1080p)
-    modSelectButton.id = "ModSelectButton"
-    modSelectButton._animationSets = {}
-    modSelectButton._sequences = {}
+    local ModSelectButton = LUI.UIButton.new()
+    ModSelectButton:SetAnchorsAndPosition(0, 1, 0, 1, 0, 500 * _1080p, 0, 30 * _1080p)
+    ModSelectButton.id = "ModSelectButton"
+    ModSelectButton._animationSets = {}
+    ModSelectButton._sequences = {}
     
     local controllerIndex = controller and controller.controllerIndex
     if not controllerIndex and not Engine.InFrontend() then
-        controllerIndex = modSelectButton:getRootController()
+        controllerIndex = ModSelectButton:getRootController()
     end
     assert(controllerIndex)
     
-    local buttonContainer = modSelectButton
-    local genericButton = nil
+    local buttonContainer = ModSelectButton
+    local GenericButton = nil
 
-    genericButton = MenuBuilder.BuildRegisteredType("GenericButton", {
+    GenericButton = MenuBuilder.BuildRegisteredType("GenericButton", {
         controllerIndex = controllerIndex
     })
-    genericButton.id = "GenericButton"
-    genericButton:SetAlpha(0, 0)
-    genericButton:SetAnchorsAndPosition(0, 1, 0, 0, 0, _1080p * 500, 0, 0)
+    GenericButton.id = "GenericButton"
+    GenericButton:SetAlpha(0, 0)
+    GenericButton:SetAnchorsAndPosition(0, 1, 0, 0, 0, _1080p * 500, 0, 0)
     
-    genericButton:SubscribeToModelThroughElement(modSelectButton, "buttonLabel", function()
-        local dataSource = modSelectButton:GetDataSource()
+    GenericButton:SubscribeToModelThroughElement(ModSelectButton, "buttonLabel", function()
+        local dataSource = ModSelectButton:GetDataSource()
         local buttonLabel = dataSource.buttonLabel:GetValue(controllerIndex)
         if buttonLabel ~= nil then
-            genericButton.Text:setText(LocalizeString(ToUpperCase(buttonLabel)), 0)
+            GenericButton.Text:setText(LocalizeString(ToUpperCase(buttonLabel)), 0)
         end
     end)
     
-    modSelectButton:addElement(genericButton)
-    modSelectButton.GenericButton = genericButton
+    ModSelectButton:addElement(GenericButton)
+    ModSelectButton.GenericButton = GenericButton
 
-    local listButtonBackground = nil
+    local GenericListArrowButtonBackground = nil
 
-    listButtonBackground = MenuBuilder.BuildRegisteredType("GenericListArrowButtonBackground", {
+    GenericListArrowButtonBackground = MenuBuilder.BuildRegisteredType("GenericListArrowButtonBackground", {
         controllerIndex = controllerIndex
     })
-    listButtonBackground.id = "GenericListButtonBackground"
-    listButtonBackground:SetAnchorsAndPosition(0, 0, 0, 0, 0, 0, 0, 0)
+    GenericListArrowButtonBackground.id = "GenericListButtonBackground"
+    GenericListArrowButtonBackground:SetAnchorsAndPosition(0, 0, 0, 0, 0, 0, 0, 0)
     
-    modSelectButton:addElement(listButtonBackground)
-    modSelectButton.GenericListButtonBackground = listButtonBackground
+    ModSelectButton:addElement(GenericListArrowButtonBackground)
+    ModSelectButton.GenericListButtonBackground = GenericListArrowButtonBackground
 
-    local buttonText = nil
+    local Text = nil
 
-    buttonText = LUI.UIStyledText.new()
-    buttonText.id = "Text"
-    buttonText:SetRGBFromInt(14277081, 0)
-    buttonText:SetFontSize(22 * _1080p)
-    buttonText:SetFont(FONTS.GetFont(FONTS.MainMedium.File))
-    buttonText:SetAlignment(LUI.Alignment.Left)
-    buttonText:SetStartupDelay(2000)
-    buttonText:SetLineHoldTime(400)
-    buttonText:SetAnimMoveTime(300)
-    buttonText:SetEndDelay(1500)
-    buttonText:SetCrossfadeTime(750)
-    buttonText:SetAutoScrollStyle(LUI.UIStyledText.AutoScrollStyle.ScrollH)
-    buttonText:SetMaxVisibleLines(1)
-    buttonText:SetOutlineRGBFromInt(0, 0)
-    buttonText:SetAnchorsAndPosition(0, 0, 0.5, 0.5, _1080p * 44, _1080p * -41, _1080p * -11, _1080p * 11)
+    Text = LUI.UIStyledText.new()
+    Text.id = "Text"
+    Text:SetRGBFromInt(14277081, 0)
+    Text:SetFontSize(22 * _1080p)
+    Text:SetFont(FONTS.GetFont(FONTS.MainMedium.File))
+    Text:SetAlignment(LUI.Alignment.Left)
+    Text:SetStartupDelay(2000)
+    Text:SetLineHoldTime(400)
+    Text:SetAnimMoveTime(300)
+    Text:SetEndDelay(1500)
+    Text:SetCrossfadeTime(750)
+    Text:SetAutoScrollStyle(LUI.UIStyledText.AutoScrollStyle.ScrollH)
+    Text:SetMaxVisibleLines(1)
+    Text:SetOutlineRGBFromInt(0, 0)
+    Text:SetAnchorsAndPosition(0, 0, 0.5, 0.5, _1080p * 44, _1080p * -41, _1080p * -11, _1080p * 11)
     
-    buttonText:SubscribeToModelThroughElement(modSelectButton, "buttonLabel", function()
-        local dataSource = modSelectButton:GetDataSource()
+    Text:SubscribeToModelThroughElement(ModSelectButton, "buttonLabel", function()
+        local dataSource = ModSelectButton:GetDataSource()
         local buttonLabel = dataSource.buttonLabel:GetValue(controllerIndex)
         if buttonLabel ~= nil then
-            buttonText:setText(LocalizeString(ToUpperCase(buttonLabel)), 0)
+            Text:setText(LocalizeString(ToUpperCase(buttonLabel)), 0)
         end
     end)
     
-    modSelectButton:addElement(buttonText)
-    modSelectButton.Text = buttonText
+    ModSelectButton:addElement(Text)
+    ModSelectButton.Text = Text
 
-    local lockIcon = nil
+    local Lock = nil
 
-    lockIcon = LUI.UIImage.new()
-    lockIcon.id = "Lock"
-    lockIcon:SetRGBFromTable(SWATCHES.genericButton.textDisabled, 0)
-    lockIcon:SetAlpha(0, 0)
-    lockIcon:setImage(RegisterMaterial("icon_slot_locked"), 0)
-    lockIcon:SetAnchorsAndPosition(1, 0, 0.5, 0.5, _1080p * -32, _1080p * -6, _1080p * -12, _1080p * 14)
+    Lock = LUI.UIImage.new()
+    Lock.id = "Lock"
+    Lock:SetRGBFromTable(SWATCHES.genericButton.textDisabled, 0)
+    Lock:SetAlpha(0, 0)
+    Lock:setImage(RegisterMaterial("icon_slot_locked"), 0)
+    Lock:SetAnchorsAndPosition(1, 0, 0.5, 0.5, _1080p * -32, _1080p * -6, _1080p * -12, _1080p * 14)
     
-    modSelectButton:addElement(lockIcon)
-    modSelectButton.Lock = lockIcon
+    ModSelectButton:addElement(Lock)
+    ModSelectButton.Lock = Lock
 
-    modSelectButton._animationSets.DefaultAnimationSet = function()
-        modSelectButton._sequences.DefaultSequence = function()
+    ModSelectButton._animationSets.DefaultAnimationSet = function()
+        ModSelectButton._sequences.DefaultSequence = function()
 
         end
 
-        buttonText:RegisterAnimationSequence("ButtonOver", {{function()
-            return modSelectButton.Text:SetRGBFromInt(0, 0)
+        Text:RegisterAnimationSequence("ButtonOver", {{function()
+            return ModSelectButton.Text:SetRGBFromInt(0, 0)
         end}, {function()
-            return modSelectButton.Text:SetAlpha(1, 0)
+            return ModSelectButton.Text:SetAlpha(1, 0)
         end}})
         
-        lockIcon:RegisterAnimationSequence("ButtonOver", {{function()
-            return modSelectButton.Lock:SetAlpha(0, 0)
+        Lock:RegisterAnimationSequence("ButtonOver", {{function()
+            return ModSelectButton.Lock:SetAlpha(0, 0)
         end}, {function()
-            return modSelectButton.Lock:SetRGBFromTable(SWATCHES.genericButton.textDisabled, 0)
+            return ModSelectButton.Lock:SetRGBFromTable(SWATCHES.genericButton.textDisabled, 0)
         end}})
         
-        modSelectButton._sequences.ButtonOver = function()
-            buttonText:AnimateSequence("ButtonOver")
-            lockIcon:AnimateSequence("ButtonOver")
+        ModSelectButton._sequences.ButtonOver = function()
+            Text:AnimateSequence("ButtonOver")
+            Lock:AnimateSequence("ButtonOver")
         end
 
-        buttonText:RegisterAnimationSequence("ButtonUp", {{function()
-            return modSelectButton.Text:SetRGBFromInt(14277081, 0)
+        Text:RegisterAnimationSequence("ButtonUp", {{function()
+            return ModSelectButton.Text:SetRGBFromInt(14277081, 0)
         end}})
         
-        lockIcon:RegisterAnimationSequence("ButtonUp", {{function()
-            return modSelectButton.Lock:SetAlpha(0, 0)
+        Lock:RegisterAnimationSequence("ButtonUp", {{function()
+            return ModSelectButton.Lock:SetAlpha(0, 0)
         end}})
         
-        modSelectButton._sequences.ButtonUp = function()
-            buttonText:AnimateSequence("ButtonUp")
-            lockIcon:AnimateSequence("ButtonUp")
+        ModSelectButton._sequences.ButtonUp = function()
+            Text:AnimateSequence("ButtonUp")
+            Lock:AnimateSequence("ButtonUp")
         end
 
-        buttonText:RegisterAnimationSequence("ButtonOverDisabled", {{function()
-            return modSelectButton.Text:SetRGBFromInt(0, 0)
+        Text:RegisterAnimationSequence("ButtonOverDisabled", {{function()
+            return ModSelectButton.Text:SetRGBFromInt(0, 0)
         end}, {function()
-            return modSelectButton.Text:SetAlpha(1, 0)
+            return ModSelectButton.Text:SetAlpha(1, 0)
         end}})
         
-        lockIcon:RegisterAnimationSequence("ButtonOverDisabled", {{function()
-            return modSelectButton.Lock:SetAlpha(1, 0)
+        Lock:RegisterAnimationSequence("ButtonOverDisabled", {{function()
+            return ModSelectButton.Lock:SetAlpha(1, 0)
         end}, {function()
-            return modSelectButton.Lock:SetRGBFromInt(0, 0)
+            return ModSelectButton.Lock:SetRGBFromInt(0, 0)
         end}})
         
-        modSelectButton._sequences.ButtonOverDisabled = function()
-            buttonText:AnimateSequence("ButtonOverDisabled")
-            lockIcon:AnimateSequence("ButtonOverDisabled")
+        ModSelectButton._sequences.ButtonOverDisabled = function()
+            Text:AnimateSequence("ButtonOverDisabled")
+            Lock:AnimateSequence("ButtonOverDisabled")
         end
 
-        buttonText:RegisterAnimationSequence("ButtonUpDisabled", {{function()
-            return modSelectButton.Text:SetRGBFromInt(14277081, 0)
+        Text:RegisterAnimationSequence("ButtonUpDisabled", {{function()
+            return ModSelectButton.Text:SetRGBFromInt(14277081, 0)
         end}})
         
-        lockIcon:RegisterAnimationSequence("ButtonUpDisabled", {{function()
-            return modSelectButton.Lock:SetAlpha(1, 0)
+        Lock:RegisterAnimationSequence("ButtonUpDisabled", {{function()
+            return ModSelectButton.Lock:SetAlpha(1, 0)
         end}, {function()
-            return modSelectButton.Lock:SetRGBFromInt(12566463, 0)
+            return ModSelectButton.Lock:SetRGBFromInt(12566463, 0)
         end}})
         
-        modSelectButton._sequences.ButtonUpDisabled = function()
-            buttonText:AnimateSequence("ButtonUpDisabled")
-            lockIcon:AnimateSequence("ButtonUpDisabled")
+        ModSelectButton._sequences.ButtonUpDisabled = function()
+            Text:AnimateSequence("ButtonUpDisabled")
+            Lock:AnimateSequence("ButtonUpDisabled")
         end
 
     end
 
-    modSelectButton._animationSets.DefaultAnimationSet()
-    PostLoadFunc(modSelectButton, controllerIndex, controller)
-    return modSelectButton
+    ModSelectButton._animationSets.DefaultAnimationSet()
+    PostLoadFunc(ModSelectButton, controllerIndex, controller)
+    return ModSelectButton
 end
 
 MenuBuilder.registerType("ModSelectButton", ModSelectButton)

@@ -3,7 +3,8 @@ if not Engine.InFrontend() then
 end
 
 require("CampaignMenuButtons")
-require("CPMainMenu")
 require("CPMainMenuButtons")
+require("CPMainMenu")
 require("MissionsVerticalLayout")
 require("MPMainMenuButtons")
+require("MPMainMenu")
