@@ -20,7 +20,7 @@ namespace profile_infos
 	namespace
 	{
 		using profile_map = std::unordered_map<std::uint64_t, profile_info>;
-		utils::concurrency::container<profile_map, std::recursive_mutex> profile_mapping{};
+		utils::concurrency::container<profile_map, std::mutex> profile_mapping{};
 
 		std::optional<profile_info> load_profile_info()
 		{
@@ -32,9 +32,9 @@ namespace profile_infos
 			}
 
 			profile_info info{};
-			info.m_memberplayer_card.assign(data);
+			info.m_memberplayer_card = std::move(data);
 
-			return {std::move(info)};
+			return info;
 		}
 
 		std::unordered_set<std::uint64_t> get_connected_client_xuids()
@@ -141,7 +141,7 @@ namespace profile_infos
 		return load_profile_info();
 	}
 
-	std::optional<profile_info> get_profile_info(const uint64_t user_id)
+	std::optional<profile_info> get_profile_info(const std::uint64_t user_id)
 	{
 		const auto my_xuid = steam::SteamUser()->GetSteamID().bits;
 		if (user_id == my_xuid)
@@ -324,6 +324,7 @@ namespace profile_infos
 			{
 				if (xuid == 0)
 				{
+					i++;
 					continue;
 				}
 				send_xuid(addr, xuid, i++);
@@ -382,7 +383,9 @@ namespace profile_infos
 		void post_unpack() override
 		{
 			client_connect_hook.create(0x140AFFF10, client_connect_stub);
-			session_unregister_remote_player_hook.create(0x140C73970, session_unregister_remote_player_stub);
+
+			// comment out this, since i think i fixed this indirectly with a patch from party.cpp
+			//session_unregister_remote_player_hook.create(0x140C73970, session_unregister_remote_player_stub);
 
 			dvars::override::register_int("playercard_cache_validity_life", 5000, 0, 3600000, 0x0); // 5sec
 
@@ -394,7 +397,7 @@ namespace profile_infos
 				{
 					buffer = utils::byte_buffer(final_packet);
 
-					const auto user_id = buffer.read<uint64_t>();
+					const auto user_id = buffer.read<std::uint64_t>();
 
 					const profile_info info(buffer);
 					if (info.m_memberplayer_card.empty())
