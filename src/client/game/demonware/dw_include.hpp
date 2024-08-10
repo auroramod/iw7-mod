@@ -1,6 +1,6 @@
 #pragma once
 
-#define DW_DEBUG
+//#define DW_DEBUG
 
 #include "game/types/demonware.hpp"
 using namespace game::demonware;
