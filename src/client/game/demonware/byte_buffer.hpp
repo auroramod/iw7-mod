@@ -26,6 +26,7 @@ namespace demonware
 		bool read_string(std::string* output);
 		bool read_blob(char** output, int* length);
 		bool read_blob(std::string* output);
+		bool read_struct(void* output);
 		bool read_data_type(unsigned char expected);
 
 		bool read_array_header(unsigned char expected, unsigned int* element_count,
@@ -46,6 +47,7 @@ namespace demonware
 		bool write_string(const std::string& data);
 		bool write_blob(const char* data, int length);
 		bool write_blob(const std::string& data);
+		bool write_struct(void* data, int length);
 
 		bool write_array_header(unsigned char type, unsigned int element_count, unsigned int element_size);
 

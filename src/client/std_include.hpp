@@ -74,8 +74,11 @@
 #include <functional>
 #include <sstream>
 #include <optional>
+#include <set>
 #include <unordered_set>
 #include <variant>
+#include <random>
+#include <numeric>
 
 #include <gsl/gsl>
 #include <udis86.h>

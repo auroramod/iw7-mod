@@ -99,10 +99,11 @@ namespace demonware
 		{
 		}
 
+		static uint64_t transaction_id;
+
 		uint64_t send()
 		{
-			static uint64_t id = 0x0000000000000000;
-			const auto transaction_id = ++id;
+			transaction_id++;
 
 			byte_buffer buffer;
 			buffer.write_uint64(transaction_id);
@@ -133,11 +134,46 @@ namespace demonware
 			return transaction_id;
 		}
 
+		uint64_t send_struct()
+		{
+			transaction_id++;
+
+			byte_buffer buffer;
+			buffer.write_uint64(transaction_id);
+			buffer.write_uint32(this->error_);
+			buffer.write_ubyte(this->type_);
+
+			if (!this->error_)
+			{
+				if (!this->objects_.empty())
+				{
+					for (auto& object : this->objects_)
+					{
+						object->serialize(&buffer);
+					}
+
+					this->objects_.clear();
+				}
+			}
+			else
+			{
+				buffer.write_uint64(transaction_id);
+			}
+
+			this->reply_.send(&buffer, true);
+			return transaction_id;
+		}
+
 		template<typename T>
 		void add(std::unique_ptr<T>& object)
 		{
 			static_assert(std::is_base_of_v<bdTaskResult, T>);
 			this->objects_.emplace_back(std::move(object));
+		}
+
+		void set_error(uint32_t err)
+		{
+			this->error_ = err;
 		}
 
 	private:

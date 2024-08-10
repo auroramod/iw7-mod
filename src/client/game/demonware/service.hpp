@@ -53,7 +53,7 @@ namespace demonware
 			if (it != this->tasks_.end())
 			{
 #ifdef DW_DEBUG
-				printf("[DW] %s: executing task '%d'\n", name_.data(), this->task_id_);
+				printf("[DW] %s: executing task '%d' (transaction ID: %llu)\n", name_.data(), this->task_id_, service_reply::transaction_id + 1);
 #endif
 
 				it->second(server, &buffer);

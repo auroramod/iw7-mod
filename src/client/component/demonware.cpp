@@ -501,7 +501,7 @@ namespace demonware
 		void post_unpack() override
 		{
 #ifdef DW_DEBUG
-			//utils::hook::jump(0x141285040, bd_logger_stub, true);
+			utils::hook::jump(0x141285040, bd_logger_stub, true);
 #endif
 
 			utils::hook::set<uint8_t>(0x14B5BB96F, 0x0);  // CURLOPT_SSL_VERIFYPEER

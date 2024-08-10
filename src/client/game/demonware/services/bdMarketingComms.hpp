@@ -8,8 +8,7 @@ namespace demonware
 		bdMarketingComms();
 
 	private:
-		void getMessages(service_server* server, byte_buffer* buffer) const;
 		void reportFullMessagesViewed(service_server* server, byte_buffer* buffer) const;
-		void unk6(service_server* server, byte_buffer* buffer) const;
+		void getMessages(service_server* server, byte_buffer* buffer) const;
 	};
 }

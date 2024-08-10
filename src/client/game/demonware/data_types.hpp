@@ -246,10 +246,10 @@ namespace demonware
 	class bdContextUserStorageFileInfo final : public bdTaskResult
 	{
 	public:
-		std::uint32_t create_time;
-		std::uint32_t modifed_time;
+		uint32_t create_time;
+		uint32_t modifed_time;
 		bool priv;
-		std::uint64_t owner_id;
+		uint64_t owner_id;
 		std::string account_type;
 		std::string filename;
 
@@ -277,7 +277,7 @@ namespace demonware
 	class bdPublicProfileInfo final : public bdTaskResult
 	{
 	public:
-		std::uint64_t m_entityID;
+		uint64_t m_entityID;
 		std::string m_memberplayer_card;
 
 		void serialize(byte_buffer* buffer) override
@@ -346,18 +346,87 @@ namespace demonware
 	{
 	public:
 		uint64_t user_id;
-		int64_t performance;
+		float performance;
 
 		void serialize(byte_buffer* buffer) override
 		{
 			buffer->write_uint64(this->user_id);
-			buffer->write_int64(this->performance);
+			buffer->write_float(this->performance);
 		}
 
 		void deserialize(byte_buffer* buffer) override
 		{
 			buffer->read_uint64(&this->user_id);
-			buffer->read_int64(&this->performance);
+			buffer->read_float(&this->performance);
+		}
+	};
+
+	class bdRewardEvent final : public bdTaskResult
+	{
+	public:
+		uint32_t push_type;
+		unsigned char r2;
+		uint64_t user_id;
+		std::string platform1;
+		std::string platform2;
+		int32_t rewardEventType;
+		uint32_t r7;
+		int32_t r8;
+		std::string json_buffer;
+
+		void serialize(byte_buffer* data) override
+		{
+			data->write_uint32(push_type);
+			data->write_ubyte(r2);
+			data->write_uint64(user_id);
+			data->write_string(platform1);
+			data->write_string(platform2);
+			data->write_int32(rewardEventType);
+			data->write_uint32(r7);
+			data->write_int32(r8);
+			data->write_string(json_buffer);
+		}
+	};
+
+	class bdMarketplaceInventory final : public bdTaskResult
+	{
+	public:
+		uint64_t m_playerId;
+		std::string unk;
+		uint32_t m_itemId;
+		uint32_t m_itemQuantity;
+		uint32_t m_itemXp;
+		std::string m_itemData;
+		uint32_t m_expireDateTime;
+		int64_t m_expiryDuration;
+		uint16_t m_collisionField;
+		uint32_t m_modDateTime;
+
+		void serialize(byte_buffer* data) override
+		{
+			data->write_uint64(m_playerId);
+			data->write_string(unk);
+			data->write_uint32(m_itemId);
+			data->write_uint32(m_itemQuantity);
+			data->write_uint32(m_itemXp);
+			data->write_blob(m_itemData);
+			data->write_uint32(m_expireDateTime);
+			data->write_int64(m_expiryDuration);
+			data->write_uint16(m_collisionField);
+			data->write_uint32(m_modDateTime);
+		}
+	};
+
+	class bdMarketplaceCurrency final : public bdTaskResult
+	{
+	public:
+		std::uint8_t m_currencyId;
+		std::uint32_t m_value;
+
+		void serialize(byte_buffer* data) override
+		{
+			data->write_ubyte(m_currencyId);
+			data->write_uint32(m_value);
 		}
 	};
 }

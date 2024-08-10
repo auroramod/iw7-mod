@@ -1,6 +1,6 @@
 #pragma once
 
-//#define DW_DEBUG
+#define DW_DEBUG
 
 #include "game/types/demonware.hpp"
 using namespace game::demonware;
@@ -12,5 +12,7 @@ using namespace game::demonware;
 #include "keys.hpp"
 #include "reply.hpp"
 #include "service.hpp"
+
+#include "loot/loot.hpp"
 
 #include "services.hpp"

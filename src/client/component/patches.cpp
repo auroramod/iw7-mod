@@ -267,7 +267,8 @@ namespace patches
 			dvars::override::register_int("dvl", 0, 0, 0, game::DVAR_FLAG_READ);
 
 			// killswitches
-			dvars::override::register_bool("killswitch_store", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("mission_team_contracts_enabled", true, game::DVAR_FLAG_READ);
+			//dvars::override::register_bool("killswitch_store", true, game::DVAR_FLAG_READ);
 			dvars::override::register_bool("killswitch_matchID", true, game::DVAR_FLAG_READ);
 
 			// announcer packs

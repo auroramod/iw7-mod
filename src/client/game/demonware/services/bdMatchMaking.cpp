@@ -71,7 +71,7 @@ namespace demonware
 	{
 		auto result = std::make_unique<bdPerformanceValue>();
 		result->user_id = steam::SteamUser()->GetSteamID().bits;
-		result->performance = 10;
+		result->performance = 10.0f;
 
 		auto reply = server->create_reply(this->task_id());
 		reply.add(result);

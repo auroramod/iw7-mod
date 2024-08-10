@@ -5,6 +5,8 @@
 
 namespace demonware
 {
+	uint64_t service_reply::transaction_id = 0;
+
 	std::string unencrypted_reply::data()
 	{
 		byte_buffer result;
