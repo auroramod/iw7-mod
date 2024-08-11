@@ -1,3 +1,39 @@
+local f0_local0 = function ( f1_arg0 )
+	if Engine.HasCompletedAnyLevel( f1_arg0 ) then
+		return true
+	end
+	local f1_local0 = {}
+	for f1_local1 = 0, Engine.TableGetRowCount( CSV.levels.file ) - 1, 1 do
+		local f1_local4 = CSV.ReadRow( CSV.levels, f1_local1 )
+		local f1_local5 = f1_local4.name
+		if not Engine.GetDvarBool( "lui_checkIfLevelInFileSystem" ) or Engine.IsLevelInFileSystem and Engine.IsLevelInFileSystem( f1_local5 ) then
+			f1_local0[#f1_local0 + 1] = {
+				buttonLabel = f1_local4.string,
+				levelName = f1_local5,
+				objectiveText = f1_local4.desc,
+				levelNumber = f1_local4.ref,
+				completedLevelIndex = f1_local4.completedRef,
+				image = f1_local4.image
+			}
+		end
+	end
+	local f1_local1 = LUI.DataSourceFromPlayerData.new( CoD.ProgressionBlob.Gold, CoD.PlayMode.SP )
+	local f1_local2 = f1_local1.spData
+	for f1_local3 = 1, #f1_local0, 1 do
+		local f1_local7 = f1_local0[f1_local3].levelName
+		if f1_local7 ~= "europa" then
+			local f1_local8 = ""
+			if f1_local2.missionStateData[f1_local7] ~= nil then
+				f1_local8 = f1_local2.missionStateData[f1_local7]:GetValue( f1_arg0 )
+			end
+			if f1_local8 ~= nil and (f1_local8 == "complete" or f1_local8 == "incomplete") then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 local f0_local1 = function(arg0)
     arg0.ResumeButton:SetButtonDisabled(not Engine.CanResumeGame(arg0._controllerIndex))
     if not CONDITIONS.IsTrialLicense(arg0) then
