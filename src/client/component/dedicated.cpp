@@ -50,26 +50,22 @@ namespace dedicated
 			return startup_command_queue;
 		}
 
-		void execute_startup_command(int client, int /*controllerIndex*/, const char* command)
+		void execute_startup_commands()
 		{
-			if (game::Live_SyncOnlineDataFlags(0) == 0)
-			{
-				game::Cbuf_ExecuteBufferInternal(0, 0, command, game::Cmd_ExecuteSingleCommand);
-			}
-			else
-			{
-				get_startup_command_queue().emplace_back(command);
-			}
-		}
+			auto& com_num_console_lines = *game::com_num_console_lines;
+			auto* com_console_lines = game::com_console_lines.get();
 
-		void execute_startup_command_queue()
-		{
-			const auto queue = get_startup_command_queue();
-			get_startup_command_queue().clear();
-
-			for (const auto& command : queue)
+			for (auto i = 0; i < com_num_console_lines; i++)
 			{
-				game::Cbuf_ExecuteBufferInternal(0, 0, command.data(), game::Cmd_ExecuteSingleCommand);
+				auto cmd = com_console_lines[i];
+
+				// if command is map or map_rotate, its already been called
+				if (cmd == "map"s || cmd == "map_rotate"s)
+				{
+					continue;
+				}
+
+				game::Cbuf_ExecuteBufferInternal(0, 0, cmd, game::Cmd_ExecuteSingleCommand);
 			}
 		}
 
@@ -268,9 +264,6 @@ namespace dedicated
 
 			utils::hook::jump(0x140341B60, init_dedicated_server, true);
 
-			// delay startup commands until the initialization is done
-			utils::hook::call(0x140B8D20F, execute_startup_command);
-
 			utils::hook::set<uint32_t>(0x140B21107 + 2, 0x482); // g_gametype flags
 			utils::hook::set<uint32_t>(0x140B21137 + 2, 0x480); // g_hardcore flags
 			utils::hook::jump(0x140C12400, sv_get_game_type_stub);
@@ -397,7 +390,7 @@ namespace dedicated
 				// remove disconnect command
 				game::Cmd_RemoveCommand("disconnect");
 
-				execute_startup_command_queue();
+				execute_startup_commands();
 
 				// Send heartbeat to dpmaster
 				scheduler::once(send_heartbeat, scheduler::pipeline::server);

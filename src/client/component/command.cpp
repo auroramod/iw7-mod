@@ -79,8 +79,8 @@ namespace command
 			static std::string comand_line_buffer = GetCommandLineA();
 			auto* command_line = comand_line_buffer.data();
 
-			auto& com_num_console_lines = *reinterpret_cast<int*>(0x146006DB0);
-			auto* com_console_lines = reinterpret_cast<char**>(0x146006DC0);
+			auto& com_num_console_lines = *game::com_num_console_lines;
+			auto* com_console_lines = game::com_console_lines.get();
 
 			auto inq = false;
 			com_console_lines[0] = command_line;
@@ -111,8 +111,8 @@ namespace command
 
 		void parse_startup_variables()
 		{
-			auto& com_num_console_lines = *reinterpret_cast<int*>(0x146006DB0);
-			auto* com_console_lines = reinterpret_cast<char**>(0x146006DC0);
+			auto& com_num_console_lines = *game::com_num_console_lines;
+			auto* com_console_lines = game::com_console_lines.get();
 
 			for (int i = 0; i < com_num_console_lines; i++)
 			{

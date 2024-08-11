@@ -378,6 +378,9 @@ namespace game
 
 	WEAK symbol<int> com_frameTime{ 0x1460053C0 };
 
+	WEAK symbol<int> com_num_console_lines{ 0x146006DB0 };
+	WEAK symbol<char*> com_console_lines{ 0x146006DC0 };
+
 	WEAK symbol<int> s_frontEndScene_state{ 0x144BFF608 };
 
 	WEAK symbol<WeaponDef*> bg_weaponDefs{ 0x145210120 };

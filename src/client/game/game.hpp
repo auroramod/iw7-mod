@@ -2,7 +2,7 @@
 
 #include "structs.hpp"
 
-#define PROTOCOL 1
+#define PROTOCOL 2
 
 namespace game
 {

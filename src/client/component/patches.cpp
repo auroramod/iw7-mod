@@ -219,6 +219,11 @@ namespace patches
 		{
 			//init_network_dvars_hook.invoke<void>(dvar);
 		}
+
+		void disconnect()
+		{
+			utils::hook::invoke<void>(0x140C58E20); // SV_MainMP_MatchEnd
+		}
 	}
 
 	class component final : public component_interface
@@ -268,8 +273,15 @@ namespace patches
 
 			// killswitches
 			dvars::override::register_bool("mission_team_contracts_enabled", true, game::DVAR_FLAG_READ);
-			//dvars::override::register_bool("killswitch_store", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_store", false, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_quartermaster", false, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_cod_points", false, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_custom_emblems", false, game::DVAR_FLAG_READ);
 			dvars::override::register_bool("killswitch_matchID", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_mp_leaderboards", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_cp_leaderboards", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_streak_variants", false, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_blood_anvil", false, game::DVAR_FLAG_READ);
 
 			// announcer packs
 			if (!game::environment::is_dedi())
@@ -297,11 +309,8 @@ namespace patches
 			dvars::override::register_float("gpad_stick_pressed", 0.4f, 0, 1, game::DVAR_FLAG_SAVED);
 			dvars::override::register_float("gpad_stick_pressed_hysteresis", 0.1f, 0, 1, game::DVAR_FLAG_SAVED);
 
-			// block changing name in-game
-			utils::hook::set<uint8_t>(0x140C4DF90, 0xC3);
-
 			// disable host migration
-			utils::hook::set<uint8_t>(0x140C5A200, 0xC3);
+			utils::hook::jump(0x140C5A200, disconnect);
 
 			// precache is always allowed
 			utils::hook::set(0x1406D5280, 0xC301B0); // NetConstStrings_IsPrecacheAllowed

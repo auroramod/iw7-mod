@@ -296,16 +296,52 @@ namespace party
 
 		bool preloaded_map = false;
 
-		void perform_game_initialization()
+		void xstartlobby(const int max_clients, const bool private_match)
 		{
-			command::execute("onlinegame 1", true);
-			command::execute("xblive_privatematch 1", true);
-			//command::execute("xstartprivateparty", true);
-			command::execute("xstartprivatematch", true);
+			// Retrieve game variables
+			const int privateMatch = private_match; //game::Dvar_FindVar("xblive_privatematch")->current.integer;
+			const int maxPlayers = max_clients; //game::Dvar_FindVar("party_maxplayers")->current.integer;
+			const int privateClients = 0; //game::Dvar_FindVar("ui_privateClients")->current.integer;
+			const int availableSpots = maxPlayers - privateClients;
+
+			// Get party data
+			auto partyData = game::Lobby_GetPartyData();
+
+			// Stop current party and reset settings
+			utils::hook::invoke<void>(0x1409D07B0, partyData); // Party_StopParty
+			utils::hook::invoke<void>(0x1409CAB20, partyData, 0, 1); // Party_Awake
+			utils::hook::invoke<void>(0x1409D0050); // Party_ResetTweakDvars
+			utils::hook::invoke<void>(0x1409CB460, partyData); // Voice_DisableLocalMics
+
+			// Set lobby presence
+			utils::hook::invoke<void>(0x140D330B0, 0); // Live_SetLobbyPresence
+
+			// Run playlist rule if not in a private match
+			if (!privateMatch/* && !game::environment::is_dedi()*/)
+			{
+				utils::hook::invoke<void>(0x140CCD840, 0, 0); // Playlist_RunRule
+			}
+
+			// Set up lobby flags
+			const int flags = utils::hook::invoke<int>(0x140D9B200, 0); // PartyHost_GetCreateFlags
+
+			// Initialize lobby
+			utils::hook::invoke<void>(0x1409D9940, partyData, 0, 0, flags, privateClients, availableSpots);
+		}
+
+		void perform_game_initialization(const int max_clients, const bool private_match)
+		{
+			xstartlobby(max_clients, private_match);
+
+			const auto ui_maxclients = game::Dvar_FindVar("ui_maxclients");
+			const auto party_maxplayers = game::Dvar_FindVar("party_maxplayers");
+			game::Dvar_SetInt(ui_maxclients, max_clients);
+			game::Dvar_SetInt(party_maxplayers, max_clients);
+
 			command::execute("uploadstats", true);
 		}
 
-		void connect_to_party(const game::netadr_s& target, const std::string& mapname, const std::string& gametype, int sv_maxclients)
+		void connect_to_party(const game::netadr_s& target, const std::string& mapname, const std::string& gametype, int sv_maxclients, const bool private_match)
 		{
 			const auto mode = game::Com_GameMode_GetActiveGameMode();
 			if (mode != game::GAME_MODE_MP && mode != game::GAME_MODE_CP)
@@ -317,20 +353,15 @@ namespace party
 			{
 				scheduler::once([=]()
 				{
-					connect_to_party(target, mapname, gametype, sv_maxclients);
+					connect_to_party(target, mapname, gametype, sv_maxclients, private_match);
 				}, scheduler::pipeline::main, 1s);
 				return;
 			}
 
-			const auto ui_maxclients = game::Dvar_FindVar("ui_maxclients");
-			const auto party_maxplayers = game::Dvar_FindVar("party_maxplayers");
-			game::Dvar_SetInt(ui_maxclients, sv_maxclients);
-			game::Dvar_SetInt(party_maxplayers, sv_maxclients);
+			perform_game_initialization(sv_maxclients, private_match);
 
-			command::execute(utils::string::va("ui_mapname %s", mapname.data()), true);
-			command::execute(utils::string::va("ui_gametype %s", gametype.data()), true);
-
-			perform_game_initialization();
+			game::Dvar_SetFromStringByName("ui_mapname", mapname.data(), game::DVAR_SOURCE_INTERNAL);
+			game::Dvar_SetFromStringByName("ui_gametype", gametype.data(), game::DVAR_SOURCE_INTERNAL);
 
 			// setup agent count
 			utils::hook::invoke<void>(0x140C19B00, gametype.data());
@@ -344,7 +375,7 @@ namespace party
 
 		void start_map_for_party(std::string map_name)
 		{
-			[[maybe_unused]]auto* mapname = game::Dvar_FindVar("ui_mapname");
+			[[maybe_unused]] auto* mapname = game::Dvar_FindVar("ui_mapname");
 			auto* gametype = game::Dvar_FindVar("ui_gametype");
 			auto* clients = game::Dvar_FindVar("ui_maxclients");
 			auto* private_clients = game::Dvar_FindVar("ui_privateClients");
@@ -398,8 +429,6 @@ namespace party
 		void sv_start_map_for_party_stub(const char* map, const char* game_type, int client_count, int agent_count, bool hardcore,
 			bool map_is_preloaded, bool migrate)
 		{
-			profile_infos::xuid::clear_xuids();
-
 			hash_cache.clear();
 
 			if (game::environment::is_dedi())
@@ -426,6 +455,8 @@ namespace party
 					memset(&*reinterpret_cast<__int64*>(0x144E3A490 + 8), 0, 0x78680ui64 - 8);
 				}
 			}
+
+			utils::hook::invoke<void>(0x140C55DF0); // SV_InitMP_SetXUIDConfigStrings
 		}
 
 		void reset_mem_stuff_stub(utils::hook::assembler& a)
@@ -438,6 +469,30 @@ namespace party
 			a.popad64();
 
 			a.jmp(0x140C563E2);
+		}
+
+		void send_user_info()
+		{
+			auto userinfostring = utils::hook::invoke<const char*>(0x1409B2850, 0); // CL_MainMP_GetUserInfoString
+			auto cmd = utils::string::va("userinfo \"%s\"", userinfostring);
+			utils::hook::invoke<void>(0x140341430, 0, cmd); // CL_Main_AddReliableCommand
+		}
+
+		utils::hook::detour cl_prepare_for_map_restart_hook;
+		void cl_prepare_for_map_restart_stub(const char* mapname, const char* gametype)
+		{
+			cl_prepare_for_map_restart_hook.invoke<void>(mapname, gametype);
+		}
+
+		utils::hook::detour cl_initialize_gamestate_hook;
+		void cl_initialize_gamestate_stub(int local_client_num)
+		{
+			if (!game::Com_IsAnyLocalServerRunning())
+			{
+				send_user_info();
+			}
+
+			cl_initialize_gamestate_hook.invoke<void>(local_client_num);
 		}
 	}
 
@@ -506,7 +561,18 @@ namespace party
 			command::execute(utils::string::va("seta ui_hardcore %d", hardcore->current.enabled), true);
 		}
 
-		perform_game_initialization();
+		if (!utils::hook::invoke<bool>(0x1409CDCF0) || game::Com_FrontEnd_IsInFrontEnd())
+		{
+			if (game::environment::is_dedi())
+			{
+				perform_game_initialization(game::Dvar_FindVar("party_maxplayers")->current.integer, false);
+			}
+			else
+			{
+				perform_game_initialization(game::Dvar_FindVar("party_maxplayers")->current.integer,
+					game::Dvar_FindVar("xblive_privatematch")->current.integer);
+			}
+		}
 
 		console::info("Starting map: %s\n", mapname.data());
 
@@ -573,7 +639,6 @@ namespace party
 	{
 		command::execute("luiOpenPopup AcceptingInvite", true);
 
-		profile_infos::xuid::clear_xuids();
 		profile_infos::clear_profile_infos();
 
 		server_connection_state.host = target;
@@ -648,8 +713,15 @@ namespace party
 			// enable custom kick reason in GScr_KickPlayer
 			utils::hook::set<uint8_t>(0x140B5377E, 0xEB);
 
-			// disable this, maybe causes no issues, but fixes Session unregister on map change/restart
-			utils::hook::set<uint8_t>(0x140851B50, 0xC3); // CG_ServerCmdMP_ParsePlayerInfos
+			cl_prepare_for_map_restart_hook.create(0x1409B3FE0, cl_prepare_for_map_restart_stub);
+			cl_initialize_gamestate_hook.create(0x1409B2FA0, cl_initialize_gamestate_stub);
+
+			command::add("senduserinfo", []()
+			{
+				auto userinfostring = utils::hook::invoke<const char*>(0x1409B2850, 0); // CL_MainMP_GetUserInfoString
+				auto cmd = utils::string::va("userinfo \"%s\"", userinfostring);
+				utils::hook::invoke<void>(0x140341430, 0, cmd); // CL_Main_AddReliableCommand
+			});
 
 			command::add("map", [](const command::params& args)
 			{
@@ -667,21 +739,24 @@ namespace party
 				start_map(args.get(1), false);
 			});
 
-			command::add("devmap", [](const command::params& args)
+			if (!game::environment::is_dedi())
 			{
-				if (args.size() != 2)
+				command::add("devmap", [](const command::params& args)
 				{
-					return;
-				}
+					if (args.size() != 2)
+					{
+						return;
+					}
 
-				if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
-				{
-					command::execute(utils::string::va("spmap %s", args.get(1)));
-					return;
-				}
+					if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
+					{
+						command::execute(utils::string::va("spmap %s", args.get(1)));
+						return;
+					}
 
-				start_map(args.get(1), true);
-			});
+					start_map(args.get(1), true);
+				});
+			}
 
 			command::add("map_restart", []()
 			{
@@ -855,6 +930,7 @@ namespace party
 				info.set("playmode", utils::string::va("%i", game::Com_GameMode_GetActiveGameMode()));
 				info.set("sv_running", utils::string::va("%i", get_dvar_bool("sv_running") && !game::Com_FrontEndScene_IsActive()));
 				info.set("dedicated", utils::string::va("%i", get_dvar_bool("dedicated")));
+				info.set("privatematch", utils::string::va("%i", get_dvar_bool("xblive_privatematch")));
 				info.set("sv_wwwBaseUrl", get_dvar_string("sv_wwwBaseUrl"));
 				info.set("sv_discordImageUrl", get_dvar_string("sv_discordImageUrl"));
 				info.set("sv_discordImageText", get_dvar_string("sv_discordImageText"));
@@ -866,7 +942,7 @@ namespace party
 				{
 					for (const auto& file : mod_files)
 					{
-						const auto hash = get_file_hash(utils::string::va("%s/mod%s", 
+						const auto hash = get_file_hash(utils::string::va("%s/mod%s",
 							fs_game.data(), file.extension.data()));
 						info.set(file.name, hash);
 					}
@@ -973,7 +1049,9 @@ namespace party
 					server_discord_info.emplace(discord_info);
 				}
 
-				connect_to_party(target, mapname, gametype, sv_maxclients);
+				const auto privatematch = std::atoi(info.get("privatematch").data());
+
+				connect_to_party(target, mapname, gametype, sv_maxclients, privatematch);
 			});
 		}
 	};
