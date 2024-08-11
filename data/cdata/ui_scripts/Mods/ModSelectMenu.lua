@@ -57,14 +57,16 @@ end
 
 local populateModList = function(menuElement, controllerIndex)
     local modList = {}
-    local mods = io.listfiles("mods/")
-    for i = 1, #mods do
-        local name, desc = getModName(mods[i])
-        modList[#modList + 1] = {
-            buttonLabel = ToUpperCase(name),
-            modName = name,
-            objectiveText = desc
-        }
+    if io.directoryexists("mods") then
+        local mods = io.listfiles("mods/")
+        for i = 1, #mods do
+            local name, desc = getModName(mods[i])
+            modList[#modList + 1] = {
+                buttonLabel = ToUpperCase(name),
+                modName = name,
+                objectiveText = desc
+            }
+        end
     end
     local dataSource = LUI.DataSourceFromList.new(#modList)
     dataSource.MakeDataSourceAtIndex = function(dataSource, index, controllerIndex)
@@ -101,6 +103,11 @@ local function postLoadFunction(menuElement, controllerIndex, controller)
     populateModList(menuElement, controllerIndex)
     menuElement:addEventHandler("gain_focus", function(focusElement, controllerIndex)
         local modSelectionList = focusElement.ModSelectionList
+
+        if modSelectionList:getNumChildren() == 0 then
+            return
+        end
+
         local contentOffset = modSelectionList:GetContentOffset(LUI.DIRECTION.vertical)
         modSelectionList:SetFocusedPosition({
             x = 0,
