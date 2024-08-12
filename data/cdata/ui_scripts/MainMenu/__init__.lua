@@ -1,10 +1,7 @@
 if not Engine.InFrontend() then
-    return
+	return
 end
 
-require("CampaignMenuButtons")
-require("CPMainMenuButtons")
 require("CPMainMenu")
-require("MissionsVerticalLayout")
-require("MPMainMenuButtons")
-require("MPMainMenu")
+require("CPMPMainMenuButtons")
+require("MissionButtons")
