@@ -296,12 +296,12 @@ namespace party
 
 		bool preloaded_map = false;
 
-		void xstartlobby(const int max_clients, const bool private_match)
+		void xstartlobby()
 		{
 			// Retrieve game variables
-			const int privateMatch = private_match; //game::Dvar_FindVar("xblive_privatematch")->current.integer;
-			const int maxPlayers = max_clients; //game::Dvar_FindVar("party_maxplayers")->current.integer;
-			const int privateClients = 0; //game::Dvar_FindVar("ui_privateClients")->current.integer;
+			const int privateMatch = game::Dvar_FindVar("xblive_privatematch")->current.integer;
+			const int maxPlayers = game::Dvar_FindVar("party_maxplayers")->current.integer;
+			const int privateClients = game::Dvar_FindVar("ui_privateClients")->current.integer;
 			const int availableSpots = maxPlayers - privateClients;
 
 			// Get party data
@@ -331,12 +331,15 @@ namespace party
 
 		void perform_game_initialization(const int max_clients, const bool private_match)
 		{
-			xstartlobby(max_clients, private_match);
-
 			const auto ui_maxclients = game::Dvar_FindVar("ui_maxclients");
 			const auto party_maxplayers = game::Dvar_FindVar("party_maxplayers");
 			game::Dvar_SetInt(ui_maxclients, max_clients);
 			game::Dvar_SetInt(party_maxplayers, max_clients);
+
+			const auto xblive_privatematch = game::Dvar_FindVar("xblive_privatematch");
+			game::Dvar_SetBool(xblive_privatematch, private_match);
+
+			xstartlobby();
 
 			command::execute("uploadstats", true);
 		}
@@ -550,7 +553,7 @@ namespace party
 		command::execute(utils::string::va("seta ui_mapname %s", mapname.data()), true);
 
 		auto* gametype = game::Dvar_FindVar("g_gametype");
-		if (gametype && gametype->current.string)
+		if (gametype && gametype->current.string && gametype->current.string != "frontend"s)
 		{
 			command::execute(utils::string::va("seta ui_gametype %s", gametype->current.string), true);
 		}
@@ -561,7 +564,7 @@ namespace party
 			command::execute(utils::string::va("seta ui_hardcore %d", hardcore->current.enabled), true);
 		}
 
-		if (!utils::hook::invoke<bool>(0x1409CDCF0) || game::Com_FrontEnd_IsInFrontEnd())
+		if (!utils::hook::invoke<bool>(0x1409CDCF0, game::Lobby_GetPartyData()) || game::Com_FrontEnd_IsInFrontEnd())
 		{
 			if (game::environment::is_dedi())
 			{

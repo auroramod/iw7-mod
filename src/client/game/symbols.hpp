@@ -125,6 +125,7 @@ namespace game
 	WEAK symbol<const char* (dvar_t* dvar, DvarValue value)> Dvar_ValueToString{ 0x140CEED00 };
 	WEAK symbol<void(dvar_t* dvar, DvarSetSource source)> Dvar_Reset{ 0x140CEC490 };
 	WEAK symbol<unsigned int(const char* name)> Dvar_GenerateChecksum{ 0x140CEA520 };
+	WEAK symbol<void(dvar_t* dvar, bool value)> Dvar_SetBool{ 0x140CEC7D0 };
 	WEAK symbol<void(dvar_t* dvar, int value)> Dvar_SetInt{ 0x140CED3D0 };
 	WEAK symbol<void(dvar_t* dvar, float value)> Dvar_SetFloat{ 0x140CECD90 };
 	WEAK symbol<void(bool cheatOverride)> Dvar_OverrideCheatProtection{ 0x140CEB250 };
