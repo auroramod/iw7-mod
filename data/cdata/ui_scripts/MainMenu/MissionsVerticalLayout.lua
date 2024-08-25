@@ -1,6 +1,7 @@
 local f0_local0 = function(arg0, arg1, arg2)
     assert(arg0.CreateAClassButton)
     assert(arg0.MissionSelect)
+    assert(arg0.MissionSelect2)
     local f1_local0 = LUI.DataSourceInGlobalModel.new("frontEnd.lobby.findMatchButtonWaitStatus")
     arg0:SubscribeToModel(f1_local0:GetModel(arg1), function()
         local f2_local0 = f1_local0:GetValue(arg1)
@@ -50,6 +51,18 @@ function MissionsVerticalLayout(menu, controller)
     MissionSelect:SetAnchorsAndPosition(0, 0, 0, 1, 0, _1080p * -4, 0, _1080p * 30)
     self:addElement(MissionSelect)
     self.MissionSelect = MissionSelect
+
+    local MissionSelect2 = nil
+
+    MissionSelect2 = MenuBuilder.BuildRegisteredType("GenericButton", {
+        controllerIndex = controllerIndex
+    })
+    MissionSelect2.id = "MissionSelect2"
+    MissionSelect2.buttonDescription = Engine.Localize( "PLATFORM_DESC_FIND_GAME" )
+    MissionSelect2.Text:setText( ToUpperCase( "COMBAT TRAINING" ), 0 )
+    MissionSelect2:SetAnchorsAndPosition(0, 0, 0, 1, 0, _1080p * -4, 0, _1080p * 30)
+    self:addElement(MissionSelect2)
+    self.MissionSelect2 = MissionSelect2
 
     local MissionTeams = nil
 
@@ -149,6 +162,10 @@ function MissionsVerticalLayout(menu, controller)
     MissionSelect:addEventHandler("button_action", function(f11_arg0, f11_arg1)
         local f11_local0 = f11_arg1.controller or controllerIndex
         ACTIONS.OpenMenu("SystemLinkMenu", true, f11_local0)
+    end)
+    MissionSelect2:addEventHandler("button_action", function(f11_arg0, f11_arg1)
+        local f11_local0 = f11_arg1.controller or controllerIndex
+        ACTIONS.OpenMenu("PlaylistMenu", true, f11_local0)
     end)
     MissionTeams:addEventHandler("button_action", function(f12_arg0, f12_arg1)
         ACTIONS.OpenMenu("MissionTeamSelect", true, f12_arg1.controller or controllerIndex)
