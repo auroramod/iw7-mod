@@ -321,6 +321,9 @@ namespace dedicated
 			// remove emblem stuff
 			utils::hook::set<uint8_t>(0x14003B9A0, 0xC3);
 
+			// remove customization xmodel stuff
+			utils::hook::set<uint8_t>(0x1405D0690, 0xC3);
+
 			// UI patches
 			utils::hook::set<uint8_t>(0x140615090, 0xC3); // LUI_CoD_Init
 			utils::hook::set<uint8_t>(0x140348A90, 0xC3); // CL_InitUI
