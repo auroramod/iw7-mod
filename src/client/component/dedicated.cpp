@@ -251,7 +251,7 @@ namespace dedicated
 			dvars::override::register_bool("intro", false, game::DVAR_FLAG_READ);
 
 			// Stop crashing from sys_errors
-			utils::hook::jump(0x140D34180, sys_error_stub, true);
+			//utils::hook::jump(0x140D34180, sys_error_stub, true);
 
 			// Is party dedicated
 			utils::hook::jump(0x1405DFC10, party_is_server_dedicated_stub);
@@ -301,12 +301,29 @@ namespace dedicated
 			// check the sounddata when server is launched
 			start_server_hook.create(0x140C56050, start_server_stub);
 
-			// IMAGE patches
-			// image stream (pak)
+			// AlwaysLoaded
+			utils::hook::set<uint8_t>(0x140A81D40, 0xC3);
+
+			// remove imagefile load
 			utils::hook::set<uint8_t>(0x140A7DB10, 0xC3); // DB_CreateGfxImageStreamInternal
+			utils::hook::set<uint8_t>(0x140E01F00, 0xC3); // Load_Texture
+
+			// remove assetfile load
+			//utils::hook::jump(0x1409E762F, 0x1409E7713);
+			//utils::hook::set<uint8_t>(0x1403BA0A0, 0xC3);
+			//utils::hook::jump(0x140571E5F, 0x140571EF0);
+
+			// remove transient loads
+			utils::hook::set<uint8_t>(0x140A79AE0, 0xC3);
+			utils::hook::set<uint8_t>(0x1403BB990, 0xC3);
+			utils::hook::set<uint8_t>(0x140A78910, 0xC3);
+
+			// remove emblem stuff
+			utils::hook::set<uint8_t>(0x14003B9A0, 0xC3);
 
 			// UI patches
 			utils::hook::set<uint8_t>(0x140615090, 0xC3); // LUI_CoD_Init
+			utils::hook::set<uint8_t>(0x140348A90, 0xC3); // CL_InitUI
 
 			// IW7 patches
 			utils::hook::set(0x140E06060, 0xC3C033); // directx

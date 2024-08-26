@@ -180,6 +180,7 @@ namespace demonware
 			lootmap.clear();
 
 			const auto asset = game::DB_FindXAssetHeader(game::ASSET_TYPE_STRINGTABLE, csv.file.data(), 0).stringTable;
+			if (!asset) return;
 
 			for (auto row = 0; row < asset->rowCount; row++)
 			{
@@ -268,6 +269,7 @@ namespace demonware
 			lootcrates.clear();
 
 			const auto asset = game::DB_FindXAssetHeader(game::ASSET_TYPE_STRINGTABLE, csv::loot_crate.file.data(), 0).stringTable;
+			if (!asset) return;
 
 			for (auto row = 0; row < asset->rowCount; row++)
 			{

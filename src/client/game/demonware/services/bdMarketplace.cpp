@@ -1,7 +1,7 @@
 #include <std_include.hpp>
 #include "../dw_include.hpp"
 
-#include <utils/io.hpp>
+#include "game/game.hpp"
 
 #include "steam/steam.hpp"
 
@@ -281,6 +281,12 @@ namespace demonware
 
 	void bdMarketplace::getInventoryPaginated(service_server* server, byte_buffer* buffer) const
 	{
+		if (game::environment::is_dedi())
+		{
+			server->create_reply(this->task_id()).send();
+			return;
+		}
+
 		std::string platform;
 		std::uint32_t itemsPerPage, pageNum;
 

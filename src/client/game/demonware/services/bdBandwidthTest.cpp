@@ -21,7 +21,7 @@ namespace demonware
 		byte_buffer buffer;
 		buffer.write(sizeof bandwidth_iw6, bandwidth_iw6);
 
-		auto reply = server->create_message(5);
+		auto reply = server->create_message(BD_LSG_SERVICE_TASK_REPLY);
 		reply.send(&buffer, true);
 	}
 }
