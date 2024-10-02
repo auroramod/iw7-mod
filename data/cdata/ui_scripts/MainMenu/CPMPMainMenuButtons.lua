@@ -40,11 +40,6 @@ local customServerButton = function(self, override, preLoad)
 		self.ServerBrowserButton.id = "ServerBrowser"
 		self.ServerBrowserButton.buttonDescription = Engine.Localize("Browse custom servers")
 		self.ServerBrowserButton.Text:setText(ToUpperCase(Engine.Localize("Server Browser")), 0)
-
-		-- -- update button position
-		-- local buttonSpacing = _1080p * 40
-		-- local pos = GetAnchorsAndPosition(override)
-		-- self.ServerBrowserButton:SetAnchorsAndPosition(table.unpack(pos))
 	end
 end
 
@@ -72,16 +67,6 @@ local customModsButton = function(self, info)
 		end
 		LUI.FlowManager.RequestAddMenu("ModSelectMenu", false, f5_arg1.controller, false, {}, true)
 	end)
-
-	-- local ModIcon = LUI.UIImage.new()
-	-- ModIcon.id = "ModIcon"
-	-- ModIcon:SetScale(-0.1, 0)
-	-- ModIcon:SetAlpha(1.0, 0)
-	-- ModIcon:setImage(RegisterMaterial("icon_currency_keys"), 0)
-	-- ModIcon:SetAnchorsAndPosition(0, 1, 0, 1, 0, -35, -10, 30)
-	-- ModIcon:SetRGBFromTable(COLORS.purple)
-	-- ModsButton:addElement(ModIcon)
-	-- ModsButton.ModIcon = ModIcon
 
 	ModsButton:SetAlignment(LUI.Alignment.Left)
 	self:addElement(ModsButton)

@@ -26,7 +26,7 @@ function MissionsButtons(menu, controller)
 	ServerBrowserButton.Text:setText(ToUpperCase(Engine.Localize("Server Browser")), 0)
 	ServerBrowserButton.buttonDescription = Engine.Localize("Browse a list of dedicated servers.")
 	ServerBrowserButton:SetAnchorsAndPosition(0, 1, 0, 1, 0, _1080p * 500, _1080p * 40, _1080p * 70)
-	LUI.UIElement.addElementBefore(ServerBrowserButton, MissionsVerticalLayout:getChildById("MissionSelect")) --addElementAfter
+	LUI.UIElement.addElementBefore(ServerBrowserButton, MissionsVerticalLayout:getChildById("MissionSelect"))
 	MissionsVerticalLayout.ServerBrowserButton = ServerBrowserButton
 	ServerBrowserButton:addEventHandler("button_action", function(f14_arg0, f14_arg1)
 		LUI.FlowManager.RequestAddMenu("SystemLinkMenu", true, f14_arg1.controller, false, {})

@@ -3,9 +3,7 @@ function CONDITIONS.IsMatchSimToolEnabled(self)
 end
 
 local set_matchmaking_dvars = function()
-	-- Engine.Exec("xstoplobbybackout")
 	Engine.Exec("xstopprivateparty")
-	-- Engine.Exec("xstartlobby")
 	Engine.Exec("online_matchmaking_dedi_required 0")
 	Engine.Exec("online_matchmaking_disband_on_update_failure 1")
 	Engine.Exec("online_matchmaking_no_dedi_search 1")
@@ -28,7 +26,7 @@ local MatchSimulator = {}
 MatchSimulator.ShowGameOverScreen = function()
 	Engine.Exec("party_minplayers 1")
 	LUI.UIRoot.BlockButtonInput(Engine.GetLuiRoot(), false, "TransitionToGame")
-	Engine.Exec("exec start") -- TODO: this is a stupid hack. fix plz
+	Engine.Exec("exec start") -- TODO: figure out how to start public match correctly. This is terrible.
 end
 
 local LobbyMissionButtons = function(menu, controller)
@@ -48,11 +46,6 @@ local LobbyMissionButtons = function(menu, controller)
 	LobbyMissionVerticalLayout:SetAnchorsAndPosition(0, 1, 0, 1, 0, _1080p * 600, 0, _1080p * 564)
 	self:addElement(LobbyMissionVerticalLayout)
 	self.LobbyMissionVerticalLayout = LobbyMissionVerticalLayout
-
-	-- local StartSim = LobbyMissionVerticalLayout:getChildById( "StartSim" )
-	-- StartSim.Text:setText(ToUpperCase( Engine.Localize( "MENU_START_MATCH" ) ), 0 )
-	-- StartSim.buttonDescription = Engine.Localize( "LUA_MENU_DESC_START_MATCH" )
-	-- StartSim:SetAnchorsAndPosition( 0, 1, 0, 1, 0, _1080p * 500, _1080p * 0, _1080p * 30 )
 
 	local StartButton = MenuBuilder.BuildRegisteredType("GenericButton", {
 		controllerIndex = f6_local1,
@@ -85,14 +78,6 @@ local LobbyMissionButtons = function(menu, controller)
 	end)
 
 	set_matchmaking_dvars()
-
-	-- local ChangeTeamOrRole = MenuBuilder.BuildRegisteredType( "ChangeTeamOrRole", {
-	-- 	controllerIndex = f6_local1
-	-- } )
-	-- ChangeTeamOrRole.id = "ChangeTeamOrRole"
-	-- ChangeTeamOrRole:SetAnchorsAndPosition( 0, 1, 0, 1, _1080p * 1103, _1080p * 1328, _1080p * 1006, _1080p * 1040 )
-	-- LobbyMissionVerticalLayout:addElement( ChangeTeamOrRole )
-	-- LobbyMissionVerticalLayout.ChangeTeamOrRole = ChangeTeamOrRole
 
 	local CRMMain = MenuBuilder.BuildRegisteredType("CRMMain", {
 		controllerIndex = f2_local1,

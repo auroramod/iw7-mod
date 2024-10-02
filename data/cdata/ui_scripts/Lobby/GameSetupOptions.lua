@@ -24,10 +24,9 @@ local postLoadGameSetupButtonsSubMenu = function(self, f2_arg1, f2_arg2)
 	assert(self.OptionsButton.DynamicText)
 	assert(self.BotSetup)
 
-	-- MatchRules.SetUsingMatchRulesData(1)
 	self.MapsButton.DynamicText:setText(ToUpperCase(Lobby.GetMapName()))
-	-- self.OptionsButton:SetButtonDisabled(1) -- TODO opening custom game rules menu resets game settings
-	-- self.BotSetup:SetButtonDisabled(1) -- TODO
+	self.OptionsButton:SetButtonDisabled(1) -- TODO: game settings are not applied and get rest on menu change.
+	self.BotSetup:SetButtonDisabled(1) -- TODO: support custom bot management (gsc + engine changes required)
 end
 
 local GameSetupButtonsSubMenu = function(menu, controller)

@@ -44,7 +44,6 @@ local Quit2 = function(f7_arg0)
 	Engine.ExecFirstClient("xpartydisbandafterround")
 	if Engine.GetDvarBool("sv_running") then
 		Engine.NotifyServer("end_game", 1)
-		-- Engine.ExecFirstClient("disconnect")
 		Engine.ExecFirstClient("xblive_privatematch 0")
 		Engine.ExecFirstClient("onlinegame 1")
 		Engine.ExecFirstClient("xstartprivateparty")

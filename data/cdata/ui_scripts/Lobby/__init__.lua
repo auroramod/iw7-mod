@@ -53,8 +53,6 @@ Lobby.ShouldDisplayMap = function(f37_arg0, f37_arg1)
 	end
 end
 
--- function FixTeamLimitsAndDifficultiesIfNecessary(f20_arg0, f20_arg1) end
-
 require("LobbyMissionButtons")
 require("GameSetupOptions")
 require("GameSetupButtonsBots")

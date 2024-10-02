@@ -75,6 +75,7 @@ local update_button = function(f1_arg0, f1_arg1, f1_arg2)
 		f1_arg0.action(f1_arg0.currentValue, f1_arg2)
 	end
 end
+
 local f0_local0 = function(f1_arg0, f1_arg1, f1_arg2)
 	local f1_local0 = {
 		[Bot.BotTeams.FFA] = f1_arg0.FFABots,
