@@ -427,6 +427,11 @@ namespace gsc
 	{
 		for (const auto& file : scripting::script_function_table_sort)
 		{
+			if (file.first.find("/asm/") != std::string::npos)
+			{
+				continue;
+			}
+
 			const auto first_function = file.second.begin();
 			for (auto i = file.second.begin(); i != file.second.end() && std::next(i) != file.second.end(); ++i)
 			{
