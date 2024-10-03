@@ -664,6 +664,9 @@ namespace game
 			WEAPON_RAISING = 1,
 			WEAPON_RAISING_ALTSWITCH = 2,
 			WEAPON_RAISING_ALTSWITCH_ADS = 3,
+
+			WEAPON_FIRING = 0x10,
+			WEAPON_RECHAMBERING = 0x11,
 		};
 
 		enum WeaponAnimNumber : std::int32_t
@@ -789,6 +792,11 @@ namespace game
 			unsigned int m_flags[bitSize >> (sizeof(unsigned int) + 1)];
 		};
 
+		struct PlayerWeaponCommonState
+		{
+			unsigned __int16 weaponIdx;
+		};
+
 		struct playerState_s
 		{
 			int commandTime;
@@ -811,14 +819,24 @@ namespace game
 		assert_offsetof(playerState_s, weapState, 1620);
 		assert_offsetof(playerState_s, weapFlags, 2188);
 
+		struct usercmd_s
+		{
+			unsigned __int64 buttons;
+			char __pad0[112];
+		}; assert_sizeof(usercmd_s, 120);
+
 		struct pmove_t
 		{
 			void* unk;
 			playerState_s* ps;
-			char __pad0[560];
+			usercmd_s cmd;
+			usercmd_s oldcmd;
+			char __pad0[312];
+			void* weaponMap;
 			unsigned char handler;
 		};
 		assert_offsetof(pmove_t, handler, 576);
+		assert_offsetof(pmove_t, weaponMap, 568);
 
 		struct pml_t
 		{
@@ -827,6 +845,15 @@ namespace game
 			float up[3];
 			float frametime;
 			int msec;
+			int walking;
+			int groundPlane;
+			int almostGroundPlane;
+			int groundTrace;
+			float impactSpeed;
+			float previous_origin[3];
+			float previous_velocity[3];
+			float wishdir[3];
+			unsigned int holdrand;
 		};
 		assert_offsetof(pml_t, msec, 40);
 
