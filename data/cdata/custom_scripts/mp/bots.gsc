@@ -10,6 +10,7 @@ main()
     replacefunc(scripts\mp\bots\bots::bot_connect_monitor, ::bot_connect_monitor);
     replacefunc(scripts\mp\bots\bots_util::bot_get_client_limit, ::bot_get_client_limit);
     replacefunc(scripts\mp\hostmigration::waitlongdurationwithhostmigrationpause, ::_wait);
+    replacefunc(scripts\mp\gamelogic::waitforplayers, ::waitforplayers);
 }
 
 initDvars()
@@ -17,6 +18,10 @@ initDvars()
     // setdvar("bots_enabled", 1);
     // setdvar("bot_difficulty", 0);
     // setdvar("party_maxplayers", 18); // controls how many bots are allowed to spawn
+    setdvar("scr_game_graceperiod", 15);
+    setdvar("scr_game_playerwaittime", 5);
+    setdvar("scr_game_matchstarttime", 5);
+    level.ready_to_start = 0;
 }
 
 initLevelVariables()
@@ -56,6 +61,34 @@ allowedBotDifficulty(difficulty)
 _wait(time)
 {
     wait(time);
+}
+
+waitForPlayers( maxTime )
+{
+	startTime = gettime();
+	endTime = startTime + maxTime * 1000 - 200;
+
+	if ( maxTime > 5 )
+		minTime = gettime() + getDvarInt( "min_wait_for_players" ) * 1000;
+	else
+		minTime = 0;
+	
+	numToWaitFor = ( level.connectingPlayers/3 );
+	
+	for ( ;; )
+	{
+		if ( isDefined( game["roundsPlayed"] ) && game["roundsPlayed"] )
+			break;
+		
+		totalSpawnedPlayers = level.maxPlayerCount;
+		
+		curTime = gettime();
+		
+		if( level.ready_to_start )
+			break;
+		
+		wait 0.05; 
+	}
 }
 
 human()
@@ -105,7 +138,10 @@ wait_for_human_player()
         wait(0.25);
     }
 
+    if(!isdefined( player )) wait_for_human_player(); // if the player leaves wait for new player
+
     level.pausing_bot_connect_monitor = 0;
+    level.ready_to_start = 1;
     
     return 1;
 }
