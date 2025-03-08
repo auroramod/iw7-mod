@@ -222,7 +222,7 @@ namespace network
 			return PROTOCOL;
 		}
 
-		void reconnect_migratated_client(void*, game::netadr_s* from, const int, const int, const char*,
+		void reconnect_migrated_client(void*, game::netadr_s* from, const int, const int, const char*,
 			const char*, bool)
 		{
 			// This happens when a client tries to rejoin after being recently disconnected, OR by a duplicated guid
@@ -317,7 +317,7 @@ namespace network
 			utils::hook::nop(0x140C55EC7, 6);
 
 			utils::hook::jump(game::NET_CompareAdr, net_compare_address);
-			utils::hook::jump(game::NET_CompareBaseAdr, net_compare_base_address);
+			utils::hook::jump(game::NET_CompareBaseAdr, net_compare_address);
 
 			// don't establish secure conenction
 			utils::hook::set<uint8_t>(0x1409DBFDD, 0xEB);
@@ -353,7 +353,7 @@ namespace network
 			utils::hook::set(0x140CE6E60, 0xC301B0);
 
 			// don't try to reconnect client
-			utils::hook::call(0x140C4F05F, reconnect_migratated_client);
+			utils::hook::call(0x140C4F05F, reconnect_migrated_client);
 			utils::hook::nop(0x140C4F03C, 4); // this crashes when reconnecting for some reason
 
 			// increase allowed packet size
