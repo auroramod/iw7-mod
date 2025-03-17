@@ -18,8 +18,6 @@ namespace steam_proxy
 {
 	namespace
 	{
-		utils::binary_resource runner_file(RUNNER, "runner.exe");
-
 		utils::nt::library steam_client_module_{};
 #ifdef LOAD_STEAM_OVERLAY
 		utils::nt::library steam_overlay_module_{};
@@ -84,8 +82,7 @@ namespace steam_proxy
 			steam_pipe_ = steam_client_module_.invoke<steam::HSteamPipe>("Steam_CreateSteamPipe");
 			global_user_ = steam_client_module_.invoke<steam::HSteamUser>(
 				"Steam_ConnectToGlobalUser", steam_pipe_);
-			client_user_ = client_engine_.invoke<void*>(8, steam_pipe_, global_user_);
-			// GetIClientUser
+			client_user_ = client_engine_.invoke<void*>(8, steam_pipe_, global_user_); // GetIClientUser
 			client_utils_ = client_engine_.invoke<void*>(14, steam_pipe_); // GetIClientUtils
 		}
 
@@ -147,36 +144,23 @@ namespace steam_proxy
 
 			client_utils_.invoke<void>("SetAppIDForCurrentPipe", app_id, false);
 
-			char our_directory[MAX_PATH] = { 0 };
-			GetCurrentDirectoryA(sizeof(our_directory), our_directory);
-
-			const auto path = runner_file.get_extracted_file();
-			const std::string cmdline = utils::string::va("\"%s\" -proc %d", path.data(), GetCurrentProcessId());
-
-			steam::game_id game_id;
-			game_id.raw.type = 1; // k_EGameIDTypeGameMod
-			game_id.raw.app_id = app_id & 0xFFFFFF;
-
-			const auto* mod_id = "iw7";
-			game_id.raw.mod_id = *reinterpret_cast<const unsigned int*>(mod_id) | 0x80000000;
-
-			client_user_.invoke<bool>("SpawnProcess", path.data(), cmdline.data(), our_directory,
-				&game_id.bits, title.data(), 0, 0, 0);
-
 			return ownership_state::success;
 		}
 
 		ownership_state start_mod(const std::string& title, const size_t app_id)
 		{
-			__try
+			try
 			{
 				return start_mod_unsafe(title, app_id);
 			}
-			__except (EXCEPTION_EXECUTE_HANDLER)
+			catch (const std::exception& e)
 			{
 				do_cleanup();
-				return ownership_state::error;
+				printf("Steam: %s\n", e.what());
+				MessageBoxA(GetForegroundWindow(), e.what(), "Error", MB_ICONERROR);
+				TerminateProcess(GetCurrentProcess(), 1234);
 			}
+			return ownership_state::error;
 		}
 	}
 
@@ -218,8 +202,9 @@ namespace steam_proxy
 					break;
 				}
 			}
-			catch (std::exception& e)
+			catch (const std::exception& e)
 			{
+				do_cleanup();
 				printf("Steam: %s\n", e.what());
 				MessageBoxA(GetForegroundWindow(), e.what(), "Error", MB_ICONERROR);
 				TerminateProcess(GetCurrentProcess(), 1234);

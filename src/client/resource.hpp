@@ -9,7 +9,6 @@
 #define DW_PLAYLISTS          303
 
 #define TLS_DLL               304
-#define RUNNER                305
 
 #define ICON_IMAGE            306
 
