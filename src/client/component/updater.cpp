@@ -475,7 +475,11 @@ namespace updater
 		void post_start() override
 		{
 			delete_old_file();
-			run_update();
+
+			if (!utils::flags::has_flag("noupdate"))
+			{
+				run_update();
+			}
 		}
 
 		component_priority priority() override
