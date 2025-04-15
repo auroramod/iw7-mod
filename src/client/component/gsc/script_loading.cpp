@@ -335,7 +335,7 @@ namespace gsc
 				const auto script_name = std::filesystem::path(included_path).replace_extension().string();
 
 				std::string file_buffer;
-				if (!read_raw_script_file(script_name, &file_buffer) || file_buffer.empty())
+				if (!read_raw_script_file(included_path, &file_buffer) || file_buffer.empty())
 				{
 					const auto name = get_script_file_name(script_name);
 					if (game::DB_XAssetExists(game::ASSET_TYPE_SCRIPTFILE, name.data()))
@@ -349,7 +349,7 @@ namespace gsc
 				std::vector<std::uint8_t> script_data;
 				script_data.assign(file_buffer.begin(), file_buffer.end());
 
-				return { {}, script_data };
+				return {{}, script_data};
 			});
 		}
 
