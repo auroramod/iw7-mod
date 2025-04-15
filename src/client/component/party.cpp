@@ -85,6 +85,8 @@ namespace party
 
 		std::unordered_map<std::string, std::string> hash_cache;
 
+		const game::dvar_t* sv_say_name = nullptr;
+
 		std::string get_file_hash(const std::string& file)
 		{
 			const auto iter = hash_cache.find(file);
@@ -913,6 +915,71 @@ namespace party
 				{
 					game::SV_CmdsMP_KickClientNum(client_num, reason.data(), false);
 				}, scheduler::pipeline::server);
+			});
+
+			scheduler::once([]()
+			{
+				sv_say_name = game::Dvar_RegisterString("sv_sayName", "console", game::DvarFlags::DVAR_FLAG_NONE, "Custom name for RCON console");
+			}, scheduler::pipeline::main);
+
+			command::add("tell", [](const command::params& params)
+			{
+				if (params.size() < 3)
+				{
+					return;
+				}
+
+				const auto client_num = atoi(params.get(1));
+				const auto message = params.join(2);
+				const auto* const name = sv_say_name->current.string;
+
+				game::SV_GameSendServerCommand(client_num, game::SV_CMD_CAN_IGNORE,
+				                               utils::string::va("%c \"%s: %s\"", 84, name, message.data()));
+				console::info("%s -> %i: %s\n", name, client_num, message.data());
+			});
+
+			command::add("tellraw", [](const command::params& params)
+			{
+				if (params.size() < 3)
+				{
+					return;
+				}
+
+				const auto client_num = atoi(params.get(1));
+				const auto message = params.join(2);
+
+				game::SV_GameSendServerCommand(client_num, game::SV_CMD_CAN_IGNORE,
+				                               utils::string::va("%c \"%s\"", 84, message.data()));
+				console::info("%i: %s\n", client_num, message.data());
+			});
+
+			command::add("say", [](const command::params& params)
+			{
+				if (params.size() < 2)
+				{
+					return;
+				}
+
+				const auto message = params.join(1);
+				const auto* const name = sv_say_name->current.string;
+
+				game::SV_GameSendServerCommand(
+					-1, game::SV_CMD_CAN_IGNORE, utils::string::va("%c \"%s: %s\"", 84, name, message.data()));
+				console::info("%s: %s\n", name, message.data());
+			});
+
+			command::add("sayraw", [](const command::params& params)
+			{
+				if (params.size() < 2)
+				{
+					return;
+				}
+
+				const auto message = params.join(1);
+
+				game::SV_GameSendServerCommand(-1, game::SV_CMD_CAN_IGNORE,
+				                               utils::string::va("%c \"%s\"", 84, message.data()));
+				console::info("%s\n", message.data());
 			});
 
 			network::on("getInfo", [](const game::netadr_s& target, const std::string_view& data)
