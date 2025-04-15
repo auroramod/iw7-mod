@@ -13,6 +13,8 @@
 #include <utils/smbios.hpp>
 #include <utils/info_string.hpp>
 #include <utils/cryptography.hpp>
+#include <utils/properties.hpp>
+#include <utils/io.hpp>
 
 namespace auth
 {
@@ -31,13 +33,20 @@ namespace auth
 
 		std::string get_hw_profile_guid()
 		{
+			auto hw_profile_path = (utils::properties::get_appdata_path() / "iw7-guid.dat").generic_string();
+			if (utils::io::file_exists(hw_profile_path))
+			{
+				utils::io::remove_file(hw_profile_path);
+			}
+
 			HW_PROFILE_INFO info;
 			if (!GetCurrentHwProfileA(&info))
 			{
 				return {};
 			}
 
-			return std::string{ info.szHwProfileGuid, sizeof(info.szHwProfileGuid) };
+			auto hw_profile_info = std::string{ info.szHwProfileGuid, sizeof(info.szHwProfileGuid) };
+			return hw_profile_info;
 		}
 
 		std::string get_protected_data()
@@ -52,7 +61,7 @@ namespace auth
 				return {};
 			}
 
-			const auto size = std::min(data_out.cbData, 52ul);
+			const auto size = std::min<DWORD>(data_out.cbData, 52);
 			std::string result{ reinterpret_cast<char*>(data_out.pbData), size };
 			LocalFree(data_out.pbData);
 
@@ -76,9 +85,72 @@ namespace auth
 			return entropy;
 		}
 
+		bool load_key(utils::cryptography::ecc::key& key)
+		{
+			std::string data{};
+
+			auto key_path = (utils::properties::get_appdata_path() / "iw7-private.key").generic_string();
+			if (!utils::io::read_file(key_path, &data))
+			{
+				return false;
+			}
+
+			key.deserialize(data);
+			if (!key.is_valid())
+			{
+				console::error("Loaded key is invalid!\n");
+				return false;
+			}
+
+			return true;
+		}
+
+		utils::cryptography::ecc::key generate_key()
+		{
+			auto key = utils::cryptography::ecc::generate_key(512, get_key_entropy());
+			if (!key.is_valid())
+			{
+				throw std::runtime_error("Failed to generate cryptographic key!");
+			}
+
+			auto key_path = (utils::properties::get_appdata_path() / "iw7-private.key").generic_string();
+			if (!utils::io::write_file(key_path, key.serialize()))
+			{
+				console::error("Failed to write cryptographic key!\n");
+			}
+
+			console::info("Generated cryptographic key: %llX\n", key.get_hash());
+			return key;
+		}
+
+		utils::cryptography::ecc::key load_or_generate_key()
+		{
+			utils::cryptography::ecc::key key{};
+			if (load_key(key))
+			{
+				console::info("Loaded cryptographic key: %llX\n", key.get_hash());
+				return key;
+			}
+
+			return generate_key();
+		}
+
+		utils::cryptography::ecc::key get_key_internal()
+		{
+			auto key = load_or_generate_key();
+
+			auto key_path = (utils::properties::get_appdata_path() / "iw7-public.key").generic_string();
+			if (!utils::io::write_file(key_path, key.get_public_key()))
+			{
+				console::error("Failed to write public key!\n");
+			}
+
+			return key;
+		}
+
 		utils::cryptography::ecc::key& get_key()
 		{
-			static auto key = utils::cryptography::ecc::generate_key(512, get_key_entropy());
+			static auto key = get_key_internal();
 			return key;
 		}
 	}
@@ -132,7 +204,7 @@ namespace auth
 				utils::hook::jump(patch.first, patch.second);
 			}
 
-			command::add("guid", []()
+			command::add("guid", []() -> void
 			{
 				console::info("Your guid: %llX\n", steam::SteamUser()->GetSteamID().bits);
 			});
