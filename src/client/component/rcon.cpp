@@ -219,6 +219,7 @@ namespace rcon
 					if (!has_redirected_)
 					{
 						network::send(redirect_target_, "print", "", '\n');
+						return;
 					}
 
 					clear_redirect();
