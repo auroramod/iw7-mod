@@ -267,7 +267,15 @@ namespace patches
 			utils::hook::jump(0x140B7A920, init_network_dvars_stub);
 
 			// some [data validation] anti tamper thing that kills performance
-			dvars::override::register_int("dvl", 0, 0, 0, game::DVAR_FLAG_READ);
+			dvars::override::register_int("dvl", 0, 0, 0, game::DVAR_FLAG_NONE);
+			dvars::override::register_int("data_validation_allow_drop", 0, 0, 0, game::DVAR_FLAG_NONE);
+			utils::hook::set<uint8_t>(0x1405C9FA0, 0xC3); // ValidateData
+			utils::hook::set<uint8_t>(0x1405C9300, 0xC3); // ValidateMetaData
+			utils::hook::set<uint8_t>(0x1405C9D70, 0xC3); // UpdateValidationDataInternal
+			utils::hook::set<uint8_t>(0x1405C9590, 0xC3); // RegisterValidationData
+			utils::hook::set<uint8_t>(0x1405C9960, 0xC3); // ShutdownValidationData
+			utils::hook::set<uint8_t>(0x1405C8EC0, 0xC3); // FreeValidationData
+			utils::hook::set<uint8_t>(0x1405C90C0, 0xC3);
 
 			// killswitches
 			dvars::override::register_bool("mission_team_contracts_enabled", true, game::DVAR_FLAG_READ);

@@ -122,6 +122,25 @@ namespace game
 		rgb = 9, // Color without alpha
 	};
 
+	struct DvarValueBool
+	{
+		bool enabled;
+		char pad[3];
+		int hashedValue;
+	};
+
+	struct DvarValueInt
+	{
+		int integer;
+		int hashedValue;
+	};
+
+	struct DvarValueEnum
+	{
+		int defaultIndex;
+		int hashedValue;
+	};
+
 	union DvarValue
 	{
 		bool enabled;
@@ -131,6 +150,10 @@ namespace game
 		float vector[4];
 		const char* string;
 		char color[4];
+
+		DvarValueBool boolean_;
+		DvarValueInt integer_;
+		DvarValueEnum enumeration_;
 	};
 
 	struct $A37BA207B3DDD6345C554D4661813EDD
