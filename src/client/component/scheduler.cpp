@@ -86,10 +86,6 @@ namespace scheduler
 		volatile bool kill = false;
 		std::thread thread;
 		task_pipeline pipelines[pipeline::count];
-		utils::hook::detour r_end_frame_hook;
-		utils::hook::detour g_run_frame_hook;
-		utils::hook::detour main_frame_hook;
-		utils::hook::detour hks_frame_hook;
 
 		void execute(const pipeline type)
 		{
@@ -100,12 +96,12 @@ namespace scheduler
 		void r_end_frame_stub()
 		{
 			execute(pipeline::renderer);
-			r_end_frame_hook.invoke<void>();
+			utils::hook::invoke<void>(0x140E267B0);
 		}
 
 		void server_frame_stub()
 		{
-			g_run_frame_hook.invoke<void>();
+			utils::hook::invoke<void>(0x140B15E20);
 			execute(pipeline::server);
 		}
 
@@ -116,7 +112,7 @@ namespace scheduler
 				execute(pipeline::main);
 			});
 
-			return main_frame_hook.invoke<void*>();
+			return utils::hook::invoke<void*>(0x140B8E2D0);
 		}
 
 		void hks_frame_stub()
@@ -126,7 +122,7 @@ namespace scheduler
 			{
 				execute(pipeline::lui);
 			}
-			hks_frame_hook.invoke<bool>();
+			utils::hook::invoke<bool>(0x140613440);
 		}
 	}
 
@@ -196,10 +192,11 @@ namespace scheduler
 
 		void post_unpack() override
 		{
-			r_end_frame_hook.create(0x140E267B0, scheduler::r_end_frame_stub);
-			g_run_frame_hook.create(0x140B15E20, scheduler::server_frame_stub);
-			main_frame_hook.create(0x140B8E2D0, scheduler::main_frame_stub);
-			hks_frame_hook.create(0x140613440, scheduler::hks_frame_stub);
+			utils::hook::call(0x14034728C, scheduler::r_end_frame_stub);
+			utils::hook::call(0x14048A7B9, scheduler::server_frame_stub); // sp call
+			utils::hook::call(0x140B21941, scheduler::server_frame_stub); // mp call
+			utils::hook::call(0x140B8E272, scheduler::main_frame_stub);
+			utils::hook::call(0x1406173C2, scheduler::hks_frame_stub);
 		}
 
 		void pre_destroy() override

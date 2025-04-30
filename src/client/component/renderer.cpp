@@ -13,7 +13,6 @@ namespace renderer
 	namespace
 	{
 		utils::hook::detour r_init_draw_method_hook;
-		utils::hook::detour r_update_front_end_dvar_options_hook;
 
 		int get_fullbright_technique()
 		{
@@ -49,7 +48,7 @@ namespace renderer
 				gfxdrawmethod();
 			}
 
-			return r_update_front_end_dvar_options_hook.invoke<bool>();
+			return utils::hook::invoke<bool>(0x140E28B60);
 		}
 	}
 
@@ -65,8 +64,8 @@ namespace renderer
 
 			dvars::r_fullbright = game::Dvar_RegisterInt("r_fullbright", 0, 0, 2, game::DVAR_FLAG_SAVED, "Toggles rendering without lighting");
 
-			r_init_draw_method_hook.create(0x140DE9260, &r_init_draw_method_stub);
-			r_update_front_end_dvar_options_hook.create(0x140E28B60, &r_update_front_end_dvar_options_stub);
+			r_init_draw_method_hook.create(0x140DE9260, r_init_draw_method_stub);
+			utils::hook::call(0x140E264B3, r_update_front_end_dvar_options_stub);
 		}
 	};
 }

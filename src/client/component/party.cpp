@@ -483,13 +483,6 @@ namespace party
 			utils::hook::invoke<void>(0x140341430, 0, cmd); // CL_Main_AddReliableCommand
 		}
 
-		utils::hook::detour cl_prepare_for_map_restart_hook;
-		void cl_prepare_for_map_restart_stub(const char* mapname, const char* gametype)
-		{
-			cl_prepare_for_map_restart_hook.invoke<void>(mapname, gametype);
-		}
-
-		utils::hook::detour cl_initialize_gamestate_hook;
 		void cl_initialize_gamestate_stub(int local_client_num)
 		{
 			if (!game::Com_IsAnyLocalServerRunning())
@@ -497,7 +490,7 @@ namespace party
 				send_user_info();
 			}
 
-			cl_initialize_gamestate_hook.invoke<void>(local_client_num);
+			utils::hook::invoke<void>(0x1409B2FA0, local_client_num);
 		}
 	}
 
@@ -718,8 +711,7 @@ namespace party
 			// enable custom kick reason in GScr_KickPlayer
 			utils::hook::set<uint8_t>(0x140B5377E, 0xEB);
 
-			cl_prepare_for_map_restart_hook.create(0x1409B3FE0, cl_prepare_for_map_restart_stub);
-			cl_initialize_gamestate_hook.create(0x1409B2FA0, cl_initialize_gamestate_stub);
+			utils::hook::call(0x1409B70A1, cl_initialize_gamestate_stub);
 
 			command::add("senduserinfo", []()
 			{

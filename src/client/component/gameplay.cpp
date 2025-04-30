@@ -16,13 +16,11 @@ namespace gameplay
 {
 	namespace
 	{
-		utils::hook::detour stuck_in_client_hook;
-
 		void stuck_in_client_stub(void* entity)
 		{
 			if (dvars::bg_playerEjection->current.enabled)
 			{
-				stuck_in_client_hook.invoke<void>(entity);
+				utils::hook::invoke<void>(0x140AFD9B0, entity);
 			}
 		}
 
@@ -144,7 +142,7 @@ namespace gameplay
 		{
 			// Implement ejection dvar
 			dvars::bg_playerEjection = game::Dvar_RegisterBool("bg_playerEjection", true, game::DVAR_FLAG_REPLICATED, "Flag whether player ejection is on or off");
-			stuck_in_client_hook.create(0x140AFD9B0, stuck_in_client_stub);
+			utils::hook::call(0x140AFA739, stuck_in_client_stub);
 
 			// Implement bounces dvar
 			dvars::bg_bounces = game::Dvar_RegisterBool("bg_bounces", false, game::DVAR_FLAG_REPLICATED, "Enables bounces");

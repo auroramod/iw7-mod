@@ -207,22 +207,11 @@ namespace profile_infos
 		});
 	}
 
-	namespace
-	{
-		utils::hook::detour session_unregister_remote_player_hook;
-		void session_unregister_remote_player_stub(game::SessionData* session, const int slot)
-		{
-			session_unregister_remote_player_hook.invoke<void>(session, slot);
-		}
-	}
-
 	class component final : public component_interface
 	{
 	public:
 		void post_unpack() override
 		{
-			session_unregister_remote_player_hook.create(0x140C73970, session_unregister_remote_player_stub);
-
 			//dvars::override::register_int("playercard_cache_validity_life", 5000, 0, 3600000, 0x0); // 5sec
 
 			network::on("profileInfo", [](const game::netadr_s& client_addr, const std::string_view& data)

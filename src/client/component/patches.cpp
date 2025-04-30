@@ -17,10 +17,8 @@ namespace patches
 	{
 		utils::hook::detour com_register_common_dvars_hook;
 		utils::hook::detour com_game_mode_supports_feature_hook;
-		utils::hook::detour cg_set_client_dvar_from_server_hook;
 		utils::hook::detour live_get_map_index_hook;
 		utils::hook::detour content_do_we_have_content_pack_hook;
-		utils::hook::detour init_network_dvars_hook;
 
 		std::string get_login_username()
 		{
@@ -168,7 +166,7 @@ namespace patches
 			if (result)
 			{
 				std::string index_str = std::to_string(index);
-				return cg_set_client_dvar_from_server_hook.invoke<void>(client_num, cgame_glob, index_str.data(), value);
+				return utils::hook::invoke<void>(0x140856D70, client_num, cgame_glob, index_str.data(), value);
 			}
 		}
 
@@ -252,7 +250,7 @@ namespace patches
 			content_do_we_have_content_pack_hook.create(0x140CE8550, content_do_we_have_content_pack_stub);
 
 			// make setclientdvar behave like older games
-			cg_set_client_dvar_from_server_hook.create(0x140856D70, cg_set_client_dvar_from_server_stub);
+			utils::hook::call(0x14084A136, cg_set_client_dvar_from_server_stub);
 			utils::hook::call(0x140B0A9BB, get_client_dvar_checksum); // setclientdvar
 			utils::hook::call(0x140B0ACD7, get_client_dvar_checksum); // setclientdvars
 			utils::hook::call(0x140B0A984, get_client_dvar); // setclientdvar
@@ -266,7 +264,7 @@ namespace patches
 			utils::hook::call(0x140B7CF11, cbuf_execute_buffer_internal_stub);
 
 			// don't register every replicated dvar as a network dvar
-			init_network_dvars_hook.create(0x140B7A920, init_network_dvars_stub);
+			utils::hook::jump(0x140B7A920, init_network_dvars_stub);
 
 			// some [data validation] anti tamper thing that kills performance
 			dvars::override::register_int("dvl", 0, 0, 0, game::DVAR_FLAG_READ);

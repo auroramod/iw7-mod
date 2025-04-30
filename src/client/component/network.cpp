@@ -58,7 +58,6 @@ namespace network
 
 	namespace
 	{
-		utils::hook::detour cl_dispatch_connectionless_packet_hook;
 		bool cl_dispatch_connectionless_packet_stub(int client_num, game::netadr_s* from, game::msg_t* msg, int time)
 		{
 			if (handle_command(from, game::Cmd_Argv(0), msg))
@@ -66,7 +65,7 @@ namespace network
 				return true;
 			}
 
-			return cl_dispatch_connectionless_packet_hook.invoke<bool>(client_num, from, msg, time);
+			return utils::hook::invoke<bool>(0x1409B2250, client_num, from, msg, time);
 		}
 
 		int dw_send_to_stub(const int length, const char* data, game::netadr_s* to)
@@ -310,7 +309,7 @@ namespace network
 			utils::hook::jump(0x140D93D70, dw_recv_from_stub);
 
 			// intercept command handling
-			cl_dispatch_connectionless_packet_hook.create(0x1409B2250, cl_dispatch_connectionless_packet_stub);
+			utils::hook::call(0x1403572B7, cl_dispatch_connectionless_packet_stub);
 
 			// handle xuid without secure connection
 			utils::hook::nop(0x140C53315, 2);

@@ -9,8 +9,6 @@ namespace intro
 {
 	namespace
 	{
-		utils::hook::detour cinematic_start_playback_hook;
-
 		void cinematic_start_playback(const char* name, const int playbackFlags, const int startOffsetMsec, 
 			const bool fillerBink, const int pauseState)
 		{
@@ -26,7 +24,7 @@ namespace intro
 				}
 			}
 
-			cinematic_start_playback_hook.invoke(name, playbackFlags, startOffsetMsec, fillerBink, pauseState);
+			utils::hook::invoke<void>(0x140DD6A10, name, playbackFlags, startOffsetMsec, fillerBink, pauseState);
 		}
 	}
 
@@ -35,7 +33,8 @@ namespace intro
 	public:
 		void post_unpack() override
 		{
-			cinematic_start_playback_hook.create(0x140DD6A10, cinematic_start_playback);
+			utils::hook::call(0x140DD69FF, cinematic_start_playback);
+			utils::hook::call(0x140DD69CF, cinematic_start_playback);
 		}
 	};
 }
