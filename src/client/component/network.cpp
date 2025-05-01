@@ -68,13 +68,6 @@ namespace network
 			return utils::hook::invoke<bool>(0x1409B2250, client_num, from, msg, time);
 		}
 
-		int dw_send_to_stub(const int length, const char* data, game::netadr_s* to)
-		{
-			sockaddr s = {};
-			game::NetadrToSockadr(to, &s);
-			return sendto(*game::query_socket, data, length, 0, &s, sizeof(sockaddr));
-		}
-
 		void sockadr_to_netadr(const sockaddr* s, game::netadr_s* a)
 		{
 			if (s->sa_family == 2)
@@ -83,6 +76,18 @@ namespace network
 				*(int*)&a->ip = *(int*)&s->sa_data[2];
 				a->port = *(unsigned short*)(&s->sa_data[0]);
 			}
+		}
+
+		int dw_send_to_stub(const int length, const char* data, game::netadr_s* to)
+		{
+			sockaddr s = {};
+			game::NetadrToSockadr(to, &s);
+			const auto result = sendto(*game::query_socket, data, length, 0, &s, sizeof(sockaddr));
+			if (result == SOCKET_ERROR)
+			{
+				console::warn("sendto failed: %s\n", std::system_category().message(GetLastError()).data());
+			}
+			return result;
 		}
 
 		int dw_recv_from_stub(game::netadr_s* from, char* data, int maxsize)
@@ -249,19 +254,14 @@ namespace network
 	void send_data(const game::netadr_s& address, const std::string& data)
 	{
 		auto size = static_cast<int>(data.size());
+
 		if (address.type == game::NA_LOOPBACK)
 		{
-			if (size > 1280)
-			{
-				console::error("Packet was too long. Truncated!\n");
-				size = 1280;
-			}
-
 			game::NET_SendLoopPacket(game::NS_CLIENT1, size, data.data(), &address);
 		}
-		else
+		else if(address.type == game::NA_BROADCAST || address.type == game::NA_IP)
 		{
-			game::Sys_SendPacket(size, data.data(), &address);
+			dw_send_to_stub(size, data.data(), const_cast<game::netadr_s*>(&address));
 		}
 	}
 
