@@ -9,13 +9,19 @@
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
 
-#include "integrity.hpp"
-#include "breakpoints.hpp"
-#include "illegal_instructions.hpp"
-
 #define PRECOMPUTED_INTEGRITY_CHECKS
 #define PRECOMPUTED_BREAKPOINTS
 #define PRECOMPUTED_ILLEGAL_INSTRUCTIONS
+
+#ifdef PRECOMPUTED_INTEGRITY_CHECKS
+#include "integrity.hpp"
+#endif
+#ifdef PRECOMPUTED_BREAKPOINTS
+#include "breakpoints.hpp"
+#endif
+#ifdef PRECOMPUTED_ILLEGAL_INSTRUCTIONS
+#include "illegal_instructions.hpp"
+#endif
 
 #define ProcessDebugPort 7
 #define ProcessDebugObjectHandle 30
@@ -674,6 +680,7 @@ namespace arxan
 
 			const auto nt_query_information_process = ntdll.get_proc<void*>("NtQueryInformationProcess");
 			nt_query_information_process_hook.create(nt_query_information_process, nt_query_information_process_stub);
+			nt_query_information_process_hook.enable();
 			nt_query_information_process_hook.move();
 
 			AddVectoredExceptionHandler(1, exception_filter);

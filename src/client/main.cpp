@@ -17,6 +17,8 @@ DECLSPEC_NORETURN void WINAPI exit_hook(const int code)
 DWORD_PTR WINAPI set_thread_affinity_mask(HANDLE hThread, DWORD_PTR dwThreadAffinityMask)
 {
 	component_loader::post_unpack();
+	MH_ApplyQueued();
+
 	return SetThreadAffinityMask(hThread, dwThreadAffinityMask);
 }
 
@@ -154,6 +156,7 @@ int main()
 			game::base_address = base_address;
 
 			if (!component_loader::post_load()) return EXIT_FAILURE;
+			MH_ApplyQueued();
 
 			premature_shutdown = false;
 		}

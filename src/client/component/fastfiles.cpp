@@ -113,6 +113,8 @@ namespace fastfiles
 
 		HANDLE sys_create_file_stub(game::Sys_Folder folder, const char* base_filename)
 		{
+			auto result = sys_createfile_hook.invoke<HANDLE>(folder, base_filename);
+
 			const auto create_file_a = [](const std::string& filepath)
 			{
 				return CreateFileA(filepath.data(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
@@ -138,12 +140,9 @@ namespace fastfiles
 				return INVALID_HANDLE_VALUE;
 			}
 
-			if (auto result = sys_createfile_hook.invoke<HANDLE>(folder, base_filename))
+			if (result != INVALID_HANDLE_VALUE)
 			{
-				if (result != INVALID_HANDLE_VALUE)
-				{
-					return result;
-				}
+				return result;
 			}
 
 			std::string real_path{};
