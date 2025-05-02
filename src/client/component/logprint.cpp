@@ -75,7 +75,7 @@ namespace logprint
 					int lpselfnum = self_.call("getentitynumber").as<int>();
 					std::string lpselfname = self_.get("name").as<std::string>();
 					std::string lpselfteam = self_.get("team").as<std::string>();
-					std::string lpselfGuid = self_.call("getxuid").as<std::string>();
+					std::string lpselfGuid = self_.call("getguid").as<std::string>();
 
 					int lpattacknum = -1;
 					std::string lpattackname = "";
@@ -90,7 +90,7 @@ namespace logprint
 							lpattacknum = attacker_.call("getentitynumber").as<int>();
 							lpattackname = attacker_.get("name").as<std::string>();
 							lpattackerteam = attacker_.get("team").as<std::string>();
-							lpattackGuid = attacker_.call("getxuid").as<std::string>();
+							lpattackGuid = attacker_.call("getguid").as<std::string>();
 						}
 					}
 
@@ -136,7 +136,7 @@ namespace logprint
 					int lpselfnum = self_.call("getentitynumber").as<int>();
 					std::string lpselfname = self_.get("name").as<std::string>();
 					std::string lpselfteam = self_.get("team").as<std::string>();
-					std::string lpselfGuid = self_.call("getxuid").as<std::string>();
+					std::string lpselfGuid = self_.call("getguid").as<std::string>();
 
 					int lpattacknum = -1;
 					std::string lpattackname = "";
@@ -151,7 +151,7 @@ namespace logprint
 							lpattacknum = attacker_.call("getentitynumber").as<int>();
 							lpattackname = attacker_.get("name").as<std::string>();
 							lpattackerteam = attacker_.get("team").as<std::string>();
-							lpattackGuid = attacker_.call("getxuid").as<std::string>();
+							lpattackGuid = attacker_.call("getguid").as<std::string>();
 						}
 					}
 
