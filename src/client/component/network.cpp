@@ -312,8 +312,8 @@ namespace network
 			utils::hook::call(0x1403572B7, cl_dispatch_connectionless_packet_stub);
 
 			// handle xuid without secure connection
-			utils::hook::nop(0x140C53315, 2);
-			utils::hook::nop(0x140C55EC7, 6);
+			//utils::hook::nop(0x140C53315, 2);
+			//utils::hook::nop(0x140C55EC7, 6);
 
 			utils::hook::jump(game::NET_CompareAdr, net_compare_address);
 			utils::hook::jump(game::NET_CompareBaseAdr, net_compare_address);

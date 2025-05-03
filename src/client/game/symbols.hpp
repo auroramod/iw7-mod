@@ -207,6 +207,10 @@ namespace game
 #define R_AddCmdDrawTextWithCursor(TXT, MC, F, UNK, X, Y, XS, YS, R, C, S, CP, CC) \
 	AddBaseDrawTextCmd(TXT, MC, F, game::R_GetFontHeight(F), X, Y, XS, YS, R, C, CP, CC, game::R_Font_GetLegacyFontStyle(S), 0, 0, 0, 0)
 
+	WEAK symbol<std::uint64_t(const SessionData* session, std::uint64_t xuid)> Session_FindRegisteredUser{ 0x140C72A00 };
+	WEAK symbol<std::uint64_t(int localControllerIndex, const SessionData* session, std::uint64_t xuid, bool privateSlot, int clientNum, 
+		const int natType, char* xnaddr, const netadr_s* addr)> Session_RegisterRemotePlayer{ 0x140C733E0 };
+
 	WEAK symbol<std::uint64_t(const void* session, const int clientNum)> Session_GetXuid{ 0x140C72AB0 };
 	WEAK symbol<bool(const SessionData* session, const int memberIndex)> Session_IsHost{ 0x140D9B470 };
 
@@ -273,6 +277,7 @@ namespace game
 	WEAK symbol<void()> SV_CmdsSP_FastRestart_f{ 0x140C12AF0 };
 	WEAK symbol<int (int clientNum)> SV_ClientMP_GetClientPing{ 0x140C507D0 };
 	WEAK symbol<char* (int entNum)> SV_GameMP_GetGuid{ 0x140C12410 };
+	WEAK symbol<int ()> SV_GameMP_GetAgentCount{ 0x140C124A0 };
 	WEAK symbol<void()> SV_MainMP_KillLocalServer{ 0x140C58DF0 };
 	WEAK symbol<SessionData* ()> SV_MainMP_GetServerLobby{ 0x140C58DA0 };
 	WEAK symbol<void(int clientNum, svscmd_type type, const char* text)> SV_GameSendServerCommand{ 0x140C54780 };
