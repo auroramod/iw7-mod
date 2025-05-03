@@ -521,6 +521,9 @@ namespace dvars
 			dvar_re_register_hook.create(0x140CEC210, dvar_re_register);
 			dvar_de_register_hook.create(0x140CE9F30, dvar_de_register);
 			dvar_register_variant_hook.create(0x140CEBDD0, dvar_register_variant);
+
+			// We need to apply these straight away
+			MH_ApplyQueued();
 		}
 
 		component_priority priority() override
