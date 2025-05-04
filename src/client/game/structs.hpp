@@ -1351,13 +1351,16 @@ namespace game
 			SessionData* session;
 			char __pad0[11436];
 			PartyPreloadMapStage preloadingMapStage;
-			char __pad1[101];
+			char __pad1[92];
+			int party_systemActive;
+			char __pad1_2[5];
 			bool m_gameStartSkipCountdown;
 			char __pad2[110];
 			int lobbyFlags;
 			bool gameStartRequested;
 		};
 		static_assert(offsetof(PartyData, preloadingMapStage) == 11444);
+		static_assert(offsetof(PartyData, party_systemActive) == 11540);
 		static_assert(offsetof(PartyData, m_gameStartSkipCountdown) == 11549);
 		static_assert(offsetof(PartyData, lobbyFlags) == 11660);
 		static_assert(offsetof(PartyData, gameStartRequested) == 11664);
