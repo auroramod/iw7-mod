@@ -509,6 +509,20 @@ namespace party
 		}
 	}
 
+	game::GameModeType get_game_mode_from_mapname(const std::string& mapname)
+	{
+		if (mapname.find("mp_") == 0)
+		{
+			return game::GAME_MODE_MP;
+		}
+		else if (mapname.find("cp_") == 0)
+		{
+			return game::GAME_MODE_CP;
+		}
+
+		return game::GAME_MODE_SP;
+	}
+
 	void start_map(const std::string& mapname, bool dev)
 	{
 		if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
@@ -522,6 +536,7 @@ namespace party
 		{
 			scheduler::once([=]()
 			{
+				game::Com_GameMode_SetDesiredGameMode(get_game_mode_from_mapname(mapname));
 				start_map(mapname, dev);
 			}, scheduler::pipeline::main, 1s);
 			return;
