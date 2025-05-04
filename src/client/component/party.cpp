@@ -81,6 +81,8 @@ namespace party
 		std::vector<fastdl_file> mod_files =
 		{
 			{".ff", "mod_hash", false},
+			{".sabl", "sabl_hash", false},
+			{".sabs", "sabs_hash", false},
 		};
 
 		std::unordered_map<std::string, std::string> hash_cache;
@@ -572,7 +574,7 @@ namespace party
 			command::execute(utils::string::va("seta ui_hardcore %d", hardcore->current.enabled), true);
 		}
 
-		if (!utils::hook::invoke<bool>(0x1409CDCF0, game::Lobby_GetPartyData()) || game::Com_FrontEnd_IsInFrontEnd())
+		if (!game::Lobby_GetPartyData()->party_systemActive || game::Com_FrontEnd_IsInFrontEnd())
 		{
 			if (game::environment::is_dedi())
 			{

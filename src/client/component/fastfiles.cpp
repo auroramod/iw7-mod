@@ -121,7 +121,7 @@ namespace fastfiles
 					FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING, nullptr);
 			};
 
-			if (base_filename == "mod.ff"s)
+			if (base_filename == "mod.ff"s || base_filename == "mod.sabs"s || base_filename == "mod.sabl"s)
 			{
 				auto* fs_basepath = game::Dvar_FindVar("fs_basepath");
 				auto* fs_game = game::Dvar_FindVar("fs_game");
