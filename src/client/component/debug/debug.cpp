@@ -368,18 +368,16 @@ namespace debug
 			float playerPosition[3]{ player->origin[0], player->origin[1], player->origin[2] };
 
 			auto mapname = game::Dvar_FindVar("mapname");
-			auto comWorld = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_COMWORLD, utils::string::va("maps/mp/%s.d3dbsp", mapname->current.string), 0).comWorld;
+			std::string asset_name = utils::string::va("maps/%s.d3dbsp", mapname->current.string);
+			if (game::Com_GameMode_GetActiveGameMode() != game::GAME_MODE_SP)
+			{
+				asset_name = utils::string::va("maps/%s/%s.d3dbsp", game::Com_GameMode_GetActiveGameModeStr(), mapname->current.string);
+			}
+
+			auto comWorld = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_COMWORLD, asset_name.data(), 0).comWorld;
 			if (comWorld == nullptr)
 			{
-				comWorld = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_COMWORLD, utils::string::va("maps/cp/%s.d3dbsp", mapname->current.string), 0).comWorld;
-				if (comWorld == nullptr)
-				{
-					comWorld = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_COMWORLD, utils::string::va("maps/%s.d3dbsp", mapname->current.string), 0).comWorld;
-					if (comWorld == nullptr)
-					{
-						return;
-					}
-				}
+				return;
 			}
 
 			auto distance = r_playerDrawDebugDistance->current.integer;
@@ -410,32 +408,22 @@ namespace debug
 			float playerPosition[3]{ player->origin[0], player->origin[1], player->origin[2] };
 
 			auto mapname = game::Dvar_FindVar("mapname");
-			auto gfxAsset = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_GFXWORLD, utils::string::va("maps/mp/%s.d3dbsp", mapname->current.string), 0).gfxWorld;
-			if (gfxAsset == nullptr)
+			std::string asset_name = utils::string::va("maps/%s.d3dbsp", mapname->current.string);
+			if (game::Com_GameMode_GetActiveGameMode() != game::GAME_MODE_SP)
 			{
-				gfxAsset = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_GFXWORLD, utils::string::va("maps/cp/%s.d3dbsp", mapname->current.string), 0).gfxWorld;
-				if (gfxAsset == nullptr)
-				{
-					gfxAsset = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_GFXWORLD, utils::string::va("maps/%s.d3dbsp", mapname->current.string), 0).gfxWorld;
-					if (gfxAsset == nullptr)
-					{
-						return;
-					}
-				}
+				asset_name = utils::string::va("maps/%s/%s.d3dbsp", game::Com_GameMode_GetActiveGameModeStr(), mapname->current.string);
 			}
 
-			auto mapEnts = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_MAP_ENTS, utils::string::va("maps/mp/%s.d3dbsp", mapname->current.string), 0).mapEnts;
+			auto gfxAsset = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_GFXWORLD, asset_name.data(), 0).gfxWorld;
+			if (gfxAsset == nullptr)
+			{
+				return;
+			}
+
+			auto mapEnts = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_MAP_ENTS, asset_name.data(), 0).mapEnts;
 			if (mapEnts == nullptr)
 			{
-				mapEnts = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_MAP_ENTS, utils::string::va("maps/cp/%s.d3dbsp", mapname->current.string), 0).mapEnts;
-				if (mapEnts == nullptr)
-				{
-					mapEnts = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_MAP_ENTS, utils::string::va("maps/%s.d3dbsp", mapname->current.string), 0).mapEnts;
-					if (mapEnts == nullptr)
-					{
-						return;
-					}
-				}
+				return;
 			}
 
 			auto distance = r_playerDrawDebugDistance->current.integer;
