@@ -630,6 +630,16 @@ namespace game
 		bool isServer;
 	};
 
+	struct rectDef_s
+	{
+		float x;
+		float y;
+		float w;
+		float h;
+		char horzAlign;
+		char vertAlign;
+	};
+
 	namespace entity
 	{
 		enum connstate_t : std::uint32_t
@@ -828,17 +838,26 @@ namespace game
 			GameModeFlagContainer<PMoveFlagsCommon, PMoveFlagsSP, PMoveFlagsMP, 64> pm_flags;
 			GameModeFlagContainer<POtherFlagsCommon, POtherFlagsSP, POtherFlagsMP, 64> otherFlags;
 			GameModeFlagContainer<PLinkFlagsCommon, PLinkFlagsSP, PLinkFlagsMP, 32> linkFlags;
-			char __pad0[312];
+			int packedBobCycle[2];
+			vec3_t origin;
+			vec3_t velocity;
+			char __pad0[68];
+			vec3_t delta_angles;
+			char __pad1[200];
 			GameModeFlagContainer<EntityStateFlagsCommon, EntityStateFlagsSP, EntityStateFlagsMP, 32> eFlags;
-			char __pad1[1272];
+			char __pad2[92];
+			vec3_t viewangles;
+			char __pad3[1168];
 			PlayerActiveWeaponState weapState[2];
-			char __pad2[464];
+			char __pad4[464];
 			GameModeFlagContainer<PWeaponFlagsCommon, PWeaponFlagsSP, PWeaponFlagsMP, 64> weapFlags;
 			float fWeaponPosFrac;
-			char __pad3[0x4000];
+			char __pad5[0x4000];
 		}; // unk size
 		assert_offsetof(playerState_s, pm_type, 4);
+		assert_offsetof(playerState_s, delta_angles, 132);
 		assert_offsetof(playerState_s, eFlags, 344);
+		assert_offsetof(playerState_s, viewangles, 440);
 		assert_offsetof(playerState_s, weapState, 1620);
 		assert_offsetof(playerState_s, weapFlags, 2188);
 
@@ -1056,6 +1075,124 @@ namespace game
 	static_assert(offsetof(cg_s, spectatingThirdPerson) == 492908);
 	static_assert(offsetof(cg_s, renderingThirdPerson) == 492912);
 	static_assert(offsetof(cg_s, m_deathCameraFailsafeLock) == 553708);
+
+	struct GfxLight
+	{
+		unsigned __int8 type;
+		unsigned __int8 canUseShadowMap;
+		unsigned __int8 needsDynamicShadows;
+		unsigned __int8 isVolumetric;
+		unsigned __int8 exponent;
+		float uvIntensity;
+		float irIntensity;
+		float color[3];
+		float dir[3];
+		float up[3];
+		float origin[3];
+		float radius;
+		vec2_t fadeOffsetRt;
+		float bulbRadius;
+		vec3_t bulbLength;
+		float cosHalfFovOuter;
+		float cosHalfFovInner;
+		unsigned int entityId;
+		unsigned int flags;
+		float tonemappingScaleFactor;
+		float shadowSoftness;
+		float shadowBias;
+		float shadowArea;
+		float distanceFalloff;
+		GfxLightDef* def;
+	};
+
+	struct GfxDynamicLight
+	{
+		GfxLight light;
+		float nearPlaneOffset;
+		float radius;
+		char __pad0[144];
+	};
+
+	struct GfxScaledPlacement
+	{
+		GfxPlacement base;
+		float scale;
+	};
+
+	struct GfxSceneModel
+	{
+		XModelDrawInfo info;
+		const XModel* model;
+		const struct DObj* obj;
+		GfxScaledPlacement placement;
+		GfxScaledPlacement prevPlacement;
+		unsigned __int32 gfxEntIndex : 7;
+		unsigned __int32 entnum : 12;
+		unsigned __int32 renderFlags : 14;
+		float radius;
+		unsigned __int16* cachedLightingHandle;
+		vec3_t lightingOrigin;
+		int unk1;
+		float unk2;
+		int unk3;
+		int unk4;
+		int unk5;
+	};
+
+	union GfxDrawGroupSetup
+	{
+		unsigned __int64 packed;
+	};
+
+	struct GfxCodeSurf
+	{
+		GfxDrawGroupSetup drawGroup;
+		unsigned int triCount;
+		unsigned int vertIndexBase;
+		unsigned __int16* indices;
+		unsigned __int16 argOffset;
+		unsigned __int16 argCount;
+		int reactiveTurbulenceGroup;
+		int sortOrder;
+		int unk;
+	};
+
+	struct GfxSceneEntity
+	{
+		char __pad0[1424];
+	};
+
+	struct GfxScene
+	{
+		GfxCodeSurf codeEmissiveSurfs[16384];
+		GfxCodeSurf surfs2[640];
+		GfxCodeSurf surfs3[1424];
+		GfxCodeSurf surfs4[640];
+		GfxCodeSurf surfs5[640];
+		char __pad0[2461208];
+		unsigned int codeEmissiveSurfCount;
+		unsigned int surfs2Count;
+		unsigned int surfs3Count;
+		unsigned int surfs4Count;
+		unsigned int surfs5Count;
+		char __pad1[64];
+		volatile int dynamicSpotLightCount;
+		GfxDynamicLight dynamicSpotLight[64];
+		char __pad2[1129016];
+		GfxSceneEntity sceneDObj[512];
+		char sceneDObjVisData[12][512];
+		int sceneDObjMarkableViewmodelIndex;
+		unsigned int sceneDObjFirstViewmodelIndex;
+		unsigned int sceneDObjViewmodelCount;
+		volatile int sceneModelCount;
+		int sceneModelCountAtMark;
+		int sceneDObjModelCount;
+		GfxSceneModel sceneModel[1024];
+		char sceneModelVisData[12][1024];
+		char __pad3[16384];
+	};
+
+	assert_offsetof(GfxScene, sceneDObjViewmodelCount, 5133104);
 
 	namespace scripting
 	{

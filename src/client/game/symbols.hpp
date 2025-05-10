@@ -55,6 +55,9 @@ namespace game
 	WEAK symbol<void(int localClientNum, int controllerIndex, const char* buffer)> Cbuf_ExecuteBuffer{ 0x140B7C3B0 };
 	WEAK symbol<void(int localClientNum, int controllerIndex, const char* buffer, void(int, int, const char*))> Cbuf_ExecuteBufferInternal{ 0x140B7C3C0 };
 
+	WEAK symbol<bool(int localClientNum, const playerState_s* ps, vec3_t* outOrigin)> CG_GetPlayerViewOrigin{ 0x1408EC810 };
+	WEAK symbol<bool(int localClientNum, const ScreenPlacement* scrPlace, const float* worldPos, float* outScreenPos)> CG_WorldPosToScreenPosReal{ 0x1407A5490 };
+
 	WEAK symbol<void(int localClientNum, const char* msg, int flags)> CG_Utils_GameMessage{ 0x1401D7FC0 };
 	WEAK symbol<void(int localClientNum, const char* msg, int flags)> CG_Utils_BoldGameMessage{ 0x1401D7F10 };
 
@@ -110,6 +113,8 @@ namespace game
 		float min, float max, unsigned int flags, const char* description)> Dvar_RegisterVec3{ 0x140CEBFE0 };
 	WEAK symbol<dvar_t* (const char* name, float x, float y, float z,
 		float w, float min, float max, unsigned int flags, const char* description)> Dvar_RegisterVec4{ 0x140CEC110 };
+	WEAK symbol<dvar_t* (const char* dvarName, const char* const* valueList, 
+		int defaultIndex, unsigned int flags, const char* description)> Dvar_RegisterEnum{ 0x140CEB720 };
 
 	WEAK symbol<dvar_t* (unsigned int checksum, const char* string, DvarSetSource source)> Dvar_SetFromStringByChecksum{ 0x140CECDB0 };
 	WEAK symbol<dvar_t* (const char* name, const char* string, DvarSetSource source)> Dvar_SetFromStringByName{ 0x140CECF30 };
@@ -309,10 +314,15 @@ namespace game
 		int horzAlign, int vertAlign, float scale, const vec4_t* color, int style)> UI_DrawText{ 0x140CC5C00 };
 	WEAK symbol<int(const char* text, int maxChars, GfxFont* font, float scale)> UI_TextWidth{ 0x140CC9FA0 };
 
+	WEAK symbol<void(ScreenPlacement* scrPlace, const char* text, rectDef_s* rect, GfxFont* font, 
+		float scale, const vec4_t* color, int style, char a8, int a9, int a10, char a11)> UI_DrawWrappedText{ 0x140CD2280 };
+
 	WEAK symbol<float(XAnim_s* anims, unsigned int anim)> XAnimGetLengthMsec{ 0x140D761C0 };
 
 	WEAK symbol<void* (jmp_buf* Buf, int Value)> longjmp{ 0x1412C0758 };
 	WEAK symbol<int(jmp_buf* Buf)> _setjmp{ 0x141423110 };
+
+	WEAK symbol<void(float* angles, float* forward, float* right, float* up)> AngleVectors{ 0x140CE6080 };
 
 	/***************************************************************
 	 * Variables
@@ -398,6 +408,10 @@ namespace game
 
 	WEAK symbol<Material*> whiteMaterial{ 0x141FE5ED0 };
 	WEAK symbol<vec4_t> colorWhite{ 0x141524800 };
+
+	WEAK symbol<GfxScene> scene{ 0x149BD1300 };
+
+	WEAK symbol<GfxWorld*> g_world{ 0x148B2D7E0 };
 
 	namespace hks
 	{
