@@ -1,11 +1,26 @@
 main()
 {
-	// Rank fixes.
+    if (!getdvarint("xblive_privatematch"))
+    {
+        level.onlinegame = 1;
+        level.rankedmatch = 1;
+
+        setdvar("systemlink", 0);
+        setdvar("onlinegame", 1);
+
+        replacefunc(scripts\mp\utility::rankingenabled, ::rankingenabled);
+    }
+
     replacefunc(scripts\mp\menus::addtoteam, ::addtoteam_stub);
     replacefunc(scripts\mp\menus::watchforteamchange, ::watchforteamchange_stub);
 	
 	// Bypass check for sessionteam
 	replacefunc(scripts\mp\playerlogic::connect_validateplayerteam, ::connect_validateplayerteam_stub);
+}
+
+rankingenabled()
+{
+    return !(!isplayer( self ) || isai( self ));
 }
 
 addtoteam_stub( team, firstConnect, changeTeamsWithoutRespawning )
