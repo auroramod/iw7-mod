@@ -222,6 +222,28 @@ namespace patches
 		{
 			utils::hook::invoke<void>(0x140C58E20); // SV_MainMP_MatchEnd
 		}
+
+		void* update_last_seen_players_stub()
+		{
+			return utils::hook::assemble([](utils::hook::assembler& a)
+			{
+				const auto safe_continue = a.newLabel();
+
+				// (game's code)
+				a.mov(rax, ptr(rsi)); // g_entities pointer
+
+				// Avoid crash if pointer is nullptr
+				a.test(rax, rax);
+				a.jz(safe_continue);
+
+				// Jump back in (game's code)
+				a.mov(dword_ptr(rax, 0x4D10), 0);
+
+				// Continue to next iter in this loop
+				a.bind(safe_continue);
+				a.jmp(0x140B22287);
+			});
+		}
 	}
 
 	class component final : public component_interface
@@ -331,6 +353,10 @@ namespace patches
 
 			utils::hook::nop(0x140E6A2FB, 2); // don't wait for occlusion query to succeed (forever loop)
 			utils::hook::nop(0x140E6A30C, 2); // ^
+
+			// Patch crash caused by the server trying to kick players for 'invalid password'
+			utils::hook::nop(0x140B2215B, 18);
+			utils::hook::jump(0x140B2215B, update_last_seen_players_stub(), true);
 		}
 	};
 }
