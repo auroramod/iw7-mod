@@ -300,6 +300,7 @@ namespace patches
 			utils::hook::set<uint8_t>(0x1405C90C0, 0xC3);
 
 			// killswitches
+			dvars::override::register_bool("mission_team_contracts_enabled", true, game::DVAR_FLAG_READ);
 			dvars::override::register_bool("killswitch_store", false, game::DVAR_FLAG_READ);
 			dvars::override::register_bool("killswitch_quartermaster", false, game::DVAR_FLAG_READ);
 			dvars::override::register_bool("killswitch_cod_points", false, game::DVAR_FLAG_READ);
@@ -309,12 +310,6 @@ namespace patches
 			dvars::override::register_bool("killswitch_cp_leaderboards", true, game::DVAR_FLAG_READ);
 			dvars::override::register_bool("killswitch_streak_variants", false, game::DVAR_FLAG_READ);
 			dvars::override::register_bool("killswitch_blood_anvil", false, game::DVAR_FLAG_READ);
-
-			// don't use contracts in latin spanish
-			if (!game::SEH_GetLanguageName(17))
-			{
-				dvars::override::register_bool("mission_team_contracts_enabled", true, game::DVAR_FLAG_READ);
-			}
 
 			// announcer packs
 			if (!game::environment::is_dedi())

@@ -169,7 +169,7 @@ namespace steam_proxy
 	public:
 		void post_load() override
 		{
-			if (game::environment::is_dedi() || is_disabled() || !FindWindowA(0, "Steam"))
+			if (game::environment::is_dedi() || is_disabled() || utils::nt::is_wine() || !FindWindowA(0, "Steam"))
 			{
 				return;
 			}
@@ -180,7 +180,7 @@ namespace steam_proxy
 
 		void post_unpack() override
 		{
-			if (game::environment::is_dedi() || is_disabled())
+			if (game::environment::is_dedi() || is_disabled() || utils::nt::is_wine())
 			{
 				return;
 			}
