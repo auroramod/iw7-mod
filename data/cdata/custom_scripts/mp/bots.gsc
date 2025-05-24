@@ -3,14 +3,18 @@
 
 main()
 {
-    initdvars();
+    initDvars();
     initLevelVariables();
 
     replacefunc(scripts\mp\bots\bots::init, ::init_stub);
+    replacefunc(scripts\mp\bots\bots::bot_get_host_team, ::get_human_player_team);
+    replacefunc(scripts\mp\bots\bots::bot_connect_monitor, ::bot_connect_monitor);
     replacefunc(scripts\mp\bots\bots_util::bot_get_client_limit, ::bot_get_client_limit);
+    replacefunc(scripts\mp\hostmigration::waitlongdurationwithhostmigrationpause, ::_wait);
+    replacefunc(scripts\mp\gamelogic::waitforplayers, ::waitforplayers);
 }
 
-initdvars()
+initDvars()
 {
     // setdvar("bots_enabled", 1);
     // setdvar("bot_difficulty", 0);
@@ -53,6 +57,11 @@ allowedBotDifficulty(difficulty)
             level.bot_difficulty_defaults[level.bot_difficulty_defaults.size] = "recruit";
             break;
     }
+}
+
+_wait(time)
+{
+    wait(time);
 }
 
 waitForPlayers( maxTime )
@@ -118,7 +127,7 @@ get_human_player_team()
 
 wait_for_human_player()
 {
-    host = get_human_player_loop();
+    player = get_human_player_loop();
     
     while ( isdefined( player ) && !player.hasspawned && !isdefined( player.selectedclass ) )
     {
@@ -181,7 +190,7 @@ bot_connect_monitor( num_ally_bots, num_enemy_bots )
     level.pausing_bot_connect_monitor = false;
 	childthread monitor_pause_spawning();
 
-    maps\mp\gametypes\_hostmigration::waitLongDurationWithHostMigrationPause( 0.5 );
+    scripts\mp\hostmigration::waitLongDurationWithHostMigrationPause( 0.5 );
 	bot_connect_monitor_update_time = 1.5;
 
     if ( !IsDefined( level.bot_cm_spawned_bots ) )
