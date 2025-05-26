@@ -141,7 +141,7 @@ namespace rcon
 		{
 			scheduler::once([]()
 			{
-				game::Dvar_RegisterString("rcon_password", "", game::DvarFlags::DVAR_FLAG_NONE, "The password for remote console");
+				game::Dvar_RegisterString("rcon_password", "", game::DvarFlags::DVAR_NOFLAG, "The password for remote console");
 			}, scheduler::pipeline::main);
 
 			command::add("status", []()

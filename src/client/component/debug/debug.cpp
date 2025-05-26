@@ -494,11 +494,11 @@ namespace debug
 				return;
 			}
 
-			r_drawLightOrigins = game::Dvar_RegisterBool("r_drawLightOrigins", false, game::DVAR_FLAG_CHEAT, "Draw comworld light origins");
-			r_drawModelNames = game::Dvar_RegisterEnum("r_drawModelNames", model_draw_s, model_draw_e::off, game::DVAR_FLAG_CHEAT, "Draw all model names");
-			r_playerDrawDebugDistance = game::Dvar_RegisterInt("r_drawDebugDistance", 500, 0, 50000, game::DVAR_FLAG_NONE, "r_draw debug functions draw distance relative to the player");
+			r_drawLightOrigins = game::Dvar_RegisterBool("r_drawLightOrigins", false, game::DVAR_CHEAT, "Draw comworld light origins");
+			r_drawModelNames = game::Dvar_RegisterEnum("r_drawModelNames", model_draw_s, model_draw_e::off, game::DVAR_CHEAT, "Draw all model names");
+			r_playerDrawDebugDistance = game::Dvar_RegisterInt("r_drawDebugDistance", 500, 0, 50000, game::DVAR_NOFLAG, "r_draw debug functions draw distance relative to the player");
 
-			cg_draw_material = game::Dvar_RegisterBool("cg_drawMaterial", false, game::DVAR_FLAG_NONE, "Draws material name on screen");
+			cg_draw_material = game::Dvar_RegisterBool("cg_drawMaterial", false, game::DVAR_NOFLAG, "Draws material name on screen");
 
 			scheduler::loop([]
 			{

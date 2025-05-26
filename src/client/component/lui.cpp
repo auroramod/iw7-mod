@@ -41,7 +41,7 @@ namespace lui
 				return;
 			}
 
-			dvars::lui_debug = game::Dvar_RegisterBool("lui_debug", false, game::DvarFlags::DVAR_FLAG_SAVED,
+			dvars::lui_debug = game::Dvar_RegisterBool("lui_debug", false, game::DvarFlags::DVAR_ARCHIVE,
 				"Print LUI DebugPrint to console. (DEV)");
 
 			// LUI_Interface_DebugPrint

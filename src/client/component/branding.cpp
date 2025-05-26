@@ -40,7 +40,7 @@ namespace branding
 
 			scheduler::once([]()
 			{
-				dvars::branding = game::Dvar_RegisterBool("branding", true, game::DvarFlags::DVAR_FLAG_SAVED, "Show branding");
+				dvars::branding = game::Dvar_RegisterBool("branding", true, game::DVAR_ARCHIVE, "Show branding");
 			}, scheduler::pipeline::renderer);
 
 #if GIT_DIRTY == 1

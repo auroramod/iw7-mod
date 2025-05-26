@@ -39,8 +39,8 @@ namespace backflips
 			utils::hook::call(0x14005651E, use_view_pitch_dvars);
 			utils::hook::call(0x140056555, use_view_pitch_dvars);
 
-			dvars::override::register_float("player_view_pitch_down", 85, 0, 360, game::DVAR_FLAG_SAVED);
-			dvars::override::register_float("player_view_pitch_up", 85, 0, 360, game::DVAR_FLAG_SAVED);
+			dvars::override::register_float("player_view_pitch_down", 85, 0, 360, game::DVAR_ARCHIVE);
+			dvars::override::register_float("player_view_pitch_up", 85, 0, 360, game::DVAR_ARCHIVE);
 		}
 	};
 }

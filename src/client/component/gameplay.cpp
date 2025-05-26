@@ -60,15 +60,19 @@ namespace gameplay
 		{
 			return utils::hook::assemble([](utils::hook::assembler& a)
 			{
+				// do moveSpeedScaleMultiplier first (xmm0)
 				a.call(0x140BB3030);
 				a.mov(ptr(rdi, 0x32C), eax);
-				a.mov(rax, ptr(rsi, 0x170));
 
 				// get bg_gravity as int
+				a.pushad64();
+				a.push(rdi);
 				a.call_aligned(get_gravity);
+				a.pop(rdi);
 				a.mov(dword_ptr(rdi, 0x78), eax);
+				a.popad64();
 
-				a.jmp(0x140AFA349);
+				a.jmp(0x140AFA342);
 			});
 		}
 
@@ -137,31 +141,31 @@ namespace gameplay
 		void post_unpack() override
 		{
 			// Implement ejection dvar
-			dvars::bg_playerEjection = game::Dvar_RegisterBool("bg_playerEjection", true, game::DVAR_FLAG_REPLICATED, "Flag whether player ejection is on or off");
+			dvars::bg_playerEjection = game::Dvar_RegisterBool("bg_playerEjection", true, game::DVAR_CODINFO, "Flag whether player ejection is on or off");
 			utils::hook::call(0x140AFA739, stuck_in_client_stub);
 
 			// Implement bounces dvar
-			dvars::bg_bounces = game::Dvar_RegisterBool("bg_bounces", false, game::DVAR_FLAG_REPLICATED, "Enables bounces");
+			dvars::bg_bounces = game::Dvar_RegisterBool("bg_bounces", false, game::DVAR_CODINFO, "Enables bounces");
 			utils::hook::jump(0x14070FBB7, bg_bounces_stub(), true);
 
 			// Modify gravity dvar
-			dvars::override::register_float("bg_gravity", 800.0f, 1.0f, 1000.0f, 0xC0 | game::DVAR_FLAG_REPLICATED);
-			utils::hook::nop(0x140AFA337, 18);
-			utils::hook::jump(0x140AFA337, bg_gravity_stub(), true);
+			dvars::override::register_float("bg_gravity", 800.0f, 1.0f, 1000.0f, 0xC0 | game::DVAR_CODINFO);
+			utils::hook::nop(0x140AFA330, 18);
+			utils::hook::jump(0x140AFA330, bg_gravity_stub(), true);
 
 			// Modify speed dvar
-			dvars::override::register_int("g_speed", 190, 0x80000000, 0x7FFFFFFF, 0xC0 | game::DVAR_FLAG_REPLICATED);
+			dvars::override::register_int("g_speed", 190, 0x80000000, 0x7FFFFFFF, 0xC0 | game::DVAR_CODINFO);
 			utils::hook::nop(0x140AFB1DF, 13);
 			utils::hook::jump(0x140AFB1DF, g_speed_stub(), true);
 
 			// Implement gun position dvars
-			dvars::cg_gun_x = game::Dvar_RegisterFloat("cg_gun_x", 0.0f, -800.0f, 800.0f, game::DvarFlags::DVAR_FLAG_NONE, "Forward position of the viewmodel");
-			dvars::cg_gun_y = game::Dvar_RegisterFloat("cg_gun_y", 0.0f, -800.0f, 800.0f, game::DvarFlags::DVAR_FLAG_NONE, "Right position of the viewmodel");
-			dvars::cg_gun_z = game::Dvar_RegisterFloat("cg_gun_z", 0.0f, -800.0f, 800.0f, game::DvarFlags::DVAR_FLAG_NONE, "Up position of the viewmodel");
+			dvars::cg_gun_x = game::Dvar_RegisterFloat("cg_gun_x", 0.0f, -800.0f, 800.0f, game::DvarFlags::DVAR_NOFLAG, "Forward position of the viewmodel");
+			dvars::cg_gun_y = game::Dvar_RegisterFloat("cg_gun_y", 0.0f, -800.0f, 800.0f, game::DvarFlags::DVAR_NOFLAG, "Right position of the viewmodel");
+			dvars::cg_gun_z = game::Dvar_RegisterFloat("cg_gun_z", 0.0f, -800.0f, 800.0f, game::DvarFlags::DVAR_NOFLAG, "Up position of the viewmodel");
 			utils::hook::jump(0x1408D5930, cg_calculate_weapon_movement_debug_stub);
 
 			// Modify limits
-			dvars::override::register_float("cl_yawspeed", 140.0f, std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max(), game::DVAR_FLAG_SAVED);
+			dvars::override::register_float("cl_yawspeed", 140.0f, std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max(), game::DVAR_ARCHIVE);
 		}
 	};
 }

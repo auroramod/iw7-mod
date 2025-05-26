@@ -200,7 +200,7 @@ namespace loadscreen
 			utils::hook::call(0x1409BC84C, UI_DrawTempConnectScreen);
 
 			// Allows loading of _load fastfiles
-			dvars::override::register_bool("frontEndUseLoadFastfiles", true, game::DVAR_FLAG_NONE);
+			dvars::override::register_bool("frontEndUseLoadFastfiles", true, game::DVAR_NOFLAG);
 		}
 	};
 }

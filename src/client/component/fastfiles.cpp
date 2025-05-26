@@ -312,7 +312,7 @@ namespace fastfiles
 			db_find_xasset_header_hook.create(game::DB_FindXAssetHeader, db_find_xasset_header_stub);
 			db_add_xasset_hook.create(0x140A76520, db_add_xasset_stub);
 
-			g_dump_scripts = game::Dvar_RegisterBool("g_dumpScripts", false, game::DVAR_FLAG_NONE, "Dump GSC scripts");
+			g_dump_scripts = game::Dvar_RegisterBool("g_dumpScripts", false, game::DVAR_NOFLAG, "Dump GSC scripts");
 
 			// Don't fatal on certain missing zones
 			db_is_patch_hook.create(0x1403BC580, db_is_patch_stub);
