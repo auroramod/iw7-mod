@@ -3,18 +3,18 @@
 
 main()
 {
-    initDvars();
-    initLevelVariables();
+    init_dvars();
+    init_level_variables();
 
     replacefunc(scripts\mp\bots\bots::init, ::init_stub);
     replacefunc(scripts\mp\bots\bots::bot_get_host_team, ::get_human_player_team);
-    replacefunc(scripts\mp\bots\bots::bot_connect_monitor, ::bot_connect_monitor);
-    replacefunc(scripts\mp\bots\bots_util::bot_get_client_limit, ::bot_get_client_limit);
+    replacefunc(scripts\mp\bots\bots::bot_connect_monitor, ::bot_connect_monitor_stub);
+    replacefunc(scripts\mp\bots\bots_util::bot_get_client_limit, ::bot_get_client_limit_stub);
     replacefunc(scripts\mp\hostmigration::waitlongdurationwithhostmigrationpause, ::_wait);
-    replacefunc(scripts\mp\gamelogic::waitforplayers, ::waitforplayers);
+    replacefunc(scripts\mp\gamelogic::waitforplayers, ::waitforplayers_stub);
 }
 
-initDvars()
+init_dvars()
 {
     // setdvar("bots_enabled", 1);
     // setdvar("bot_difficulty", 0);
@@ -25,7 +25,7 @@ initDvars()
     level.ready_to_start = 0;
 }
 
-initLevelVariables()
+init_level_variables()
 {
     if (!getdvarint("xblive_privatematch"))
     {
@@ -64,7 +64,7 @@ _wait(time)
     wait(time);
 }
 
-waitForPlayers( maxTime )
+waitforplayers_stub( maxTime )
 {
 	startTime = gettime();
 	endTime = startTime + maxTime * 1000 - 200;
@@ -74,7 +74,7 @@ waitForPlayers( maxTime )
 	else
 		minTime = 0;
 
-	numToWaitFor = ( level.connectingPlayers/3 );
+	numToWaitFor = ( level._id_4533/3 ); // connectingPlayers variable
 
 	for ( ;; )
 	{
@@ -159,10 +159,10 @@ init_stub()
 
     setmatchdata( "hasBots", 1 );
 
-    level thread bot_connect_monitor();
+    level thread scripts\mp\bots\bots::bot_connect_monitor();
 }
 
-bot_get_client_limit()
+bot_get_client_limit_stub()
 {
     var_0 = getdvarint( "party_maxplayers", 0 );
 
@@ -180,7 +180,7 @@ bot_get_client_limit()
     return maxclients;
 }
 
-bot_connect_monitor( num_ally_bots, num_enemy_bots )
+bot_connect_monitor_stub( num_ally_bots, num_enemy_bots )
 {
     level endon( "game_ended" );
     
