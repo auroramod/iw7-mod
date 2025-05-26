@@ -60,19 +60,15 @@ namespace gameplay
 		{
 			return utils::hook::assemble([](utils::hook::assembler& a)
 			{
-				// do moveSpeedScaleMultiplier first (xmm0)
 				a.call(0x140BB3030);
 				a.mov(ptr(rdi, 0x32C), eax);
+				a.mov(rax, ptr(rsi, 0x170));
 
 				// get bg_gravity as int
-				a.pushad64();
-				a.push(rdi);
 				a.call_aligned(get_gravity);
-				a.pop(rdi);
 				a.mov(dword_ptr(rdi, 0x78), eax);
-				a.popad64();
 
-				a.jmp(0x140AFA342);
+				a.jmp(0x140AFA349);
 			});
 		}
 
@@ -149,9 +145,9 @@ namespace gameplay
 			utils::hook::jump(0x14070FBB7, bg_bounces_stub(), true);
 
 			// Modify gravity dvar
-			dvars::override::register_float("bg_gravity", 800, 0, 1000, 0xC0 | game::DVAR_FLAG_REPLICATED);
-			utils::hook::nop(0x140AFA330, 18);
-			utils::hook::jump(0x140AFA330, bg_gravity_stub(), true);
+			dvars::override::register_float("bg_gravity", 800.0f, 1.0f, 1000.0f, 0xC0 | game::DVAR_FLAG_REPLICATED);
+			utils::hook::nop(0x140AFA337, 18);
+			utils::hook::jump(0x140AFA337, bg_gravity_stub(), true);
 
 			// Modify speed dvar
 			dvars::override::register_int("g_speed", 190, 0x80000000, 0x7FFFFFFF, 0xC0 | game::DVAR_FLAG_REPLICATED);
