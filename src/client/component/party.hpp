@@ -11,6 +11,7 @@ namespace party
 		std::string motd;
 		int max_clients;
 		std::string base_url;
+		std::string hostname;
 	};
 
 	struct discord_information
@@ -29,7 +30,7 @@ namespace party
 	void start_map(const std::string& mapname, bool dev = false);
 
 	void clear_sv_motd();
-	connection_state get_server_connection_state();
+	connection_state* get_server_connection_state();
 	std::optional<discord_information> get_server_discord_info();
 
 	int get_client_num_by_name(const std::string& name);

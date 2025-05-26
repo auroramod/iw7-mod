@@ -688,9 +688,9 @@ namespace party
 		server_connection_state.motd.clear();
 	}
 
-	connection_state get_server_connection_state()
+	connection_state* get_server_connection_state()
 	{
-		return server_connection_state;
+		return &server_connection_state;
 	}
 
 	std::optional<discord_information> get_server_discord_info()
@@ -1117,6 +1117,7 @@ namespace party
 
 				server_connection_state.motd = info.get("sv_motd");
 				server_connection_state.max_clients = std::stoi(sv_maxclients_str);
+				server_connection_state.hostname = info.get("hostname");
 
 				const auto profile_info = profile_infos::get_profile_info();
 				if (!profile_info.has_value())

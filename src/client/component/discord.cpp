@@ -98,65 +98,47 @@ namespace discord
 
 		void update_discord_ingame()
 		{
-			static const auto mapname_dvar = game::Dvar_FindVar("mapname");
-			auto mapname = mapname_dvar->current.string;
+			static const auto mapname_dvar = game::Dvar_FindVar("ui_mapname");
+			const auto* mapname = mapname_dvar->current.string;
 
 			discord_strings.large_image_key = mapname;
 
 			const auto mode = game::Com_GameMode_GetActiveGameMode();
-			const auto presence_key = utils::string::va(
-				"PRESENCE_%s%s",
-				(mode == game::GAME_MODE_SP ? "SP_" : (mode == game::GAME_MODE_CP ? "CP_" : "MP_")),
-				mapname);
-
-			if (game::DB_XAssetExists(game::ASSET_TYPE_LOCALIZE_ENTRY, presence_key) && 
-				!game::DB_IsXAssetDefault(game::ASSET_TYPE_LOCALIZE_ENTRY, presence_key))
-			{
-				mapname = game::UI_SafeTranslateString(presence_key);
-			}
 
 			if (mode == game::GAME_MODE_CP || mode == game::GAME_MODE_MP)
 			{
-				static const auto gametype_dvar = game::Dvar_FindVar("g_gametype");
-				static const auto max_clients_dvar = game::Dvar_FindVar("sv_maxclients");
-				static const auto hostname_dvar = game::Dvar_FindVar("sv_hostname");
+				static const auto* gametype_dvar = game::Dvar_FindVar("ui_gametype");
+				static const auto* max_clients_dvar = game::Dvar_FindVar("ui_maxclients");
 
-				const auto gametype_display_name = game::UI_GetGameTypeDisplayName(gametype_dvar->current.string);
-				const auto gametype = utils::string::strip(gametype_display_name);
+				const auto* gametype_ui = game::UI_GetGameTypeDisplayName(gametype_dvar->current.string);
+				const auto* mapname_ui = game::UI_GetMapDisplayName(mapname);
 
-				discord_strings.details = std::format("{} on {}", gametype, mapname);
+				discord_strings.details = std::format("{} on {}", gametype_ui, mapname_ui);
 
-				// cant find anything for numClients rn in iw7 :p
-				/*
-				const auto client_state = *game::client_state;
-				if (client_state != nullptr)
-				{
-					discord_presence.partySize = client_state->num_players;
-				}
-				*/
-				discord_presence.partySize = 1;
+				discord_presence.partySize = *reinterpret_cast<int*>(0x14434FEF0); // probably numClients from snapshot
 
 				if (game::SV_Loaded() && !game::Com_FrontEnd_IsInFrontEnd())
 				{
 					discord_strings.state = "Private Match";
-					discord_presence.partyMax = max_clients_dvar->current.integer;
+					discord_presence.partyMax = (max_clients_dvar ? max_clients_dvar->current.integer : 12);
 					discord_presence.partyPrivacy = DISCORD_PARTY_PRIVATE;
 				}
 				else
 				{
-					discord_strings.state = utils::string::strip(hostname_dvar->current.string);
+					auto* server_connection_state = party::get_server_connection_state();
 
-					const auto server_connection_state = party::get_server_connection_state();
+					discord_strings.state = utils::string::strip(server_connection_state->hostname);
+
 					const auto server_ip_port = std::format("{}.{}.{}.{}:{}",
-						static_cast<int>(server_connection_state.host.ip[0]),
-						static_cast<int>(server_connection_state.host.ip[1]),
-						static_cast<int>(server_connection_state.host.ip[2]),
-						static_cast<int>(server_connection_state.host.ip[3]),
-						static_cast<int>(ntohs(server_connection_state.host.port))
+						static_cast<int>(server_connection_state->host.ip[0]),
+						static_cast<int>(server_connection_state->host.ip[1]),
+						static_cast<int>(server_connection_state->host.ip[2]),
+						static_cast<int>(server_connection_state->host.ip[3]),
+						static_cast<int>(ntohs(server_connection_state->host.port))
 					);
 
 					discord_strings.party_id = utils::cryptography::sha1::compute(server_ip_port, true).substr(0, 8);
-					discord_presence.partyMax = server_connection_state.max_clients;
+					discord_presence.partyMax = server_connection_state->max_clients;
 					discord_presence.partyPrivacy = DISCORD_PARTY_PUBLIC;
 					discord_strings.join_secret = server_ip_port;
 				}
@@ -197,9 +179,7 @@ namespace discord
 			discord_presence = {};
 			discord_presence.startTimestamp = saved_time;
 
-			//const auto game_initialized = game::client_actives_something[0] == 1; // 196 * client num = resultc
-			//const auto game_initialized = false; // TODO: figure out a way to do this
-			if (/*!game_initialized || */game::Com_FrontEndScene_IsActive())
+			if (!game::CL_IsGameClientActive(0) || game::Com_FrontEndScene_IsActive())
 			{
 				update_discord_frontend();
 			}
@@ -498,4 +478,4 @@ namespace discord
 	};
 }
 
-//REGISTER_COMPONENT(discord::component)
+REGISTER_COMPONENT(discord::component)
