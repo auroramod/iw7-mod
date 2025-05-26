@@ -19,7 +19,7 @@
 
 namespace gsc
 {
-	std::unique_ptr<xsk::gsc::iw7::context> gsc_ctx = std::make_unique<xsk::gsc::iw7::context>();
+	std::unique_ptr<xsk::gsc::iw7::context> gsc_ctx = std::make_unique<xsk::gsc::iw7::context>(xsk::gsc::instance::server);
 	std::unordered_map<std::string, loaded_script_t> loaded_scripts;
 
 	namespace
