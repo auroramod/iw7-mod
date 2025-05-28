@@ -109,39 +109,6 @@ namespace command
 			parsed = true;
 		}
 
-		void parse_startup_variables()
-		{
-			auto& com_num_console_lines = *game::com_num_console_lines;
-			auto* com_console_lines = game::com_console_lines.get();
-
-			for (int i = 0; i < com_num_console_lines; i++)
-			{
-				game::Cmd_TokenizeString(com_console_lines[i]);
-
-				// only +set dvar value
-				if (game::Cmd_Argc() >= 3 && (game::Cmd_Argv(0) == "set"s || game::Cmd_Argv(0) == "seta"s))
-				{
-					const std::string& dvar_name = game::Cmd_Argv(1);
-					const std::string& value = game::Cmd_Argv(2);
-
-					const auto* dvar = game::Dvar_FindVar(dvar_name.data());
-					if (dvar)
-					{
-						game::Dvar_SetCommand(dvar_name.data(), value.data());
-					}
-					else
-					{
-						dvars::callback::on_register(dvar_name, [dvar_name, value]()
-						{
-							game::Dvar_SetCommand(dvar_name.data(), value.data());
-						});
-					}
-				}
-
-				game::Cmd_EndTokenizeString();
-			}
-		}
-
 		void parse_commandline()
 		{
 			parse_command_line();
@@ -427,6 +394,39 @@ namespace command
 		else
 		{
 			game::Cbuf_AddText(0, command.data());
+		}
+	}
+
+	void parse_startup_variables()
+	{
+		auto& com_num_console_lines = *game::com_num_console_lines;
+		auto* com_console_lines = game::com_console_lines.get();
+
+		for (int i = 0; i < com_num_console_lines; i++)
+		{
+			game::Cmd_TokenizeString(com_console_lines[i]);
+
+			// only +set dvar value
+			if (game::Cmd_Argc() >= 3 && (game::Cmd_Argv(0) == "set"s || game::Cmd_Argv(0) == "seta"s))
+			{
+				const std::string& dvar_name = game::Cmd_Argv(1);
+				const std::string& value = game::Cmd_Argv(2);
+
+				const auto* dvar = game::Dvar_FindVar(dvar_name.data());
+				if (dvar)
+				{
+					game::Dvar_SetCommand(dvar_name.data(), value.data());
+				}
+				else
+				{
+					dvars::callback::on_register(dvar_name, [dvar_name, value]()
+					{
+						game::Dvar_SetCommand(dvar_name.data(), value.data());
+					});
+				}
+			}
+
+			game::Cmd_EndTokenizeString();
 		}
 	}
 

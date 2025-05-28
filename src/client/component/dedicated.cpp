@@ -44,31 +44,6 @@ namespace dedicated
 			com_quit_f_hook.invoke<void>();
 		}
 
-		std::vector<std::string>& get_startup_command_queue()
-		{
-			static std::vector<std::string> startup_command_queue;
-			return startup_command_queue;
-		}
-
-		void execute_startup_commands()
-		{
-			auto& com_num_console_lines = *game::com_num_console_lines;
-			auto* com_console_lines = game::com_console_lines.get();
-
-			for (auto i = 0; i < com_num_console_lines; i++)
-			{
-				auto cmd = com_console_lines[i];
-
-				// if command is map or map_rotate, its already been called
-				if (cmd == "map"s || cmd == "map_rotate"s)
-				{
-					continue;
-				}
-
-				game::Cbuf_ExecuteBufferInternal(0, 0, cmd, game::Cmd_ExecuteSingleCommand);
-			}
-		}
-
 		bool party_is_server_dedicated_stub()
 		{
 			return true;
@@ -103,25 +78,6 @@ namespace dedicated
 			{
 				network::send(target, "heartbeat", "IW7");
 			}
-		}
-
-		void sys_error_stub(const char* msg, ...)
-		{
-			char buffer[2048]{};
-
-			va_list ap;
-			va_start(ap, msg);
-
-			vsnprintf_s(buffer, _TRUNCATE, msg, ap);
-
-			va_end(ap);
-
-			scheduler::once([]
-			{
-				command::execute("map_rotate");
-			}, scheduler::main, 3s);
-
-			game::Com_Error(game::ERR_DROP, "%s", buffer);
 		}
 
 		void init_dedicated_server()
@@ -249,9 +205,6 @@ namespace dedicated
 			dvars::override::register_bool("r_loadForRenderer", false, game::DVAR_INIT);
 
 			dvars::override::register_bool("intro", false, game::DVAR_INIT);
-
-			// Stop crashing from sys_errors
-			//utils::hook::jump(0x140D34180, sys_error_stub, true);
 
 			// Is party dedicated
 			utils::hook::jump(0x1405DFC10, party_is_server_dedicated_stub);
@@ -410,7 +363,7 @@ namespace dedicated
 				// remove disconnect command
 				game::Cmd_RemoveCommand("disconnect");
 
-				execute_startup_commands();
+				command::parse_startup_variables();
 
 				// Send heartbeat to dpmaster
 				scheduler::once(send_heartbeat, scheduler::pipeline::server);
