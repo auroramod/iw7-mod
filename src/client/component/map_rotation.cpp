@@ -1,11 +1,15 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
+
 #include "command.hpp"
 #include "scheduler.hpp"
-#include <utils/hook.hpp>
-#include <utils/string.hpp>
+#include "console/console.hpp"
+
 #include "game/game.hpp"
 #include <game/dvars.hpp>
+
+#include <utils/hook.hpp>
+#include <utils/string.hpp>
 
 namespace map_rotation
 {
@@ -30,26 +34,38 @@ namespace map_rotation
 
 		void launch_default_map()
 		{
-			auto* mapname = game::Dvar_FindVar("mapname");
-			if (mapname && mapname->current.string && strlen(mapname->current.string) && 
-				mapname->current.string != "mp_frontend"s && 
-				mapname->current.string != "cp_frontend"s)
+			const auto* mapname = game::Dvar_FindVar("mapname");
+
+			if (mapname && mapname->current.string && strlen(mapname->current.string))
 			{
-				launch_map(mapname->current.string);
+				const std::string current_map = mapname->current.string;
+				if (current_map != "mp_frontend"s && current_map != "cp_frontend"s)
+				{
+					launch_map(current_map);
+					return;
+				}
 			}
-			else
-			{
-				launch_map(game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_CP ? "cp_zmb" : "mp_frontier");
-			}
+
+			const char* fallback_map = (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_CP)
+				? "cp_zmb"
+				: "mp_frontier";
+
+			launch_map(fallback_map);
 		}
 
 		std::string load_current_map_rotation()
 		{
 			auto* rotation = game::Dvar_FindVar("sv_mapRotationCurrent");
-			if (!strlen(rotation->current.string))
+
+			if (!rotation || !rotation->current.string || !strlen(rotation->current.string))
 			{
 				rotation = game::Dvar_FindVar("sv_mapRotation");
-				set_dvar("sv_mapRotationCurrent", rotation->current.string);
+				if (rotation && rotation->current.string)
+				{
+					set_dvar("sv_mapRotationCurrent", rotation->current.string);
+					return rotation->current.string;
+				}
+				return {};
 			}
 
 			return rotation->current.string;
@@ -63,34 +79,30 @@ namespace map_rotation
 
 		void store_new_rotation(const std::vector<std::string>& elements, const size_t index)
 		{
-			std::string value{};
-
-			for (auto i = index; i < elements.size(); ++i)
+			std::ostringstream oss;
+			for (size_t i = index; i < elements.size(); ++i)
 			{
-				if (i != index)
-				{
-					value.push_back(' ');
-				}
-
-				value.append(elements[i]);
+				if (i > index)
+					oss << ' ';
+				oss << elements[i];
 			}
-
-			set_dvar("sv_mapRotationCurrent", value);
+			set_dvar("sv_mapRotationCurrent", oss.str());
 		}
 
 		void change_process_priority()
 		{
-			auto* const dvar = game::Dvar_FindVar("sv_autoPriority");
+			const auto* dvar = game::Dvar_FindVar("sv_autoPriority");
 			if (dvar && dvar->current.enabled)
 			{
+				// Save current priority
+				previous_priority = GetPriorityClass(GetCurrentProcess());
+
+				// Restore priority later
 				scheduler::on_game_initialized([]()
 				{
-					//printf("=======================setting OLD priority=======================\n");
 					SetPriorityClass(GetCurrentProcess(), previous_priority);
 				}, scheduler::pipeline::main, 1s);
 
-				previous_priority = GetPriorityClass(GetCurrentProcess());
-				//printf("=======================setting NEW priority=======================\n");
 				SetPriorityClass(GetCurrentProcess(), NORMAL_PRIORITY_CLASS);
 			}
 		}
@@ -105,34 +117,39 @@ namespace map_rotation
 
 			const auto rotation = parse_current_map_rotation();
 
-			for (size_t i = 0; !rotation.empty() && i < (rotation.size() - 1); i += 2)
+			for (size_t i = 0; i + 1 < rotation.size(); i += 2)
 			{
 				const auto& key = rotation[i];
 				const auto& value = rotation[i + 1];
 
 				if (key == "gametype")
 				{
+					console::info("%s %s", key.data(), value.data());
 					set_gametype(value);
 				}
 				else if (key == "map")
 				{
+					console::info("%s %s", key.data(), value.data());
 					store_new_rotation(rotation, i + 2);
 					change_process_priority();
+
 					if (!game::SV_MapExists(value.data()))
 					{
-						printf("map_rotation: '%s' map doesn't exist!\n", value.data());
+						console::info("map_rotation: map '%s' doesn't exist, launching default.\n", value.data());
 						launch_default_map();
 						return;
 					}
+
 					launch_map(value);
 					return;
 				}
 				else
 				{
-					printf("Invalid map rotation key: %s\n", key.data());
+					console::warn("map_rotation: Invalid rotation key '%s'\n", key.data());
 				}
 			}
 
+			// If no map key was found
 			launch_default_map();
 		}
 
@@ -141,9 +158,7 @@ namespace map_rotation
 			scheduler::schedule([]()
 			{
 				if (game::CL_IsGameClientActive(0))
-				{
 					return scheduler::cond_continue;
-				}
 
 				command::execute("map_rotate", false);
 				return scheduler::cond_end;
@@ -157,20 +172,19 @@ namespace map_rotation
 		void post_unpack() override
 		{
 			if (!game::environment::is_dedi())
-			{
 				return;
-			}
 
 			scheduler::once([]()
 			{
 				game::Dvar_RegisterString("sv_mapRotation", "", game::DVAR_NOFLAG, "");
 				game::Dvar_RegisterString("sv_mapRotationCurrent", "", game::DVAR_NOFLAG, "");
-				game::Dvar_RegisterString("sv_autoPriority", "", game::DVAR_NOFLAG, "Lowers the process priority during map changes to not cause lags on other servers.");
+				game::Dvar_RegisterBool("sv_autoPriority", false, game::DVAR_NOFLAG,
+					"Lowers the process priority during map changes to not cause lags on other servers.");
 			}, scheduler::pipeline::main);
 
 			command::add("map_rotate", &perform_map_rotation);
 
-			// Hook GScr_ExitLevel 
+			// Hook GScr_ExitLevel
 			utils::hook::jump(0x140B52E50, &trigger_map_rotation, true);
 
 			previous_priority = GetPriorityClass(GetCurrentProcess());
