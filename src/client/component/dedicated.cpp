@@ -52,8 +52,10 @@ namespace dedicated
 
 		void execute_buffer_stub(int /*client*/, int /*controllerIndex*/, const char* command)
 		{
-			if(_ReturnAddress() != (void*)0x140B8D214)
+			if (_ReturnAddress() != (void*)0x140B8D214)
+			{
 				return game::Cbuf_ExecuteBufferInternal(0, 0, command, game::Cmd_ExecuteSingleCommand);
+			}
 
 			if (game::Live_SyncOnlineDataFlags(0) == 0)
 			{
@@ -137,12 +139,10 @@ namespace dedicated
 			{
 				if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_CP)
 				{
-					command::execute("exec default_systemlink_cp.cfg", true);
 					command::execute("exec default_cp.cfg", true);
 				}
 				else if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_MP)
 				{
-					command::execute("exec default_systemlink_mp.cfg", true);
 					command::execute("exec default_mp.cfg", true);
 				}
 			};
@@ -376,6 +376,7 @@ namespace dedicated
 			// recipe save threads
 			utils::hook::set<uint8_t>(0x140E7C970, 0xC3);
 
+			// start game mode
 			scheduler::once([]()
 			{
 				if (utils::flags::has_flag("cpMode") || utils::flags::has_flag("zombies"))
@@ -391,7 +392,7 @@ namespace dedicated
 			// initialization
 			scheduler::on_game_initialized([]()
 			{
-				//initialize();
+				initialize();
 
 				console::info("==================================\n");
 				console::info("Server started!\n");
@@ -409,6 +410,8 @@ namespace dedicated
 			}, scheduler::pipeline::main, 100ms);
 
 			utils::hook::jump(0x140B7C3B0, execute_buffer_stub);
+			utils::hook::set<uint8_t>(0x1405AC6A0, 0xC3); // Com_ExecLobbyDefaultConfigs
+			utils::hook::set<uint8_t>(0x140CCD840, 0xC3); // Playlist_RunRules
 
 			// dedicated info
 			scheduler::loop([]()
