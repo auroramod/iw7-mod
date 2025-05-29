@@ -400,6 +400,8 @@ namespace dedicated
 				// remove disconnect command
 				game::Cmd_RemoveCommand("disconnect");
 
+				execute_startup_command_queue();
+
 				// Send heartbeat to dpmaster
 				scheduler::once(send_heartbeat, scheduler::pipeline::server);
 				scheduler::loop(send_heartbeat, scheduler::pipeline::server, 10min);
