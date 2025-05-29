@@ -121,19 +121,19 @@ namespace command
 				// only +set dvar value
 				if (game::Cmd_Argc() >= 3 && (game::Cmd_Argv(0) == "set"s || game::Cmd_Argv(0) == "seta"s))
 				{
-					const std::string& dvar_name = game::Cmd_Argv(1);
+					const std::string& key = game::Cmd_Argv(1);
 					const std::string& value = game::Cmd_Argv(2);
 
-					const auto* dvar = game::Dvar_FindVar(dvar_name.data());
+					const auto* dvar = game::Dvar_FindVar(key.data());
 					if (dvar)
 					{
-						game::Dvar_SetCommand(dvar_name.data(), value.data());
+						game::Dvar_SetCommand(key.data(), value.data());
 					}
 					else
 					{
-						dvars::callback::on_register(dvar_name, [dvar_name, value]()
+						dvars::callback::on_register(key, [key, value]()
 						{
-							game::Dvar_SetCommand(dvar_name.data(), value.data());
+							game::Dvar_SetCommand(key.data(), value.data());
 						});
 					}
 				}

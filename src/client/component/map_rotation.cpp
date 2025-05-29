@@ -29,7 +29,8 @@ namespace map_rotation
 
 		void launch_map(const std::string& mapname)
 		{
-			command::execute(utils::string::va("map %s", mapname.data()), false);
+			const auto sv_cheats = game::Dvar_FindVar("sv_cheats");
+			command::execute(utils::string::va("%s %s", sv_cheats && sv_cheats->current.enabled ? "devmap" : "map", mapname.data()), false);
 		}
 
 		void launch_default_map()
@@ -124,12 +125,10 @@ namespace map_rotation
 
 				if (key == "gametype")
 				{
-					console::info("%s %s", key.data(), value.data());
 					set_gametype(value);
 				}
 				else if (key == "map")
 				{
-					console::info("%s %s", key.data(), value.data());
 					store_new_rotation(rotation, i + 2);
 					change_process_priority();
 
