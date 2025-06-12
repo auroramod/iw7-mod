@@ -85,44 +85,25 @@ namespace game
 
 	enum DvarFlags : std::uint32_t
 	{
-		DVAR_NOFLAG = 0x0,
-		DVAR_ARCHIVE = 0x1,
-		DVAR_LATCH = 0x2,
-		DVAR_CHEAT = 0x4,
-		DVAR_CODINFO = 0x8,
-		DVAR_SCRIPTINFO = 0x10,
-		DVAR_TEMP = 0x20,
-		DVAR_SAVED = 0x40,
-		DVAR_INTERNAL = 0x80,
-		DVAR_EXTERNAL = 0x100,
-		DVAR_USERINFO = 0x200,
-		DVAR_SERVERINFO = 0x400,
-		DVAR_ROM = 0x800,
-		DVAR_SYSTEMINFO = 0x1000,
-		DVAR_INIT = 0x2000,
-		DVAR_CHANGEABLE_RESET = 0x4000,
-		DVAR_AUTOEXEC = 0x8000,
+		DVAR_FLAG_NONE = 0,					// DVAR_NOFLAG
+		DVAR_FLAG_SAVED = 0x1,				// DVAR_ARCHIVE
+		DVAR_FLAG_LATCHED = 0x2,			// DVAR_LATCH
+		DVAR_FLAG_CHEAT = 0x4,				// DVAR_CHEAT
+		DVAR_FLAG_REPLICATED = 0x8,			// DVAR_CODINFO
+		DVAR_FLAG_NETWORK = 0x10,			// DVAR_SCRIPTINFO
+		DVAR_FLAG_TEMP = 0x20,				// DVAR_TEMP
+		DVAR_FLAG_TRUE_SAVED = 0x40,		// DVAR_SAVED
+		DVAR_FLAG_INTERNAL = 0x80,			// DVAR_INTERNAL
+		DVAR_FLAG_EXTERNAL = 0x100,			// DVAR_EXTERNAL
+		DVAR_FLAG_USERINFO = 0x200,			// DVAR_USERINFO
+		DVAR_FLAG_SERVERINFO = 0x400,		// DVAR_SERVERINFO
+		DVAR_FLAG_WRITE = 0x800,			// DVAR_ROM
+		DVAR_FLAG_SYSTEMINFO = 0x1000,		// DVAR_SYSTEMINFO
+		DVAR_FLAG_READ = 0x2000,			// DVAR_INIT
+		DVAR_FLAG_CHANGEABLE_RESET = 0x4000,
+		DVAR_FLAG_AUTOEXEC = 0x8000,
 
-		DVAR_UNADDABLE_FLAGS = DVAR_LATCH | DVAR_CHEAT | DVAR_EXTERNAL | DVAR_ROM | DVAR_INIT,
-
-		//DVAR_NOFLAG = 0,	// No flags
-		//DVAR_ARCHIVE = 1 << 0,	// Set to cause it to be saved to config_mp.cfg of the client
-		//DVAR_LATCH = 1 << 1,	// Will only change when C code next does a Dvar_Get(), so it can't be changed
-		// without proper initialization. Modified will be set, even though the value hasn't changed yet
-		//DVAR_CHEAT = 1 << 2,	// Can not be changed if cheats are disabled
-		//DVAR_CODINFO = 1 << 3,	// On change, this is sent to all clients (if you are host)
-		//DVAR_SCRIPTINFO = 1 << 4,
-		//DVAR_TEMP = 1 << 5, // Best educated guess
-		//DVAR_SAVED = 1 << 6,
-		//DVAR_INTERNAL = 1 << 7, // Best educated guess
-		//DVAR_EXTERNAL = 1 << 8,	// Created by a set command
-		//DVAR_USERINFO = 1 << 9,	// Sent to server on connect or change
-		//DVAR_SERVERINFO = 1 << 10, // Sent in response to front end requests
-		//DVAR_ROM = 1 << 11, // Don't allow change from console at all
-		//DVAR_SYSTEMINFO = 1 << 12, // Will be duplicated on all clients
-		//DVAR_INIT = 1 << 13, // Display only, cannot be set by user at all
-		//DVAR_CHANGEABLE_RESET = 1 << 14,
-		//DVAR_AUTOEXEC = 1 << 15, // isLoadingAutoExecGlobalFlag is always false so it should be never set by the game
+		DVAR_UNADDABLE_FLAGS = DVAR_FLAG_LATCHED | DVAR_FLAG_CHEAT | DVAR_FLAG_EXTERNAL | DVAR_FLAG_WRITE | DVAR_FLAG_READ
 	};
 
 	enum DvarType : std::uint8_t

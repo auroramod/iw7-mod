@@ -88,12 +88,12 @@ namespace thirdperson
 
 			scheduler::once([]()
 			{
-				dvars::cg_thirdPerson = game::Dvar_RegisterBool("cg_thirdPerson", false, game::DVAR_CHEAT, "Use third person view");
+				dvars::cg_thirdPerson = game::Dvar_RegisterBool("cg_thirdPerson", false, game::DVAR_FLAG_CHEAT, "Use third person view");
 
-				dvars::cg_thirdPersonAngle = game::Dvar_RegisterFloat("cg_thirdPersonAngle", 356.0f, -180.0f, 360.0f, game::DVAR_CHEAT,
+				dvars::cg_thirdPersonAngle = game::Dvar_RegisterFloat("cg_thirdPersonAngle", 356.0f, -180.0f, 360.0f, game::DVAR_FLAG_CHEAT,
 					"The angle of the camera from the player in third person view");
 
-				dvars::cg_thirdPersonRange = game::Dvar_RegisterFloat("cg_thirdPersonRange", 120.0f, 0.0f, 1024, game::DVAR_CHEAT,
+				dvars::cg_thirdPersonRange = game::Dvar_RegisterFloat("cg_thirdPersonRange", 120.0f, 0.0f, 1024, game::DVAR_FLAG_CHEAT,
 					"The range of the camera from the player in third person view");
 			}, scheduler::main);
 

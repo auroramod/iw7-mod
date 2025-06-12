@@ -363,10 +363,10 @@ namespace network
 			utils::hook::set<int>(0x140BB4F31, max_packet_size);
 
 			// increase cl_maxpackets
-			dvars::override::register_int("cl_maxpackets", 1000, 1, 1000, game::DVAR_NOFLAG);
+			dvars::override::register_int("cl_maxpackets", 1000, 1, 1000, game::DVAR_FLAG_NONE);
 
 			// increase snaps
-			dvars::override::register_int("sv_remote_client_snapshot_msec", 33, -1, 100, game::DVAR_NOFLAG);
+			dvars::override::register_int("sv_remote_client_snapshot_msec", 33, -1, 100, game::DVAR_FLAG_NONE);
 
 			// disable snapshot default values overriding the actual values every time the server starts
 			utils::hook::set<uint8_t>(0x140C56780, 0xC3); // SV_SnapshotMP_InitRuntime

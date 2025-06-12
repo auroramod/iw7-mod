@@ -25,16 +25,16 @@ namespace ranked
 		{
 			if (game::environment::is_dedi())
 			{
-				dvars::override::register_bool("xblive_privatematch", false, game::DVAR_CODINFO | game::DVAR_ROM);
+				dvars::override::register_bool("xblive_privatematch", false, game::DVAR_FLAG_REPLICATED | game::DVAR_FLAG_WRITE);
 
-				dvars::override::register_bool("onlinegame", true, game::DVAR_ROM);
+				dvars::override::register_bool("onlinegame", true, game::DVAR_FLAG_READ);
 
 				// Fix sessionteam always returning none (SV_ClientMP_HasAssignedTeam_Internal)
 				utils::hook::set(0x140C50BC0, 0xC300B0);
 			}
 			else
 			{
-				dvars::override::register_bool("xblive_privatematch", true, game::DVAR_CODINFO);
+				dvars::override::register_bool("xblive_privatematch", true, game::DVAR_FLAG_REPLICATED);
 			}
 
 			// Always run bots, even if xblive_privatematch is 0

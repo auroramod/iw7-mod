@@ -37,15 +37,15 @@ namespace patches
 			game::dvar_t* name_dvar;
 			game::dvar_t* com_maxfps;
 
-			name_dvar = game::Dvar_RegisterString("name", get_login_username().data(), game::DVAR_ARCHIVE, "Player name.");
+			name_dvar = game::Dvar_RegisterString("name", get_login_username().data(), game::DVAR_FLAG_SAVED, "Player name.");
 
 			if (game::environment::is_dedi())
 			{
-				com_maxfps = game::Dvar_RegisterInt("com_maxfps", 85, 0, 100, game::DVAR_NOFLAG, "Cap frames per second");
+				com_maxfps = game::Dvar_RegisterInt("com_maxfps", 85, 0, 100, game::DVAR_FLAG_NONE, "Cap frames per second");
 			}
 			else
 			{
-				com_maxfps = game::Dvar_RegisterInt("com_maxfps", 0, 0, 1000, game::DVAR_ARCHIVE, "Cap frames per second");
+				com_maxfps = game::Dvar_RegisterInt("com_maxfps", 0, 0, 1000, game::DVAR_FLAG_SAVED, "Cap frames per second");
 			}
 
 			*reinterpret_cast<game::dvar_t**>(0x146005758) = com_maxfps;
@@ -77,7 +77,7 @@ namespace patches
 		std::vector<std::string> dvar_save_variables;
 		void dvar_write_single_variable(const game::dvar_t* dvar, int* user_data)
 		{
-			if ((dvar->flags & game::DVAR_ARCHIVE) != 0)
+			if ((dvar->flags & game::DVAR_FLAG_SAVED) != 0)
 			{
 				const char* val = game::Dvar_DisplayableLatchedValue(dvar);
 				auto h = *user_data;
@@ -154,8 +154,8 @@ namespace patches
 				game::Dvar_SetFromStringByChecksum(checksum, value, game::DvarSetSource::DVAR_SOURCE_EXTERNAL);
 			}
 			// only set if dvar has no flags or has external flag
-			else if (dvar->flags == game::DVAR_NOFLAG ||
-				(dvar->flags & game::DVAR_EXTERNAL) != 0)
+			else if (dvar->flags == game::DVAR_FLAG_NONE ||
+				(dvar->flags & game::DVAR_FLAG_EXTERNAL) != 0)
 			{
 				game::Dvar_SetFromStringFromSource(dvar, value, game::DvarSetSource::DVAR_SOURCE_EXTERNAL);
 			}
@@ -289,8 +289,8 @@ namespace patches
 			utils::hook::jump(0x140B7A920, init_network_dvars_stub);
 
 			// some [data validation] anti tamper thing that kills performance
-			dvars::override::register_int("dvl", 0, 0, 0, game::DVAR_NOFLAG);
-			dvars::override::register_int("data_validation_allow_drop", 0, 0, 0, game::DVAR_NOFLAG);
+			dvars::override::register_int("dvl", 0, 0, 0, game::DVAR_FLAG_NONE);
+			dvars::override::register_int("data_validation_allow_drop", 0, 0, 0, game::DVAR_FLAG_NONE);
 			utils::hook::set<uint8_t>(0x1405C9FA0, 0xC3); // ValidateData
 			utils::hook::set<uint8_t>(0x1405C9300, 0xC3); // ValidateMetaData
 			utils::hook::set<uint8_t>(0x1405C9D70, 0xC3); // UpdateValidationDataInternal
@@ -300,42 +300,42 @@ namespace patches
 			utils::hook::set<uint8_t>(0x1405C90C0, 0xC3);
 
 			// killswitches
-			dvars::override::register_bool("mission_team_contracts_enabled", true, game::DVAR_ROM);
-			dvars::override::register_bool("killswitch_store", false, game::DVAR_ROM);
-			dvars::override::register_bool("killswitch_quartermaster", false, game::DVAR_ROM);
-			dvars::override::register_bool("killswitch_cod_points", false, game::DVAR_ROM);
-			dvars::override::register_bool("killswitch_custom_emblems", false, game::DVAR_ROM);
-			dvars::override::register_bool("killswitch_matchID", true, game::DVAR_ROM);
-			dvars::override::register_bool("killswitch_mp_leaderboards", true, game::DVAR_ROM);
-			dvars::override::register_bool("killswitch_cp_leaderboards", true, game::DVAR_ROM);
-			dvars::override::register_bool("killswitch_streak_variants", false, game::DVAR_ROM);
-			dvars::override::register_bool("killswitch_blood_anvil", false, game::DVAR_ROM);
+			dvars::override::register_bool("mission_team_contracts_enabled", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_store", false, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_quartermaster", false, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_cod_points", false, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_custom_emblems", false, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_matchID", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_mp_leaderboards", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_cp_leaderboards", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_streak_variants", false, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_blood_anvil", false, game::DVAR_FLAG_READ);
 
 			// announcer packs
 			if (!game::environment::is_dedi())
 			{
-				dvars::override::register_bool("killswitch_announcers", false, game::DVAR_ROM);
-				dvars::override::register_int("igs_announcer", 0x1F, 0, 0x7FFFFFFF, game::DVAR_ROM); // show all announcer packs
+				dvars::override::register_bool("killswitch_announcers", false, game::DVAR_FLAG_READ);
+				dvars::override::register_int("igs_announcer", 0x1F, 0, 0x7FFFFFFF, game::DVAR_FLAG_READ); // show all announcer packs
 			}
 
 			// disable cod account
-			dvars::override::register_bool("enable_cod_account", false, game::DVAR_ROM);
+			dvars::override::register_bool("enable_cod_account", false, game::DVAR_FLAG_READ);
 
 			// enable boss battles
-			dvars::override::register_bool("online_zombie_boss_battle", true, game::DVAR_ROM);
-			dvars::override::register_bool("online_zombie_boss_zmb", true, game::DVAR_ROM);
-			dvars::override::register_bool("online_zombie_boss_rave", true, game::DVAR_ROM);
-			dvars::override::register_bool("online_zombie_boss_disco", true, game::DVAR_ROM);
-			dvars::override::register_bool("online_zombie_boss_town", true, game::DVAR_ROM);
-			dvars::override::register_bool("online_zombie_boss_final", true, game::DVAR_ROM);
-			dvars::override::register_bool("online_zombie_boss_dc", true, game::DVAR_ROM);
+			dvars::override::register_bool("online_zombie_boss_battle", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("online_zombie_boss_zmb", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("online_zombie_boss_rave", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("online_zombie_boss_disco", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("online_zombie_boss_town", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("online_zombie_boss_final", true, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("online_zombie_boss_dc", true, game::DVAR_FLAG_READ);
 
 			// uncheat protect gamepad-related dvars
-			dvars::override::register_float("gpad_button_deadzone", 0.13f, 0, 1, game::DVAR_ARCHIVE);
-			dvars::override::register_float("gpad_stick_deadzone_min", 0.2f, 0, 1, game::DVAR_ARCHIVE);
-			dvars::override::register_float("gpad_stick_deadzone_max", 0.01f, 0, 1, game::DVAR_ARCHIVE);
-			dvars::override::register_float("gpad_stick_pressed", 0.4f, 0, 1, game::DVAR_ARCHIVE);
-			dvars::override::register_float("gpad_stick_pressed_hysteresis", 0.1f, 0, 1, game::DVAR_ARCHIVE);
+			dvars::override::register_float("gpad_button_deadzone", 0.13f, 0, 1, game::DVAR_FLAG_SAVED);
+			dvars::override::register_float("gpad_stick_deadzone_min", 0.2f, 0, 1, game::DVAR_FLAG_SAVED);
+			dvars::override::register_float("gpad_stick_deadzone_max", 0.01f, 0, 1, game::DVAR_FLAG_SAVED);
+			dvars::override::register_float("gpad_stick_pressed", 0.4f, 0, 1, game::DVAR_FLAG_SAVED);
+			dvars::override::register_float("gpad_stick_pressed_hysteresis", 0.1f, 0, 1, game::DVAR_FLAG_SAVED);
 
 			// disable host migration
 			utils::hook::jump(0x140C5A200, disconnect);
@@ -352,6 +352,9 @@ namespace patches
 			// Patch crash caused by the server trying to kick players for 'invalid password'
 			utils::hook::nop(0x140B2215B, 18);
 			utils::hook::jump(0x140B2215B, update_last_seen_players_stub(), true);
+
+			// change default hostname and make it replicated
+			dvars::override::register_string("sv_hostname", "^5IW7-Mod ^7Default Server", game::DVAR_FLAG_REPLICATED);
 		}
 	};
 }

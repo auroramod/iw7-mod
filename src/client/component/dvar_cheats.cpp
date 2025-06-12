@@ -41,7 +41,7 @@ namespace dvar_cheats
 
 	bool dvar_flag_checks(const game::dvar_t* dvar, const game::DvarSetSource source)
 	{
-		if ((dvar->flags & game::DVAR_ROM))
+		if ((dvar->flags & game::DvarFlags::DVAR_FLAG_WRITE))
 		{
 #ifdef DEBUG
 			console::error("%s is write protected\n", dvars::dvar_get_name(dvar).data());
@@ -49,7 +49,7 @@ namespace dvar_cheats
 			return false;
 		}
 
-		if ((dvar->flags & game::DVAR_ROM))
+		if ((dvar->flags & game::DvarFlags::DVAR_FLAG_READ))
 		{
 #ifdef DEBUG
 			console::error("%s is read only\n", dvars::dvar_get_name(dvar).data());
@@ -63,13 +63,13 @@ namespace dvar_cheats
 			const auto cl_ingame = game::CL_IsGameClientActive(0);
 			const auto sv_running = game::SV_Loaded();
 
-			if ((dvar->flags & game::DVAR_CODINFO) && cl_ingame && !sv_running)
+			if ((dvar->flags & game::DvarFlags::DVAR_FLAG_REPLICATED) && cl_ingame && !sv_running)
 			{
 				console::error("%s can only be changed by the server\n", dvars::dvar_get_name(dvar).data());
 				return false;
 			}
 
-			if ((dvar->flags & game::DVAR_CHEAT) && (!game::shared::cheats_ok() && *game::isCheatOverride))
+			if ((dvar->flags & game::DvarFlags::DVAR_FLAG_CHEAT) && (!game::shared::cheats_ok() && *game::isCheatOverride))
 			{
 //#ifdef DEBUG
 				console::error("%s is cheat protected\n", dvars::dvar_get_name(dvar).data());
@@ -131,7 +131,7 @@ namespace dvar_cheats
 
 			scheduler::once([]
 			{
-				game::Dvar_RegisterBool("sv_cheats", false, game::DVAR_CODINFO, "Allow cheat commands and dvars on this server");
+				game::Dvar_RegisterBool("sv_cheats", false, game::DvarFlags::DVAR_FLAG_REPLICATED, "Allow cheat commands and dvars on this server");
 			}, scheduler::pipeline::main);
 		}
 	};

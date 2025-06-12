@@ -39,9 +39,9 @@ namespace fov
 				return;
 			}
 			
-			cg_fov = game::Dvar_RegisterFloat("cg_fov", 65.0f, 1.0f, 160.f, game::DVAR_ARCHIVE,
+			cg_fov = game::Dvar_RegisterFloat("cg_fov", 65.0f, 1.0f, 160.f, game::DVAR_FLAG_SAVED,
 				"The field of view angle in degrees");
-			cg_fovScale = game::Dvar_RegisterFloat("cg_fovScale", 1.0f, 0.1f, 2.0f, game::DVAR_ARCHIVE,
+			cg_fovScale = game::Dvar_RegisterFloat("cg_fovScale", 1.0f, 0.1f, 2.0f, game::DVAR_FLAG_SAVED,
 				"Scale applied to the field of view");
 
 			*reinterpret_cast<game::dvar_t**>(0x141FA6DA0) = cg_fov;
@@ -60,7 +60,7 @@ namespace fov
 			utils::hook::set<uint8_t>(0x1408B5659, 0xC3);
 
 			// disable FOV compensation by default
-			cg_use_fov_comp = game::Dvar_RegisterBool("cg_use_fov_comp", false, game::DVAR_ARCHIVE, "Use FOV offset compensation for the viewmodel");
+			cg_use_fov_comp = game::Dvar_RegisterBool("cg_use_fov_comp", false, game::DVAR_FLAG_SAVED, "Use FOV offset compensation for the viewmodel");
 			utils::hook::call(0x140186FC4, cg_view_calc_fov_compensation_stub);
 			utils::hook::call(0x1408D5940, cg_view_calc_fov_compensation_stub);
 

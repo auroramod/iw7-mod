@@ -221,7 +221,7 @@ namespace dedicated
 #endif
 			
 			// Register dedicated dvar
-			game::Dvar_RegisterBool("dedicated", true, game::DVAR_INIT, "Dedicated server");
+			game::Dvar_RegisterBool("dedicated", true, game::DVAR_FLAG_READ, "Dedicated server");
 
 			// Add hostname
 			scheduler::once([]()
@@ -230,19 +230,19 @@ namespace dedicated
 			}, scheduler::pipeline::main);
 
 			// Add lanonly mode
-			sv_lanOnly = game::Dvar_RegisterBool("sv_lanOnly", false, game::DVAR_NOFLAG, "Don't send heartbeat");
+			sv_lanOnly = game::Dvar_RegisterBool("sv_lanOnly", false, game::DVAR_FLAG_NONE, "Don't send heartbeat");
 
 			// Disable frontend
 			//dvars::override::register_bool("frontEndSceneEnabled", false, game::DVAR_FLAG_READ);
 			utils::hook::set<uint8_t>(0x1405AC8F0, 0xC3); // Com_FastFile_Frame_FrontEnd
 
 			// Disable shader preload
-			dvars::override::register_bool("r_preloadShaders", false, game::DVAR_INIT);
+			dvars::override::register_bool("r_preloadShaders", false, game::DVAR_FLAG_READ);
 
 			// Disable load for renderer
-			dvars::override::register_bool("r_loadForRenderer", false, game::DVAR_INIT);
+			dvars::override::register_bool("r_loadForRenderer", false, game::DVAR_FLAG_READ);
 
-			dvars::override::register_bool("intro", false, game::DVAR_INIT);
+			dvars::override::register_bool("intro", false, game::DVAR_FLAG_READ);
 
 			// Is party dedicated
 			utils::hook::jump(0x1405DFC10, party_is_server_dedicated_stub);

@@ -359,11 +359,11 @@ namespace stats
 			// register dvars
 			scheduler::once([]()
 			{
-				dvars::cg_unlockall_items = game::Dvar_RegisterBool("cg_unlockall_items", false, game::DVAR_ARCHIVE, "Whether items should be locked based on the player's stats or always unlocked.");
-				game::Dvar_RegisterBool("cg_unlockall_classes", false, game::DVAR_ARCHIVE, "Whether classes should be locked based on the player's stats or always unlocked."); // TODO: need LUI scripting
-				dvars::cg_unlockall_loot = game::Dvar_RegisterBool("cg_unlockall_loot", false, game::DVAR_ARCHIVE, "Whether loot should be locked based on the player's stats or always unlocked.");
+				dvars::cg_unlockall_items = game::Dvar_RegisterBool("cg_unlockall_items", false, game::DVAR_FLAG_SAVED, "Whether items should be locked based on the player's stats or always unlocked.");
+				game::Dvar_RegisterBool("cg_unlockall_classes", false, game::DVAR_FLAG_SAVED, "Whether classes should be locked based on the player's stats or always unlocked."); // TODO: need LUI scripting
+				dvars::cg_unlockall_loot = game::Dvar_RegisterBool("cg_unlockall_loot", false, game::DVAR_FLAG_SAVED, "Whether loot should be locked based on the player's stats or always unlocked.");
 				
-				cg_loot_count = game::Dvar_RegisterInt("cg_loot_count", 1, 1, std::numeric_limits<int>::max(), game::DVAR_ARCHIVE, "Amount of loot to give for items");
+				cg_loot_count = game::Dvar_RegisterInt("cg_loot_count", 1, 1, std::numeric_limits<int>::max(), game::DVAR_FLAG_SAVED, "Amount of loot to give for items");
 			}, scheduler::main);
 
 			// unlockables

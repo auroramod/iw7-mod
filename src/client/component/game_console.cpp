@@ -390,7 +390,7 @@ namespace game_console
 					break;
 				}
 
-				game::R_AddCmdDrawText(output.at(index).data(), 0x7FFFFFFF, console_font, x, y + offset, 1.0f, 1.0f,
+				game::R_AddCmdDrawText(output.at(index).data(), 0x7FFF, console_font, x, y + offset, 1.0f, 1.0f,
 					0.0f, color_white, 0);
 			}
 		}
@@ -773,33 +773,33 @@ namespace game_console
 
 			// add our dvars
 			dvars::con_inputBoxColor = game::Dvar_RegisterVec4("con_inputBoxColor", 0.2f, 0.2f, 0.2f, 0.9f, 0.0f, 1.0f,
-				game::DVAR_ARCHIVE,
+				game::DVAR_FLAG_SAVED,
 				"color of console input box");
 			dvars::con_inputHintBoxColor = game::Dvar_RegisterVec4("con_inputHintBoxColor", 0.3f, 0.3f, 0.3f, 1.0f,
 				0.0f, 1.0f,
-				game::DVAR_ARCHIVE, "color of console input hint box");
+				game::DVAR_FLAG_SAVED, "color of console input hint box");
 			dvars::con_outputBarColor = game::Dvar_RegisterVec4("con_outputBarColor", 0.5f, 0.5f, 0.5f, 0.6f, 0.0f,
-				1.0f, game::DVAR_ARCHIVE,
+				1.0f, game::DVAR_FLAG_SAVED,
 				"color of console output bar");
 			dvars::con_outputSliderColor = game::Dvar_RegisterVec4("con_outputSliderColor", 1.0f, 1.0f, 1.0f, 1.0f,
 				0.0f, 1.0f,
-				game::DVAR_ARCHIVE, "color of console output slider");
+				game::DVAR_FLAG_SAVED, "color of console output slider");
 			dvars::con_outputWindowColor = game::Dvar_RegisterVec4("con_outputWindowColor", 0.25f, 0.25f, 0.25f, 0.85f,
 				0.0f,
-				1.0f, game::DVAR_ARCHIVE, "color of console output window");
+				1.0f, game::DVAR_FLAG_SAVED, "color of console output window");
 			dvars::con_inputDvarMatchColor = game::Dvar_RegisterVec4("con_inputDvarMatchColor", 1.0f, 1.0f, 0.8f, 1.0f,
 				0.0f,
-				1.0f, game::DVAR_ARCHIVE, "color of console matched dvar");
+				1.0f, game::DVAR_FLAG_SAVED, "color of console matched dvar");
 			dvars::con_inputDvarValueColor = game::Dvar_RegisterVec4("con_inputDvarValueColor", 1.0f, 1.0f, 0.8f, 1.0f,
 				0.0f,
-				1.0f, game::DVAR_ARCHIVE, "color of console matched dvar value");
+				1.0f, game::DVAR_FLAG_SAVED, "color of console matched dvar value");
 			dvars::con_inputDvarInactiveValueColor = game::Dvar_RegisterVec4(
 				"con_inputDvarInactiveValueColor", 0.8f, 0.8f,
-				0.8f, 1.0f, 0.0f, 1.0f, game::DVAR_ARCHIVE,
+				0.8f, 1.0f, 0.0f, 1.0f, game::DVAR_FLAG_SAVED,
 				"color of console inactive dvar value");
 			dvars::con_inputCmdMatchColor = game::Dvar_RegisterVec4("con_inputCmdMatchColor", 0.80f, 0.80f, 1.0f, 1.0f,
 				0.0f,
-				1.0f, game::DVAR_ARCHIVE, "color of console matched command");
+				1.0f, game::DVAR_FLAG_SAVED, "color of console matched command");
 		}
 	};
 }

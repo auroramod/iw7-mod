@@ -935,7 +935,7 @@ namespace party
 
 			scheduler::once([]()
 			{
-				sv_say_name = game::Dvar_RegisterString("sv_sayName", "console", game::DvarFlags::DVAR_NOFLAG, "Custom name for RCON console");
+				sv_say_name = game::Dvar_RegisterString("sv_sayName", "console", game::DvarFlags::DVAR_FLAG_NONE, "Custom name for RCON console");
 			}, scheduler::pipeline::main);
 
 			command::add("tell", [](const command::params& params)
