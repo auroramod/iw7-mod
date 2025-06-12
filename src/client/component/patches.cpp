@@ -352,9 +352,6 @@ namespace patches
 			// Patch crash caused by the server trying to kick players for 'invalid password'
 			utils::hook::nop(0x140B2215B, 18);
 			utils::hook::jump(0x140B2215B, update_last_seen_players_stub(), true);
-
-			// change default hostname and make it replicated
-			dvars::override::register_string("sv_hostname", "^5IW7-Mod ^7Default Server", game::DVAR_FLAG_REPLICATED);
 		}
 	};
 }

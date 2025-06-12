@@ -226,7 +226,7 @@ namespace dedicated
 			// Add hostname
 			scheduler::once([]()
 			{
-				game::Dvar_RegisterString("sv_hostname", "IW7-Mod Default Server", game::DVAR_CODINFO, "Host name of the server");
+				game::Dvar_RegisterString("sv_hostname", "IW7-Mod Default Server", game::DVAR_FLAG_REPLICATED, "Host name of the server");
 			}, scheduler::pipeline::main);
 
 			// Add lanonly mode
