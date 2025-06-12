@@ -150,8 +150,10 @@ namespace gameplay
 
 			// Modify gravity dvar
 			dvars::override::register_float("bg_gravity", 800.0f, 1.0f, 1000.0f, 0xC0 | game::DVAR_FLAG_REPLICATED);
+			/*
 			utils::hook::nop(0x140AFA337, 18);
 			utils::hook::jump(0x140AFA337, bg_gravity_stub(), true);
+			*/
 
 			// Modify speed dvar
 			dvars::override::register_int("g_speed", 190, 0x80000000, 0x7FFFFFFF, 0xC0 | game::DVAR_FLAG_REPLICATED);
