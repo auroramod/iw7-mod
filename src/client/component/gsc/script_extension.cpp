@@ -214,6 +214,18 @@ namespace gsc
 			a.mov(rsi, rax);
 			a.jmp(end);
 		}
+
+		void replace(std::string& str, const std::string& from, const std::string& to)
+		{
+			const auto start_pos = str.find(from);
+
+			if (start_pos == std::string::npos)
+			{
+				return;
+			}
+
+			str.replace(start_pos, from.length(), to);
+		}
 	}
 
 	namespace function
@@ -393,20 +405,80 @@ namespace gsc
 				return utils::string::to_upper(string);
 			});
 
+			function::add("logprint", [](const function_args& args)
+			{
+				std::string buffer{};
+
+				for (auto i = 0u; i < args.size(); ++i)
+				{
+					const auto string = args[i].as<std::string>();
+					buffer.append(string);
+				}
+
+				game::G_LogPrintf("%s", buffer.data());
+				return scripting::script_value{};
+			});
+
 			function::add("executecommand", [](const function_args& args)
 			{
 				command::execute(args[0].as<std::string>(), false);
-
 				return scripting::script_value{};
 			});
 
 			function::add("typeof", typeof);
 			function::add("type", typeof);
 
+			function::add("say", [](const function_args& args)
+			{
+				const auto message = args[0].as<std::string>();
+				game::SV_GameSendServerCommand(-1, game::SV_CMD_CAN_IGNORE, utils::string::va("%c \"%s\"", 84, message.data()));
+				return scripting::script_value{};
+			});
+
+			method::add("tell", [](const game::scr_entref_t ent, const function_args& args)
+			{
+				if (ent.classnum != 0)
+				{
+					throw std::runtime_error("Invalid entity");
+				}
+
+				const auto client = ent.entnum;
+
+				if (game::g_entities[client].client == nullptr)
+				{
+					throw std::runtime_error("Not a player entity");
+				}
+
+				const auto message = args[0].as<std::string>();
+				game::SV_GameSendServerCommand(client, game::SV_CMD_CAN_IGNORE, utils::string::va("%c \"%s\"", 84, message.data()));
+
+				return scripting::script_value{};
+			});
+
 			method::add("test_method", [](game::scr_entref_t ent_ref, const function_args& args)
 			{
 				print(args);
 				return scripting::script_value{};
+			});
+
+			function::add("va", [](const function_args& args)
+			{
+				auto fmt = args[0].as<std::string>();
+
+				for (auto i = 1u; i < args.size(); i++)
+				{
+					const auto arg = args[i].to_string();
+					replace(fmt, "%s", arg);
+				}
+
+				return fmt;
+			});
+
+			function::add("strstartswith", [](const function_args& args)
+			{
+				auto string = args[0].as<std::string>();
+				auto substring = args[1].as<std::string>();
+				return string.starts_with(substring);
 			});
 		}
 	};

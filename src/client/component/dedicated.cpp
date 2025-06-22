@@ -12,6 +12,8 @@
 #include "server_list.hpp"
 #include "network.hpp"
 
+#include "gsc/script_extension.hpp"
+
 #include <utils/json.hpp>
 
 #include <utils/hook.hpp>
@@ -93,11 +95,6 @@ namespace dedicated
 			const auto msec = frame_time - sys_msec;
 
 			std::this_thread::sleep_for(std::chrono::milliseconds(msec));
-		}
-
-		void gscr_is_using_match_rules_data_stub()
-		{
-			game::Scr_AddInt(0);
 		}
 
 		void send_heartbeat()
@@ -248,7 +245,10 @@ namespace dedicated
 			utils::hook::jump(0x1405DFC10, party_is_server_dedicated_stub);
 
 			// Make GScr_IsUsingMatchRulesData return 0 so the game doesn't override the cfg
-			utils::hook::jump(0x140B53950, gscr_is_using_match_rules_data_stub);
+			gsc::function::add("isusingmatchrulesdata", [](const gsc::function_args& args)
+			{
+				return 0;
+			});
 
 			// Hook R_SyncGpu
 			utils::hook::call(0x1403428B1, sync_gpu_stub);
