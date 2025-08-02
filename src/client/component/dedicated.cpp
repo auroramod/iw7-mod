@@ -12,8 +12,6 @@
 #include "server_list.hpp"
 #include "network.hpp"
 
-#include "gsc/script_extension.hpp"
-
 #include <utils/json.hpp>
 
 #include <utils/hook.hpp>
@@ -97,6 +95,11 @@ namespace dedicated
 			std::this_thread::sleep_for(std::chrono::milliseconds(msec));
 		}
 
+		void gscr_is_using_match_rules_data_stub()
+		{
+			game::Scr_AddInt(0);
+		}
+
 		void send_heartbeat()
 		{
 			if (sv_lanOnly->current.enabled)
@@ -147,6 +150,9 @@ namespace dedicated
 			initialize_gamemode();
 		}
 
+		utils::hook::detour snd_lookup_sound_length_hook;
+		utils::hook::detour start_server_hook;
+
 		nlohmann::json snd_alias_length_data;
 
 		nlohmann::json get_snd_alias_length_data(const char* mapname, const std::string& game_mode = "")
@@ -184,18 +190,41 @@ namespace dedicated
 			}
 			else
 			{
-				//console::error("[SND]: failed to find sound length soundalias \"%s\"\n", alias);
+#ifdef DEBUG
+				console::error("[SND]: failed to find sound length soundalias \"%s\"\n", alias);
+#endif
 				return 0;
 			}
 		}
 
-		utils::hook::detour snd_lookup_sound_length_hook;
-		int snd_lookup_sound_length_stub(const char* alias)
+		void generate_snd_alias_length_data()
 		{
-			return get_snd_alias_length(alias);
+			snd_alias_length_data.clear();
+
+			game::DB_EnumXAssets(game::ASSET_TYPE_SOUND_BANK, [](const game::XAssetHeader& header)
+			{
+				auto* asset = header.soundBank;
+				for (unsigned int i = 0; i < asset->aliasCount; i++)
+				{
+					auto alias = &asset->alias[i];
+					const auto length = snd_lookup_sound_length_hook.invoke<int>(alias->aliasName);
+					if (!snd_alias_length_data.contains(alias->aliasName) && length > 0)
+					{
+						snd_alias_length_data[alias->aliasName] = length;
+					}
+				}
+			});
 		}
 
-		utils::hook::detour start_server_hook;
+		int snd_lookup_sound_length_stub(const char* alias)
+		{
+			if (game::environment::is_dedi())
+			{
+				return get_snd_alias_length(alias);
+			}
+			return snd_lookup_sound_length_hook.invoke<int>(alias);
+		}
+
 		void start_server_stub(game::SvServerInitSettings* init_settings)
 		{
 			snd_alias_length_data = get_snd_alias_length_data_for_map(init_settings->mapName);
@@ -210,13 +239,35 @@ namespace dedicated
 		{
 			if (!game::environment::is_dedi())
 			{
+#ifdef DEBUG
+				snd_lookup_sound_length_hook.create(0x140C9BCE0, snd_lookup_sound_length_stub);
+				command::add("generateSoundLookupData", []()
+				{
+					console::info("Generating sound lookup data...\n");
+					const auto mapname = game::Dvar_FindVar("mapname")->current.string;
+					if (mapname && *mapname && game::CL_IsGameClientActive(0))
+					{
+						generate_snd_alias_length_data();
+						if (snd_alias_length_data.is_object())
+						{
+							const auto path = "sounddata/"s + game::Com_GameMode_GetActiveGameModeStr() + "/"s + mapname + ".json"s;
+							utils::io::write_file(path, snd_alias_length_data.dump(4));
+							console::info("Sound lookup data written to %s\n", path.data());
+						}
+					}
+					else
+					{
+						console::error("Failed to generate sound lookup data: map is not loaded yet.\n");
+					}
+				});
+#endif
 				return;
 			}
-			
+
 #ifdef DEBUG
 			printf("Starting dedicated server\n");
 #endif
-			
+
 			// Register dedicated dvar
 			game::Dvar_RegisterBool("dedicated", true, game::DVAR_FLAG_READ, "Dedicated server");
 
@@ -245,10 +296,7 @@ namespace dedicated
 			utils::hook::jump(0x1405DFC10, party_is_server_dedicated_stub);
 
 			// Make GScr_IsUsingMatchRulesData return 0 so the game doesn't override the cfg
-			gsc::function::add("isusingmatchrulesdata", [](const gsc::function_args& args)
-			{
-				return 0;
-			});
+			utils::hook::jump(0x140B53950, gscr_is_using_match_rules_data_stub);
 
 			// Hook R_SyncGpu
 			utils::hook::call(0x1403428B1, sync_gpu_stub);
