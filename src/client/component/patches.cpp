@@ -188,22 +188,17 @@ namespace patches
 			return true;
 		}
 
-		char* db_read_raw_file_stub(const char* filename, char* buf, const int size)
+		utils::hook::detour db_read_raw_file_hook;
+		const char* db_read_raw_file_stub(const char* filename, char* buf, const int size)
 		{
-			std::string file_name = filename;
-			if (file_name.find(".cfg") == std::string::npos)
-			{
-				file_name.append(".cfg");
-			}
-
 			std::string buffer{};
-			if (filesystem::read_file(file_name, &buffer))
+			if (filesystem::read_file(filename, &buffer))
 			{
 				snprintf(buf, size, "%s\n", buffer.data());
 				return buf;
 			}
 
-			return game::DB_ReadRawFile(filename, buf, size);
+			return db_read_raw_file_hook.invoke<const char*>(filename, buf, size);
 		}
 
 		void cbuf_execute_buffer_internal_stub(int local_client_num, int controller_index, char* buffer, [[maybe_unused]]void* callback)
@@ -280,8 +275,9 @@ namespace patches
 			utils::hook::set<uint8_t>(0x140B0A9AC, 0xEB); // setclientdvar
 			utils::hook::set<uint8_t>(0x140B0ACC8, 0xEB); // setclientdvars
 
-			// Allow executing custom cfg files with the "exec" command
-			utils::hook::call(0x140B7CEF9, db_read_raw_file_stub);
+			// Allow loading of rawfiles from disk
+			db_read_raw_file_hook.create(game::DB_ReadRawFile, db_read_raw_file_stub);
+
 			// Add cheat override to exec
 			utils::hook::call(0x140B7CF11, cbuf_execute_buffer_internal_stub);
 

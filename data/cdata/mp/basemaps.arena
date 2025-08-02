@@ -1,0 +1,389 @@
+{
+	map			"cp_zmb"
+	longname	"PLAYLIST_CP_ZMB_QA_NAME"
+	gametype	"zombie Aliens escape"
+	defaultgametype "zombie"
+	description "LUA_MENU_MP_ZOMBIES_DESC"
+	mapimage    "zm_theater_poster_zmb"
+	mappack		"0"
+}
+
+{
+	map			"cp_rave"
+	longname	"LUA_MENU_ZM_CP_RAVE"
+	gametype	"zombie Aliens escape"
+	defaultgametype "zombie"
+	description "LUA_MENU_ZM_CP_RAVE_DESC"
+	mapimage    "zm_theater_poster_rave"
+	mappack		"1"
+}
+
+{
+	map			"cp_disco"
+	longname	"LUA_MENU_ZM_CP_DISCO"
+	gametype	"zombie Aliens escape"
+	defaultgametype "zombie"
+	description "LUA_MENU_MP_ZOMBIES_DESC"
+	mapimage    "zm_theater_poster_disco"
+	mappack		"2"
+}
+
+{
+	map			"cp_town"
+	longname	"LUA_MENU_ZM_CP_TOWN"
+	gametype	"zombie Aliens escape"
+	defaultgametype "zombie"
+	description "LUA_MENU_MP_ZOMBIES_DESC"
+	mapimage    "zm_theater_poster_town"
+	mappack		"3"
+}
+
+{
+	map			"cp_final"
+	longname	"LUA_MENU_ZM_CP_FINAL"
+	gametype	"zombie Aliens escape"
+	defaultgametype "zombie"
+	description "LUA_MENU_MP_ZOMBIES_DESC"
+	mapimage    "zm_theater_poster_final"
+	mappack		"4"
+}
+
+{
+	map			"mp_parkour"
+	longname	"LUA_MENU_MP_PARKOUR"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_PARKOUR_DESC"
+	mapimage    "image_mp_map_breakout"
+	mapvoteimage "image_mp_map_breakout_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_quarry"
+	longname	"LUA_MENU_MP_QUARRY"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_QUARRY_DESC"
+	mapimage    "image_mp_map_quarry"
+	mapvoteimage "image_mp_map_quarry_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_divide"
+	longname	"LUA_MENU_MP_DIVIDE"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_DIVIDE_DESC"
+	mapimage    "image_mp_map_scorch"
+	mapvoteimage "image_mp_map_scorch_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_riot"
+	longname	"LUA_MENU_MP_RIOT"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_RIOT_DESC"
+	mapimage    "image_mp_map_riot"
+	mapvoteimage "image_mp_map_riot_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_frontier"
+	longname	"LUA_MENU_MP_FRONTIER"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_FRONTIER_DESC"
+	mapimage    "image_mp_map_frontier"
+	mapvoteimage "image_mp_map_frontier_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_desert"
+	longname	"LUA_MENU_MP_DESERT"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_DESERT_DESC"
+	mapimage    "image_mp_map_grounded"
+	mapvoteimage "image_mp_map_grounded_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_metropolis"
+	longname	"LUA_MENU_MP_METROPOLIS"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_METROPOLIS_DESC"
+	mapimage    "image_mp_map_metropolis"
+	mapvoteimage "image_mp_map_metropolis_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_proto"
+	longname	"LUA_MENU_MP_PROTO"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_PROTO_DESC"
+	mapimage    "image_mp_map_proto"
+	mapvoteimage "image_mp_map_proto_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_fallen"
+	longname	"LUA_MENU_MP_FALLEN"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_FALLEN_DESC"
+	mapimage    "image_mp_map_fallen"
+	mapvoteimage "image_mp_map_fallen_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_skyway"
+	longname	"LUA_MENU_MP_SKYWAY"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_SKYWAY_DESC"
+	mapimage    "image_mp_map_terminus"
+	mapvoteimage "image_mp_map_terminus_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_rivet"
+	longname	"LUA_MENU_MP_RIVET"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_RIVET_DESC"
+	mapimage    "image_mp_map_skydock"
+	mapvoteimage "image_mp_map_skydock_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_breakneck"
+	longname	"LUA_MENU_MP_BREAKNECK"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_BREAKNECK_DESC"
+	mapimage    "image_mp_map_mayday"
+	mapvoteimage "image_mp_map_mayday_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_dome_iw"
+	longname	"LUA_MENU_MP_DOME_IW"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_DOME_IW_DESC"
+	mapimage    "image_mp_map_dome"
+	mapvoteimage "image_mp_map_dome_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_dome_dusk"
+	longname	"LUA_MENU_MP_DOME_DUSK_IW"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_DOME_IW_DESC"
+	mapimage    "image_mp_map_dome_dusk"
+	mapvoteimage "image_mp_map_dome_dusk_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_afghan"
+	longname	"LUA_MENU_MAPNAME_AFGHAN"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_AFGHAN_DESC"
+	mapimage    "image_mp_map_afghan"
+	mapvoteimage "image_mp_map_afghan_vote"
+	mappack		"1"
+}
+
+{
+	map			"mp_geneva"
+	longname	"LUA_MENU_MAPNAME_GENEVA"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_GENEVA_DESC"
+	mapimage    "image_mp_map_geneva"
+	mapvoteimage "image_mp_map_geneva_vote"
+	mappack		"1"
+}
+
+{
+	map			"mp_neon"
+	longname	"LUA_MENU_MAPNAME_NEON"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_NEON_DESC"
+	mapimage    "image_mp_map_neon"
+	mapvoteimage "image_mp_map_neon_vote"
+	mappack		"1"
+}
+
+{
+	map			"mp_prime"
+	longname	"LUA_MENU_MAPNAME_PRIME"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_PRIME_DESC"
+	mapimage    "image_mp_map_prime"
+	mapvoteimage "image_mp_map_prime_vote"
+	mappack		"1"
+}
+
+{
+	map			"mp_marsoasis"
+	longname	"LUA_MENU_MP_MARSOASIS"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_MARSOASIS_DESC"
+	mapimage    "image_mp_map_marsoasis"
+	mapvoteimage "image_mp_map_marsoasis_vote"
+	mappack		"2"
+}
+
+{
+	map			"mp_flip"
+	longname	"LUA_MENU_MP_FLIP"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_FLIP_DESC"
+	mapimage    "image_mp_map_flip"
+	mapvoteimage "image_mp_map_flip_vote"
+	mappack		"2"
+}
+
+{
+	map			"mp_junk"
+	longname	"LUA_MENU_MP_JUNK"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_JUNK_DESC"
+	mapimage    "image_mp_map_junk"
+	mapvoteimage "image_mp_map_junk_vote"
+	mappack		"2"
+}
+
+{
+	map			"mp_mansion"
+	longname	"LUA_MENU_MP_MANSION"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_MANSION_DESC"
+	mapimage    "image_mp_map_mansion"
+	mapvoteimage "image_mp_map_mansion_vote"
+	mappack		"2"
+}
+
+{
+	map			"mp_turista2"
+	longname	"LUA_MENU_MP_MARSOASIS2"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_MARSOASIS2_DESC"
+	mapimage    "image_mp_map_marsoasis"
+	mapvoteimage "image_mp_map_marsoasis_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_paris"
+	longname	"LUA_MENU_MP_PARIS"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_PARIS_DESC"
+	mapimage    "image_mp_map_paris"
+	mapvoteimage "image_mp_map_paris_vote"
+	mappack		"3"
+}
+
+{
+	map			"mp_pixel"
+	longname	"LUA_MENU_MP_PIXEL"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_PIXEL_DESC"
+	mapimage    "image_mp_map_pixel"
+	mapvoteimage "image_mp_map_pixel_vote"
+	mappack		"3"
+}
+
+{
+	map			"mp_overflow"
+	longname	"LUA_MENU_MP_OVERFLOW"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_OVERFLOW_DESC"
+	mapimage    "image_mp_map_overflow"
+	mapvoteimage "image_mp_map_overflow_vote"
+	mappack		"3"
+}
+
+{
+	map			"mp_nova"
+	longname	"LUA_MENU_MP_NOVA"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_NOVA_DESC"
+	mapimage	"image_mp_map_nova"
+	mapvoteimage "image_mp_map_nova_vote" 
+	mappack		"3"
+}
+
+{
+	map			"mp_hawkwar"
+	longname	"LUA_MENU_MP_hawkwar"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_HAWKWAR_DESC"
+	mapimage    "image_mp_map_heartland"
+	mapvoteimage "image_mp_map_heartland_vote"
+	mappack		"4"
+}
+
+{
+	map			"mp_depot"
+	longname	"LUA_MENU_MP_DEPOT"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_DEPOT_DESC"
+	mapimage    "image_mp_map_depot"
+	mapvoteimage "image_mp_map_depot_vote"
+	mappack		"4"
+}
+
+{
+	map			"mp_rally"
+	longname	"LUA_MENU_MP_RALLY"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_RALLY_DESC"
+	mapimage    "image_mp_map_carnage"
+	mapvoteimage "image_mp_map_carnage_vote"
+	mappack		"4"
+}
+
+{
+	map			"mp_codphish"
+	longname	"LUA_MENU_MP_CODPHISH"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_CODPHISH_DESC"
+	mapimage	"image_mp_map_altitude"
+	mapvoteimage "image_mp_map_altitude_vote" 
+	mappack		"4"
+}
+
+{
+	map			"mp_permafrost2"
+	longname	"LUA_MENU_MP_PERMAFROST2"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_OVERFLOW_DESC"
+	mapimage    "image_mp_map_overflow"
+	mapvoteimage "image_mp_map_overflow_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_renaissance2"
+	longname	"LUA_MENU_MP_RENAISSANCE2"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_GENEVA_DESC"
+	mapimage    "image_mp_map_geneva"
+	mapvoteimage "image_mp_map_geneva_vote"
+	mappack		"0"
+}
+
+{
+	map			"mp_carnage2"
+	longname	"LUA_MENU_MP_CARNAGE2"
+	gametype	"ball conf ctf dd dm dom front grind grnd gun infect koth sd siege sr tdef war hc thc"
+	description "LUA_MENU_MP_RAllY_DESC"
+	mapimage    "image_mp_map_carnage"
+	mapvoteimage "image_mp_map_carnage_vote"
+	mappack		"0"
+}
