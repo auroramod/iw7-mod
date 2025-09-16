@@ -92,7 +92,7 @@ namespace bots
 		{
 			// register bot dvars
 			game::Dvar_RegisterBool("bots_enabled", true, game::DVAR_FLAG_READ, "Enable bots and activate bot management systems");
-			game::Dvar_RegisterInt("bot_difficulty", 0, 0, 5, game::DVAR_FLAG_READ, "Bot difficulty. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
+			game::Dvar_RegisterInt("bot_difficulty", 0, 0, 5, game::DVAR_FLAG_NONE, "Bot difficulty. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
 
 			sv_kick_client_num_hook.create(game::SV_CmdsMP_KickClientNum, sv_kick_client_num_stub);
 
