@@ -16,15 +16,15 @@ function MissionsButtons(menu, controller)
 	self.MissionsVerticalLayout = MissionsVerticalLayout
 
 	local FindMatchButton = MissionsVerticalLayout:getChildById("MissionSelect")
-	FindMatchButton.Text:setText(ToUpperCase(Engine.Localize("Combat Training")), 0)
-	FindMatchButton.buttonDescription = Engine.Localize("Rank up against bots.")
+	FindMatchButton.Text:setText(ToUpperCase("Combat Training"), 0)
+	FindMatchButton.buttonDescription = "Rank up against bots."
 
 	local ServerBrowserButton = MenuBuilder.BuildRegisteredType("GenericButton", {
 		controllerIndex = f6_local1,
 	})
 	ServerBrowserButton.id = "ServerBrowserButton"
-	ServerBrowserButton.Text:setText(ToUpperCase(Engine.Localize("Server Browser")), 0)
-	ServerBrowserButton.buttonDescription = Engine.Localize("Browse a list of dedicated servers.")
+	ServerBrowserButton.Text:setText(ToUpperCase("Server Browser"), 0)
+	ServerBrowserButton.buttonDescription = "Browse a list of dedicated servers."
 	ServerBrowserButton:SetAnchorsAndPosition(0, 1, 0, 1, 0, _1080p * 500, _1080p * 40, _1080p * 70)
 	LUI.UIElement.addElementBefore(ServerBrowserButton, MissionsVerticalLayout:getChildById("MissionSelect"))
 	MissionsVerticalLayout.ServerBrowserButton = ServerBrowserButton

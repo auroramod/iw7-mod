@@ -13,14 +13,14 @@ function CODTV.IsCODTVEnabled()
 	return false
 end
 
+function CONDITIONS.IsGameBattlesAllowed()
+	return false
+end
+
 -- MP
 if CONDITIONS.InFrontendPublicMP then
 	function CONDITIONS.IsServerBrowserAllowed(self)
 		return true
-	end
-
-	function CONDITIONS.IsGameBattlesAllowed(self)
-		return CONDITIONS.IsServerBrowserAllowed(self)
 	end
 end
 

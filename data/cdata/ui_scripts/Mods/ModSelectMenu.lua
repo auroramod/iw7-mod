@@ -4,15 +4,24 @@ modSelectPathCleanup = function()
     WipeGlobalModelsAtPath(modSelectPath)
 end
 
-local function getModName(path)
+local function getModInfo(path)
     local modName = path
+    if string.sub(path, 1, 5) == "mods/" then
+        modName = string.sub(path, 6)
+    end
+
     local modDesc = Engine.Localize("LUA_MENU_MOD_DESC_DEFAULT", modName)
+
+    local descFilePath = path .. "/desc.txt"
+    if io.fileexists(descFilePath) then
+        modDesc = io.readfile(descFilePath)
+    end
 
     return modName, modDesc
 end
 
-local function setMod(modName)
-    Engine.SetDvarString("fs_game", modName)
+local function setMod(mod)
+    Engine.SetDvarString("fs_game", mod)
     Engine.Exec("vid_restart")
 end
 
@@ -32,6 +41,7 @@ local updateModInfo = function(menuElement, controllerIndex)
     if not scopedData.currentDesc then
         scopedData.currentDesc = ""
     end
+
     menuElement:processEvent({
         name = "menu_refresh"
     })
@@ -42,8 +52,8 @@ local updateModInfo = function(menuElement, controllerIndex)
     currentMenu.ModInfoText:setText(scopedData.currentDesc)
 end
 
-local applyMod = function(buttonElement, controllerIndex, modName)
-    setMod(modName)
+local applyMod = function(buttonElement, controllerIndex, mod)
+    setMod(mod)
 end
 
 local updateModSelection = function(menuElement, controllerIndex, modData)
@@ -60,10 +70,12 @@ local populateModList = function(menuElement, controllerIndex)
     if io.directoryexists("mods") then
         local mods = io.listfiles("mods/")
         for i = 1, #mods do
-            local name, desc = getModName(mods[i])
+            local path = mods[i]
+            local name, desc = getModInfo(path)
             modList[#modList + 1] = {
                 buttonLabel = ToUpperCase(name),
                 modName = name,
+                modPath = path,
                 objectiveText = desc
             }
         end
@@ -74,12 +86,11 @@ local populateModList = function(menuElement, controllerIndex)
             buttonLabel = LUI.DataSourceInGlobalModel.new(modSelectPath .. ".mods." .. index,
                 modList[index + 1].buttonLabel),
             buttonOnClickFunction = function(buttonElement, controllerIndex)
-                applyMod(buttonElement, controllerIndex, modList[index + 1].modName)
+                applyMod(buttonElement, controllerIndex, modList[index + 1].modPath)
             end,
             buttonOnHoverFunction = function(buttonElement, controllerIndex)
                 updateModSelection(buttonElement, controllerIndex, modList[index + 1])
             end,
-            modName = modList[index + 1].modName
         }
     end
 
@@ -314,6 +325,15 @@ function ModSelectMenu(arg0, controller)
     menuElement.bindButton = bindButton
 
     postLoadFunction(menuElement, controllerIndex, controller)
+    
+	if Engine.InFrontend() then
+        local Blur = LUI.UIElement.new({
+            worldBlur = 5
+        })
+        Blur:setupWorldBlur()
+        Blur.id = "blur"
+        menuElement:addElement(Blur)
+    end
 
     return menuElement
 end
