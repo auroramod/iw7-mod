@@ -198,6 +198,10 @@ namespace demonware
 					cost = std::atoi(game::StringTable_GetColumnValueForRow(asset, row, csv.cost));
 				}
 
+				// reward item, not from lootboxes
+				if (cost == 0 && salvageReturned == 0)
+					continue;
+
 				const Item loot = { id, quality, salvageReturned, cost };
 				m_lootmap[id] = loot;
 				lootmap.push_back(id);
@@ -465,7 +469,7 @@ namespace demonware
 		{
 			std::vector<std::uint32_t> lootmap = combine_mp_lootmaps();
 
-			auto mp = get_random_loot_from_map(lootmap, 2, scale);
+			auto mp = get_random_loot_from_map(lootmap, 2, scale, quality);
 			auto cp = get_random_loot_from_map(lootmap_zombiefatefortune, 1, scale);
 
 			std::vector<Item> items;

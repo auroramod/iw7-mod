@@ -284,6 +284,9 @@ namespace stats
 				}
 			}
 
+			// fix
+			command::execute("setRankedPlayerData mp challengeScore 0", true);
+
 			command::execute("uploadstats", true); // needed to update stats i think
 			console::debug("unlocked all normal stats!\n");
 		}
@@ -363,7 +366,7 @@ namespace stats
 				game::Dvar_RegisterBool("cg_unlockall_classes", false, game::DVAR_FLAG_SAVED, "Whether classes should be locked based on the player's stats or always unlocked."); // TODO: need LUI scripting
 				dvars::cg_unlockall_loot = game::Dvar_RegisterBool("cg_unlockall_loot", false, game::DVAR_FLAG_SAVED, "Whether loot should be locked based on the player's stats or always unlocked.");
 				
-				cg_loot_count = game::Dvar_RegisterInt("cg_loot_count", 1, 1, std::numeric_limits<int>::max(), game::DVAR_FLAG_SAVED, "Amount of loot to give for items");
+				cg_loot_count = game::Dvar_RegisterInt("cg_loot_count", 1, 1, 99999, game::DVAR_FLAG_SAVED, "Amount of loot to give for items");
 			}, scheduler::main);
 
 			// unlockables

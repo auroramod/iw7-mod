@@ -219,8 +219,6 @@ namespace game
 	WEAK symbol<std::uint64_t(const void* session, const int clientNum)> Session_GetXuid{ 0x140C72AB0 };
 	WEAK symbol<bool(const SessionData* session, const int memberIndex)> Session_IsHost{ 0x140D9B470 };
 
-	WEAK symbol<int(const char* str, std::uint64_t* xuid)> StringToXUID{ 0x140CE6C40 };
-
 	WEAK symbol<char* ()> Sys_Cwd{ 0x140CFE5A0 };
 	
 	WEAK symbol<int()> Sys_Milliseconds{ 0x140D58110 };
@@ -280,6 +278,7 @@ namespace game
 	WEAK symbol<void()> SV_CmdsMP_CheckLoadGame{ 0x140C4C9E0 };
 	WEAK symbol<void()> SV_CmdsSP_MapRestart_f{ 0x140C12B30 };
 	WEAK symbol<void()> SV_CmdsSP_FastRestart_f{ 0x140C12AF0 };
+	WEAK symbol<void(netadr_s* from)> SV_ClientMP_DirectConnect{ 0x140C4EBD0 };
 	WEAK symbol<int (int clientNum)> SV_ClientMP_GetClientPing{ 0x140C507D0 };
 	WEAK symbol<char* (int entNum)> SV_GameMP_GetGuid{ 0x140C12410 };
 	WEAK symbol<int ()> SV_GameMP_GetAgentCount{ 0x140C124A0 };
@@ -318,6 +317,9 @@ namespace game
 		float scale, const vec4_t* color, int style, char a8, int a9, int a10, char a11)> UI_DrawWrappedText{ 0x140CD2280 };
 
 	WEAK symbol<float(XAnim_s* anims, unsigned int anim)> XAnimGetLengthMsec{ 0x140D761C0 };
+
+	WEAK symbol<int(const char* str, std::uint64_t* xuid)> StringToXUID{ 0x140CE6C40 };
+	WEAK symbol<void(std::uint64_t* xuid, const char* buffer)> XUIDToString{ 0x140CE6E90 };
 
 	WEAK symbol<void* (jmp_buf* Buf, int Value)> longjmp{ 0x1412C0758 };
 	WEAK symbol<int(jmp_buf* Buf)> _setjmp{ 0x141423110 };
