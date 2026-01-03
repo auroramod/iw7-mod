@@ -8,6 +8,8 @@
 #include "command.hpp"
 #include "console/console.hpp"
 
+#include "network.hpp"
+
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
 #include <utils/smbios.hpp>
@@ -156,6 +158,100 @@ namespace auth
 		}
 	}
 
+	namespace
+	{
+		bool send_connect_data(game::netsrc_t sock, game::netadr_s* adr, const char* format, const int len)
+		{
+			std::string connect_string(format, len);
+			game::SV_Cmd_TokenizeString(connect_string.data());
+			const auto _0 = gsl::finally([]()
+			{
+				game::SV_Cmd_EndTokenizedString();
+			});
+
+			const command::params_sv params;
+			if (params.size() < 3)
+			{
+				return false;
+			}
+
+			utils::info_string info_string{ std::string{params[2]} };
+
+			//char xuidStr[32]{};
+			//std::uint64_t xuid = steam::SteamUser()->GetSteamID().bits;
+			//game::XUIDToString(&xuid, xuidStr);
+			//info_string.set("xuid", xuidStr);
+
+			game::dvar_t* password = game::Dvar_FindVar("password");
+			info_string.set("password", password && password->current.string && password->current.string[0] != '\0' ? 
+				password->current.string : "0");
+
+			connect_string.clear();
+			connect_string.append(params[0]);
+			connect_string.append(" ");
+			connect_string.append(params[1]);
+			connect_string.append(" ");
+			connect_string.append("\"" + info_string.build() + "\"");
+
+			std::string packet_data = "\xFF\xFF\xFF\xFF";
+			packet_data.append(connect_string);
+			network::send_data(*adr, packet_data);
+			return true;
+		}
+
+		void direct_connect(game::netadr_s* from, game::msg_t* msg)
+		{
+			const auto offset = 4;
+
+			if (msg->cursize < offset)
+			{
+				network::send(*from, "error", "Invalid connect data!", '\n');
+				return;
+			}
+
+			game::SV_Cmd_EndTokenizedString();
+			game::SV_Cmd_TokenizeString(msg->data + offset);
+
+			const command::params_sv params;
+			if (params.size() < 3)
+			{
+				network::send(*from, "error", "Invalid connect string!", '\n');
+				return;
+			}
+
+			console::info("Direct connect from %s\n", params[0]);
+
+			const utils::info_string info_string{ std::string{params[2]} };
+			const auto steam_id = info_string.get("xuid");
+			const auto challenge = info_string.get("challenge");
+
+			if (steam_id.empty() || challenge.empty())
+			{
+				network::send(*from, "error", "Invalid connect data!", '\n');
+				return;
+			}
+
+			game::SV_ClientMP_DirectConnect(from);
+
+		}
+
+		void* get_direct_connect_stub()
+		{
+			return utils::hook::assemble([](utils::hook::assembler& a)
+			{
+				a.mov(ptr(rsp, 0x30), eax);
+				a.movaps(xmmword_ptr(rsp, 0x20), xmm0);
+
+				a.pushad64();
+				a.mov(rdx, rsi);
+				a.call_aligned(direct_connect);
+				a.popad64();
+
+				a.jmp(0x140C58A7F);
+			});
+		}
+	}
+
 	uint64_t get_guid()
 	{
 		if (game::environment::is_dedi())
@@ -165,6 +261,15 @@ namespace auth
 		}
 
 		return get_key().get_hash();
+	}
+	
+	utils::hook::detour test_hook;
+	
+	const char* test_stub(int clientNum, unsigned int scriptPersId)
+	{
+		auto result = test_hook.invoke<const char*>(clientNum, scriptPersId);
+		console::debug("result: %s\n", result);
+		return result;
 	}
 
 	class component final : public component_interface
@@ -205,6 +310,12 @@ namespace auth
 			{
 				utils::hook::jump(patch.first, patch.second);
 			}
+
+			//utils::hook::jump(0x140C58938, get_direct_connect_stub(), true);
+			utils::hook::call(0x1409AADFD, send_connect_data);
+			
+			// TODO: remove
+			//test_hook.create(0x140AFFF10, test_stub);
 
 			command::add("guid", []() -> void
 			{
