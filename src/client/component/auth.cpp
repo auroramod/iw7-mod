@@ -263,12 +263,15 @@ namespace auth
 		return get_key().get_hash();
 	}
 	
-	utils::hook::detour test_hook;
-	
-	const char* test_stub(int clientNum, unsigned int scriptPersId)
+	utils::hook::detour Info_ValueForKey_hook;
+	char* Info_ValueForKey_stub(const char* s, const char* key)
 	{
-		auto result = test_hook.invoke<const char*>(clientNum, scriptPersId);
-		console::debug("result: %s\n", result);
+		if (!strcmp(key, "password")) // Server for some reason checks the checksum of the password dvar on second time of connecting
+		{
+			key = "-690481622";
+		}
+
+		auto result = Info_ValueForKey_hook.invoke<char*>(s, key);
 		return result;
 	}
 
@@ -314,8 +317,7 @@ namespace auth
 			//utils::hook::jump(0x140C58938, get_direct_connect_stub(), true);
 			utils::hook::call(0x1409AADFD, send_connect_data);
 			
-			// TODO: remove
-			//test_hook.create(0x140AFFF10, test_stub);
+			Info_ValueForKey_hook.create(0x140CFB9A0, Info_ValueForKey_stub);
 
 			command::add("guid", []() -> void
 			{
