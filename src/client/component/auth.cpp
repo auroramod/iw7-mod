@@ -239,7 +239,8 @@ namespace auth
 		{
 			return utils::hook::assemble([](utils::hook::assembler& a)
 			{
-				a.mov(ptr(rsp, 0x30), eax);
+				a.lea(rcx, qword_ptr(rsp, 0x20));
+				a.mov(qword_ptr(rsp, 0x30), eax);
 				a.movaps(xmmword_ptr(rsp, 0x20), xmm0);
 
 				a.pushad64();
@@ -314,7 +315,7 @@ namespace auth
 				utils::hook::jump(patch.first, patch.second);
 			}
 
-			//utils::hook::jump(0x140C58938, get_direct_connect_stub(), true);
+			utils::hook::jump(0x140C58933, get_direct_connect_stub(), true);
 			utils::hook::call(0x1409AADFD, send_connect_data);
 			
 			Info_ValueForKey_hook.create(0x140CFB9A0, Info_ValueForKey_stub);
