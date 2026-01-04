@@ -360,7 +360,7 @@ namespace network
 			utils::hook::set<int>(0x140BB4F01, max_packet_size);
 			utils::hook::set<int>(0x140BB4F31, max_packet_size);
 			utils::hook::set<int>(0x140BB4E22, max_packet_size);
-			utils::hook::set<int>(0x140BB4F31, max_packet_size);
+			utils::hook::set<int>(0x140BB4E3D, max_packet_size);
 
 			// increase cl_maxpackets
 			dvars::override::register_int("cl_maxpackets", 1000, 1, 1000, game::DVAR_FLAG_NONE);
