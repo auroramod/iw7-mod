@@ -5,6 +5,8 @@
 
 #include <utils/hook.hpp>
 
+#include "utils/flags.hpp"
+
 namespace intro
 {
 	namespace
@@ -14,9 +16,11 @@ namespace intro
 		{
 			if (name == "startup"s)
 			{
-#ifdef DEV_BUILD
-				return;
-#endif
+				if (utils::flags::has_flag("nointro"))
+				{
+					return;
+				}
+				
 				const auto* intro_dvar = game::Dvar_FindVar("intro");
 				if (intro_dvar && !intro_dvar->current.enabled)
 				{

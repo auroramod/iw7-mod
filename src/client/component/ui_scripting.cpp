@@ -34,7 +34,7 @@ namespace ui_scripting
 	{
 		int64_t is_development_build_stub([[maybe_unused]] game::hks::lua_State* luaVM)
 		{
-#if defined(DEV_BUILD) || defined(DEBUG)
+#if defined(DEBUG)
 			ui_scripting::push_value(true);
 #else
 			ui_scripting::push_value(false);

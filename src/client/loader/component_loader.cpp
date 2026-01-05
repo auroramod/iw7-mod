@@ -3,10 +3,6 @@
 
 void component_loader::register_component(std::unique_ptr<component_interface>&& component_, [[maybe_unused]] const std::string& name)
 {
-#ifdef DEV_BUILD
-	printf("registering component: %s\n", name.data());
-#endif
-
 	get_components().push_back(std::move(component_));
 }
 

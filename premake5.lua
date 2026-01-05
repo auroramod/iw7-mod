@@ -73,11 +73,6 @@ newoption {
 }
 
 newoption {
-    trigger = "dev-build",
-    description = "Enable development builds of the client."
-}
-
-newoption {
     trigger = "steam-overlay",
     description = "Enable the Steam Overlay."
 }
@@ -259,11 +254,7 @@ editandcontinue "Off"
 warnings "Extra"
 characterset "ASCII"
 
-if _OPTIONS["dev-build"] then
-    defines {"DEV_BUILD", 'BUILD_NAME="IW7_DEV"'}
-else
-    defines {'BUILD_NAME="IW7"'}
-end
+defines {'BUILD_NAME="IW7"'}
 
 if _OPTIONS["steam-overlay"] then
     defines "LOAD_STEAM_OVERLAY"

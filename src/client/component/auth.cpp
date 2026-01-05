@@ -264,16 +264,16 @@ namespace auth
 		return get_key().get_hash();
 	}
 	
-	utils::hook::detour Info_ValueForKey_hook;
-	char* Info_ValueForKey_stub(const char* s, const char* key)
+	utils::hook::detour info_value_for_key_hook;
+	char* info_value_for_key_stub(const char* s, const char* key)
 	{
-		if (!strcmp(key, "password")) // Server for some reason checks the checksum of the password dvar on second time of connecting
+		// the server will check hashed password dvar on map rotate instead of the initial plain text one..?
+		if (!strcmp(key, "password"))
 		{
 			key = "-690481622";
 		}
 
-		auto result = Info_ValueForKey_hook.invoke<char*>(s, key);
-		return result;
+		return info_value_for_key_hook.invoke<char*>(s, key);
 	}
 
 	class component final : public component_interface
@@ -318,7 +318,7 @@ namespace auth
 			utils::hook::jump(0x140C58933, get_direct_connect_stub(), true);
 			utils::hook::call(0x1409AADFD, send_connect_data);
 			
-			Info_ValueForKey_hook.create(0x140CFB9A0, Info_ValueForKey_stub);
+			info_value_for_key_hook.create(0x140CFB9A0, info_value_for_key_stub);
 
 			command::add("guid", []() -> void
 			{
