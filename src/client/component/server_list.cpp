@@ -334,12 +334,7 @@ namespace server_list
 		server.bots = atoi(info.get("bots").data());
 		server.ping = std::min(now - start_time, 999);
 		server.is_private = atoi(info.get("isPrivate").data()) == 1;
-
 		server.in_game = 1;
-
-#ifdef DEBUG
-		console::debug("inserting server \"%s\"\n", server.host_name.data());
-#endif
 
 		insert_server(std::move(server));
 	}

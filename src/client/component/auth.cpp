@@ -219,8 +219,6 @@ namespace auth
 				return;
 			}
 
-			console::info("Direct connect from %s\n", params[0]);
-
 			const utils::info_string info_string{ std::string{params[2]} };
 			const auto steam_id = info_string.get("xuid");
 			const auto challenge = info_string.get("challenge");

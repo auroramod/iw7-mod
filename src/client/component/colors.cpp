@@ -6,6 +6,8 @@
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
 
+constexpr auto MAX_COLOR_INDEX = 15;
+
 namespace colors
 {
 	struct hsv_color
@@ -17,7 +19,16 @@ namespace colors
 
 	namespace
 	{
-		std::vector<DWORD> color_table;
+		enum color_mode_t
+		{
+			mode_original,
+			mode_custom,
+			mode_count,
+		};
+		
+		game::dvar_t* r_color_mode = nullptr;
+		
+		std::vector<DWORD> color_table[mode_count];
 
 		DWORD hsv_to_rgb(const hsv_color hsv)
 		{
@@ -70,19 +81,39 @@ namespace colors
 		int color_index(const char c)
 		{
 			const auto index = c - 48;
-			return index >= 0xC ? 7 : index;
+			return (index > MAX_COLOR_INDEX ? 7 : index);
 		}
 
-		char add(const uint8_t r, const uint8_t g, const uint8_t b)
+		char add(const std::int32_t mode, const uint8_t r, const uint8_t g, const uint8_t b)
 		{
-			const char index = '0' + static_cast<char>(color_table.size());
-			color_table.push_back(RGB(r, g, b));
+			const char index = '0' + static_cast<char>(color_table[mode].size());
+
+			if (mode == -1)
+			{
+				color_table[mode_original].emplace_back(RGB(r, g, b));
+				color_table[mode_custom].emplace_back(RGB(r, g, b));
+
+			}
+			else
+			{
+				color_table[mode].emplace_back(RGB(r, g, b));
+			}
+
 			return index;
 		}
 
 		void com_clean_name_stub(const char* in, char* out, const int out_size)
 		{
-			strncpy_s(out, out_size, in, _TRUNCATE);
+			// check that the name is at least 3 char without colors
+			char name[32]{};
+
+			game::I_strncpyz(out, in, std::min<int>(out_size, sizeof(name)));
+
+			utils::string::strip(out, name, std::min<int>(out_size, sizeof(name)));
+			if (std::strlen(name) < 3)
+			{
+				game::I_strncpyz(out, "UnnamedPlayer", std::min<int>(out_size, sizeof(name)));
+			}
 		}
 
 		char* i_clean_str_stub(char* string)
@@ -106,30 +137,27 @@ namespace colors
 		void rb_lookup_color_stub(const char index, DWORD* color)
 		{
 			*color = RGB(255, 255, 255);
-
-			if (index == '8')
+			
+			switch (index)
 			{
+			case '8':
 				*color = *reinterpret_cast<DWORD*>(0x148B9D284);
-			}
-			else if (index == '9')
-			{
+				break;
+			case '9':
 				*color = *reinterpret_cast<DWORD*>(0x148B9D288);
-			}
-			else if (index == ':')
-			{
+				break;
+			case ':':
 				*color = hsv_to_rgb({static_cast<uint8_t>((game::Sys_Milliseconds() / 100) % 256), 255, 255});
-			}
-			else if (index == ';')
-			{
+				break;
+			case ';':
 				*color = *reinterpret_cast<DWORD*>(0x148B9D290);
-			}
-			else if (index == '<')
-			{
+				break;
+			case '<':
 				*color = 0xFFFCFF80;
-			}
-			else
-			{
-				*color = color_table[color_index(index)];
+				break;
+			default:
+				*color = color_table[r_color_mode->current.integer][color_index(index)];
+				break;
 			}
 		}
 	}
@@ -143,6 +171,12 @@ namespace colors
 			{
 				return;
 			}
+			
+			static const char* color_modes[3]{};
+			color_modes[mode_original] = "original";
+			color_modes[mode_custom] = "custom";
+			color_modes[mode_count] = nullptr;
+			r_color_mode = game::Dvar_RegisterEnum("r_colorMode", color_modes, mode_custom, game::DVAR_FLAG_SAVED, "Use original colors or client-patched colors");
 
 			// allows colored name in-game
 			utils::hook::jump(0x140CFA700, com_clean_name_stub, true);
@@ -152,6 +186,10 @@ namespace colors
 
 			// patch I_CleanStr
 			utils::hook::jump(0x140CFACC0, i_clean_str_stub, true);
+			
+			// make color index higher for more colors
+			utils::hook::jump(0x140CFA6F0, color_index, true);
+			utils::hook::set<uint8_t>(0x140E4F64B, MAX_COLOR_INDEX);
 
 			// force new colors
 			utils::hook::jump(0x140E570E0, rb_lookup_color_stub, true);
@@ -160,21 +198,38 @@ namespace colors
 			utils::hook::set<uint8_t>(0x140805C10, 0xC3);
 
 			// add colors
-			add(0, 0, 0); // 0  - Black
-			add(255, 49, 49); // 1  - Red
-			add(134, 192, 0); // 2  - Green
-			add(255, 173, 34); // 3  - Yellow
-			add(0, 135, 193); // 4  - Blue
-			add(32, 197, 255); // 5  - Light Blue
-			add(151, 80, 221); // 6  - Pink
-			add(255, 255, 255); // 7  - White
+			add(mode_original, 0, 0, 0);		// ^0 black (original)
+			add(mode_original, 255, 0, 0);		// ^1 red (original)
+			add(mode_original, 0, 255, 0);		// ^2 green (original)
+			add(mode_original, 255, 255, 0);	// ^3 yellow (original)
+			add(mode_original, 0, 135, 193);	// ^4 blue (easier to see)
+			add(mode_original, 25, 200, 230);	// ^5 light blue (original)
+			add(mode_original, 255, 92, 255);	// ^6 pink (original)
+			add(mode_original, 255, 255, 255);	// ^7 white (original)
 
-			add(0, 0, 0); // 8  - Team color (axis?)
-			add(0, 0, 0); // 9  - Team color (allies?)
+			add(mode_custom, 0, 0, 0); // 0  - Black
+			add(mode_custom, 255, 49, 49); // 1  - Red
+			add(mode_custom, 134, 192, 0); // 2  - Green
+			add(mode_custom, 255, 173, 34); // 3  - Yellow
+			add(mode_custom, 0, 135, 193); // 4  - Blue
+			add(mode_custom, 32, 197, 255); // 5  - Light Blue
+			add(mode_custom, 151, 80, 221); // 6  - Pink
+			add(mode_custom, 255, 255, 255); // 7  - White
 
-			add(0, 0, 0); // 10 - Rainbow (:)
-			add(0, 0, 0);
-			// 11 - Server color (;) - using that color in infostrings (e.g. your name) fails, ';' is an illegal character!
+			// these are all handled in rb_lookup_color_stub
+			add(-1, 0, 0, 0);		// ^8 friendly team color (original)
+			add(-1, 0, 0, 0);		// ^9 enemy team color (original)
+			add(-1, 0, 0, 0);		// ^: rainbow color code (original is "my party")
+			add(-1, 0, 0, 0);		// ^; facebook blue (original, ';' is an illegal character for infostrings)
+			add(-1, 0, 0, 0);		// ^< sky blue (idek where this comes from)
+
+			add(mode_original, 255, 173, 34);	// ^= orange 
+			add(mode_original, 151, 80, 221);	// ^> purple
+			add(mode_original, 205, 133, 63);	// ^? brown
+
+			add(mode_custom, 255, 173, 34);	// ^= orange 
+			add(mode_custom, 151, 80, 221);	// ^> purple
+			add(mode_custom, 205, 133, 63);	// ^? brown
 		}
 	};
 }
