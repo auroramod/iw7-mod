@@ -307,6 +307,7 @@ namespace dedicated
 			utils::hook::set<uint32_t>(0x140B21137 + 2, 0x480); // g_hardcore flags
 			utils::hook::jump(0x140C12400, sv_get_game_type_stub);
 			utils::hook::jump(0x140C12660, sv_is_hardcore_mode_stub);
+			utils::hook::nop(0x140B20905, 5); // Stop g_hardcore being set to 1
 
 			utils::hook::nop(0x140CDD5D3, 5); // don't load config file
 			utils::hook::nop(0x140B7CE46, 5); // ^
