@@ -1602,6 +1602,18 @@ namespace game
 			PhysicalMemoryPrim prim[2];
 		};
 	}
+	
+	struct DB_AssetEntry
+	{
+		XAssetHeader m_header;
+		unsigned int m_nextHash;
+		unsigned int m_nextStashed;
+		volatile unsigned __int8 m_inuse;
+		unsigned __int8 m_type;
+		unsigned __int16 m_zoneIndex; // 11
+		unsigned __int16 m_printedMissingAsset; // 1
+	};
+	
 	using namespace pmem;
 
 	namespace hks

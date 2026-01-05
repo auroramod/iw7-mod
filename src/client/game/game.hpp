@@ -63,6 +63,7 @@ namespace game
 	extern const char* g_assetNames[ASSET_TYPE_COUNT];
 	const char* DB_GetXAssetName(const XAsset* asset);
 	void DB_EnumXAssets(const std::int32_t type, const std::function<void(XAssetHeader)>& callback);
+	void DB_EnumXAssetEntries(const std::int32_t type, const std::function<void(game::XAssetEntry*)>& callback, bool include_override);
 
 	void SV_CmdsMP_RequestMapRestart(bool loadScripts, bool migrate);
 

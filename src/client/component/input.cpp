@@ -5,6 +5,8 @@
 
 #include "game_console.hpp"
 
+#include "gui/gui.hpp"
+
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
 
@@ -17,6 +19,8 @@ namespace input
 		utils::hook::detour cl_char_event_hook;
 		utils::hook::detour cl_key_event_hook;
 		utils::hook::detour cl_execute_key_hook;
+		
+		utils::hook::detour cl_mouse_move_hook;
 
 		int key_get_binding_for_cmd_stub(const char* command);
 
@@ -26,6 +30,13 @@ namespace input
 			{
 				return;
 			}
+			
+#ifdef _DEBUG
+			if (!gui::gui_char_event(local_client_num, key))
+			{
+				return;
+			}
+#endif
 
 			cl_char_event_hook.invoke<void>(local_client_num, key);
 		}
@@ -36,6 +47,13 @@ namespace input
 			{
 				return;
 			}
+			
+#ifdef _DEBUG
+			if (!gui::gui_key_event(local_client_num, key, down))
+			{
+				return;
+			}
+#endif
 
 			cl_key_event_hook.invoke<void>(local_client_num, key, down);
 
@@ -56,6 +74,18 @@ namespace input
 				utils::hook::invoke<void>(0x14035DFB0, local_client_num, binding, key, 1); // CL_InputMP_ExecBinding
 			}
 		}
+		
+#ifdef _DEBUG
+		void cl_mouse_move_stub(const int local_client_num, int x, int y)
+		{
+			if (!gui::gui_mouse_event(local_client_num, x, y))
+			{
+				return;
+			}
+
+			cl_mouse_move_hook.invoke<void>(local_client_num, x, y);
+		}
+#endif
 
 		int get_num_keys()
 		{
@@ -195,6 +225,9 @@ namespace input
 
 			cl_char_event_hook.create(0x1409A7350, cl_char_event_stub);
 			cl_key_event_hook.create(0x1409A7980, cl_key_event_stub);
+#ifdef _DEBUG
+			cl_mouse_move_hook.create(0x140615A50, cl_mouse_move_stub);
+#endif
 
 			custom_binds.push_back("+actionslot 8");
 			custom_binds.push_back("-actionslot 8");

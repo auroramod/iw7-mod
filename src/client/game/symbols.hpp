@@ -327,10 +327,17 @@ namespace game
 	WEAK symbol<void(float* angles, float* forward, float* right, float* up)> AngleVectors{ 0x140CE6080 };
 	
 	WEAK symbol<char*(char* dest, const char* src, int dest_size)> I_strncpyz{0x1412C3560};
+	
+	WEAK symbol<const char*(const int zoneIndex)> DB_Zones_GetZoneNameFromIndex{0x1403BC410};
+	WEAK symbol<bool(const int zoneIndex)> DB_Zones_IsValidZoneIndex{0x1403BC730};
+	
+	WEAK symbol<DB_AssetEntry*(void* this_, const char* name, XAssetType type)> DB_AssetEntryTable_FindAsset{0x1403B57F0};
 
 	/***************************************************************
 	 * Variables
 	 **************************************************************/
+	
+	WEAK symbol<__int64> s_assetManager_table{0x1453E7370};
 
 	WEAK symbol<int> g_script_error_level{ 0x146B16298 };
 	WEAK symbol<jmp_buf> g_script_error{ 0x146B162A0 };

@@ -91,6 +91,7 @@ namespace utils::string
 	std::string dump_hex(const std::string& data, const std::string& separator = " ");
 
 	std::string get_clipboard_data();
+	void set_clipboard_data(const std::string& text);
 
 	void strip(const char* in, char* out, int max);
 	std::string strip(const std::string& string);
@@ -101,4 +102,7 @@ namespace utils::string
 	std::string replace(std::string str, const std::string& from, const std::string& to);
 
 	bool match_compare(const std::string& input, const std::string& text, const bool exact);
+
+	bool find_lower(const std::string& a, const std::string& b);
+	bool strstr_lower(const char* a, const char* b);
 }
