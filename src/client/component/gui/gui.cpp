@@ -476,5 +476,5 @@ namespace gui
 	};
 }
 
-REGISTER_COMPONENT(gui::component)
+//REGISTER_COMPONENT(gui::component)
 #endif
