@@ -11,7 +11,7 @@
 IW7-Mod is a client for Call of Duty®: Infinite Warfare that adds dedicated servers, hands-on modding utilities, and custom mods that feature content like weapons, models, sounds, and more. ***You must legally own [Call of Duty®: Infinite Warfare](https://store.steampowered.com/app/292730/Call_of_Duty_Infinite_Warfare/)*** to run this mod. Unlicensed or cracked versions of the game are **NOT** supported and will not be given assistance.
 
 <p align="center">
-  <img src="assets/github/banner.png?raw=true" />
+  <img src="assets/github/banner.png?raw=true" width="500" height="500" />
 </p>
 
 ## Compile from source code
@@ -25,7 +25,7 @@ IW7-Mod is a client for Call of Duty®: Infinite Warfare that adds dedicated ser
 - [s1x-client](https://git.alterware.dev/alterware/s1-mod) *(now **s1-mod**)* - codebase and research
 - [h1-mod](https://github.com/auroramod/h1-mod) - extended work and research
 - [h2-mod](https://github.com/alicelys/h2-mod) - research
-- [momo5502](https://github.com/momo5502) - Arxan/Steam research, former lead developer of [XLabsProject](https://github.com/XLabsProject)
+- [momo5502](https://github.com/momo5502) - Arxan & Steam research, former lead developer of [XLabsProject](https://github.com/XLabsProject)
 
 ## Disclaimer
 
