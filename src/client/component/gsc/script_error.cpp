@@ -414,13 +414,18 @@ namespace gsc
 		void scr_error_internal_stub()
 		{
 			const auto ret_addr = reinterpret_cast<std::uint64_t>(_ReturnAddress());
+			
 			if (!gsc_error_msg.has_value())
 			{
 				const auto it = scr_error_info_map.find(ret_addr - 5);
 
 				if (it != scr_error_info_map.end() && !it->second.empty())
 				{
-					gsc_error_msg = it->second;
+					gsc_error_msg = std::format("{} ({:p})", it->second, reinterpret_cast<void*>(ret_addr));
+				}
+				else
+				{
+					gsc_error_msg = std::format("{:p}", reinterpret_cast<void*>(ret_addr));
 				}
 			}
 
