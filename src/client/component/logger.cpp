@@ -13,6 +13,8 @@ namespace logger
 {
 	namespace
 	{
+		game::dvar_t* r_warnings_enable = nullptr;
+		
 		void sys_print_stub(const char* msg)
 		{
 			console::info("%s", msg);
@@ -76,6 +78,11 @@ namespace logger
 
 		void r_warn_once_per_frame_vsnprintf_stub(char* buffer, size_t buffer_length, char* msg, va_list va)
 		{
+			if (r_warnings_enable && !r_warnings_enable->current.enabled)
+			{
+				return;
+			}
+			
 			vsnprintf(buffer, buffer_length, msg, va);
 			console::warn("%s", buffer);
 		}
@@ -127,6 +134,8 @@ namespace logger
 
 			if (!game::environment::is_dedi())
 			{
+				r_warnings_enable = game::Dvar_RegisterBool("r_enableWarnings", false, game::DVAR_FLAG_SAVED, "enable rendering warnings");
+				
 				// R_WarnOncePerFrame
 				utils::hook::call(0x140E4B121, r_warn_once_per_frame_vsnprintf_stub);
 			}
