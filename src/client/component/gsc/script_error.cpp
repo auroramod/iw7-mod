@@ -256,6 +256,19 @@ namespace gsc
 			scr_error(va("Parameter %u does not exist", index + 1));
 			return nullptr;
 		}
+		
+		bool random_verify_weapon_stub(char* output_name, char* weapon_name)
+		{
+			// sometimes, the output_name may not equal the weapon_name like its suppose to, causing this to fail
+			// the real issue is BG_GetWeaponNameComplete stripping mods out, but it only matters here to be honest
+			// the weapon name contains a mod but output name doesn't, so lazily trust weapon_name
+			if (strstr(weapon_name, "mod_") != nullptr && strstr(output_name, "mod_") == nullptr)
+			{
+				return true;
+			}
+			
+			return utils::hook::invoke<bool>(0x1407336C0, output_name, weapon_name);
+		}
 	}
 
 	namespace
@@ -477,6 +490,9 @@ namespace gsc
 			utils::hook::jump(0x140C0BC00, scr_get_pointer_type);
 			utils::hook::jump(0x140C0BDE0, scr_get_type);
 			utils::hook::jump(0x140C0BE50, scr_get_type_name);
+			
+			// fix giveweapon failing on mod attachments
+			utils::hook::call(0x140B522D5, random_verify_weapon_stub);
 		}
 	};
 }
