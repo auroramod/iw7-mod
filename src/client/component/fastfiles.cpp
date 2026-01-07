@@ -14,8 +14,6 @@
 #include <utils/concurrency.hpp>
 #include <utils/io.hpp>
 
-#include <zlib.h>
-
 //#define XFILE_DEBUG
 
 namespace fastfiles
@@ -296,6 +294,7 @@ namespace fastfiles
 
 		return false;
 	}
+	
 
 	class component final : public component_interface
 	{
