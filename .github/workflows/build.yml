@@ -22,7 +22,7 @@ jobs:
           - Release
     steps:
       - name: Check out files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: true
           fetch-depth: 0
