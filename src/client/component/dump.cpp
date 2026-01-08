@@ -13,7 +13,7 @@
 
 namespace dump
 {
-	int safeStoi(const std::string& str, const int defaultValue = 0) 
+	static int safeStoi(const std::string& str, const int defaultValue = 0)
 	{
 		try 
 		{
@@ -41,19 +41,19 @@ namespace dump
 
 			return static_cast<int>(result);
 		}
-		catch (const std::invalid_argument& e)
+		catch (const std::invalid_argument&)
 		{
 			// Conversion failed due to non-numeric string
 			return defaultValue;
 		}
-		catch (const std::out_of_range& e) 
+		catch (const std::out_of_range&) 
 		{
 			// Number out of integer range
 			return defaultValue;
 		}
 	}
 
-	void DumpScriptFile(const char* filename, game::ScriptFile* scriptfile)
+	static void DumpScriptFile(const char* filename, game::ScriptFile* scriptfile)
 	{
 		std::string buffer;
 		buffer.append(scriptfile->name, std::strlen(scriptfile->name) + 1);
@@ -96,7 +96,7 @@ namespace dump
 		}
 	}
 
-	void DumpLuaFile(const char* filename, game::LuaFile* luaFile)
+	static void DumpLuaFile(const char* filename, game::LuaFile* luaFile)
 	{
 		std::string buffer;
 		if (luaFile->len > 0)
@@ -108,7 +108,7 @@ namespace dump
 		console::info("Dumped %s (%d bytes)\n", filename, buffer.length());
 	}
 
-	void DumpStringTableFile(std::string filename, game::StringTable* stringTable)
+	static void DumpStringTableFile(std::string filename, game::StringTable* stringTable)
 	{
 		std::string buffer;
 		console::info("Dumping string table %s with %d rows and %d columns\n", stringTable->name, stringTable->rowCount, stringTable->columnCount);
