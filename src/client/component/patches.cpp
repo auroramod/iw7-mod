@@ -239,6 +239,11 @@ namespace patches
 				a.jmp(0x140B22287);
 			});
 		}
+
+		void request_start_match(game::PartyData* party, bool skip_start_countdown)
+		{
+			utils::hook::invoke<void>(0x1409D8900, party, true); // PartyHost_RequestStartMatch
+		}
 	}
 
 	class component final : public component_interface
@@ -348,6 +353,9 @@ namespace patches
 			// Patch crash caused by the server trying to kick players for 'invalid password'
 			utils::hook::nop(0x140B2215B, 18);
 			utils::hook::jump(0x140B2215B, update_last_seen_players_stub(), true);
+
+			// xpartygo -> just start the match
+			utils::hook::jump(0x1409AA7F5, request_start_match);
 		}
 	};
 }
