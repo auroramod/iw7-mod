@@ -16,6 +16,10 @@ namespace gameplay
 {
 	namespace
 	{
+		game::dvar_t* player_sustain_ammo = nullptr;
+
+		utils::hook::detour pm_weapon_use_ammo_hook;
+
 		void stuck_in_client_stub(void* entity)
 		{
 			if (dvars::bg_playerEjection->current.enabled)
@@ -133,6 +137,14 @@ namespace gameplay
 			origin[1] += dvars::cg_gun_z->current.value * glob->viewModelAxis[2][1];
 			origin[2] += dvars::cg_gun_z->current.value * glob->viewModelAxis[2][2];
 		}
+
+		void pm_weapon_use_ammo_stub(void* ps, const void* weapon, bool isAlternate, int amount, int hand)
+		{
+			if (!player_sustain_ammo || !player_sustain_ammo->current.enabled)
+			{
+				pm_weapon_use_ammo_hook.invoke<void>(ps, weapon, isAlternate, amount, hand);
+			}
+		}
 	}
 
 	class component final : public component_interface
@@ -144,9 +156,9 @@ namespace gameplay
 			dvars::bg_playerEjection = game::Dvar_RegisterBool("bg_playerEjection", true, game::DVAR_FLAG_REPLICATED, "Flag whether player ejection is on or off");
 			utils::hook::call(0x140AFA739, stuck_in_client_stub);
 
-			// Implement bounces dvar
-			dvars::bg_bounces = game::Dvar_RegisterBool("bg_bounces", false, game::DVAR_FLAG_REPLICATED, "Enables bounces");
-			utils::hook::jump(0x14070FBB7, bg_bounces_stub(), true);
+			// TOOD: Properly implement bounces dvar (check issue #13 on github)
+			//dvars::bg_bounces = game::Dvar_RegisterBool("bg_bounces", false, game::DVAR_FLAG_REPLICATED, "Enables bounces");
+			//utils::hook::jump(0x14070FBB7, bg_bounces_stub(), true);
 
 			// Modify gravity dvar
 			dvars::override::register_float("bg_gravity", 800.0f, 1.0f, 1000.0f, 0xC0 | game::DVAR_FLAG_REPLICATED);
@@ -168,6 +180,10 @@ namespace gameplay
 
 			// Modify limits
 			dvars::override::register_float("cl_yawspeed", 140.0f, std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max(), game::DVAR_FLAG_SAVED);
+
+			// Add toggle for keeping your clip ammo
+			player_sustain_ammo = game::Dvar_RegisterBool("player_sustainAmmo", false, game::DVAR_FLAG_REPLICATED, "Firing weapon will not decrease clip ammo");
+			pm_weapon_use_ammo_hook.create(0x1407330E0, pm_weapon_use_ammo_stub);
 		}
 	};
 }
