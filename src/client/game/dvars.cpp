@@ -43,6 +43,8 @@ namespace dvars
 	game::dvar_t* logfile = nullptr;
 	game::dvar_t* g_log = nullptr;
 
+	game::dvar_t* jump_enableFallDamage = nullptr;
+
 	std::string dvar_get_vector_domain(const int components, const game::DvarLimits& domain)
 	{
 		if (domain.vector.min == -FLT_MAX)

@@ -145,6 +145,15 @@ namespace gameplay
 				pm_weapon_use_ammo_hook.invoke<void>(ps, weapon, isAlternate, amount, hand);
 			}
 		}
+
+		utils::hook::detour pm_crashland_hook;
+		void pm_crashland_stub(void* ps, void* pml)
+		{
+			if (dvars::jump_enableFallDamage->current.enabled)
+			{
+				pm_crashland_hook.invoke<void>(ps, pml);
+			}
+		}
 	}
 
 	class component final : public component_interface
@@ -184,6 +193,10 @@ namespace gameplay
 			// Add toggle for keeping your clip ammo
 			player_sustain_ammo = game::Dvar_RegisterBool("player_sustainAmmo", false, game::DVAR_FLAG_REPLICATED, "Firing weapon will not decrease clip ammo");
 			pm_weapon_use_ammo_hook.create(0x1407330E0, pm_weapon_use_ammo_stub);
+
+			// Implement fall damage dvar
+			dvars::jump_enableFallDamage = game::Dvar_RegisterBool("jump_enableFallDamage", true, game::DVAR_FLAG_REPLICATED, "Enable fall damage");
+			pm_crashland_hook.create(0x1406F9860, pm_crashland_stub);
 		}
 	};
 }
