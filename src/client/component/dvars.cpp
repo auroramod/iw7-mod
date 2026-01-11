@@ -512,6 +512,11 @@ namespace dvars
 		return dvar;
 	}
 
+	game::dvar_t* fps_labels_register_stub(const char*, bool, unsigned int, const char*)
+	{
+		return game::Dvar_RegisterBool("cg_drawFPS", false, game::DVAR_FLAG_READ, "cg_drawFPS is deprecated, use cg_fpsCounter instead");
+	}
+
 	class component final : public component_interface
 	{
 	public:
@@ -524,6 +529,9 @@ namespace dvars
 
 			// We need to apply these straight away
 			MH_ApplyQueued();
+
+			// de-register cg_drawFPSLabels and register a placeholder cg_drawFps
+			utils::hook::call(0x140BAEAE9, fps_labels_register_stub);
 		}
 
 		component_priority priority() override
