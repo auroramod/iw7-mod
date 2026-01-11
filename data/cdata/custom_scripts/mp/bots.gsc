@@ -14,6 +14,67 @@ main()
     replacefunc(scripts\mp\gamelogic::waitforplayers, ::waitforplayers_stub);
 }
 
+init()
+{
+    level thread on_player_connect();
+}
+
+get_difficulty_for_team(team)
+{
+    return getdvarint( va("bot_difficulty_%s", team), 0 );
+}
+
+on_player_spawned()
+{
+    self endon("disconnect");
+    level endon("game_ended");
+
+    for(;;)
+    {
+        self waittill("spawned_player");
+
+        // check if is a bot
+        if (isbot(self))
+        {
+            // get the difficulty for their team via the dvar, and then change it
+            raw_bot_difficulty = get_difficulty_for_team(self.team);
+            bot_difficulty = get_bot_difficulty_for_number(raw_bot_difficulty);
+
+            self.var_2D32 = bot_difficulty; // this is bot_chosen_difficulty variable (checked here https://github.com/mjkzy/iw6-gsc-dump/blob/main/maps/mp/bots/_bots_util.gsc#L232)
+            self scripts\mp\bots\bots_util::bot_set_difficulty(bot_difficulty);
+        }
+    }
+}
+
+get_bot_difficulty_for_number(difficulty)
+{
+    switch (difficulty)
+    {
+        case 4:
+        case 3:
+            return "veteran";
+        case 2:
+            return "regular";
+        case 1:
+            return "recruit";
+        case 0:
+        default:
+            random_difficulty = ["recruit", "regular", "hardened", "veteran"];
+            return random_difficulty[ randomintrange(0, 3) ];
+    }
+}
+
+on_player_connect()
+{
+    level endon("game_ended");
+
+    for(;;)
+    {
+        level waittill("connected", player);
+        player thread on_player_spawned();
+    }
+}
+
 init_dvars()
 {
     // setdvar("bots_enabled", 1);

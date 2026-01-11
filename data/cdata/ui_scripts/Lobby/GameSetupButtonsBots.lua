@@ -82,7 +82,8 @@ local f0_local0 = function(f1_arg0, f1_arg1, f1_arg2)
 		[Bot.BotTeams.Enemy] = f1_arg0.EnemyBots,
 		[Bot.BotTeams.Friendly] = f1_arg0.FriendlyBots,
 	}
-	local f1_local1 = function(team, teambased)
+	
+	local callback_bots_changed = function(team, teambased)
 		local f2_local0 = {}
 		local MaxBotLimit = Bot.GetMaxBotLimit()
 		for f2_local2 = 0, MaxBotLimit, 1 do
@@ -129,19 +130,19 @@ local f0_local0 = function(f1_arg0, f1_arg1, f1_arg2)
 		}
 	end
 
-	local f1_local2 = function(f4_arg0)
-		local f4_local0 = {}
-		table.insert(f4_local0, Engine.Localize("LUA_MENU_BOTS_RECRUIT"))
-		table.insert(f4_local0, Engine.Localize("LUA_MENU_BOTS_REGULAR"))
-		table.insert(f4_local0, Engine.Localize("LUA_MENU_BOTS_HARDENED"))
-		table.insert(f4_local0, Engine.Localize("LUA_MENU_BOTS_VETERAN"))
-		table.insert(f4_local0, Engine.Localize("LUA_MENU_BOTS_MIXED"))
+	local callback_difficulty_changed = function(team)
+		local difficulties = {}
+		table.insert(difficulties, Engine.Localize("LUA_MENU_BOTS_MIXED"))
+		table.insert(difficulties, Engine.Localize("LUA_MENU_BOTS_RECRUIT"))
+		table.insert(difficulties, Engine.Localize("LUA_MENU_BOTS_REGULAR"))
+		table.insert(difficulties, Engine.Localize("LUA_MENU_BOTS_HARDENED"))
+		table.insert(difficulties, Engine.Localize("LUA_MENU_BOTS_VETERAN"))
 		return {
-			labels = f4_local0,
+			labels = difficulties,
 			action = function(f5_arg0)
-				Bot.SetBotsDifficulty(f4_arg0, f5_arg0 - 1)
+				Bot.SetBotsDifficulty(team, f5_arg0 - 1)
 			end,
-			defaultValue = 1 + Bot.GetBotsDifficulty(f4_arg0),
+			defaultValue = 1 + Bot.GetBotsDifficulty(team),
 			wrapAround = true,
 		}
 	end
@@ -155,15 +156,15 @@ local f0_local0 = function(f1_arg0, f1_arg1, f1_arg2)
 		LUI.AddUIArrowTextButtonLogic(
 			f1_arg0.FriendlyBots,
 			f1_arg1,
-			f1_local1(Bot.BotTeams.Friendly, Bot.BotTeams.Enemy)
+			callback_bots_changed(Bot.BotTeams.Friendly, Bot.BotTeams.Enemy)
 		)
-		LUI.AddUIArrowTextButtonLogic(f1_arg0.EnemyBots, f1_arg1, f1_local1(Bot.BotTeams.Enemy, Bot.BotTeams.Friendly))
-		LUI.AddUIArrowTextButtonLogic(f1_arg0.FriendlyBotsDifficulty, f1_arg1, f1_local2(Bot.BotTeams.Friendly))
-		LUI.AddUIArrowTextButtonLogic(f1_arg0.EnemyBotsDifficulty, f1_arg1, f1_local2(Bot.BotTeams.Enemy))
+		LUI.AddUIArrowTextButtonLogic(f1_arg0.EnemyBots, f1_arg1, callback_bots_changed(Bot.BotTeams.Enemy, Bot.BotTeams.Friendly))
+		LUI.AddUIArrowTextButtonLogic(f1_arg0.FriendlyBotsDifficulty, f1_arg1, callback_difficulty_changed(Bot.BotTeams.Friendly))
+		LUI.AddUIArrowTextButtonLogic(f1_arg0.EnemyBotsDifficulty, f1_arg1, callback_difficulty_changed(Bot.BotTeams.Enemy))
 	end
 	if f1_arg0.FFABots and f1_arg0.FFABotsDifficulty then
-		LUI.AddUIArrowTextButtonLogic(f1_arg0.FFABots, f1_arg1, f1_local1(Bot.BotTeams.FFA))
-		LUI.AddUIArrowTextButtonLogic(f1_arg0.FFABotsDifficulty, f1_arg1, f1_local2(Bot.BotTeams.FFA))
+		LUI.AddUIArrowTextButtonLogic(f1_arg0.FFABots, f1_arg1, callback_bots_changed(Bot.BotTeams.FFA))
+		LUI.AddUIArrowTextButtonLogic(f1_arg0.FFABotsDifficulty, f1_arg1, callback_difficulty_changed(Bot.BotTeams.FFA))
 	end
 	local f1_local3 = LUI.DataSourceInGlobalModel.new("frontEnd.Bot.areWeGameHost")
 	f1_arg0:SubscribeToModel(f1_local3:GetModel(f1_arg1), function(f6_arg0)

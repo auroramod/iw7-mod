@@ -26,7 +26,7 @@ local postLoadGameSetupButtonsSubMenu = function(self, f2_arg1, f2_arg2)
 
 	self.MapsButton.DynamicText:setText(ToUpperCase(Lobby.GetMapName()))
 	self.OptionsButton:SetButtonDisabled(1) -- TODO: game settings are not applied and get rest on menu change.
-	self.BotSetup:SetButtonDisabled(1) -- TODO: support custom bot management (gsc + engine changes required)
+	--self.BotSetup:SetButtonDisabled(1) -- TODO: finish custom bot management (gsc + engine changes required)
 end
 
 local GameSetupButtonsSubMenu = function(menu, controller)

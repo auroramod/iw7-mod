@@ -356,6 +356,9 @@ namespace patches
 
 			// xpartygo -> just start the match
 			utils::hook::jump(0x1409AA7F5, request_start_match);
+
+			game::Dvar_RegisterInt("bot_difficulty_allies", 0, 0, 4, game::DVAR_FLAG_NONE, "Bot difficulty for friendly bots. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
+			game::Dvar_RegisterInt("bot_difficulty_enemies", 0, 0, 4, game::DVAR_FLAG_NONE, "Bot difficulty for enemy bots. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
 		}
 	};
 }
