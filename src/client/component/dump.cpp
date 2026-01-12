@@ -218,12 +218,10 @@ namespace dump
 	static void DumpMapEnts(const char* filename, game::MapEnts* mapEnts)
 	{
 		std::string buffer;
-
 		const char* map_ents_ptr = mapEnts->entityString;
 		std::string map_ents(map_ents_ptr);
 
 		size_t pos = 0;
-		bool first_block_processed = false;
 
 		while (pos < map_ents.length())
 		{
@@ -235,12 +233,6 @@ namespace dump
 
 			std::string block_text = map_ents.substr(block_start, block_end - block_start + 1);
 			pos = block_end + 1;
-
-			if (!first_block_processed)
-			{
-				first_block_processed = true;
-				continue;
-			}
 
 			// decode the block to get the proper key names
 			std::string decoded_block = DecodeEntityBlock(block_text);
