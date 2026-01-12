@@ -164,12 +164,10 @@ namespace gsc
 				if (real_name.starts_with(utils::string::va("scripts/%s/maps/", game::Com_GameMode_GetActiveGameModeStr()))
 					&& (real_name.ends_with("_fx") || real_name.ends_with("_sound")))
 				{
-					console::debug("Refusing to compile rawfile '%s'\n", real_name.data());
+					//console::debug("Refusing to compile rawfile '%s'\n", real_name.data());
 					return game::DB_FindXAssetHeader(game::ASSET_TYPE_SCRIPTFILE, file_name, false).scriptfile;
 				}
 			}
-
-			console::debug("Loading custom gsc '%s.gsc'", real_name.data());
 
 			try
 			{
@@ -204,7 +202,7 @@ namespace gsc
 				loaded_script.devmap = parse_devmap(devmap);
 				loaded_scripts.insert(std::make_pair(file_name, loaded_script));
 
-				console::debug("Loaded custom gsc '%s.gsc'", real_name.data());
+				console::important("Loaded custom gsc '%s.gsc'", real_name.data());
 
 				return script_file_ptr;
 			}
@@ -271,13 +269,13 @@ namespace gsc
 
 			if (main_handle)
 			{
-				console::debug("Loaded '%s::main'\n", name.data());
+				//console::debug("Loaded '%s::main'\n", name.data());
 				main_handles[name] = main_handle;
 			}
 
 			if (init_handle)
 			{
-				console::debug("Loaded '%s::init'\n", name.data());
+				//console::debug("Loaded '%s::init'\n", name.data());
 				init_handles[name] = init_handle;
 			}
 		}
@@ -377,7 +375,7 @@ namespace gsc
 		{
 			for (auto& function_handle : main_handles)
 			{
-				console::debug("Executing '%s::main'\n", function_handle.first.data());
+				console::redudant("Executing '%s::main'\n", function_handle.first.data());
 				game::RemoveRefToObject(game::Scr_ExecThread(function_handle.second, 0));
 			}
 
@@ -389,7 +387,7 @@ namespace gsc
 		{
 			for (auto& function_handle : init_handles)
 			{
-				console::debug("Executing '%s::init'\n", function_handle.first.data());
+				console::redudant("Executing '%s::init'\n", function_handle.first.data());
 				game::RemoveRefToObject(game::Scr_ExecThread(function_handle.second, 0));
 			}
 

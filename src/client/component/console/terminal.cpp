@@ -77,6 +77,10 @@ namespace terminal
 		{
 			switch (type)
 			{
+			case console::print_type_important:
+				return 10; // light green
+			case console::print_type_redudant:
+				return 8; // light green
 			case console::print_type_info:
 				return 7; // white
 			case console::print_type_warning:

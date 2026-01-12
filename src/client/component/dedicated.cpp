@@ -443,9 +443,9 @@ namespace dedicated
 			{
 				initialize();
 
-				console::info("==================================\n");
-				console::info("Server started!\n");
-				console::info("==================================\n");
+				console::important("==================================\n");
+				console::important("Server started!\n");
+				console::important("==================================\n");
 
 				// remove disconnect command
 				game::Cmd_RemoveCommand("disconnect");
@@ -454,7 +454,7 @@ namespace dedicated
 
 				// Send heartbeat to dpmaster
 				scheduler::once(send_heartbeat, scheduler::pipeline::server);
-				scheduler::loop(send_heartbeat, scheduler::pipeline::server, 10min);
+				scheduler::loop(send_heartbeat, scheduler::pipeline::server, 1min);
 				command::add("heartbeat", send_heartbeat);
 			}, scheduler::pipeline::main, 100ms);
 
