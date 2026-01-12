@@ -1,6 +1,8 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
 
+#include "console/console.hpp"
+
 #include "game/game.hpp"
 #include "game/dvars.hpp"
 
@@ -244,6 +246,16 @@ namespace patches
 		{
 			utils::hook::invoke<void>(0x1409D8900, party, true); // PartyHost_RequestStartMatch
 		}
+
+		void dvar_set_command_stub(const char* name, const char* value, bool superuser)
+		{
+			if (!strcmp(name, "sv_maxclients"))
+			{
+				name = "party_maxplayers";
+			}
+
+			utils::hook::invoke<void>(0x140CECB30, name, value, superuser);
+		}
 	}
 
 	class component final : public component_interface
@@ -357,8 +369,12 @@ namespace patches
 			// xpartygo -> just start the match
 			utils::hook::jump(0x1409AA7F5, request_start_match);
 
+			// register bot difficulty script dvars
 			game::Dvar_RegisterInt("bot_difficulty_allies", 0, 0, 4, game::DVAR_FLAG_NONE, "Bot difficulty for friendly bots. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
 			game::Dvar_RegisterInt("bot_difficulty_enemies", 0, 0, 4, game::DVAR_FLAG_NONE, "Bot difficulty for enemy bots. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
+		
+			// set any value on sv_maxclients -> party_maxplayers
+			utils::hook::call(0x140BB241C, dvar_set_command_stub);
 		}
 	};
 }

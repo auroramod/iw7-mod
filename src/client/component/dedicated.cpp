@@ -265,7 +265,7 @@ namespace dedicated
 			}
 
 #ifdef DEBUG
-			printf("Starting dedicated server\n");
+			console::important("Starting dedicated server\n");
 #endif
 
 			// Register dedicated dvar

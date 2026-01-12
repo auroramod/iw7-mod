@@ -240,7 +240,7 @@ namespace fastfiles
 
 			if (!strncmp(zone_name, buffer, len))
 			{
-				printf("Tried to load missing language zone: %s\n", zone_name);
+				console::warn("Tried to load missing language zone: %s\n", zone_name);
 				return true;
 			}
 
