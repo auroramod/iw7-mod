@@ -53,6 +53,66 @@ namespace dump
 		}
 	}
 
+	static std::string DecodeEntityBlock(const std::string& encoded_block)
+	{
+		std::string result = "{\n";
+		std::istringstream block_stream(encoded_block);
+		std::string line;
+
+		// Skip the opening brace
+		std::getline(block_stream, line);
+
+		// Process each line
+		while (std::getline(block_stream, line))
+		{
+			// Trim whitespace
+			line.erase(0, line.find_first_not_of(" \t\n\r"));
+
+			// Skip closing brace - we'll add it later
+			if (line.find("}") == 0)
+				continue;
+
+			// Find the key ID (number at start of line)
+			size_t space_pos = line.find(" ");
+			if (space_pos != std::string::npos)
+			{
+				std::string key_id_str = line.substr(0, space_pos);
+
+				// Try to convert to a number
+				try 
+				{
+					const int key_id = std::stoi(key_id_str);
+
+					if (auto key_string = gsc::gsc_ctx->token_name(key_id); !key_string.empty())
+					{
+						// Replace the ID with the string
+						result += "    \"" + std::string(key_string) + "\" ";
+
+						// Add the rest of the line
+						result += line.substr(space_pos + 1) + "\n";
+					}
+					else
+					{
+						// If lookup fails, keep the original line
+						result += "    " + line + "\n";
+					}
+				}
+				catch (...) {
+					// If not a valid number, keep the original line
+					result += "    " + line + "\n";
+				}
+			}
+			else
+			{
+				// Line doesn't have a space, keep it as is
+				result += "    " + line + "\n";
+			}
+		}
+
+		result += "}";
+		return result;
+	}
+
 	static void DumpScriptFile(const char* filename, game::ScriptFile* scriptfile)
 	{
 		std::string buffer;
@@ -155,6 +215,43 @@ namespace dump
 		console::info("Dumped %s (%d bytes)\n", finalFilename, buffer.length());
 	}
 
+	static void DumpMapEnts(const char* filename, game::MapEnts* mapEnts)
+	{
+		std::string buffer;
+
+		const char* map_ents_ptr = mapEnts->entityString;
+		std::string map_ents(map_ents_ptr);
+
+		size_t pos = 0;
+		bool first_block_processed = false;
+
+		while (pos < map_ents.length())
+		{
+			size_t block_start = map_ents.find('{', pos);
+			if (block_start == std::string::npos) break;
+
+			size_t block_end = map_ents.find('}', block_start);
+			if (block_end == std::string::npos) break;
+
+			std::string block_text = map_ents.substr(block_start, block_end - block_start + 1);
+			pos = block_end + 1;
+
+			if (!first_block_processed)
+			{
+				first_block_processed = true;
+				continue;
+			}
+
+			// decode the block to get the proper key names
+			std::string decoded_block = DecodeEntityBlock(block_text);
+			buffer.append(decoded_block);
+			buffer.append("\n");
+		}
+
+		utils::io::write_file(filename, buffer);
+		console::info("Dumped %s (%d bytes)\n", filename, buffer.length());
+	}
+
 	class component final : public component_interface
 	{
 	public:
@@ -219,6 +316,22 @@ namespace dump
 					cmd = cmd->next;
 				}
 				console::info("dumped %d commands", i);
+			});
+
+			command::add("entityDump", []()
+			{
+				game::DB_EnumXAssets(game::XAssetType::ASSET_TYPE_MAP_ENTS, [&](game::XAssetHeader header)
+				{
+					if (const auto asset = header.mapEnts; asset != nullptr)
+					{
+						std::string name = asset->name;
+						name = utils::string::replace(name, "maps/mp/", "");
+						name = utils::string::replace(name, "maps/cp/", "");
+						name = utils::string::replace(name, "maps/", "");
+						name = utils::string::replace(name, ".d3dbsp", "");
+						DumpMapEnts(utils::string::va("iw7-mod/dump/mapents/%s.txt", name.c_str()), asset);
+					}
+				});
 			});
 		}
 	};
