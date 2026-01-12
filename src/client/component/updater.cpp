@@ -304,7 +304,7 @@ namespace updater
 				}
 #endif
 
-				console::info("[Updater] Add file \"%s\"\n", name);
+				console::debug("[Updater] Add file \"%s\"\n", name);
 
 				parsed_list.emplace_back(name, sha);
 			}
