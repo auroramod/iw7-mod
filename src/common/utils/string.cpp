@@ -160,6 +160,16 @@ namespace utils::string
 		return new_string.data();
 	}
 
+	std::string& ltrim(std::string& s) 
+	{
+		s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) 
+			{
+				return !std::isspace(c); 
+			}
+		));
+		return s;
+	}
+
 #pragma warning(push)
 #pragma warning(disable: 4100)
 	std::string convert(const std::wstring& wstr)

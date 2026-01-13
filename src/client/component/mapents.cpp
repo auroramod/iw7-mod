@@ -101,6 +101,7 @@ namespace mapents
 				}
 
 				auto key = utils::string::to_lower(match[1].str());
+				key = utils::string::ltrim(key);
 				const auto value = match[2].str();
 
 				if (key.size() <= 0)
