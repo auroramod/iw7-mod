@@ -1,6 +1,6 @@
 /*
 
-    label all Infinite Warfare builtin functions & methods
+    label all Infinite Warfare GSC builtin functions & methods
     by: mjkzy
     created: 1-12-2026
 
@@ -2324,4 +2324,6 @@ static main(void)
     LabelFunction("PlayerCmd_%s", "_meth_85C8", 0x140B5FFC0);
     LabelFunction("PlayerCmd_%s", "_meth_85C9", 0x140C1D320);
     LabelFunction("PlayerCmd_%s", "_meth_85CA", 0x1403E0D50);
+
+    Message("Labeling of GSC functions complete!\n");
 }

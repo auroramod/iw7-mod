@@ -7,4 +7,5 @@ This folder contains IDA scripts that were used to reverse engineer Infinite War
 To load a .idc script, go to `File` in the top left, and click `Script File`. From there, you simply want to select the .idc script of choice.
 
 ## Scripts
-- **iw7 label GSC builtins.idc** - automatically labels all of the engine functions that GSC builtins have
+- **iw7 label GSC builtins.idc** - automatically labels all of the engine functions that GSC builtins has
+- **iw7 label LUA builtins.idc** - automatically labels all of the engine functions that LUI (the game's Lua UI) has

@@ -455,12 +455,6 @@ namespace gsc
 				return scripting::script_value{};
 			});
 
-			method::add("test_method", [](game::scr_entref_t ent_ref, const function_args& args)
-			{
-				print(args);
-				return scripting::script_value{};
-			});
-
 			function::add("va", [](const function_args& args)
 			{
 				auto fmt = args[0].as<std::string>();
