@@ -95,6 +95,7 @@ namespace utils::string
 
 	void strip(const char* in, char* out, int max);
 	std::string strip(const std::string& string);
+	std::string& ltrim(std::string& s);
 
 	std::string convert(const std::wstring& wstr);
 	std::wstring convert(const std::string& str);
