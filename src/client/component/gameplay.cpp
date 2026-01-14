@@ -168,12 +168,12 @@ namespace gameplay
 		void post_unpack() override
 		{
 			// Implement ejection dvar
-			dvars::g_playerEjection = game::Dvar_RegisterBool("g_playerEjection", true, game::DVAR_FLAG_REPLICATED, "Flag whether player ejection is on or off");
+			dvars::g_playerEjection = game::Dvar_RegisterBool("bg_playerEjection", true, game::DVAR_FLAG_REPLICATED, "Flag whether player ejection is on or off");
 			utils::hook::call(0x140AFA739, stuck_in_client_stub);
 
-			// Implement bounces dvar
-			dvars::g_bounces = game::Dvar_RegisterBool("g_bounces", false, game::DVAR_FLAG_REPLICATED, "Enables bounces");
-			utils::hook::jump(0x14070FBB7, g_bounces_stub(), true);
+			// TODO: Implement bounces dvar without making the game unstable
+			//dvars::g_bounces = game::Dvar_RegisterBool("bg_bounces", false, game::DVAR_FLAG_REPLICATED, "Enables bounces");
+			//utils::hook::jump(0x14070FBB7, g_bounces_stub(), true);
 
 			// Modify gravity dvar
 			dvars::override::register_float("bg_gravity", 800.0f, 1.0f, 1000.0f, 0xC0 | game::DVAR_FLAG_REPLICATED);

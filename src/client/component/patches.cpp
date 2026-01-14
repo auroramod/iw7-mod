@@ -254,11 +254,6 @@ namespace patches
 			if (!strcmp(name, "sv_maxclients"))
 				name = "party_maxplayers";
 
-			// old bounce dvar was deprecated but is still in config, support it
-			if (!strcmp(name, "bg_bounces"))
-				name = "g_bounces";
-			
-
 			utils::hook::invoke<void>(0x140CECB30, name, value, superuser);
 		}
 
