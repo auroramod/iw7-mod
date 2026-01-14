@@ -249,10 +249,14 @@ namespace patches
 
 		void dvar_set_command_stub(const char* name, const char* value, bool superuser)
 		{
+			// party_maxplayers is the true max clients value
 			if (!strcmp(name, "sv_maxclients"))
-			{
 				name = "party_maxplayers";
-			}
+
+			// old bounce dvar was deprecated but is still in config, support it
+			if (!strcmp(name, "bg_bounces"))
+				name = "g_bounces";
+			
 
 			utils::hook::invoke<void>(0x140CECB30, name, value, superuser);
 		}
@@ -373,7 +377,7 @@ namespace patches
 			game::Dvar_RegisterInt("bot_difficulty_allies", 0, 0, 4, game::DVAR_FLAG_NONE, "Bot difficulty for friendly bots. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
 			game::Dvar_RegisterInt("bot_difficulty_enemies", 0, 0, 4, game::DVAR_FLAG_NONE, "Bot difficulty for enemy bots. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
 		
-			// set any value on sv_maxclients -> party_maxplayers
+			// re-direct some dvars to others for backwards compatibility on configurations
 			utils::hook::call(0x140BB241C, dvar_set_command_stub);
 		}
 	};
