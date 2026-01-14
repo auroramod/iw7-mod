@@ -1,6 +1,8 @@
 #include <std_include.hpp>
 #include "../dw_include.hpp"
 
+#include "component/console/console.hpp"
+
 #include <utils/nt.hpp>
 #include <utils/io.hpp>
 #include <utils/cryptography.hpp>
@@ -58,9 +60,7 @@ namespace demonware
 			}
 		}
 
-#ifdef DW_DEBUG
-		printf("[DW]: [bdStorage]: missing publisher file: %s\n", name.data());
-#endif
+		console::demonware("[DW]: [bdStorage]: missing publisher file: %s\n", name.data());
 
 		return false;
 	}
@@ -77,9 +77,7 @@ namespace demonware
 		buffer->read_uint16(&offset);
 		buffer->read_string(&filename);
 
-#ifdef DW_DEBUG
-		printf("[DW]: [bdStorage]: list publisher files: %s\n", filename.data());
-#endif
+		console::demonware("[DW]: [bdStorage]: list publisher files: %s\n", filename.data());
 
 		auto reply = server->create_reply(this->task_id());
 
@@ -108,17 +106,13 @@ namespace demonware
 		buffer->read_string(&unk);
 		buffer->read_string(&filename);
 
-#ifdef DW_DEBUG
-		printf("[DW]: [bdStorage]: loading publisher file: %s\n", filename.data());
-#endif
+		console::demonware("[DW]: [bdStorage]: loading publisher file: %s\n", filename.data());
 
 		std::string data;
 
 		if (this->load_publisher_resource(filename, data))
 		{
-#ifdef DW_DEBUG
-			printf("[DW]: [bdStorage]: sending publisher file: %s, size: %lld\n", filename.data(), data.size());
-#endif
+			console::demonware("[DW]: [bdStorage]: sending publisher file: %s, size: %lld\n", filename.data(), data.size());
 
 			auto reply = server->create_reply(this->task_id());
 			auto result = std::make_unique<bdFileData>(data);
@@ -183,9 +177,7 @@ namespace demonware
 			info->filename = filename;
 			info->data = data;
 
-#ifdef DW_DEBUG
-			printf("[DW]: [bdStorage]: set user file: %s\n", filename.data());
-#endif
+			console::demonware("[DW]: [bdStorage]: set user file: %s\n", filename.data());
 
 			reply.add(info);
 		}
@@ -228,9 +220,7 @@ namespace demonware
 			info->account_type = platform;
 			info->filename = filename;
 
-#ifdef DW_DEBUG
-			printf("[DW]: [bdStorage]: set user file: %s\n", filename.data());
-#endif
+			console::demonware("[DW]: [bdStorage]: set user file: %s\n", filename.data());
 
 			reply.add(info);
 		}
@@ -283,16 +273,12 @@ namespace demonware
 			if (utils::io::read_file(get_user_file_path(name), &filedata))
 			{
 				entry->filedata = filedata;
-#ifdef DW_DEBUG
-				printf("[DW]: [bdStorage]: get user file: %s\n", name.data());
-#endif
+				console::demonware("[DW]: [bdStorage]: get user file: %s\n", name.data());
 			}
 			else
 			{
 				entry->errorcode = game::BD_NO_FILE;
-#ifdef DW_DEBUG
-				printf("[DW]: [bdStorage]: missing user file: %s\n", name.data());
-#endif
+				console::demonware("[DW]: [bdStorage]: missing user file: %s\n", name.data());
 			}
 
 			reply.add(entry);
