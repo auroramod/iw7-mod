@@ -242,7 +242,7 @@ namespace patches
 			});
 		}
 
-		void request_start_match(game::PartyData* party, bool skip_start_countdown)
+		void request_start_match(game::PartyData* party, bool/* skip_start_countdown*/)
 		{
 			utils::hook::invoke<void>(0x1409D8900, party, true); // PartyHost_RequestStartMatch
 		}
@@ -366,7 +366,7 @@ namespace patches
 			utils::hook::nop(0x140B2215B, 18);
 			utils::hook::jump(0x140B2215B, update_last_seen_players_stub(), true);
 
-			// xpartygo -> just start the match
+			// Start match without the timer
 			utils::hook::jump(0x1409AA7F5, request_start_match);
 
 			// register bot difficulty script dvars
