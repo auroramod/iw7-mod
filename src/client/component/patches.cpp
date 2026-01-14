@@ -5,6 +5,7 @@
 
 #include "game/game.hpp"
 #include "game/dvars.hpp"
+#include "command.hpp"
 
 #include "fastfiles.hpp"
 #include "filesystem.hpp"
@@ -259,6 +260,34 @@ namespace patches
 			
 
 			utils::hook::invoke<void>(0x140CECB30, name, value, superuser);
+		}
+
+		utils::hook::detour cmd_lui_notify_server_hook;
+		void cmd_lui_notify_server_stub(game::gentity_s* ent)
+		{
+			const auto svs_clients = *game::svs_clients;
+			if (svs_clients == nullptr)
+			{
+				return;
+			}
+
+			command::params_sv params{};
+			const auto menu_id = atoi(params.get(1));
+			const auto client = &svs_clients[ent->s.number];
+
+			if (client == nullptr)
+			{
+				return;
+			}
+
+			//// 161 => "end_game"
+			if (menu_id == 161 && client->remoteAddress.type != game::NA_LOOPBACK)
+			{
+				game::SV_DropClient(client, "PLATFORM_STEAM_KICK_CHEAT", true);
+				return;
+			}
+
+			cmd_lui_notify_server_hook.invoke<void>(ent);
 		}
 	}
 

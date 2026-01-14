@@ -256,6 +256,11 @@ namespace server_list
 
 		void lui_open_menu_stub(int controllerIndex, const char* menuName, int isPopup, int isModal, unsigned int isExclusive)
 		{
+			if (!strcmp(menuName, "LobbyMission"))
+			{
+				menuName = "SystemLinkMenu";
+			}
+
 			if (!strcmp(menuName, "SystemLinkMenu"))
 			{
 				refresh_server_list();
