@@ -22,49 +22,73 @@ namespace gameplay
 
 		void stuck_in_client_stub(void* entity)
 		{
-			if (dvars::g_playerEjection->current.enabled)
+			if (dvars::bg_playerEjection->current.enabled)
 			{
 				utils::hook::invoke<void>(0x140AFD9B0, entity);
 			}
 		}
 
-		void* g_bounces_stub()
+		void* bg_bounces_stub()
 		{
 			return utils::hook::assemble([](utils::hook::assembler& a)
 			{
 				const auto no_bounce = a.newLabel();
-				const auto jmp_14070FBF0 = a.newLabel();
-				const auto jmp_14070FB6F = a.newLabel();
+				const auto loc_70FB6F = a.newLabel();
 
 				a.push(rax);
-				a.mov(rax, qword_ptr(reinterpret_cast<int64_t>(&dvars::g_bounces)));
-				a.mov(r11b, byte_ptr(rax, 0x10));
-				a.pop(rax);
 
-				a.cmp(ptr(rbp, -0x66), r11b);
+				a.mov(rax, qword_ptr(reinterpret_cast<int64_t>(&dvars::bg_bounces)));
+				a.mov(al, byte_ptr(rax, 0x10));
+				a.cmp(ptr(rbp, -0x66), al);
+
+				a.pop(rax);
 				a.jz(no_bounce);
-				a.jmp(jmp_14070FBF0);
+				a.jmp(0x14070FBF0);
 
 				a.bind(no_bounce);
 				a.cmp(ptr(rsp, 0x44), r14d);
-				a.jnz(jmp_14070FB6F);
+				a.jnz(loc_70FB6F);
+				a.jmp(0x14070FBE1);
 
-				// force bounce if enabled
-				a.test(r11b, r11b);
-				a.jnz(jmp_14070FB6F);
+				a.bind(loc_70FB6F);
+				a.jmp(0x14070FB6F);
+			});
+		}
+
+		void* force_bounce_stub()
+		{
+			return utils::hook::assemble([](utils::hook::assembler& a)
+			{
+				const auto do_bounce = a.newLabel();
+				const auto no_bounce = a.newLabel();
+
+				// check dvar value
+				a.push(rax);
+				a.mov(rax, qword_ptr(reinterpret_cast<int64_t>(&dvars::bg_bounces)));
+				a.mov(al, byte_ptr(rax, 0x10));
+				a.test(al, al);
+				a.pop(rax);
+				a.jnz(do_bounce);
 
 				// original code
-				a.comiss(xmm0, dword_ptr(0x3E99999A));
-				a.jb(jmp_14070FB6F);
+				a.push(rax);
+				a.mov(rax, 0x14143E5A0);
+				a.comiss(xmm0, dword_ptr(rax));
+				a.pop(rax);
+				a.jb(no_bounce);
 
-				// continue normal flow
-				a.jmp(0x14070FBEA);
+				// go to next instruction
+				a.mov(rax, 0x14070FBEA);
+				a.jmp(rax);
 
-				a.bind(jmp_14070FB6F);
-				a.jmp(0x14070FB6F);
+				// force bounce by forcing jmp
+				a.bind(do_bounce);
+				a.mov(rax, 0x14070FB6F);
+				a.jmp(rax);
 
-				a.bind(jmp_14070FBF0);
-				a.jmp(0x14070FBF0);
+				a.bind(no_bounce);
+				a.mov(rax, 0x14070FB6F);
+				a.jmp(rax);
 			});
 		}
 
@@ -168,12 +192,13 @@ namespace gameplay
 		void post_unpack() override
 		{
 			// Implement ejection dvar
-			dvars::g_playerEjection = game::Dvar_RegisterBool("bg_playerEjection", true, game::DVAR_FLAG_REPLICATED, "Flag whether player ejection is on or off");
+			dvars::bg_playerEjection = game::Dvar_RegisterBool("bg_playerEjection", true, game::DVAR_FLAG_REPLICATED, "Flag whether player ejection is on or off");
 			utils::hook::call(0x140AFA739, stuck_in_client_stub);
 
-			// TODO: Implement bounces dvar without making the game unstable
-			//dvars::g_bounces = game::Dvar_RegisterBool("bg_bounces", false, game::DVAR_FLAG_REPLICATED, "Enables bounces");
-			//utils::hook::jump(0x14070FBB7, g_bounces_stub(), true);
+			// Implement bounces dvar
+			dvars::bg_bounces = game::Dvar_RegisterBool("bg_bounces", false, game::DVAR_FLAG_REPLICATED, "Enables bounces");
+			utils::hook::jump(0x14070FBB7, bg_bounces_stub(), true);
+			utils::hook::jump(0x14070FBE1, force_bounce_stub(), true);
 
 			// Modify gravity dvar
 			dvars::override::register_float("bg_gravity", 800.0f, 1.0f, 1000.0f, 0xC0 | game::DVAR_FLAG_REPLICATED);

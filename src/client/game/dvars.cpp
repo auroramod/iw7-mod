@@ -37,8 +37,8 @@ namespace dvars
 
 	game::dvar_t* r_fullbright = nullptr;
 
-	game::dvar_t* g_bounces = nullptr;
-	game::dvar_t* g_playerEjection = nullptr;
+	game::dvar_t* bg_bounces = nullptr;
+	game::dvar_t* bg_playerEjection = nullptr;
 
 	game::dvar_t* logfile = nullptr;
 	game::dvar_t* g_log = nullptr;

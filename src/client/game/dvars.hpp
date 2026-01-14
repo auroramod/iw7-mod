@@ -34,8 +34,8 @@ namespace dvars
 
 	extern game::dvar_t* r_fullbright;
 
-	extern game::dvar_t* g_bounces;
-	extern game::dvar_t* g_playerEjection;
+	extern game::dvar_t* bg_bounces;
+	extern game::dvar_t* bg_playerEjection;
 
 	extern game::dvar_t* logfile;
 	extern game::dvar_t* g_log;
