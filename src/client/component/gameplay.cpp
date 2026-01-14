@@ -55,26 +55,19 @@ namespace gameplay
 			});
 		}
 
-		int get_gravity()
-		{
-			return static_cast<int>(game::BG_GetGravity());
-		}
-
 		void* bg_gravity_stub()
 		{
 			return utils::hook::assemble([](utils::hook::assembler& a)
 			{
-				// do moveSpeedScaleMultiplier first (xmm0)
-				a.call(0x140BB3030);
-				a.mov(ptr(rdi, 0x32C), eax);
-
-				// get bg_gravity as int
-				a.pushad64();
-				a.push(rdi);
-				a.call_aligned(get_gravity);
-				a.pop(rdi);
+				a.mov(rax, qword_ptr(reinterpret_cast<int64_t>(&*reinterpret_cast<game::dvar_t**>(0x145209290))));
+				a.movss(xmm6, dword_ptr(rax, 0x10));
+				a.cvtss2si(eax, xmm6);
 				a.mov(dword_ptr(rdi, 0x78), eax);
-				a.popad64();
+
+				a.mov(rcx, rsi);
+				a.mov(r8d, 0xC);
+				a.call(0x140BB3030);
+				a.mov(dword_ptr(rdi, 0x32C), eax);
 
 				a.jmp(0x140AFA342);
 			});
@@ -171,10 +164,8 @@ namespace gameplay
 
 			// Modify gravity dvar
 			dvars::override::register_float("bg_gravity", 800.0f, 1.0f, 1000.0f, 0xC0 | game::DVAR_FLAG_REPLICATED);
-			/*
-			utils::hook::nop(0x140AFA337, 18);
-			utils::hook::jump(0x140AFA337, bg_gravity_stub(), true);
-			*/
+			utils::hook::nop(0x140AFA330, 18);
+			utils::hook::jump(0x140AFA330, bg_gravity_stub(), true);
 
 			// Modify speed dvar
 			dvars::override::register_int("g_speed", 190, 0x80000000, 0x7FFFFFFF, 0xC0 | game::DVAR_FLAG_REPLICATED);
