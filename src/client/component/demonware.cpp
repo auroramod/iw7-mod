@@ -4,6 +4,7 @@
 #include <utils/hook.hpp>
 #include <utils/thread.hpp>
 
+#include "console/console.hpp"
 #include "dvars.hpp"
 
 #include "game/game.hpp"
@@ -121,9 +122,7 @@ namespace demonware
 			int getaddrinfo_stub(const char* name, const char* service,
 				const addrinfo* hints, addrinfo** res)
 			{
-#ifdef DW_DEBUG
-				printf("[ network ]: [getaddrinfo]: \"%s\" \"%s\"\n", name, service);
-#endif
+				console::demonware("[ network ]: [getaddrinfo]: \"%s\" \"%s\"\n", name, service);
 
 				base_server* server = tcp_servers.find(name);
 				if (!server)
@@ -204,9 +203,7 @@ namespace demonware
 
 			hostent* gethostbyname_stub(const char* name)
 			{
-#ifdef DW_DEBUG
-				printf("[ network ]: [gethostbyname]: \"%s\"\n", name);
-#endif
+				console::demonware("[ network ]: [gethostbyname]: \"%s\"\n", name);
 
 				base_server* server = tcp_servers.find(name);
 				if (!server)
@@ -427,7 +424,6 @@ namespace demonware
 			}
 		}
 
-#ifdef DW_DEBUG
 		void bd_logger_stub(int /*type*/, const char* const /*channelName*/, const char* /*fileLoc*/, const char* const /*file*/,
 			const char* const function, const unsigned int /*line*/, const char* const msg, ...)
 		{
@@ -438,11 +434,10 @@ namespace demonware
 
 			vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, msg, ap);
 
-			printf("%s: %s\n", function, buffer);
+			console::demonware("%s: %s\n", function, buffer);
 
 			va_end(ap);
 		}
-#endif
 	}
 
 	class component final : public component_interface
@@ -500,9 +495,7 @@ namespace demonware
 
 		void post_unpack() override
 		{
-#ifdef DW_DEBUG
 			utils::hook::jump(0x141285040, bd_logger_stub, true);
-#endif
 
 			utils::hook::set<uint8_t>(0x14B5BB96F, 0x0);  // CURLOPT_SSL_VERIFYPEER
 			utils::hook::set<uint8_t>(0x14B7C6CB1, 0xAF); // CURLOPT_SSL_VERIFYHOST

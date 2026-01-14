@@ -386,7 +386,7 @@ namespace updater
 		
 		void run_update()
 		{
-			console::redudant("[Updater] Checking for updates...");
+			console::redudant("[Updater] Checking for updates... (this may take a few seconds)");
 
 			const auto file_list = get_file_list();
 			if (file_list.empty())
@@ -428,6 +428,7 @@ namespace updater
 
 			if (download_threads.size() == 0)
 			{
+				console::redudant("[Updater] Update check complete");
 				return;
 			}
 

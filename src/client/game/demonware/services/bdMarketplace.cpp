@@ -3,9 +3,12 @@
 
 #include "game/game.hpp"
 
+#include "component/console/console.hpp"
+
 #include "steam/steam.hpp"
 
 #include "utils/json.hpp"
+#include <utils/flags.hpp>
 
 namespace demonware
 {
@@ -374,9 +377,7 @@ namespace demonware
 			loot::set_item_balance(loot.id, nextBalance);
 			currency += loot.salvageReturned;
 
-#ifdef DW_DEBUG
-			printf("[DW]: pawning %d for %d salvage\n", loot.id, loot.salvageReturned);
-#endif
+			console::demonware("[DW]: pawning %d for %d salvage\n", loot.id, loot.salvageReturned);
 		}
 		loot::set_currency_balance(loot::CurrencyType::salvage, currency);
 		loot::save();

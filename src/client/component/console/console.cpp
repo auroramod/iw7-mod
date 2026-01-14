@@ -134,6 +134,13 @@ namespace console
 
 	void print(const int type, const char* fmt, ...)
 	{
+		if (type == console::print_type_demonware)
+		{
+			static bool has_demonware_debug = utils::flags::has_flag("demonware_debug");
+			if (!has_demonware_debug)
+				return;
+		}
+
 		va_list ap;
 		va_start(ap, fmt);
 		const auto result = format(&ap, fmt);
