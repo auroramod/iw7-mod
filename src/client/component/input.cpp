@@ -226,7 +226,7 @@ namespace input
 			cl_char_event_hook.create(0x1409A7350, cl_char_event_stub);
 			cl_key_event_hook.create(0x1409A7980, cl_key_event_stub);
 #ifdef _DEBUG
-			cl_mouse_move_hook.create(0x140615A50, cl_mouse_move_stub);
+			//cl_mouse_move_hook.create(0x140615A50, cl_mouse_move_stub);
 #endif
 
 			custom_binds.push_back("+actionslot 8");

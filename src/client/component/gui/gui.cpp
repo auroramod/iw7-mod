@@ -311,6 +311,9 @@ namespace gui
 
 	bool gui_key_event(const int local_client_num, const int key, const int down)
 	{
+		return true;
+
+		/*
 		if (key == game::K_F11 && down)
 		{
 			toggle();
@@ -324,16 +327,17 @@ namespace gui
 		}
 
 		return !toggled;
+		*/
 	}
 
 	bool gui_char_event(const int local_client_num, const int key)
 	{
-		return !toggled;
+		return true; // !toggled;
 	}
 
 	bool gui_mouse_event(const int local_client_num, int x, int y)
 	{
-		return !toggled;
+		return true; // !toggled;
 	}
 
 	void on_frame(const std::function<void()>& callback, bool always)
