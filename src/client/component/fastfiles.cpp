@@ -199,9 +199,7 @@ namespace fastfiles
 
 			add_zone("iw7mod_global_mp", game::DB_ZONE_GLOBAL_TIER1 | game::DB_ZONE_CUSTOM, 1);
 
-			// TODO: custom fastfiles' shaders seem to not sit well with Linux Proton, which uses DXVK
-			// DXVK seems fine on Windows doing this, so probably just weirdness
-			if (!game::environment::is_dedi() && !utils::nt::is_wine())
+			if (!game::environment::is_dedi())
 			{
 				add_zone("iw7mod_ui_mp", game::DB_ZONE_UI | game::DB_ZONE_CUSTOM, 0);
 			}
