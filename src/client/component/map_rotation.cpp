@@ -24,6 +24,7 @@ namespace map_rotation
 
 		void set_gametype(const std::string& gametype)
 		{
+			set_dvar("ui_gametype", gametype);
 			set_dvar("g_gametype", gametype);
 		}
 
