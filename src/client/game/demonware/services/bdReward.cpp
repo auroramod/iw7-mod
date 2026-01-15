@@ -10,7 +10,7 @@
 
 #include "../loot/loot.hpp"
 
-#define VERIFY_CRATE_AMOUNT
+#define TRUE_KEY_AMOUNT(num) num * 100
 
 namespace demonware
 {
@@ -54,6 +54,8 @@ namespace demonware
 
 		std::string json_buffer;
 
+		static bool has_passed_dud_daily_login = false; // daily login calls twice, and the first one means nothing
+
 		buffer->read_string(&platform);
 		buffer->read_uint16(&numEvents);
 		buffer->read_int32(&rewardEventType); // none 0, json 1
@@ -90,24 +92,55 @@ namespace demonware
 		const auto action = json["Action"].get<std::string>();
 		if (action == "DailyLogin")
 		{
-			console::demonware("[DW]: daily login requested...\n");
+			if (!has_passed_dud_daily_login)
+			{
+				console::redudant("[%s] ignoring first call of DailyLogin", __func__);
+				has_passed_dud_daily_login = true;
+				server->create_reply(this->task_id(), BD_NO_ERROR).send();
+				return;
+			}
+
+			console::important("[%s] handling daily login rewards\n", __func__);
 
 			nlohmann::json json_reply;
 			json_reply["Action"] = "DailyLoginResponse";
 
-			json_reply["LoginDayCountSP"] = -1;
-			json_reply["FirstTimeTodaySP"] = false;
-			json_reply["LoginDayCount"] = 1;
-			json_reply["FirstTimeToday"] = false;
+			auto is_new_day = loot::is_new_day();
+			const auto days_logged_in = loot::get_days_logged_in();
+			const auto login_day_count = days_logged_in + (is_new_day ? 1 : 0);
+			if (is_new_day)
+				loot::set_days_logged_in(login_day_count);
+
+			json_reply["LoginDayCount"] = login_day_count;
+			json_reply["FirstTimeToday"] = is_new_day;
+			json_reply["LoginDayCountSP"] = login_day_count;
+			json_reply["FirstTimeTodaySP"] = is_new_day;
 
 			// Packs
 			json_reply["BasicPacks"] = nlohmann::json::value_type::array();
+
+			// this lets you give currency for the daily login
 			json_reply["BasicPacks"][0]["Currencies"] = nlohmann::json::value_type::object();
-			json_reply["BasicPacks"][0]["Currencies"]["11"] = 0;
-			json_reply["BasicPacks"][0]["Currencies"]["12"] = 0;
-			json_reply["BasicPacks"][0]["Currencies"]["20"] = 0;
+
+			// give the plyer 60 keys daily for logins
+			if (is_new_day)
+			{
+				json_reply["BasicPacks"][0]["Currencies"]["11"] = TRUE_KEY_AMOUNT(60);
+
+				auto current_keys = loot::get_currency_balance(loot::CurrencyType::keys);
+				loot::set_currency_balance( loot::CurrencyType::keys, current_keys + (TRUE_KEY_AMOUNT(60)) );
+				loot::save(); // save because we read it a few lines down
+			}
+			else
+				json_reply["BasicPacks"][0]["Currencies"]["11"] = 0;
+
+			json_reply["BasicPacks"][0]["Currencies"]["12"] = 0; // salvage
+			json_reply["BasicPacks"][0]["Currencies"]["20"] = 0; // codpoints
+
+			// ?
 			json_reply["BasicPacks"][0]["Items"] = nlohmann::json::value_type::array();
 			json_reply["BasicPacks"][0]["Id"] = 200018;
+
 			json_reply["SeasonPassPacks"] = nlohmann::json::value_type::array();
 
 			// Extra Items
@@ -116,10 +149,10 @@ namespace demonware
 			// Items
 			json_reply["Items"] = nlohmann::json::value_type::array();
 
-			// mp/loot/iw7_loot_crate_loot_master.csv
-			json_reply["Items"][0]["ItemId"] = 70005; // ZombieRareCardPack
+			// mp/loot/iw7_loot_crate_loot_master.csv (TODO: check this out again)
+			json_reply["Items"][0]["ItemId"] = loot::LootBoxType::LOOT_COMMON_CRATE;
 			json_reply["Items"][0]["Collision"] = 0; // not sure what this does
-			json_reply["Items"][0]["Balance"] = loot::get_item_balance(70005);
+			json_reply["Items"][0]["Balance"] = loot::get_item_balance(loot::LootBoxType::LOOT_COMMON_CRATE);
 
 			// Currencies
 			json_reply["Currencies"] = nlohmann::json::value_type::array();
@@ -138,12 +171,12 @@ namespace demonware
 
 			json_reply["ClientTx"] = json["ClientTx"];
 
+			loot::save();
+
 			send(json_reply);
 		}
 		else if (action == "ClaimLootCrates")
 		{
-			console::demonware("[DW]: supply drop open requested...\n");
-
 			nlohmann::json json_reply;
 			json_reply["Action"] = "ClaimLootCratesResponse";
 
@@ -156,23 +189,22 @@ namespace demonware
 			const auto rule_id = json["RuleId"].is_number_integer() ? json["RuleId"].get<int>() : 0;
 			const auto crate_id = 70000 + rule_id;
 
+			console::demonware("\n[DW]: supply drop open requested (crate id = %d)\n", crate_id);
+
 			int itemidx = 0;
 
 			auto crate_balance = loot::get_item_balance(crate_id);
-#ifdef VERIFY_CRATE_AMOUNT
+			console::demonware("[DW]: crate balance is %d for %d\n", crate_balance, crate_id);
+
 			if (!crate_balance)
 			{
+				console::error("[%s] ClaimLootCrates: crate_balance is 0\n", __func__);
 				server->create_reply(this->task_id(), BD_MARKETPLACE_INSUFFICIENT_ITEM_QUANTITY).send();
 				return;
 			}
-#else
-			if (!crate_balance)
-			{
-				crate_balance = 1;
-			}
-#endif
 
 			const auto new_crate_balance = crate_balance - 1;
+			console::demonware("[DW]: new crate balance is %d for %d\n", crate_balance, crate_id);
 
 			json_reply["Items"][itemidx]["ItemId"] = crate_id;
 			json_reply["Items"][itemidx]["Collision"] = 0; // not sure what this does
@@ -196,10 +228,12 @@ namespace demonware
 				json_reply["Items"][i + itemidx]["Collision"] = 0;
 				json_reply["Items"][i + itemidx]["Balance"] = balance;
 
-				console::demonware("[DW]: loot %d\n", item_id);
+				console::demonware("[DW]: + giving loot %d for %d\n", item_id, i);
 			}
 
 			loot::save();
+
+			console::demonware("[DW]: saving loot\n\n");
 
 			json_reply["Error"] = "";
 			json_reply["ClientTx"] = json["ClientTx"];
@@ -210,7 +244,7 @@ namespace demonware
 		{
 			console::demonware("[DW]: mission start requested...\n");
 
-			printf("%s\n", json_buffer.data());
+			console::demonware("%s\n", json_buffer.data());
 
 			[[maybe_unused]] const auto match_id = json["MatchId"].get<int>(); // always 0
 			[[maybe_unused]] const auto mission_id = json["MissionId"].get<int>();
@@ -222,13 +256,13 @@ namespace demonware
 			json_reply["MissionInstanceId"] = mission_instanced_id_cache++;
 
 			send(json_reply);
-			printf("%s\n", json_reply.dump().data());
+			console::demonware("%s\n", json_reply.dump().data());
 		}
 		else if (action == "StartMissionSet")
 		{
 			console::demonware("[DW]: mission set start requested...\n");
 
-			printf("%s\n", json_buffer.data());
+			console::demonware("%s\n", json_buffer.data());
 
 			const auto mission_set_id = json["MissionSetId"].get<unsigned int>();
 
@@ -239,7 +273,7 @@ namespace demonware
 			json_reply["MissionSetInstanceId"] = mission_set_instanced_id_cache++;
 
 			send(json_reply);
-			printf("%s\n", json_reply.dump().data());
+			console::demonware("%s\n", json_reply.dump().data());
 		}
 		else if (action == "EndMission")
 		{

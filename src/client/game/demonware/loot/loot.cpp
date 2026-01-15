@@ -579,9 +579,13 @@ namespace demonware
 
 			json_buffer = {};
 
-			set_currency_balance(CurrencyType::keys, 9999999);
-			set_currency_balance(CurrencyType::salvage, 9999);
-			set_currency_balance(CurrencyType::codpoints, 99999);
+			set_currency_balance(CurrencyType::keys, 0);
+			set_currency_balance(CurrencyType::salvage, 0);
+			set_currency_balance(CurrencyType::codpoints, 0);
+
+			json_put(json_buffer["DailyLogin"]["DaysLoggedIn"], 0);
+			json_put(json_buffer["DailyLogin"]["LastDateClaimed"], -1);
+
 			save_json_data();
 		}
 
@@ -605,6 +609,53 @@ namespace demonware
 		{
 			read_json_data();
 			return json_read<std::uint32_t>(json_buffer["Currency"][std::to_string(currency_id)]["Balance"]);
+		}
+
+		// daily login
+		bool is_new_day()
+		{
+			read_json_data();
+
+			const int64_t last_date_claimed = json_read<int64_t>(json_buffer["DailyLogin"]["LastDateClaimed"]);
+
+			// this may happen if the last date claimed doesn't exist yet
+			if (last_date_claimed == -1)
+				return true;
+
+			// check if its been a new day since the last claim
+			std::time_t now_time = std::time(nullptr);
+			std::time_t last_time = static_cast<std::time_t>(last_date_claimed);
+
+			std::tm now_tm{};
+			std::tm last_tm{};
+
+#if defined(_WIN32)
+			localtime_s(&now_tm, &now_time);
+			localtime_s(&last_tm, &last_time);
+#else
+			localtime_r(&now_time, &now_tm);
+			localtime_r(&last_time, &last_tm);
+#endif
+
+			return (now_tm.tm_year != last_tm.tm_year) ||
+				(now_tm.tm_yday != last_tm.tm_yday);
+		}
+
+		int get_days_logged_in()
+		{
+			read_json_data();
+			return json_read<int>(json_buffer["DailyLogin"]["DaysLoggedIn"]);
+		}
+
+		void set_days_logged_in(const std::int32_t new_days)
+		{
+			const int64_t now =
+				std::chrono::duration_cast<std::chrono::seconds>(
+					std::chrono::system_clock::now().time_since_epoch()
+				).count();
+
+			json_put(json_buffer["DailyLogin"]["DaysLoggedIn"], new_days);
+			json_put(json_buffer["DailyLogin"]["LastDateClaimed"], now);
 		}
 
 		void save()
