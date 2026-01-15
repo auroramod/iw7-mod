@@ -1,11 +1,10 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
 
-#include "console/console.hpp"
-
 #include "game/game.hpp"
 #include "game/dvars.hpp"
 #include "command.hpp"
+#include "console/console.hpp"
 
 #include "fastfiles.hpp"
 #include "filesystem.hpp"
@@ -284,6 +283,31 @@ namespace patches
 
 			cmd_lui_notify_server_hook.invoke<void>(ent);
 		}
+
+		constexpr auto high_byte(std::uint32_t l) 
+		{ 
+			return static_cast<std::uint8_t>((static_cast<std::uintptr_t>(l) >> 24) & 0xFFFFFF);
+		}
+
+		// Stop Server Crash from CL_NetChan_Transmit
+		utils::hook::detour msg_readlong_hook;
+		__int64 msg_readlong_stub(game::msg_t* msg)
+		{
+			if ((void*)_ReturnAddress() == (void*)0x140C59438)
+			{
+				auto reliable_acknowledge = msg_readlong_hook.invoke<__int64>(msg);
+				if (high_byte(reliable_acknowledge) > 0x7F)
+				{
+					return 0;
+				}
+				else
+				{
+					return reliable_acknowledge;
+				}
+			}
+
+			return msg_readlong_hook.invoke<__int64>(msg);
+		}
 	}
 
 	class component final : public component_interface
@@ -291,6 +315,8 @@ namespace patches
 	public:
 		void post_unpack() override
 		{
+			msg_readlong_hook.create(0x140BB37D0, msg_readlong_stub);
+
 			// register custom dvars
 			com_register_common_dvars_hook.create(0x140BADF30, com_register_common_dvars_stub);
 
