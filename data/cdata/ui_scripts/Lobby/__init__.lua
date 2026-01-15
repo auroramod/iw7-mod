@@ -55,6 +55,8 @@ require("GameSetupButtonsBots")
 -- Fix issue with LobbyMission being rendered when error message is shown
 local orig_HandleErrors = LUI.UIRoot.HandleErrors
 LUI.UIRoot.HandleErrors = function(f16_arg0)
-    LUI.FlowManager.RequestLeaveMenuByName("LobbyMission", true)
     orig_HandleErrors(f16_arg0)
+    if LUI.FlowManager.IsInStack("error_popmenu") then
+        LUI.FlowManager.RequestLeaveMenuByName("LobbyMission", true)
+    end
 end
