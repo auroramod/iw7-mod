@@ -4,7 +4,6 @@
 #include "game/game.hpp"
 #include "game/dvars.hpp"
 #include "command.hpp"
-#include "console/console.hpp"
 
 #include "fastfiles.hpp"
 #include "filesystem.hpp"
