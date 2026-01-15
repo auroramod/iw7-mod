@@ -283,26 +283,26 @@ namespace patches
 			cmd_lui_notify_server_hook.invoke<void>(ent);
 		}
 
-		constexpr auto high_byte(std::uint32_t l) 
-		{ 
-			return static_cast<std::uint8_t>((static_cast<std::uintptr_t>(l) >> 24) & 0xFFFFFF);
+		constexpr auto high_byte(std::uint64_t l)
+		{
+			return static_cast<std::uint8_t>((l >> 24) & 0xFF);
 		}
 
 		// Stop Server Crash from CL_NetChan_Transmit
 		utils::hook::detour msg_readlong_hook;
 		__int64 msg_readlong_stub(game::msg_t* msg)
 		{
-			if ((void*)_ReturnAddress() == (void*)0x140C59438)
+			void* retAddr = (void*)_ReturnAddress();
+
+			if (retAddr == (void*)0x140C59438)
 			{
-				long long reliable_acknowledge = msg_readlong_hook.invoke<__int64>(msg);
-				if (high_byte(reliable_acknowledge) > 0x7F)
+				__int64 reliable_acknowledge = msg_readlong_hook.invoke<__int64>(msg);
+
+				if (high_byte(static_cast<std::uint64_t>(reliable_acknowledge)) > 0x7F)
 				{
 					return 0;
 				}
-				else
-				{
-					return reliable_acknowledge;
-				}
+				return reliable_acknowledge;
 			}
 
 			return msg_readlong_hook.invoke<__int64>(msg);
