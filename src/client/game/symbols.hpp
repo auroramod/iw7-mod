@@ -188,6 +188,7 @@ namespace game
 
 	WEAK symbol<void(netadr_s*, sockaddr*)> NetadrToSockadr{ 0x140CE6B90 };
 	WEAK symbol<void(netsrc_t, netadr_s*, const char*)> NET_OutOfBandPrint{ 0x140BB4EE0 };
+	WEAK symbol<void(netsrc_t, netadr_s*, char*, int)> NET_OutOfBandData{ 0x140BB4E00 };
 	WEAK symbol<void(netsrc_t sock, int length, const void* data, const netadr_s* to)> NET_SendLoopPacket{ 0x140BB50A0 };
 	WEAK symbol<bool(const char* s, netadr_s* a)> NET_StringToAdr{ 0x140BB5180 };
 	WEAK symbol<int(netadr_s a, netadr_s b)> NET_CompareAdr{ 0x140BB49B0 };
@@ -332,6 +333,11 @@ namespace game
 	WEAK symbol<bool(const int zoneIndex)> DB_Zones_IsValidZoneIndex{0x1403BC730};
 	
 	WEAK symbol<DB_AssetEntry*(void* this_, const char* name, XAssetType type)> DB_AssetEntryTable_FindAsset{0x1403B57F0};
+	WEAK symbol<void(msg_t* msg, char* data, std::int32_t length)> MSG_Init{ 0x140BB2F60 };
+	WEAK symbol<void(msg_t* msg, std::string data)> MSG_WriteString{ 0x140BB4620 };
+	WEAK symbol<void(msg_t* msg, const void* data, std::int32_t length)> MSG_WriteData{ 0x140BB4340 };
+	WEAK symbol<void(msg_t* msg, std::int32_t data)> MSG_WriteByte{ 0x140BB4320 };
+	WEAK symbol<void(msg_t* msg, std::uint64_t data)> MSG_WriteInt64{ 0x140BB4570 };
 
 	/***************************************************************
 	 * Variables
