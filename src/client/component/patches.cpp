@@ -294,7 +294,7 @@ namespace patches
 		{
 			if ((void*)_ReturnAddress() == (void*)0x140C59438)
 			{
-				auto reliable_acknowledge = msg_readlong_hook.invoke<__int64>(msg);
+				long long reliable_acknowledge = msg_readlong_hook.invoke<__int64>(msg);
 				if (high_byte(reliable_acknowledge) > 0x7F)
 				{
 					return 0;
