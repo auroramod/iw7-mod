@@ -14,6 +14,10 @@ IW7-Mod is a client for Call of Duty®: Infinite Warfare that adds dedicated ser
   <img src="assets/github/banner.png?raw=true" width="500" height="500" />
 </p>
 
+## Download
+
+To download IW7-Mod, [read our Installing IW7-Mod guide](https://docs.auroramod.dev/iw7-install) to help you.
+
 ## Compile from source code
 
 - Clone the Git repo via [Git](https://git-scm.com/install/windows) or [GitHub Desktop](https://desktop.github.com/download/). **DO NOT download it as ZIP** as it will not work.
