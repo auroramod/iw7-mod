@@ -98,8 +98,22 @@ namespace discord
 
 		void update_discord_ingame()
 		{
-			static const auto mapname_dvar = game::Dvar_FindVar("ui_mapname");
-			const auto* mapname = mapname_dvar->current.string;
+			static const game::dvar_t* mapname_dvar = nullptr;
+			static const game::dvar_t* gametype_dvar = nullptr;
+			static const game::dvar_t* max_clients_dvar = nullptr;
+
+			if (!mapname_dvar) mapname_dvar = game::Dvar_FindVar("ui_mapname");
+			if (!gametype_dvar) gametype_dvar = game::Dvar_FindVar("ui_gametype");
+			if (!max_clients_dvar) max_clients_dvar = game::Dvar_FindVar("ui_maxclients");
+
+			static std::string mapname_str = "mp_frontend";
+			const char* mapname = mapname_str.c_str();
+
+			if (mapname_dvar && strcmp(mapname, mapname_dvar->current.string) == 0)
+			{
+				mapname_str = utils::string::copy(mapname_dvar->current.string, std::strlen(mapname_dvar->current.string));
+				mapname = mapname_str.c_str();
+			}
 
 			discord_strings.large_image_key = mapname;
 
@@ -107,10 +121,7 @@ namespace discord
 
 			if (mode == game::GAME_MODE_CP || mode == game::GAME_MODE_MP)
 			{
-				static const auto* gametype_dvar = game::Dvar_FindVar("ui_gametype");
-				static const auto* max_clients_dvar = game::Dvar_FindVar("ui_maxclients");
-
-				const auto* gametype_ui = game::UI_GetGameTypeDisplayName(gametype_dvar->current.string);
+				const auto* gametype_ui = game::UI_GetGameTypeDisplayName(gametype_dvar != nullptr ? gametype_dvar->current.string : "");
 				const auto* mapname_ui = game::UI_GetMapDisplayName(mapname);
 
 				discord_strings.details = std::format("{} on {}", gametype_ui, mapname_ui);

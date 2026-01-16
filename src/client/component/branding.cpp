@@ -7,7 +7,8 @@
 
 #include "game/game.hpp"
 #include "game/dvars.hpp"
-#include "utils/hook.hpp"
+
+#include <utils/hook.hpp>
 #include <utils/string.hpp>
 
 namespace branding
@@ -17,8 +18,15 @@ namespace branding
 		utils::hook::detour ui_get_formatted_build_number_hook;
 		const char* ui_get_formatted_build_number_stub()
 		{
-			const auto build_num = ui_get_formatted_build_number_hook.invoke<const char*>();
-			return utils::string::va("%s (%s)", VERSION, build_num);
+			static std::array<char, 0x100> buf {};
+			static bool once = ([]()
+			{
+				const char* build_num = ui_get_formatted_build_number_hook.invoke<const char*>();
+				utils::string::copy(buf, utils::string::va("%s (%s)", VERSION, build_num));
+				return true;
+			})();
+
+			return buf.data();
 		}
 	}
 

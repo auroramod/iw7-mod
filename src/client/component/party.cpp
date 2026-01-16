@@ -383,10 +383,16 @@ namespace party
 		void start_map_for_party(std::string map_name)
 		{
 			[[maybe_unused]] auto* mapname = game::Dvar_FindVar("ui_mapname");
-			auto* gametype = game::Dvar_FindVar("ui_gametype");
-			auto* clients = game::Dvar_FindVar("ui_maxclients");
-			auto* private_clients = game::Dvar_FindVar("ui_privateClients");
-			auto* hardcore = game::Dvar_FindVar("ui_hardcore");
+			auto* ui_gametype = game::Dvar_FindVar("ui_gametype");
+			auto* ui_maxclients = game::Dvar_FindVar("ui_maxclients");
+			auto* ui_privateClients = game::Dvar_FindVar("ui_privateClients");
+			auto* ui_hardcore = game::Dvar_FindVar("ui_hardcore");
+
+			if (!ui_gametype)
+			{
+				console::error("Failed to start map for party. ui_gametype was undefined");
+				return;
+			}
 
 			if (game::Com_FrontEnd_IsInFrontEnd())
 			{
@@ -396,10 +402,10 @@ namespace party
 
 			game::SV_CmdsMP_StartMapForParty(
 				map_name.data(),
-				gametype->current.string,
-				clients->current.integer,
-				private_clients->current.integer,
-				hardcore->current.enabled,
+				ui_gametype->current.string,
+				ui_maxclients != nullptr ? ui_maxclients->current.integer : 18,
+				ui_privateClients != nullptr ? ui_privateClients->current.integer : 0,
+				ui_hardcore != nullptr ? ui_hardcore->current.integer : 0,
 				false,
 				false);
 		}
@@ -590,14 +596,13 @@ namespace party
 
 		command::execute(utils::string::va("seta ui_mapname %s", mapname.data()), true);
 
-		auto* gametype = game::Dvar_FindVar("g_gametype");
-		if (gametype && gametype->current.string && gametype->current.string != "frontend"s)
+		if (auto* gametype = game::Dvar_FindVar("g_gametype");
+		    gametype && gametype->current.string && gametype->current.string != "frontend"s)
 		{
 			command::execute(utils::string::va("seta ui_gametype %s", gametype->current.string), true);
 		}
 
-		auto* hardcore = game::Dvar_FindVar("g_hardcore");
-		if (hardcore)
+		if (auto* hardcore = game::Dvar_FindVar("g_hardcore"); hardcore)
 		{
 			command::execute(utils::string::va("seta ui_hardcore %d", hardcore->current.enabled), true);
 		}

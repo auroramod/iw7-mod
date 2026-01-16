@@ -72,7 +72,8 @@ namespace patches
 
 		const char* live_get_local_client_name()
 		{
-			return game::Dvar_FindVar("name")->current.string;
+			static const auto* name = game::Dvar_FindVar("name");
+			return name != nullptr ? name->current.string : "Unknown Soldier";
 		}
 
 		std::vector<std::string> dvar_save_variables;
