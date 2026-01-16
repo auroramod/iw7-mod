@@ -249,4 +249,33 @@ namespace utils::string
 
 		return *b_ == '\0';
 	}
+
+	void copy(char* dest, const size_t max_size, const char* src)
+	{
+		if (!max_size)
+		{
+			return;
+		}
+
+		for (size_t i = 0;; ++i)
+		{
+			if (i + 1 == max_size)
+			{
+				dest[i] = 0;
+				break;
+			}
+
+			dest[i] = src[i];
+
+			if (!src[i])
+			{
+				break;
+			}
+		}
+	}
+
+	std::string copy(const char* src, size_t length)
+	{
+		return std::string(src, length);
+	}
 }

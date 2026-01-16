@@ -106,4 +106,19 @@ namespace utils::string
 
 	bool find_lower(const std::string& a, const std::string& b);
 	bool strstr_lower(const char* a, const char* b);
+
+	void copy(char* dest, size_t max_size, const char* src);
+	std::string copy(const char* src, size_t length);
+
+    template <size_t Size>
+    void copy(char (&dest)[Size], const char* src)
+    {
+        copy(dest, Size, src);
+    }
+
+    template <size_t Size>
+    void copy(std::array<char, Size>& dest, const char* src)
+    {
+        copy(dest.data(), dest.size(), src);
+    }
 }
