@@ -125,7 +125,7 @@ namespace demonware
 			// give the plyer 60 keys daily for logins
 			if (is_new_day)
 			{
-				json_reply["BasicPacks"][0]["Currencies"]["11"] = TRUE_KEY_AMOUNT(60 + (login_day_count * 3));
+				json_reply["BasicPacks"][0]["Currencies"]["11"] = TRUE_KEY_AMOUNT(60);
 
 				auto current_keys = loot::get_currency_balance(loot::CurrencyType::keys);
 				loot::set_currency_balance( loot::CurrencyType::keys, current_keys + (TRUE_KEY_AMOUNT(60)) );
