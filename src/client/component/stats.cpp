@@ -378,6 +378,8 @@ namespace stats
 
 			// GetPlayerData print
 			utils::hook::jump(0x140B84F00, com_ddl_print_state); // Com_DDL_PrintState
+
+			utils::hook::set<byte>(0x140B86230, 0xEB); // Allow setting stats with connstate > 9
 		}
 	};
 }
