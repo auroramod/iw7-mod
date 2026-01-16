@@ -178,6 +178,37 @@ namespace logprint
 			return scr_player_killed_hook.invoke<void>(self, inflictor, attacker, damage, damageFlags, 
 				meansOfDeath, weapon, isAlternate, vDir, hitLoc, timeOffset, deathAnimDuration);
 		}
+
+		std::string format(va_list* ap, const char* message)
+		{
+			static thread_local char buffer[0x400];
+			const auto count = vsnprintf_s(buffer, _TRUNCATE, message, *ap);
+			if (count < 0) return {};
+			return {buffer, static_cast<size_t>(count)};
+		}
+
+		utils::hook::detour dlog_record_event_hook;
+		template <typename... Args>
+		int invoke_dlog_record_event(int type, const char *event, const char* fmt, Args&&... args)
+		{
+			return dlog_record_event_hook.invoke<int>(type, event, fmt, std::forward<Args>(args)...);
+		}
+
+		int dlog_record_event_stub(int type, const char *event, const char *fmt, ...)
+		{
+			va_list ap;
+			va_start(ap, fmt);
+			const auto result = format(&ap, fmt);
+			va_end(ap);
+			
+			if(dvars::dlog_enabled && dvars::dlog_enabled->current.enabled)
+			{
+				std::string msg = std::format("[DLOG] {}", result.data());
+				console::debug("%s\n", msg.c_str());
+			}
+
+			return invoke_dlog_record_event(type, event, "%s", result.data());
+		}
 	}
 
 	class component final : public component_interface
@@ -204,6 +235,7 @@ namespace logprint
 			scheduler::once([]()
 			{
 				dvars::logfile = game::Dvar_RegisterBool("logfile", true, game::DVAR_FLAG_NONE, "Enable game logging");
+				dvars::dlog_enabled = game::Dvar_RegisterBool("dlog_enabled", false, game::DVAR_FLAG_NONE, "Enable DLOG");
 				dvars::g_log = game::Dvar_RegisterString("g_log", "iw7-mod\\logs\\games_mp.log", game::DVAR_FLAG_NONE, "Log file path");
 			}, scheduler::pipeline::main);
 
@@ -216,6 +248,8 @@ namespace logprint
 			// Hook player damage and player death so we can logprint them
 			scr_player_damage_hook.create(0x140B5E7D0, scr_player_damage_stub);
 			scr_player_killed_hook.create(0x140B5E9E0, scr_player_killed_stub);
+
+			dlog_record_event_hook.create(0x140CD2E60, dlog_record_event_stub);
 		}
 	};
 }

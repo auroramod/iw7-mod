@@ -39,6 +39,7 @@ namespace dvars
 
 	extern game::dvar_t* logfile;
 	extern game::dvar_t* g_log;
+	extern game::dvar_t* dlog_enabled;
 
 	extern game::dvar_t* jump_enableFallDamage;
 
