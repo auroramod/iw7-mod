@@ -19,7 +19,7 @@ local set_matchmaking_dvars = function()
 	Engine.Exec("mming_minplayers_to_lobby 1")
 	Engine.Exec("scr_default_maxagents 24")
 	Engine.Exec("pt_migrateBeforeAdvertise 0")
-	Engine.Exec("party_minplayers 3")
+	Engine.Exec("party_minplayers 1") -- we are the only player
 end
 
 local MatchSimulator = {}
@@ -33,14 +33,15 @@ local LobbyMissionButtons = function(menu, controller)
 	local self = LUI.UIVerticalNavigator.new()
 	self:SetAnchorsAndPosition(0, 1, 0, 1, 0, 600 * _1080p, 0, 643 * _1080p)
 	self.id = "LobbyMissionButtons"
-	local f2_local1 = controller and controller.controllerIndex
-	if not f2_local1 and not Engine.InFrontend() then
-		f2_local1 = self:getRootController()
+
+	local controller_index = controller and controller.controllerIndex
+	if not controller_index and not Engine.InFrontend() then
+		controller_index = self:getRootController()
 	end
-	assert(f2_local1)
+	assert(controller_index)
 
 	local LobbyMissionVerticalLayout = MenuBuilder.BuildRegisteredType("LobbyMissionVerticalLayout", {
-		controllerIndex = f2_local1,
+		controllerIndex = controller_index,
 	})
 	LobbyMissionVerticalLayout.id = "LobbyMissionVerticalLayout"
 	LobbyMissionVerticalLayout:SetAnchorsAndPosition(0, 1, 0, 1, 0, _1080p * 600, 0, _1080p * 564)
@@ -48,7 +49,7 @@ local LobbyMissionButtons = function(menu, controller)
 	self.LobbyMissionVerticalLayout = LobbyMissionVerticalLayout
 
 	local StartButton = MenuBuilder.BuildRegisteredType("GenericButton", {
-		controllerIndex = f6_local1,
+		controllerIndex = controller_index,
 	})
 	StartButton.id = "StartButton"
 	StartButton.Text:setText(ToUpperCase(Engine.Localize("MENU_START_MATCH")), 0)
@@ -63,7 +64,7 @@ local LobbyMissionButtons = function(menu, controller)
 	end)
 
 	local GameSetupButton = MenuBuilder.BuildRegisteredType("GenericButton", {
-		controllerIndex = f6_local1,
+		controllerIndex = controller_index,
 	})
 	GameSetupButton.id = "GameSetupButton"
 	GameSetupButton.Text:setText(ToUpperCase(Engine.Localize("LUA_MENU_GAME_SETUP_CAPS")), 0)
@@ -80,7 +81,7 @@ local LobbyMissionButtons = function(menu, controller)
 	set_matchmaking_dvars()
 
 	local CRMMain = MenuBuilder.BuildRegisteredType("CRMMain", {
-		controllerIndex = f2_local1,
+		controllerIndex = controller_index,
 	})
 	CRMMain.id = "CRMMain"
 	CRMMain:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 6, _1080p * 317, _1080p * 529, _1080p * 723)
@@ -94,6 +95,7 @@ local LobbyMissionButtons = function(menu, controller)
 			elementPath = "CRMMain",
 		})
 	end
+
 	return self
 end
 
