@@ -369,7 +369,7 @@ namespace server_list
 			scheduler::once([]()
 			{
 				// add dvars to change destination master server ip/port
-				master_server_ip = game::Dvar_RegisterString("masterServerIP", "iw7.auroramod.dev", game::DVAR_FLAG_NONE,
+				master_server_ip = game::Dvar_RegisterString("masterServerIP", "server.alterware.dev", game::DVAR_FLAG_NONE,
 					"IP of the destination master server to connect to");
 				master_server_port = game::Dvar_RegisterString("masterServerPort", "20810", game::DVAR_FLAG_NONE,
 					"Port of the destination master server to connect to");
