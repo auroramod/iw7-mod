@@ -1,8 +1,8 @@
 /*
 
     label all Infinite Warfare LUA engine functions
-    by: mjkzy
-    created: 1-13-2026
+    by: mjkzy & quaK
+    created: 1-15-2026
 
 */
 
@@ -12,7 +12,7 @@ static LabelFunction(name, ea)
 {
     auto final_name;
 
-    if (ea == BADADDR || ea == -1)
+    if (ea == BADADDR || ea == -1 || ea == 0)
     {
         Message("%s has invalid address\n", name);
         return;
@@ -20,7 +20,6 @@ static LabelFunction(name, ea)
 
     final_name = form("LUI_CoD_LuaCall_%s", name);
 
-    // create function if it doesn't exist already
     if (get_func_attr(ea, FUNCATTR_START) == BADADDR)
         add_func(ea);
 
@@ -28,354 +27,89 @@ static LabelFunction(name, ea)
         Message("failed to label %s at %a\n", final_name, ea);
 }
 
+static LabelFunctions(table_ea)
+{
+    auto cur, name_ptr, fn_ea, name;
+
+    cur = table_ea;
+
+    while (1)
+    {
+        name_ptr = get_qword(cur);
+        if (name_ptr == 0 || name_ptr == BADADDR)
+            break;
+
+        fn_ea = get_qword(cur + 8);
+
+        name = GetString(name_ptr, -1, ASCSTR_C);
+        if (name == 0)
+            name = form("sub_%a", fn_ea);
+
+        LabelFunction(name, fn_ea);
+
+        cur = cur + 16;
+    }
+}
+
 static main(void)
 {
-    // label functions
-
-    LabelFunction("BitwiseAnd", 0x1406B50C0);
-    LabelFunction("BitwiseOr", 0x1406B5320);
-    LabelFunction("IsBitSet", 0x1406B55D0);
-    LabelFunction("BitShiftRight", 0x1406B5AD0);
-    LabelFunction("MustShowSplashScreens", 0x1406B5E70);
-    LabelFunction("DoesSoundExist", 0x1406B5EA0);
-    LabelFunction("PlaySound", 0x1406B6020);
-    LabelFunction("IsSoundPlaying", 0x1406B6370);
-    LabelFunction("StopSound", 0x1406B6B50);
-    LabelFunction("FadeSound", 0x1406B6E60);
-    LabelFunction("GetSubtitleForSound", 0x1406B7320);
-    LabelFunction("PlayCountdownSound", 0x1406B7900);
-    LabelFunction("PlayMusic", 0x1406B7AF0);
-    LabelFunction("StopMusic", 0x1406B7D10);
-    LabelFunction("FadeMusic", 0x1406B7DC0);
-    LabelFunction("GetLuiInUse", 0x1406B8320);
-    LabelFunction("SetLuiInUse", 0x1406B85D0);
-    LabelFunction("GetLuiRoot", 0x1406B8A20);
-    LabelFunction("GetAspectRatio", 0x1406B8B70);
-    LabelFunction("AddKeyCatcherSubscriber", 0x1406B8BC0);
-    LabelFunction("RemoveKeyCatcherSubscriber", 0x1406B8DA0);
-    LabelFunction("IndexForNetConstString", 0x1406C1D50);
-    LabelFunction("NetConstStringFromIndex", 0x1406C1FA0);
-    LabelFunction("NotifyServer", 0x1406C2360);
-    LabelFunction("GetDvarString", 0x1406C3110);
-    LabelFunction("GetDvarInt", 0x1406C32E0);
-    LabelFunction("GetDvarFloat", 0x1406C34B0);
-    LabelFunction("GetDvarBool", 0x1406C3850);
-    LabelFunction("GetDvarEnumNext", 0x1406ADFD0);
-    LabelFunction("GetDvarEnumPrev", 0x1406AE400);
-    LabelFunction("GetDvarEnumList", 0x1406AE9F0);
-    LabelFunction("GetDvarType", 0x1406B3630);
-    LabelFunction("SetDvarString", 0x1406B3A70);
-    LabelFunction("SetDvarInt", 0x1406B3F10);
-    LabelFunction("SetDvarFloat", 0x1406B4390);
-    LabelFunction("SetDvarBool", 0x1406B4760);
-    LabelFunction("SetDvarColor", 0x1406B4AB0);
-    LabelFunction("MarkLocalized", 0x1406C1AB0);
-    LabelFunction("Localize", 0x1406C0E50);
-    LabelFunction("LocalizeLong", 0x1406C1610);
-    LabelFunction("IsEliteAppAvailable", 0x1406AE590);
-    LabelFunction("IsControllerMissing", 0x1406AE720);
-    LabelFunction("ShowControllerConnectedPopup", 0x1406AEBC0);
-    LabelFunction("IsNetworkConnected", 0x1406BB320);
-    LabelFunction("IsWaitingForTransientFiles", 0x1406AEEA0);
-    LabelFunction("IsAnyUserSignedIn", 0x1406AF000);
-    LabelFunction("IsUserSignedIn", 0x1406AF210);
-    LabelFunction("IsUserSignedInToLive", 0x1406AF5C0);
-    LabelFunction("IsUserSignedInForCommerce", 0x1406AFA90);
-    LabelFunction("IsUserAGuest", 0x1406B0870);
-    LabelFunction("IsProfileSignedIn", 0x1406AFFD0);
-    LabelFunction("UserCanPlayOnline", 0x1406B03F0);
-    LabelFunction("UserIsGuest", 0x1406B0870);
-    LabelFunction("UserIsAgeRestricted", 0x1406B0C50);
-    LabelFunction("CancelConnecting", 0x1406B1350);
-    LabelFunction("IsInQueue", 0x1406B1960);
-    LabelFunction("GetQueueWaitTimeSecs", 0x1406B1B30);
-    LabelFunction("GetQueuePosition", 0x1406B1EA0);
-    LabelFunction("AllSplitscreenProfilesSignedIn", 0x1406BB320);
-    LabelFunction("UserWithoutOfflineProfile", 0x1406B22A0);
-    LabelFunction("GetProfileData", 0x1406B2530);
-    LabelFunction("NeedToDeleteSaveData", 0x1406B2F60);
-    LabelFunction("DeleteProfile", 0x1406B3170);
-    LabelFunction("WriteProfile", 0x1406B33F0);
-    LabelFunction("CanViewClanTags", 0x1406BB320);
-    LabelFunction("IsUGCRestricted", 0x1406BF090);
-    LabelFunction("CanViewCustomEmblemFromUser", 0x1406B3840);
-    LabelFunction("CanAccessCustomEmblemFeature", 0x1406B3A20);
-    LabelFunction("IsChatRestricted", 0x1406BF090);
-    LabelFunction("GetCustomClanTag", 0x1406B3D50);
-    LabelFunction("GetClanTag", 0x1406B4100);
-    LabelFunction("SetAndEnableCustomClanTag", 0x1406B4240);
-    LabelFunction("SyncPartyPlayercards", 0x1406B4600);
-    LabelFunction("HasClientMatchData", 0x1406B6C20);
-    LabelFunction("GetClientMatchData", 0x1406B6CF0);
-    LabelFunction("ResetStatsCancel", 0x1406B7030);
-    LabelFunction("HasSaveDevice", 0x1406BB320);
-    LabelFunction("HasPlayerData", 0x1406B7430);
-    LabelFunction("CheckPlayerData", 0x1406B7610);
-    LabelFunction("GetPlayerData", 0x1406B7C00);
-    LabelFunction("SetPlayerData", 0x1406B7FB0);
-    LabelFunction("GetPlayerDataEx", 0x1406B8800);
-    LabelFunction("SetPlayerDataEx", 0x1406B9300);
-    LabelFunction("GetExtinctionBonusDeadline", 0x1406B9830);
-    LabelFunction("UpdateExtinctionBonusDeadline", 0x1406B9E00);
-    LabelFunction("ToggleInvertedPitch", 0x1406BA310);
-    LabelFunction("ToggleInvertedFlyPitch", 0x1406BA730);
-    LabelFunction("ToggleSprintCancelsReload", 0x1406BABB0);
-    LabelFunction("IsPitchInverted", 0x1406BA070);
-    LabelFunction("ToggleRumble", 0x1406BADF0);
-    LabelFunction("ToggleLean", 0x1406BB270);
-    LabelFunction("SetYoloState", 0x1406BB440);
-    LabelFunction("SetSubtitlesEnabled", 0x1406BB920);
-    LabelFunction("SubtitlesEnabled", 0x1406BBC70);
-    LabelFunction("ToggleAutoAim", 0x1406BCFE0);
-    LabelFunction("ToggleTargetAssist", 0x1406BD220);
-    LabelFunction("ToggleRenderColorBlind", 0x1406BD460);
-    LabelFunction("ToggleMPVoice", 0x1406BD5C0);
-    LabelFunction("MenuDvarsSetup", 0x1406BE590);
-    LabelFunction("MenuDvarsFinish", 0x1406BE710);
-    LabelFunction("GetTimePlayed", 0x1406C2BE0);
-    LabelFunction("TableLookup", 0x1406B9040);
-    LabelFunction("TableLookupMultipleKeys", 0x1406B9C30);
-    LabelFunction("TableLookupByRow", 0x1406BA170);
-    LabelFunction("TableLookupGetRowNum", 0x1406BA5D0);
-    LabelFunction("TableLookupMultipleKeysGetRowNum", 0x1406BA810);
-    LabelFunction("TableExists", 0x1406BB130);
-    LabelFunction("TableGetRowCount", 0x1406BAD10);
-    LabelFunction("UsesMouseCursor", 0x1406BB320);
-    LabelFunction("GetMousePosition", 0x1406BB340);
-    LabelFunction("Exec", 0x1406BB650);
-    LabelFunction("ExecFirstClient", 0x1406BBDA0);
-    LabelFunction("ExecNow", 0x1406BC070);
-    LabelFunction("ExecKeysCfgFrom", 0x1406BC600);
-    LabelFunction("PlayMenuVideo", 0x1406BCA10);
-    LabelFunction("StopMenuVideo", 0x1406BD2D0);
-    LabelFunction("PlaySavedVideo", 0x1406BD510);
-    LabelFunction("GetMenuVideoName", 0x1406BD1C0);
-    LabelFunction("IsVideoFinished", 0x1406BD550);
-    LabelFunction("IsPlayingStoryBink", 0x1406BD730);
-    LabelFunction("IsCurrentBinkLoadFiller", 0x1406BDA50);
-    LabelFunction("GetCurrentBink", 0x1406BDAE0);
-    LabelFunction("IsDoingSPHotLoad", 0x1406BDBA0);
-    LabelFunction("IsInSPHotLoadBinkTransition", 0x1406BDCA0);
-    LabelFunction("IsVideoPlaying", 0x1406BDDF0);
-    LabelFunction("PauseVideo", 0x1406BDED0);
-    LabelFunction("ResumeVideo", 0x1406BE080);
-    LabelFunction("InLoadingScreen", 0x1406BE1C0);
-    LabelFunction("IsConsoleGame", 0x1406BE540);
-    LabelFunction("ClearError", 0x1406BE610);
-    LabelFunction("ReportMemory", 0x1406BE700);
-    LabelFunction("IsMultiplayer", 0x1406BE970);
-    LabelFunction("IsSingleplayer", 0x1406BE9C0);
-    LabelFunction("IsCoreMode", 0x1406BEAB0);
-    LabelFunction("IsAliensMode", 0x1406BEC50);
-    LabelFunction("GetCurrentCoDPlayMode", 0x1406BED70);
-    LabelFunction("GetLUIModeTransition", 0x1406BEE70);
-    LabelFunction("IsPS3", 0x1406BF090);
-    LabelFunction("IsPS4", 0x1406BF090);
-    LabelFunction("IsGamepadVita", 0x1406BF090);
-    LabelFunction("IsWiiU", 0x1406BF090);
-    LabelFunction("IsXbox360", 0x1406BF090);
-    LabelFunction("IsXB3", 0x1406BF090);
-    LabelFunction("IsPC", 0x1406BB320);
-    LabelFunction("IsPCApp", 0x1406BF090);
-    LabelFunction("IsPCDesktop", 0x1406BB320);
-    LabelFunction("IsLanguageAvailable", 0x1406BF5B0);
-    LabelFunction("CanResumeGame", 0x1406BFA20);
-    LabelFunction("GetFirstActiveController", 0x1406C06B0);
-    LabelFunction("IsAnyLocalClientActive", 0x1406C07D0);
-    LabelFunction("MakeLocalClientInactive", 0x1406B8D10);
-    LabelFunction("GetLocalClientXUID", 0x1406C0900);
-    LabelFunction("GetLocalClientXUIDString", 0x1406C0CD0);
-    LabelFunction("GetXUIDFromString", 0x1406C10F0);
-    LabelFunction("HasActiveLocalClient", 0x1406C1520);
-    LabelFunction("IsActiveLocalClientPrimary", 0x1406C17C0);
-    LabelFunction("GetMaxControllerCount", 0x1406C1A20);
-    LabelFunction("InFrontend", 0x1406C1A70);
-    LabelFunction("InLobby", 0x1406C1CE0);
-    LabelFunction("IsDevelopmentBuild", 0x1406BF090);
-    LabelFunction("AntiCheatBanCheck", 0x1406C1EC0);
-    LabelFunction("Quit", 0x1406B7F80);
-    LabelFunction("SetUsingScrollbar", 0x1406B8110);
-    LabelFunction("GetKeyBindingLocalizedString", 0x1406B8370);
-    LabelFunction("GetDisplayHeight", 0x1406B89C0);
-    LabelFunction("GetDisplayWidth", 0x1406B89F0);
-    LabelFunction("GetStatsGroupForGameMode", 0x1406B8A70);
-    LabelFunction("GetMaterialAspectRatio", 0x1406B8AB0);
-    LabelFunction("BindKey", 0x1406B2FF0);
-    LabelFunction("GetBinding", 0x1406B31E0);
-    LabelFunction("SetRecommended", 0x1406B2DD0);
-    LabelFunction("BBPrint", 0x140CD5280);
-    LabelFunction("GetBytesFree", 0x1406B2F20);
-    LabelFunction("GetHighestDifficultyForLevel", 0x1406BD7A0);
-    LabelFunction("HasCompletedAnyLevel", 0x1406BDF20);
-    LabelFunction("SupportsDefaultMenu", 0x1406BF090);
-    LabelFunction("GetMaxMPClients", 0x1406BE3E0);
-    LabelFunction("GetLastErrorCode", 0x1406BE480);
-    LabelFunction("ClearLastErrorCode", 0x1406BE650);
-    LabelFunction("IsGamepadEnabled", 0x1406BEA00);
-    LabelFunction("IsGamepadConnected", 0x1406BED00);
-    LabelFunction("GetUsernameByController", 0x1406BF0B0);
-    LabelFunction("HasAcceptedInvite", 0x1406BF3A0);
-    LabelFunction("DeclineInvitationOnGamerProfileFenceBac", 0x1406BF3E0);
-    LabelFunction("GetPlayerIntelIsFound", 0x1406BF8B0);
-    LabelFunction("SaveRevert", 0x1406BFA10);
-    LabelFunction("IsSaveAvailable", 0x1406BFB50);
-    LabelFunction("CurrentMapHasSave", 0x1406BFBF0);
-    LabelFunction("Pause", 0x1406C04C0);
-    LabelFunction("Unpause", 0x1406C0670);
-    LabelFunction("StartTransitionSettleFrames", 0x1406C0720);
-    LabelFunction("IsRunningTransitionSettleFrames", 0x1406C0880);
-    LabelFunction("DuckAudio", 0x1406C09E0);
-    LabelFunction("StopAllSounds", 0x1406C0E30);
-    LabelFunction("StripTextLocs", 0x1406C28A0);
-    LabelFunction("GetBuildNumber", 0x1406C2B50);
-    LabelFunction("GetMilliseconds", 0x1406C30D0);
-    LabelFunction("GetCurrentDayMonthYear", 0x1406C3200);
-    LabelFunction("GetCurrentTimeDiffWithEpochTime", 0x1406C33C0);
-    LabelFunction("IsCurrentTimeWithinRange", 0x1406C3580);
-    LabelFunction("AddToEpochTime", 0x1406C3A20);
-    LabelFunction("GetCurrentEpochTime", 0x1406ADDD0);
-    LabelFunction("GetCurrentYear", 0x1406ADF30);
-    LabelFunction("GetFormattedDate", 0x1406AFD30);
-    LabelFunction("GetFormattedTime", 0x1406B0150);
-    LabelFunction("GetFormattedDateTime", 0x1406B0560);
-    LabelFunction("GetFormattedDateTimeForEvent", 0x1406B0920);
-    LabelFunction("GetCurrentFormattedDateTime", 0x1406B0CE0);
-    LabelFunction("FormatTimeHoursMinutesSeconds", 0x1406B1130);
-    LabelFunction("FormatTimeSmall", 0x1406B1570);
-    LabelFunction("GetRawMonthDayYear", 0x1406B1C50);
-    LabelFunction("FormatDuration", 0x1406AE880);
-    LabelFunction("UsingSplitscreenUpscaling", 0x1406C1E40);
-    LabelFunction("SplitscreenPlayerCount", 0x1406C1E80);
-    LabelFunction("GetCurrentLocalClient", 0x1406C2090);
-    LabelFunction("AnyContentDamaged", 0x1406BF090);
-    LabelFunction("PreCacheGlyphs", 0x1406C26E0);
-    LabelFunction("ResetFontsPrecache", 0x1406C2530);
-    LabelFunction("StreamingCheckInstall", 0x1406B1FC0);
-    LabelFunction("StreamingSuspendInstall", 0x1406BDF10);
-    LabelFunction("IsFastFileGameWorkComplete", 0x1406B2110);
-    LabelFunction("GetCurrentLanguage", 0x1406B2260);
-    LabelFunction("GetPreferredLanguage", 0x1406B2C10);
-    LabelFunction("SetPreferredLanguage", 0x1406B2430);
-    LabelFunction("AcceptInvite", 0x1406B2DA0);
-    LabelFunction("AllowOnline", 0x1406BB320);
-    LabelFunction("IsSpecialRegion", 0x1406B7F40);
-    LabelFunction("ClearMatchData", 0x1406B2F00);
-    LabelFunction("NVidiaGPUAvailable", 0x1406B33C0);
-    LabelFunction("TXAAAvailable", 0x1406BF090);
-    LabelFunction("SMAAT2XAvailable", 0x1406B3550);
-    LabelFunction("HBAOAvailable", 0x1406BF090);
-    LabelFunction("CanVidRestart", 0x1406B5A70);
-    LabelFunction("IsSaveGameScreenShotAvailable", 0x1406BC5C0);
-    LabelFunction("GetTimeOfLastSaveGame", 0x1406C0560);
-    LabelFunction("WeaponUsesEnergyBullets", 0x1406BBF30);
-    LabelFunction("IsDraftTeamCompositionValid", 0x1406BC360);
-    LabelFunction("GetLoadoutDraftTeams", 0x1406BCBE0);
-    LabelFunction("GetTeamForLocalClient", 0x1406BDE40);
-    LabelFunction("GetTeamForPartyMemberIndex", 0x1406BE0C0);
-    LabelFunction("GetLocalClientFullGamertag", 0x1406BE240);
-    LabelFunction("GetNumActiveLocalClients", 0x1406BE6A0);
-    LabelFunction("ShowLowTextureResolutionWarning", 0x1406B38C0);
-    LabelFunction("GetEstimatedVRAMUsageFromUISettingsMB", 0x1406B39E0);
-    LabelFunction("GetAvailableTextureMemMB", 0x1406B3D10);
-    LabelFunction("GetAdapterList", 0x1406B3E30);
-    LabelFunction("GetMonitorList", 0x1406B4160);
-    LabelFunction("GetModeList", 0x1406B4520);
-    LabelFunction("GetRefreshRateList", 0x1406B4990);
-    LabelFunction("GetSceneResolutionList", 0x1406B4E30);
-    LabelFunction("GetSceneResolutionCurrentIndex", 0x1406B5220);
-    LabelFunction("GetSceneResolutionPixelCountForIndex", 0x1406B5280);
-    LabelFunction("GetWindowResolution", 0x1406B5520);
-    LabelFunction("GetVoiceLevel", 0x1406B4E00);
-    LabelFunction("PartyMissingMapPacks", 0x1406B5C30);
-    LabelFunction("PartyGetFirstPlayerWithoutMap", 0x1406B5F60);
-    LabelFunction("IsMapPackOwned", 0x1406B6280);
-    LabelFunction("PartyEveryoneHasMap", 0x1406B6440);
-    LabelFunction("AnyoneHasSeasonPass", 0x1406B6CB0);
-    LabelFunction("AnyoneHasSpecificDLCPack", 0x1406B6D80);
-    LabelFunction("AnyoneHasAliensDLC", 0x1406B6FF0);
-    LabelFunction("AnyoneHasAliensDLC1", 0x1406B71E0);
-    LabelFunction("AnyoneHasAliensDLC2", 0x1406B7230);
-    LabelFunction("AnyoneHasAliensDLC3", 0x1406B7510);
-    LabelFunction("AnyoneHasAliensDLC4", 0x1406B7590);
-    LabelFunction("SetStoreEnterTimestamp", 0x1406B77D0);
-    LabelFunction("GetUpsellMenuViewTime", 0x1406B7B90);
-    LabelFunction("SetUpsellMenuOpenTimestamp", 0x1406B79B0);
-    LabelFunction("GetUpsellMenuOpenTimestamp", 0x1406B7D60);
-    LabelFunction("SetUpsellMenuCloseTimestamp", 0x1406B7AB0);
-    LabelFunction("ShowOnlineUpsell", 0x1406B8D10);
-    LabelFunction("IsShowingOnlineUpsell", 0x1406B9510);
-    LabelFunction("ShowAccountPicker", 0x1406B9250);
-    LabelFunction("IsShowingAccountPicker", 0x1406B9510);
-    LabelFunction("GetControllerForLocalClient", 0x1406B9570);
-    LabelFunction("GetVoteItemText", 0x1406BA7F0);
-    LabelFunction("GetVoteItemFileID", 0x1406BA010);
-    LabelFunction("GetActiveVotes", 0x140515CD0);
-    LabelFunction("GetNumberOfImagesForVote", 0x1406BA150);
-    LabelFunction("IsVoteImageDownloaded", 0x1406BF090);
-    LabelFunction("GetVoteImageHandle", 0x1406BA5B0);
-    LabelFunction("GetVotingID", 0x1406BA150);
-    LabelFunction("GetVotingHeader", 0x1406BA7F0);
-    LabelFunction("IsAnnouncerReleased", 0x1406BAB10);
-    LabelFunction("IsAnnouncerUnlocked", 0x1406BAC70);
-    LabelFunction("IsSuitLocked", 0x1406BF090);
-    LabelFunction("ToUpperCase", 0x1406BB790);
-    LabelFunction("TruncateToGlyphCount", 0x1406BBAC0);
-    LabelFunction("GetUnlockedDir", 0x1406BEBF0);
-    LabelFunction("InvalidatePermanentUnlockCache", 0x1406BEC90);
-    LabelFunction("InvalidatePermanentClassicWeaponsUnlock", 0x1406BEDB0);
-    LabelFunction("UserOwnsApp", 0x1406BEEF0);
-    LabelFunction("AppIsInstalled", 0x1406BF410);
-    LabelFunction("GetUTC", 0x1406BC1D0);
-    LabelFunction("GetCurrentMissionGroup", 0x1406BC250);
-    LabelFunction("GetEntityNumNoneValue", 0x1406BC6D0);
-    LabelFunction("MakeLocalClientActive", 0x1406B8D10);
-    LabelFunction("GetMaxShipCallouts", 0x1406BC860);
-    LabelFunction("GetShipCalloutText", 0x1406BC880);
-    LabelFunction("GetSpaceshipTargetTag", 0x1406BD090);
-    LabelFunction("GetEntityAnnotationOffset", 0x1406BD320);
-    LabelFunction("GetRankForXP", 0x1406BD670);
-    LabelFunction("IsTURequired", 0x1406BF090);
-    LabelFunction("EnableSplitscreenControls", 0x1406BDC00);
-    LabelFunction("DisableSplitscreenControls", 0x1406BDD00);
-    LabelFunction("AreSplitscreenControlsEnabled", 0x1406BDAB0);
-    LabelFunction("GetControllerInUse", 0x1406BDB70);
-    LabelFunction("BootCheckActivate", 0x1406BDF10);
-    LabelFunction("BootCheckIsBlocking", 0x1406BE040);
-    LabelFunction("BootCheckIsCorruptSaveDataDetected", 0x1406BE180);
-    LabelFunction("BootCheckCorruptSaveDataDialogClosed", 0x1406BDF10);
-    LabelFunction("SystemRestart", 0x1406BE340);
-    LabelFunction("TelemetryMenuChange", 0x1406AEEE0);
-    LabelFunction("TelemetryPrestige", 0x1406AFF20);
-    LabelFunction("StoreItemViewBegan", 0x1406AF2C0);
-    LabelFunction("StoreItemViewEnded", 0x1406AF6B0);
-    LabelFunction("StoreOpened", 0x1406AF930);
-    LabelFunction("StoreClosed", 0x1406AFB40);
-    LabelFunction("CRMGetMessageContent", 0x1406B2790);
-    LabelFunction("CRMGetMaxMessageCount", 0x1406B0780);
-    LabelFunction("CRMGetValidMessageCount", 0x1406B0EC0);
-    LabelFunction("CRMFetchMessagesAsync", 0x1406B0310);
-    LabelFunction("CRMClearLocallyCachedData", 0x1406B2410);
-    LabelFunction("CRMRedeemAllCodesForMessage", 0x1406B13A0);
-    LabelFunction("IsFrontEndLevelInitialized", 0x1406BEA70);
-    LabelFunction("SetFrontEndSceneSection", 0x1406BEAF0);
-    LabelFunction("PlayRumble", 0x1406BC470);
-    LabelFunction("RegisterAccount", 0x1406BC6F0);
-    LabelFunction("MakeRootFullscreen", 0x1406BEE30);
-    LabelFunction("MakeRootSplitscreen", 0x1406BEEB0);
-    LabelFunction("CompleteTutorial", 0x1406BF6D0);
-    LabelFunction("IsTutorialCompleted", 0x1406BF1B0);
-    LabelFunction("IsDedi", 0x1406BFB90);
-    LabelFunction("SaveCurrentSPMissions", 0x1406BFC30);
-    LabelFunction("IsHardcoreMPActive", 0x1406BB100);
-    LabelFunction("GetGameTypeIndex", 0x1406BB1A0);
-    LabelFunction("IsXUIDInvalid", 0x1406BB570);
-    LabelFunction("IsLocalServerPaused", 0x1406C0830);
-    LabelFunction("SaveChallengeAsDone", 0x1406C0B10);
-    LabelFunction("IsTrialLicense", 0x1406BF090);
-    LabelFunction("ShouldShowPostMatchSurvey", 0x1406C10B0);
-    LabelFunction("PostMatchSurveyResponded", 0x1406C11D0);
-    LabelFunction("ShowWebBrowser", 0x1406C1370);
-    LabelFunction("HasSocialNetworkPrivileges", 0x1406BB320);
+    // Engine
+    LabelFunctions(0x1414B42F0);
+    // Friends
+    LabelFunctions(0x1414B3B70);
+    // Lobby
+    LabelFunctions(0x1414AE730);
+    // LobbyMember
+    LabelFunctions(0x1414AEEE0);
+    // PlayerData
+    LabelFunctions(0x141487090);
+    // Playlist
+    LabelFunctions(0x1414B0960);
+    // MLG
+    LabelFunctions(0x1414AFDF0);
+    // Groups
+    LabelFunctions(0x141445860);
+    // Game
+    LabelFunctions(0x1414AD9B0);
+    // On Screen Keyboard
+    LabelFunctions(0x141445670);
+    // Customization
+    LabelFunctions(0x1414AD958);
+    // Fences
+    LabelFunctions(0x141489970);
+    // CharacterScene
+    LabelFunctions(0x1414ABF20);
+    // ClientCharacter
+    LabelFunctions(0x141486BE0);
+    // ClientWeapon
+    LabelFunctions(0x1414872E0);
+    // Streaming
+    LabelFunctions(0x141487160);
+    // MatchRules
+    LabelFunctions(0x1414B3E90);
+    // DCache
+    LabelFunctions(0x1414B40D0);
+    // ShaderUpload
+    LabelFunctions(0x1414B4130);
+    // LoadoutDrafting
+    LabelFunctions(0x1414B3FF0);
+    
+    // PrettyNumber
+    LabelFunctions(0x1414B0C50);
+    // UpSell
+    LabelFunctions(0x1414980E0);
+    // CoDAccount
+    LabelFunctions(0x141497E60);
+    // Rewards
+    LabelFunctions(0x141497230);
+    // Redeemables
+    LabelFunctions(0x141497080);
+    // Loot
+    LabelFunctions(0x1414948E0);
+    // Commerce
+    LabelFunctions(0x141493EC0);
+    // Game 2
+    LabelFunctions(0x141489E30);
 
     Message("Labeling of LUI functions complete!\n");
 }
