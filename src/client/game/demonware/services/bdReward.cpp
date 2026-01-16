@@ -263,9 +263,9 @@ namespace demonware
 			send(json_reply);
 			console::demonware("%s\n", json_reply.dump().data());
 		}
-		else if (action == "StartMissionSet")
+		else if (action == "StartMissionSet") // aka StartContract
 		{
-			console::demonware("[DW]: mission set start requested...\n");
+			console::demonware("[DW]: contract start requested...\n");
 
 			console::demonware("%s\n", json_buffer.data());
 
@@ -303,9 +303,9 @@ namespace demonware
 			send(json_reply);
 			printf("%s\n", json_reply.dump().data());
 		}
-		else if (action == "EndMissionSet")
+		else if (action == "EndMissionSet") // aka EndContract
 		{
-			console::demonware("[DW]: mission set end requested...\n");
+			console::demonware("[DW]: contract end requested...\n");
 
 			printf("%s\n", json_buffer.data());
 
