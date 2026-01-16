@@ -109,10 +109,26 @@ namespace utils::string
 		}
 		return {};
 	}
+	
+	void set_clipboard_data(const std::string& text)
+	{
+		const auto len = text.size() + 1;
+		const auto mem = GlobalAlloc(GMEM_MOVEABLE, len);
+
+		memcpy(GlobalLock(mem), text.data(), len);
+		GlobalUnlock(mem);
+
+		if (OpenClipboard(nullptr))
+		{
+			EmptyClipboard();
+			SetClipboardData(CF_TEXT, mem);
+			CloseClipboard();
+		}
+	}
 
 	void strip(const char* in, char* out, int max)
 	{
-		if (!in || !out) return;
+		if (!in || !out || !max) return;
 
 		max--;
 		auto current = 0;
@@ -142,6 +158,16 @@ namespace utils::string
 		new_string.resize(string.size() + 1, 0);
 		strip(string.data(), new_string.data(), static_cast<int>(new_string.size()));
 		return new_string.data();
+	}
+
+	std::string& ltrim(std::string& s) 
+	{
+		s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) 
+			{
+				return !std::isspace(c); 
+			}
+		));
+		return s;
 	}
 
 #pragma warning(push)
@@ -195,5 +221,61 @@ namespace utils::string
 		if (exact && text == input) return true;
 		if (!exact && text.find(input) != std::string::npos) return true;
 		return false;
+	}
+
+	bool find_lower(const std::string& a, const std::string& b)
+	{
+		return to_lower(a).find(to_lower(b)) != std::string::npos;
+	}
+
+	bool strstr_lower(const char* a, const char* b)
+	{
+		const char* a_ = a;
+		const char* b_ = b;
+
+		while (*a_ != '\0' && *b_ != '\0')
+		{
+			if (*b_ == '*' || std::tolower(*a_) == std::tolower(*b_))
+			{
+				b_++;
+			}
+			else
+			{
+				b_ = b;
+			}
+
+			a_++;
+		}
+
+		return *b_ == '\0';
+	}
+
+	void copy(char* dest, const size_t max_size, const char* src)
+	{
+		if (!max_size)
+		{
+			return;
+		}
+
+		for (size_t i = 0;; ++i)
+		{
+			if (i + 1 == max_size)
+			{
+				dest[i] = 0;
+				break;
+			}
+
+			dest[i] = src[i];
+
+			if (!src[i])
+			{
+				break;
+			}
+		}
+	}
+
+	std::string copy(const char* src, size_t length)
+	{
+		return std::string(src, length);
 	}
 }

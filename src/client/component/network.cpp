@@ -58,7 +58,6 @@ namespace network
 
 	namespace
 	{
-		utils::hook::detour cl_dispatch_connectionless_packet_hook;
 		bool cl_dispatch_connectionless_packet_stub(int client_num, game::netadr_s* from, game::msg_t* msg, int time)
 		{
 			if (handle_command(from, game::Cmd_Argv(0), msg))
@@ -66,14 +65,7 @@ namespace network
 				return true;
 			}
 
-			return cl_dispatch_connectionless_packet_hook.invoke<bool>(client_num, from, msg, time);
-		}
-
-		int dw_send_to_stub(const int length, const char* data, game::netadr_s* to)
-		{
-			sockaddr s = {};
-			game::NetadrToSockadr(to, &s);
-			return sendto(*game::query_socket, data, length, 0, &s, sizeof(sockaddr));
+			return utils::hook::invoke<bool>(0x1409B2250, client_num, from, msg, time);
 		}
 
 		void sockadr_to_netadr(const sockaddr* s, game::netadr_s* a)
@@ -84,6 +76,18 @@ namespace network
 				*(int*)&a->ip = *(int*)&s->sa_data[2];
 				a->port = *(unsigned short*)(&s->sa_data[0]);
 			}
+		}
+
+		int dw_send_to_stub(const int length, const char* data, game::netadr_s* to)
+		{
+			sockaddr s = {};
+			game::NetadrToSockadr(to, &s);
+			const auto result = sendto(*game::query_socket, data, length, 0, &s, sizeof(sockaddr));
+			if (result == SOCKET_ERROR)
+			{
+				console::warn("sendto failed: %s\n", std::system_category().message(GetLastError()).data());
+			}
+			return result;
 		}
 
 		int dw_recv_from_stub(game::netadr_s* from, char* data, int maxsize)
@@ -191,6 +195,12 @@ namespace network
 			const auto net_ip = game::Dvar_FindVar("net_ip");
 			const auto net_port = game::Dvar_FindVar("net_port");
 
+			if (!net_ip || !net_port)
+			{
+				console::warn("WARNING: net_ip or net_port dvars are undefined!\n");
+				return;
+			}
+
 			auto port_diff = 0;
 			for (port_diff = 0; port_diff < 10; port_diff++)
 			{
@@ -222,7 +232,7 @@ namespace network
 			return PROTOCOL;
 		}
 
-		void reconnect_migratated_client(void*, game::netadr_s* from, const int, const int, const char*,
+		void reconnect_migrated_client(void*, game::netadr_s* from, const int, const int, const char*,
 			const char*, bool)
 		{
 			// This happens when a client tries to rejoin after being recently disconnected, OR by a duplicated guid
@@ -250,19 +260,14 @@ namespace network
 	void send_data(const game::netadr_s& address, const std::string& data)
 	{
 		auto size = static_cast<int>(data.size());
-		if (size > 1280)
-		{
-			console::error("Packet was too long. Truncated!\n");
-			size = 1280;
-		}
 
 		if (address.type == game::NA_LOOPBACK)
 		{
 			game::NET_SendLoopPacket(game::NS_CLIENT1, size, data.data(), &address);
 		}
-		else
+		else if (address.type == game::NA_BROADCAST || address.type == game::NA_IP)
 		{
-			game::Sys_SendPacket(size, data.data(), &address);
+			dw_send_to_stub(size, data.data(), const_cast<game::netadr_s*>(&address));
 		}
 	}
 
@@ -310,14 +315,14 @@ namespace network
 			utils::hook::jump(0x140D93D70, dw_recv_from_stub);
 
 			// intercept command handling
-			cl_dispatch_connectionless_packet_hook.create(0x1409B2250, cl_dispatch_connectionless_packet_stub);
+			utils::hook::call(0x1403572B7, cl_dispatch_connectionless_packet_stub);
 
 			// handle xuid without secure connection
-			utils::hook::nop(0x140C53315, 2);
-			utils::hook::nop(0x140C55EC7, 6);
+			//utils::hook::nop(0x140C53315, 2);
+			//utils::hook::nop(0x140C55EC7, 6);
 
 			utils::hook::jump(game::NET_CompareAdr, net_compare_address);
-			utils::hook::jump(game::NET_CompareBaseAdr, net_compare_base_address);
+			utils::hook::jump(game::NET_CompareBaseAdr, net_compare_address);
 
 			// don't establish secure conenction
 			utils::hook::set<uint8_t>(0x1409DBFDD, 0xEB);
@@ -353,7 +358,7 @@ namespace network
 			utils::hook::set(0x140CE6E60, 0xC301B0);
 
 			// don't try to reconnect client
-			utils::hook::call(0x140C4F05F, reconnect_migratated_client);
+			utils::hook::call(0x140C4F05F, reconnect_migrated_client);
 			utils::hook::nop(0x140C4F03C, 4); // this crashes when reconnecting for some reason
 
 			// increase allowed packet size
@@ -361,7 +366,7 @@ namespace network
 			utils::hook::set<int>(0x140BB4F01, max_packet_size);
 			utils::hook::set<int>(0x140BB4F31, max_packet_size);
 			utils::hook::set<int>(0x140BB4E22, max_packet_size);
-			utils::hook::set<int>(0x140BB4F31, max_packet_size);
+			utils::hook::set<int>(0x140BB4E3D, max_packet_size);
 
 			// increase cl_maxpackets
 			dvars::override::register_int("cl_maxpackets", 1000, 1, 1000, game::DVAR_FLAG_NONE);

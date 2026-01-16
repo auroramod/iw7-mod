@@ -79,8 +79,8 @@ namespace command
 			static std::string comand_line_buffer = GetCommandLineA();
 			auto* command_line = comand_line_buffer.data();
 
-			auto& com_num_console_lines = *reinterpret_cast<int*>(0x146006DB0);
-			auto* com_console_lines = reinterpret_cast<char**>(0x146006DC0);
+			auto& com_num_console_lines = *game::com_num_console_lines;
+			auto* com_console_lines = game::com_console_lines.get();
 
 			auto inq = false;
 			com_console_lines[0] = command_line;
@@ -111,8 +111,8 @@ namespace command
 
 		void parse_startup_variables()
 		{
-			auto& com_num_console_lines = *reinterpret_cast<int*>(0x146006DB0);
-			auto* com_console_lines = reinterpret_cast<char**>(0x146006DC0);
+			auto& com_num_console_lines = *game::com_num_console_lines;
+			auto* com_console_lines = game::com_console_lines.get();
 
 			for (int i = 0; i < com_num_console_lines; i++)
 			{
@@ -121,19 +121,19 @@ namespace command
 				// only +set dvar value
 				if (game::Cmd_Argc() >= 3 && (game::Cmd_Argv(0) == "set"s || game::Cmd_Argv(0) == "seta"s))
 				{
-					const std::string& dvar_name = game::Cmd_Argv(1);
+					const std::string& key = game::Cmd_Argv(1);
 					const std::string& value = game::Cmd_Argv(2);
 
-					const auto* dvar = game::Dvar_FindVar(dvar_name.data());
+					const auto* dvar = game::Dvar_FindVar(key.data());
 					if (dvar)
 					{
-						game::Dvar_SetCommand(dvar_name.data(), value.data());
+						game::Dvar_SetCommand(key.data(), value.data());
 					}
 					else
 					{
-						dvars::callback::on_register(dvar_name, [dvar_name, value]()
+						dvars::callback::on_register(key, [key, value]()
 						{
-							game::Dvar_SetCommand(dvar_name.data(), value.data());
+							game::Dvar_SetCommand(key.data(), value.data());
 						});
 					}
 				}
@@ -439,7 +439,7 @@ namespace command
 			client_command_mp_hook.create(0x140B105D0, &client_command_mp);
 			client_command_sp_hook.create(0x140483130, &client_command_sp);
 
-			parse_commandline_hook.create(0x140F2F67B, parse_commandline);
+			parse_commandline_hook.create(0x140C039F0, parse_commandline); // SL_Init
 
 			add_commands();
 		}

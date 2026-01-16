@@ -8,32 +8,28 @@
 
 # IW7-Mod
 
+IW7-Mod is a client for Call of Duty®: Infinite Warfare that adds dedicated servers, hands-on modding utilities, and custom mods that feature content like weapons, models, sounds, and more. ***You must legally own [Call of Duty®: Infinite Warfare](https://store.steampowered.com/app/292730/Call_of_Duty_Infinite_Warfare/)*** to run this mod. Unlicensed or cracked versions of the game are **NOT** supported and will not be given assistance.
+
 <p align="center">
-  <img src="assets/github/banner.png?raw=true" />
+  <img src="assets/github/banner.png?raw=true" width="500" height="500" />
 </p>
 
-<br>
+## Download
 
-**NOTE**: You must legally own a copy of Call of Duty®: Infinite Warfare to run this mod. Cracked/pirated versions of the game are **NOT** supported. Grab a copy of the game from Steam: https://store.steampowered.com/app/292730/Call_of_Duty_Infinite_Warfare/
+To download IW7-Mod, [read our Installing IW7-Mod guide](https://docs.auroramod.dev/iw7-install) to help you.
 
-## Compile from source
+## Compile from source code
 
-- Clone the Git repo. Do NOT download it as ZIP, that won't work.
-- Update the submodules and run `premake5 vs2022` or simply use the delivered `generate.bat`.
-- Build via solution file in `build\iw7-mod.sln`.
-
-### Premake arguments
-
-| Argument                    | Description                                    |
-|:----------------------------|:-----------------------------------------------|
-| `--copy-to=PATH`            | Optional, copy the EXE to a custom folder after build, define the path here if wanted. |
-| `--dev-build`               | Enable development builds of the client. |
+- Clone the Git repo via [Git](https://git-scm.com/install/windows) or [GitHub Desktop](https://desktop.github.com/download/). **DO NOT download it as ZIP** as it will not work.
+- Run the `generate.bat` script to generate the project solution.
+- Build the project via the generated solution file in `build\iw7-mod.sln`.
 
 ## Credits
 
-- [h1-mod](https://github.com/h1-mod/h1-mod) - codebase and research
-- [h2-mod](https://github.com/fedddddd/h2-mod) - research (successor of MWR)
-- [momo5502](https://github.com/momo5502) - Arxan/Steam research, former lead developer of [XLabsProject](https://github.com/XLabsProject)
+- [s1x-client](https://git.alterware.dev/alterware/s1-mod) *(now **s1-mod**)* - codebase and research
+- [h1-mod](https://github.com/auroramod/h1-mod) - extended work and research
+- [h2-mod](https://github.com/alicelys/h2-mod) - research
+- [momo5502](https://github.com/momo5502) - Arxan & Steam research, former lead developer of [XLabsProject](https://github.com/XLabsProject)
 
 ## Disclaimer
 

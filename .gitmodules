@@ -33,8 +33,8 @@
 	url = https://github.com/Tencent/rapidjson.git
 [submodule "deps/gsc-tool"]
 	path = deps/gsc-tool
-	url = https://github.com/Joelrau/gsc-tool.git
-	branch = iw7
+	url = https://github.com/mjkzy/gsc-tool.git
+	branch = iw7-finished
 [submodule "deps/sol2"]
 	path = deps/sol2
 	url = https://github.com/ThePhD/sol2.git
@@ -47,3 +47,6 @@
 [submodule "deps/discord-rpc"]
 	path = deps/discord-rpc
 	url = https://github.com/fedddddd/discord-rpc
+[submodule "deps/imgui"]
+	path = deps/imgui
+	url = https://github.com/alicealys/imgui

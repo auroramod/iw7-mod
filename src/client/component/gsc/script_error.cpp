@@ -256,6 +256,19 @@ namespace gsc
 			scr_error(va("Parameter %u does not exist", index + 1));
 			return nullptr;
 		}
+		
+		bool random_verify_weapon_stub(char* output_name, char* weapon_name)
+		{
+			// sometimes, the output_name may not equal the weapon_name like its suppose to, causing this to fail
+			// the real issue is BG_GetWeaponNameComplete stripping mods out, but it only matters here to be honest
+			// the weapon name contains a mod but output name doesn't, so lazily trust weapon_name
+			if (strstr(weapon_name, "mod_") != nullptr && strstr(output_name, "mod_") == nullptr)
+			{
+				return true;
+			}
+			
+			return utils::hook::invoke<bool>(0x1407336C0, output_name, weapon_name);
+		}
 	}
 
 	namespace
@@ -401,13 +414,18 @@ namespace gsc
 		void scr_error_internal_stub()
 		{
 			const auto ret_addr = reinterpret_cast<std::uint64_t>(_ReturnAddress());
+			
 			if (!gsc_error_msg.has_value())
 			{
 				const auto it = scr_error_info_map.find(ret_addr - 5);
 
 				if (it != scr_error_info_map.end() && !it->second.empty())
 				{
-					gsc_error_msg = it->second;
+					gsc_error_msg = std::format("{} ({:p})", it->second, reinterpret_cast<void*>(ret_addr));
+				}
+				else
+				{
+					gsc_error_msg = std::format("{:p}", reinterpret_cast<void*>(ret_addr));
 				}
 			}
 
@@ -427,6 +445,11 @@ namespace gsc
 	{
 		for (const auto& file : scripting::script_function_table_sort)
 		{
+			if (file.first.find("/asm/") != std::string::npos)
+			{
+				continue;
+			}
+
 			const auto first_function = file.second.begin();
 			for (auto i = file.second.begin(); i != file.second.end() && std::next(i) != file.second.end(); ++i)
 			{
@@ -472,6 +495,9 @@ namespace gsc
 			utils::hook::jump(0x140C0BC00, scr_get_pointer_type);
 			utils::hook::jump(0x140C0BDE0, scr_get_type);
 			utils::hook::jump(0x140C0BE50, scr_get_type_name);
+			
+			// fix giveweapon failing on mod attachments
+			utils::hook::call(0x140B522D5, random_verify_weapon_stub);
 		}
 	};
 }

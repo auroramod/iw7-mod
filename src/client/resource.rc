@@ -70,13 +70,13 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", "XLabs"
+            VALUE "CompanyName", "Aurora"
             VALUE "FileDescription", "IW7-Mod"
             VALUE "FileVersion", VERSION_FILE
             VALUE "InternalName", "IW7-Mod"
-            VALUE "LegalCopyright", "Copyright (C) 2022 X Labs Project. All rights reserved."
+            VALUE "LegalCopyright", "Copyright (C) 2025 Aurora. All rights reserved."
             VALUE "Licence", "GPLv3"
-            VALUE "Info", "https://github.com/Joelrau/iw7-mod/"
+            VALUE "Info", "https://github.com/auroramod/iw7-mod/"
             VALUE "OriginalFilename", "iw7-mod.exe"
             VALUE "ProductName", "iw7-mod"
             VALUE "ProductVersion", VERSION_PRODUCT
@@ -100,17 +100,12 @@ IMAGE_LOGO            BITMAP "resources/logo.bmp"
 
 DW_MOTD               RCDATA "resources/dw/motd-english.txt"
 DW_PLAYLISTS          RCDATA "resources/dw/playlists_tu23.aggr"
+DW_PUBVARS            RCDATA "resources/dw/publisher_variables.json"
 
 #ifdef _DEBUG
 TLS_DLL               RCDATA "../../build/bin/x64/Debug/tlsdll.dll"
 #else
 TLS_DLL               RCDATA "../../build/bin/x64/Release/tlsdll.dll"
-#endif
-
-#ifdef _DEBUG
-RUNNER                RCDATA "../../build/bin/x64/Debug/runner.exe"
-#else
-RUNNER                RCDATA "../../build/bin/x64/Release/runner.exe"
 #endif
 
 ICON_IMAGE            RCDATA "resources/icon.png"
@@ -129,4 +124,3 @@ ICON_IMAGE            RCDATA "resources/icon.png"
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
-

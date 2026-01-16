@@ -25,15 +25,8 @@ namespace game
 	{
 		void client_println(int client_num, const std::string& text)
 		{
-			if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_SP)
-			{
-				game::CG_Utils_GameMessage(client_num, text.data(), 0); // why is nothing printed?
-			}
-			else
-			{
-				game::SV_GameSendServerCommand(client_num, game::SV_CMD_RELIABLE,
-					utils::string::va("f \"%s\"", text.data()));
-			}
+			game::SV_GameSendServerCommand(client_num, game::SV_CMD_RELIABLE,
+				utils::string::va("f \"%s\"", text.data()));
 		}
 
 		bool cheats_ok(int client_num, bool print)
@@ -46,12 +39,18 @@ namespace game
 			const auto sv_cheats = game::Dvar_FindVar("sv_cheats");
 			if (!sv_cheats || !sv_cheats->current.enabled)
 			{
-				if(print)
+				if (print)
 					client_println(client_num, "GAME_CHEATSNOTENABLED");
 				return false;
 			}
 
 			return true;
+		}
+
+		void menu_error(const std::string& error)
+		{
+			console::error("%s\n", error.data());
+			game::Com_SetLocalizedErrorMessage(error.data(), "MENU_NOTICE");
 		}
 	}
 
@@ -233,7 +232,7 @@ namespace game
 
 	void G_LogPrintf(const char* fmt, ...)
 	{
-		if (!dvars::logfile->current.enabled)
+		if (!dvars::g_log || !dvars::logfile || !dvars::logfile->current.enabled)
 		{
 			return;
 		}

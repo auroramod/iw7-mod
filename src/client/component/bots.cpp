@@ -34,6 +34,14 @@ namespace bots
 			std::string bots_content;
 			if (!utils::io::read_file(bots_txt, &bots_content))
 			{
+				// add cool people n contributors
+				bot_names = {
+					"mjkzy", "alicealys", "Joelrau",
+					"momo5502", "skkuull", "yoyothebest",
+					"Lierrmm", "Wanted", "January",
+					"diamante0018", "efinst0rm"
+				};
+
 				return;
 			}
 
@@ -90,6 +98,10 @@ namespace bots
 	public:
 		void post_unpack() override
 		{
+			// register bot dvars
+			game::Dvar_RegisterBool("bots_enabled", true, game::DVAR_FLAG_READ, "Enable bots and activate bot management systems");
+			game::Dvar_RegisterInt("bot_difficulty", 0, 0, 5, game::DVAR_FLAG_NONE, "Bot difficulty. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
+
 			sv_kick_client_num_hook.create(game::SV_CmdsMP_KickClientNum, sv_kick_client_num_stub);
 
 			get_bot_name_hook.create(game::SV_BotGetRandomName, get_random_bot_name);

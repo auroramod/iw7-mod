@@ -7,7 +7,8 @@
 
 #include "game/game.hpp"
 #include "game/dvars.hpp"
-#include "utils/hook.hpp"
+
+#include <utils/hook.hpp>
 #include <utils/string.hpp>
 
 namespace branding
@@ -17,8 +18,15 @@ namespace branding
 		utils::hook::detour ui_get_formatted_build_number_hook;
 		const char* ui_get_formatted_build_number_stub()
 		{
-			const auto build_num = ui_get_formatted_build_number_hook.invoke<const char*>();
-			return utils::string::va("%s (%s)", VERSION, build_num);
+			static std::array<char, 0x100> buf {};
+			static bool once = ([]()
+			{
+				const char* build_num = ui_get_formatted_build_number_hook.invoke<const char*>();
+				utils::string::copy(buf, utils::string::va("%s (%s)", VERSION, build_num));
+				return true;
+			})();
+
+			return buf.data();
 		}
 	}
 
@@ -33,6 +41,7 @@ namespace branding
 			}
 
 			localized_strings::override("LUA_MENU_LEGAL_COPYRIGHT", "IW7-MOD");
+			localized_strings::override("LUA_MENU_MP_DAILY_LOGIN_MESSAGE", "Thank you for playing IW7-Mod!\nLog in every day to receive better and better rewards.");
 
 			//localized_strings::override("MENU_SP_CAMPAIGN", "IW7-MOD: CAMPAIGN");
 			//localized_strings::override("LUA_MENU_MULTIPLAYER_CAPS", "IW7-MOD: MULTIPLAYER");

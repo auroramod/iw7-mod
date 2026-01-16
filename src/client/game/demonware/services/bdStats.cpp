@@ -20,7 +20,7 @@ namespace demonware
 		this->register_task(14, &bdStats::writeServerValidatedStats);
 	}
 
-	void bdStats::writeStats(service_server* server, byte_buffer* /*buffer*/) const
+	void bdStats::writeStats(service_server* server, byte_buffer* buffer) const
 	{
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
@@ -104,8 +104,11 @@ namespace demonware
 		reply.send();
 	}
 
-	void bdStats::writeServerValidatedStats(service_server* server, byte_buffer* /*buffer*/) const
+	void bdStats::writeServerValidatedStats(service_server* server, byte_buffer* buffer) const
 	{
+		std::string blob;
+		buffer->read_blob(&blob);
+
 		// TODO:
 		auto reply = server->create_reply(this->task_id());
 		reply.send();

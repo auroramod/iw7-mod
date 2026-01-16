@@ -2,8 +2,10 @@
 #include "../dw_include.hpp"
 
 #include "lobby_server.hpp"
+#include "component/console/console.hpp"
 
 #include <utils/cryptography.hpp>
+#include <utils/flags.hpp>
 
 namespace demonware
 {
@@ -65,9 +67,7 @@ namespace demonware
 				}
 				else if (size == 0xC8)
 				{
-#ifdef DW_DEBUG
-					printf("[DW]: [lobby]: received client_header_ack.\n");
-#endif
+					console::demonware("[DW]: [lobby]: received client_header_ack.\n");
 
 					int c8;
 					buffer.read_int32(&c8);
@@ -81,9 +81,9 @@ namespace demonware
 
 					raw_reply reply(packet_2);
 					this->send_reply(&reply);
-#ifdef DW_DEBUG
-					printf("[DW]: [lobby]: sending server_header_ack.\n");
-#endif
+
+					console::demonware("[DW]: [lobby]: sending server_header_ack.\n");
+
 					return;
 				}
 
@@ -98,9 +98,8 @@ namespace demonware
 
 					if (type == 0x82)
 					{
-#ifdef DW_DEBUG
-						printf("[DW]: [lobby]: received client_auth.\n");
-#endif
+						console::demonware("[DW]: [lobby]: received client_auth.\n");
+
 						std::string packet_3(packet.data(), packet.size() - 8); // this 8 are client hash check?
 
 						demonware::queue_packet_to_hash(packet_3);
@@ -113,9 +112,8 @@ namespace demonware
 						raw_reply reply(response);
 						this->send_reply(&reply);
 
-#ifdef DW_DEBUG
-						printf("[DW]: [lobby]: sending server_auth_done.\n");
-#endif
+						console::demonware("[DW]: [lobby]: sending server_auth_done.\n");
+
 						return;
 					}
 					else if (type == 0x85)
@@ -153,7 +151,7 @@ namespace demonware
 					}
 				}
 
-				printf("[DW]: [lobby]: ERROR! received unk message.\n");
+				console::error("[DW]: [lobby]: ERROR! received unk message.\n");
 				return;
 			}
 		}
@@ -172,7 +170,7 @@ namespace demonware
 		}
 		else
 		{
-			printf("[DW]: [lobby]: missing service '%s'\n", utils::string::va("%d", id));
+			console::error("[DW]: [lobby]: missing service '%s'\n", utils::string::va("%d", id));
 
 			// return no error
 			byte_buffer buffer(data);

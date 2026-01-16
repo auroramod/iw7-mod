@@ -128,6 +128,24 @@ namespace demonware
 		return true;
 	}
 
+	bool byte_buffer::read_struct(void* output)
+	{
+		if (!this->read_data_type(BD_BB_STRUCTURED_DATA_TYPE))
+		{
+			return false;
+		}
+
+		unsigned int size;
+		this->read_uint32(&size);
+
+		auto data = const_cast<char*>(this->buffer_.data()) + this->current_byte_;
+		memcpy(output, data, size);
+
+		this->current_byte_ += size;
+
+		return true;
+	}
+
 	bool byte_buffer::read_data_type(const unsigned char expected)
 	{
 		if (!this->use_data_types_) return true;
@@ -243,6 +261,14 @@ namespace demonware
 	bool byte_buffer::write_blob(const char* data, const int length)
 	{
 		this->write_data_type(BD_BB_BLOB_TYPE);
+		this->write_uint32(length);
+
+		return this->write(length, data);
+	}
+
+	bool byte_buffer::write_struct(void* data, const int length)
+	{
+		this->write_data_type(BD_BB_STRUCTURED_DATA_TYPE);
 		this->write_uint32(length);
 
 		return this->write(length, data);

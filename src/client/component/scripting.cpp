@@ -24,8 +24,6 @@ namespace scripting
 	std::unordered_map<std::string, std::vector<std::pair<std::string, const char*>>> script_function_table_sort;
 	std::unordered_map<const char*, std::pair<std::string, std::string>> script_function_table_rev;
 
-	utils::concurrency::container<shared_table_t> shared_table;
-
 	std::string current_file;
 
 	namespace

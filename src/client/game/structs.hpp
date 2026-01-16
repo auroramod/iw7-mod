@@ -85,15 +85,25 @@ namespace game
 
 	enum DvarFlags : std::uint32_t
 	{
-		DVAR_FLAG_NONE = 0,
-		DVAR_FLAG_SAVED = 0x1,
-		DVAR_FLAG_LATCHED = 0x2,
-		DVAR_FLAG_CHEAT = 0x4,
-		DVAR_FLAG_REPLICATED = 0x8,
-		DVAR_FLAG_NETWORK = 0x10,
-		DVAR_FLAG_EXTERNAL = 0x100,
-		DVAR_FLAG_WRITE = 0x800,
-		DVAR_FLAG_READ = 0x2000,
+		DVAR_FLAG_NONE = 0,					// DVAR_NOFLAG
+		DVAR_FLAG_SAVED = 0x1,				// DVAR_ARCHIVE
+		DVAR_FLAG_LATCHED = 0x2,			// DVAR_LATCH
+		DVAR_FLAG_CHEAT = 0x4,				// DVAR_CHEAT
+		DVAR_FLAG_REPLICATED = 0x8,			// DVAR_CODINFO
+		DVAR_FLAG_NETWORK = 0x10,			// DVAR_SCRIPTINFO
+		DVAR_FLAG_TEMP = 0x20,				// DVAR_TEMP
+		DVAR_FLAG_TRUE_SAVED = 0x40,		// DVAR_SAVED
+		DVAR_FLAG_INTERNAL = 0x80,			// DVAR_INTERNAL
+		DVAR_FLAG_EXTERNAL = 0x100,			// DVAR_EXTERNAL
+		DVAR_FLAG_USERINFO = 0x200,			// DVAR_USERINFO
+		DVAR_FLAG_SERVERINFO = 0x400,		// DVAR_SERVERINFO
+		DVAR_FLAG_WRITE = 0x800,			// DVAR_ROM
+		DVAR_FLAG_SYSTEMINFO = 0x1000,		// DVAR_SYSTEMINFO
+		DVAR_FLAG_READ = 0x2000,			// DVAR_INIT
+		DVAR_FLAG_CHANGEABLE_RESET = 0x4000,
+		DVAR_FLAG_AUTOEXEC = 0x8000,
+
+		DVAR_UNADDABLE_FLAGS = DVAR_FLAG_LATCHED | DVAR_FLAG_CHEAT | DVAR_FLAG_EXTERNAL | DVAR_FLAG_WRITE | DVAR_FLAG_READ
 	};
 
 	enum DvarType : std::uint8_t
@@ -122,6 +132,25 @@ namespace game
 		rgb = 9, // Color without alpha
 	};
 
+	struct DvarValueBool
+	{
+		bool enabled;
+		char pad[3];
+		int hashedValue;
+	};
+
+	struct DvarValueInt
+	{
+		int integer;
+		int hashedValue;
+	};
+
+	struct DvarValueEnum
+	{
+		int defaultIndex;
+		int hashedValue;
+	};
+
 	union DvarValue
 	{
 		bool enabled;
@@ -131,6 +160,10 @@ namespace game
 		float vector[4];
 		const char* string;
 		char color[4];
+
+		DvarValueBool boolean_;
+		DvarValueInt integer_;
+		DvarValueEnum enumeration_;
 	};
 
 	struct $A37BA207B3DDD6345C554D4661813EDD
@@ -607,6 +640,16 @@ namespace game
 		bool isServer;
 	};
 
+	struct rectDef_s
+	{
+		float x;
+		float y;
+		float w;
+		float h;
+		char horzAlign;
+		char vertAlign;
+	};
+
 	namespace entity
 	{
 		enum connstate_t : std::uint32_t
@@ -664,6 +707,9 @@ namespace game
 			WEAPON_RAISING = 1,
 			WEAPON_RAISING_ALTSWITCH = 2,
 			WEAPON_RAISING_ALTSWITCH_ADS = 3,
+
+			WEAPON_FIRING = 0x10,
+			WEAPON_RECHAMBERING = 0x11,
 		};
 
 		enum WeaponAnimNumber : std::int32_t
@@ -789,6 +835,11 @@ namespace game
 			unsigned int m_flags[bitSize >> (sizeof(unsigned int) + 1)];
 		};
 
+		struct PlayerWeaponCommonState
+		{
+			unsigned __int16 weaponIdx;
+		};
+
 		struct playerState_s
 		{
 			int commandTime;
@@ -797,28 +848,47 @@ namespace game
 			GameModeFlagContainer<PMoveFlagsCommon, PMoveFlagsSP, PMoveFlagsMP, 64> pm_flags;
 			GameModeFlagContainer<POtherFlagsCommon, POtherFlagsSP, POtherFlagsMP, 64> otherFlags;
 			GameModeFlagContainer<PLinkFlagsCommon, PLinkFlagsSP, PLinkFlagsMP, 32> linkFlags;
-			char __pad0[312];
+			int packedBobCycle[2];
+			vec3_t origin;
+			vec3_t velocity;
+			char __pad0[68];
+			vec3_t delta_angles;
+			char __pad1[200];
 			GameModeFlagContainer<EntityStateFlagsCommon, EntityStateFlagsSP, EntityStateFlagsMP, 32> eFlags;
-			char __pad1[1272];
+			char __pad2[92];
+			vec3_t viewangles;
+			char __pad3[1168];
 			PlayerActiveWeaponState weapState[2];
-			char __pad2[464];
+			char __pad4[464];
 			GameModeFlagContainer<PWeaponFlagsCommon, PWeaponFlagsSP, PWeaponFlagsMP, 64> weapFlags;
 			float fWeaponPosFrac;
-			char __pad3[0x4000];
+			char __pad5[0x4000];
 		}; // unk size
 		assert_offsetof(playerState_s, pm_type, 4);
+		assert_offsetof(playerState_s, delta_angles, 132);
 		assert_offsetof(playerState_s, eFlags, 344);
+		assert_offsetof(playerState_s, viewangles, 440);
 		assert_offsetof(playerState_s, weapState, 1620);
 		assert_offsetof(playerState_s, weapFlags, 2188);
+
+		struct usercmd_s
+		{
+			unsigned __int64 buttons;
+			char __pad0[112];
+		}; assert_sizeof(usercmd_s, 120);
 
 		struct pmove_t
 		{
 			void* unk;
 			playerState_s* ps;
-			char __pad0[560];
+			usercmd_s cmd;
+			usercmd_s oldcmd;
+			char __pad0[312];
+			void* weaponMap;
 			unsigned char handler;
 		};
 		assert_offsetof(pmove_t, handler, 576);
+		assert_offsetof(pmove_t, weaponMap, 568);
 
 		struct pml_t
 		{
@@ -827,6 +897,15 @@ namespace game
 			float up[3];
 			float frametime;
 			int msec;
+			int walking;
+			int groundPlane;
+			int almostGroundPlane;
+			int groundTrace;
+			float impactSpeed;
+			float previous_origin[3];
+			float previous_velocity[3];
+			float wishdir[3];
+			unsigned int holdrand;
 		};
 		assert_offsetof(pml_t, msec, 40);
 
@@ -1006,6 +1085,124 @@ namespace game
 	static_assert(offsetof(cg_s, spectatingThirdPerson) == 492908);
 	static_assert(offsetof(cg_s, renderingThirdPerson) == 492912);
 	static_assert(offsetof(cg_s, m_deathCameraFailsafeLock) == 553708);
+
+	struct GfxLight
+	{
+		unsigned __int8 type;
+		unsigned __int8 canUseShadowMap;
+		unsigned __int8 needsDynamicShadows;
+		unsigned __int8 isVolumetric;
+		unsigned __int8 exponent;
+		float uvIntensity;
+		float irIntensity;
+		float color[3];
+		float dir[3];
+		float up[3];
+		float origin[3];
+		float radius;
+		vec2_t fadeOffsetRt;
+		float bulbRadius;
+		vec3_t bulbLength;
+		float cosHalfFovOuter;
+		float cosHalfFovInner;
+		unsigned int entityId;
+		unsigned int flags;
+		float tonemappingScaleFactor;
+		float shadowSoftness;
+		float shadowBias;
+		float shadowArea;
+		float distanceFalloff;
+		GfxLightDef* def;
+	};
+
+	struct GfxDynamicLight
+	{
+		GfxLight light;
+		float nearPlaneOffset;
+		float radius;
+		char __pad0[144];
+	};
+
+	struct GfxScaledPlacement
+	{
+		GfxPlacement base;
+		float scale;
+	};
+
+	struct GfxSceneModel
+	{
+		XModelDrawInfo info;
+		const XModel* model;
+		const struct DObj* obj;
+		GfxScaledPlacement placement;
+		GfxScaledPlacement prevPlacement;
+		unsigned __int32 gfxEntIndex : 7;
+		unsigned __int32 entnum : 12;
+		unsigned __int32 renderFlags : 14;
+		float radius;
+		unsigned __int16* cachedLightingHandle;
+		vec3_t lightingOrigin;
+		int unk1;
+		float unk2;
+		int unk3;
+		int unk4;
+		int unk5;
+	};
+
+	union GfxDrawGroupSetup
+	{
+		unsigned __int64 packed;
+	};
+
+	struct GfxCodeSurf
+	{
+		GfxDrawGroupSetup drawGroup;
+		unsigned int triCount;
+		unsigned int vertIndexBase;
+		unsigned __int16* indices;
+		unsigned __int16 argOffset;
+		unsigned __int16 argCount;
+		int reactiveTurbulenceGroup;
+		int sortOrder;
+		int unk;
+	};
+
+	struct GfxSceneEntity
+	{
+		char __pad0[1424];
+	};
+
+	struct GfxScene
+	{
+		GfxCodeSurf codeEmissiveSurfs[16384];
+		GfxCodeSurf surfs2[640];
+		GfxCodeSurf surfs3[1424];
+		GfxCodeSurf surfs4[640];
+		GfxCodeSurf surfs5[640];
+		char __pad0[2461208];
+		unsigned int codeEmissiveSurfCount;
+		unsigned int surfs2Count;
+		unsigned int surfs3Count;
+		unsigned int surfs4Count;
+		unsigned int surfs5Count;
+		char __pad1[64];
+		volatile int dynamicSpotLightCount;
+		GfxDynamicLight dynamicSpotLight[64];
+		char __pad2[1129016];
+		GfxSceneEntity sceneDObj[512];
+		char sceneDObjVisData[12][512];
+		int sceneDObjMarkableViewmodelIndex;
+		unsigned int sceneDObjFirstViewmodelIndex;
+		unsigned int sceneDObjViewmodelCount;
+		volatile int sceneModelCount;
+		int sceneModelCountAtMark;
+		int sceneDObjModelCount;
+		GfxSceneModel sceneModel[1024];
+		char sceneModelVisData[12][1024];
+		char __pad3[16384];
+	};
+
+	assert_offsetof(GfxScene, sceneDObjViewmodelCount, 5133104);
 
 	namespace scripting
 	{
@@ -1301,13 +1498,16 @@ namespace game
 			SessionData* session;
 			char __pad0[11436];
 			PartyPreloadMapStage preloadingMapStage;
-			char __pad1[101];
+			char __pad1[92];
+			int party_systemActive;
+			char __pad1_2[5];
 			bool m_gameStartSkipCountdown;
 			char __pad2[110];
 			int lobbyFlags;
 			bool gameStartRequested;
 		};
 		static_assert(offsetof(PartyData, preloadingMapStage) == 11444);
+		static_assert(offsetof(PartyData, party_systemActive) == 11540);
 		static_assert(offsetof(PartyData, m_gameStartSkipCountdown) == 11549);
 		static_assert(offsetof(PartyData, lobbyFlags) == 11660);
 		static_assert(offsetof(PartyData, gameStartRequested) == 11664);
@@ -1402,6 +1602,18 @@ namespace game
 			PhysicalMemoryPrim prim[2];
 		};
 	}
+	
+	struct DB_AssetEntry
+	{
+		XAssetHeader m_header;
+		unsigned int m_nextHash;
+		unsigned int m_nextStashed;
+		volatile unsigned __int8 m_inuse;
+		unsigned __int8 m_type;
+		unsigned __int16 m_zoneIndex; // 11
+		unsigned __int16 m_printedMissingAsset; // 1
+	};
+	
 	using namespace pmem;
 
 	namespace hks

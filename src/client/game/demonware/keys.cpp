@@ -1,8 +1,11 @@
 #include <std_include.hpp>
 #include "dw_include.hpp"
 
+#include "component/console/console.hpp"
+
 #include <utils/cryptography.hpp>
 #include <utils/string.hpp>
+#include <utils/flags.hpp>
 
 namespace demonware
 {
@@ -89,13 +92,14 @@ namespace demonware
 		std::memcpy(data.m_dec_key, &out_3[40], 16);
 		std::memcpy(data.m_enc_key, &out_3[56], 16);
 
-#ifdef DW_DEBUG
-		printf("[DW] Response id: %s\n", utils::string::dump_hex(std::string(&out_2[8], 8)).data());
-		printf("[DW] Hash verify: %s\n", utils::string::dump_hex(std::string(&out_3[20], 20)).data());
-		printf("[DW] AES dec key: %s\n", utils::string::dump_hex(std::string(&out_3[40], 16)).data());
-		printf("[DW] AES enc key: %s\n", utils::string::dump_hex(std::string(&out_3[56], 16)).data());
-		printf("[DW] Bravo 6, going dark.\n");
-#endif
+		if (utils::flags::has_flag("demonware_debug"))
+		{
+			console::redudant("[DW] Response id: %s\n", utils::string::dump_hex(std::string(&out_2[8], 8)).data());
+			console::redudant("[DW] Hash verify: %s\n", utils::string::dump_hex(std::string(&out_3[20], 20)).data());
+			console::redudant("[DW] AES dec key: %s\n", utils::string::dump_hex(std::string(&out_3[40], 16)).data());
+			console::redudant("[DW] AES enc key: %s\n", utils::string::dump_hex(std::string(&out_3[56], 16)).data());
+			console::redudant("[DW] Bravo 6, going dark.\n");
+		}
 	}
 
 	void queue_packet_to_hash(const std::string& packet)

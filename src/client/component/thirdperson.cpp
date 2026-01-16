@@ -66,7 +66,10 @@ namespace thirdperson
 			auto result = cg_should_render_third_person_hook.invoke<int>(localClientNum, cgameGlob);
 			if (!result && cgameGlob->predictedPlayerState.pm_type != 3)
 			{
-				result = static_cast<int>(dvars::cg_thirdPerson->current.enabled);
+				if (dvars::cg_thirdPerson)
+				{
+					result = static_cast<int>(dvars::cg_thirdPerson->current.enabled);
+				}
 				if (result)
 				{
 					cgameGlob->m_deathCameraFailsafeLock = false; // disable this, acts up for some reason

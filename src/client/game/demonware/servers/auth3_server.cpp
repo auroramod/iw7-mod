@@ -3,8 +3,11 @@
 
 #include "auth3_server.hpp"
 
+#include "component/console/console.hpp"
+
 #include <utils/cryptography.hpp>
 #include <utils/string.hpp>
+#include <utils/flags.hpp>
 
 namespace demonware
 {
@@ -38,9 +41,8 @@ namespace demonware
 	{
 		if (packet.starts_with("POST /auth/"))
 		{
-#ifdef DW_DEBUG
-			printf("[DW]: [auth]: user requested authentication.\n");
-#endif
+			console::demonware("[DW]: [auth]: user requested authentication.\n");
+
 			return;
 		}
 
@@ -81,9 +83,7 @@ namespace demonware
 			}
 		}
 
-#ifdef DW_DEBUG
-		printf("[DW]: [auth]: authenticating user %s\n", token.data() + 64);
-#endif
+		console::demonware("[DW]: [auth]: authenticating user %s\n", token.data() + 64);
 
 		std::string auth_key(reinterpret_cast<char*>(token.data() + 32), 24);
 		std::string session_key(
@@ -171,8 +171,6 @@ namespace demonware
 
 		this->send_reply(&reply);
 
-#ifdef DW_DEBUG
-		printf("[DW]: [auth]: user successfully authenticated.\n");
-#endif
+		console::demonware("[DW]: [auth]: user successfully authenticated.\n");
 	}
 }

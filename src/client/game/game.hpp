@@ -2,7 +2,7 @@
 
 #include "structs.hpp"
 
-#define PROTOCOL 1
+#define PROTOCOL 2
 
 namespace game
 {
@@ -45,6 +45,7 @@ namespace game
 	{
 		void client_println(int client_num, const std::string& text);
 		bool cheats_ok(int client_num = 0, bool print = false);
+		void menu_error(const std::string& error);
 	}
 
 	int Cmd_Argc();
@@ -62,6 +63,7 @@ namespace game
 	extern const char* g_assetNames[ASSET_TYPE_COUNT];
 	const char* DB_GetXAssetName(const XAsset* asset);
 	void DB_EnumXAssets(const std::int32_t type, const std::function<void(XAssetHeader)>& callback);
+	void DB_EnumXAssetEntries(const std::int32_t type, const std::function<void(game::XAssetEntry*)>& callback, bool include_override);
 
 	void SV_CmdsMP_RequestMapRestart(bool loadScripts, bool migrate);
 

@@ -50,8 +50,13 @@ namespace dedicated
 			return startup_command_queue;
 		}
 
-		void execute_startup_command(int client, int /*controllerIndex*/, const char* command)
+		void execute_buffer_stub(int /*client*/, int /*controllerIndex*/, const char* command)
 		{
+			if (_ReturnAddress() != (void*)0x140B8D214)
+			{
+				return game::Cbuf_ExecuteBufferInternal(0, 0, command, game::Cmd_ExecuteSingleCommand);
+			}
+
 			if (game::Live_SyncOnlineDataFlags(0) == 0)
 			{
 				game::Cbuf_ExecuteBufferInternal(0, 0, command, game::Cmd_ExecuteSingleCommand);
@@ -109,25 +114,6 @@ namespace dedicated
 			}
 		}
 
-		void sys_error_stub(const char* msg, ...)
-		{
-			char buffer[2048]{};
-
-			va_list ap;
-			va_start(ap, msg);
-
-			vsnprintf_s(buffer, _TRUNCATE, msg, ap);
-
-			va_end(ap);
-
-			scheduler::once([]
-			{
-				command::execute("map_rotate");
-			}, scheduler::main, 3s);
-
-			game::Com_Error(game::ERR_DROP, "%s", buffer);
-		}
-
 		void init_dedicated_server()
 		{
 			// R_RegisterDvars
@@ -153,18 +139,19 @@ namespace dedicated
 			{
 				if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_CP)
 				{
-					command::execute("exec default_systemlink_cp.cfg", true);
 					command::execute("exec default_cp.cfg", true);
 				}
 				else if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_MP)
 				{
-					command::execute("exec default_systemlink_mp.cfg", true);
 					command::execute("exec default_mp.cfg", true);
 				}
 			};
 
 			initialize_gamemode();
 		}
+
+		utils::hook::detour snd_lookup_sound_length_hook;
+		utils::hook::detour start_server_hook;
 
 		nlohmann::json snd_alias_length_data;
 
@@ -203,18 +190,41 @@ namespace dedicated
 			}
 			else
 			{
-				//console::error("[SND]: failed to find sound length soundalias \"%s\"\n", alias);
+#ifdef DEBUG
+				console::error("[SND]: failed to find sound length soundalias \"%s\"\n", alias);
+#endif
 				return 0;
 			}
 		}
 
-		utils::hook::detour snd_lookup_sound_length_hook;
-		int snd_lookup_sound_length_stub(const char* alias)
+		void generate_snd_alias_length_data()
 		{
-			return get_snd_alias_length(alias);
+			snd_alias_length_data.clear();
+
+			game::DB_EnumXAssets(game::ASSET_TYPE_SOUND_BANK, [](const game::XAssetHeader& header)
+			{
+				auto* asset = header.soundBank;
+				for (unsigned int i = 0; i < asset->aliasCount; i++)
+				{
+					auto alias = &asset->alias[i];
+					const auto length = snd_lookup_sound_length_hook.invoke<int>(alias->aliasName);
+					if (!snd_alias_length_data.contains(alias->aliasName) && length > 0)
+					{
+						snd_alias_length_data[alias->aliasName] = length;
+					}
+				}
+			});
 		}
 
-		utils::hook::detour start_server_hook;
+		int snd_lookup_sound_length_stub(const char* alias)
+		{
+			if (game::environment::is_dedi())
+			{
+				return get_snd_alias_length(alias);
+			}
+			return snd_lookup_sound_length_hook.invoke<int>(alias);
+		}
+
 		void start_server_stub(game::SvServerInitSettings* init_settings)
 		{
 			snd_alias_length_data = get_snd_alias_length_data_for_map(init_settings->mapName);
@@ -229,15 +239,43 @@ namespace dedicated
 		{
 			if (!game::environment::is_dedi())
 			{
+#ifdef DEBUG
+				snd_lookup_sound_length_hook.create(0x140C9BCE0, snd_lookup_sound_length_stub);
+				command::add("generateSoundLookupData", []()
+				{
+					console::info("Generating sound lookup data...\n");
+					const auto mapname = game::Dvar_FindVar("mapname")->current.string;
+					if (mapname && *mapname && game::CL_IsGameClientActive(0))
+					{
+						generate_snd_alias_length_data();
+						if (snd_alias_length_data.is_object())
+						{
+							const auto path = "sounddata/"s + game::Com_GameMode_GetActiveGameModeStr() + "/"s + mapname + ".json"s;
+							utils::io::write_file(path, snd_alias_length_data.dump(4));
+							console::info("Sound lookup data written to %s\n", path.data());
+						}
+					}
+					else
+					{
+						console::error("Failed to generate sound lookup data: map is not loaded yet.\n");
+					}
+				});
+#endif
 				return;
 			}
-			
+
 #ifdef DEBUG
-			printf("Starting dedicated server\n");
+			console::important("Starting dedicated server\n");
 #endif
-			
+
 			// Register dedicated dvar
 			game::Dvar_RegisterBool("dedicated", true, game::DVAR_FLAG_READ, "Dedicated server");
+
+			// Add hostname
+			scheduler::once([]()
+			{
+				game::Dvar_RegisterString("sv_hostname", "IW7-Mod Default Server", game::DVAR_FLAG_REPLICATED, "Host name of the server");
+			}, scheduler::pipeline::main);
 
 			// Add lanonly mode
 			sv_lanOnly = game::Dvar_RegisterBool("sv_lanOnly", false, game::DVAR_FLAG_NONE, "Don't send heartbeat");
@@ -254,9 +292,6 @@ namespace dedicated
 
 			dvars::override::register_bool("intro", false, game::DVAR_FLAG_READ);
 
-			// Stop crashing from sys_errors
-			utils::hook::jump(0x140D34180, sys_error_stub, true);
-
 			// Is party dedicated
 			utils::hook::jump(0x1405DFC10, party_is_server_dedicated_stub);
 
@@ -268,13 +303,11 @@ namespace dedicated
 
 			utils::hook::jump(0x140341B60, init_dedicated_server, true);
 
-			// delay startup commands until the initialization is done
-			utils::hook::call(0x140B8D20F, execute_startup_command);
-
 			utils::hook::set<uint32_t>(0x140B21107 + 2, 0x482); // g_gametype flags
 			utils::hook::set<uint32_t>(0x140B21137 + 2, 0x480); // g_hardcore flags
 			utils::hook::jump(0x140C12400, sv_get_game_type_stub);
 			utils::hook::jump(0x140C12660, sv_is_hardcore_mode_stub);
+			utils::hook::nop(0x140B20905, 5); // Stop g_hardcore being set to 1
 
 			utils::hook::nop(0x140CDD5D3, 5); // don't load config file
 			utils::hook::nop(0x140B7CE46, 5); // ^
@@ -308,12 +341,32 @@ namespace dedicated
 			// check the sounddata when server is launched
 			start_server_hook.create(0x140C56050, start_server_stub);
 
-			// IMAGE patches
-			// image stream (pak)
+			// AlwaysLoaded
+			utils::hook::set<uint8_t>(0x140A81D40, 0xC3);
+
+			// remove imagefile load
 			utils::hook::set<uint8_t>(0x140A7DB10, 0xC3); // DB_CreateGfxImageStreamInternal
+			utils::hook::set<uint8_t>(0x140E01F00, 0xC3); // Load_Texture
+
+			// remove assetfile load
+			//utils::hook::jump(0x1409E762F, 0x1409E7713);
+			//utils::hook::set<uint8_t>(0x1403BA0A0, 0xC3);
+			//utils::hook::jump(0x140571E5F, 0x140571EF0);
+
+			// remove transient loads
+			utils::hook::set<uint8_t>(0x140A79AE0, 0xC3);
+			utils::hook::set<uint8_t>(0x1403BB990, 0xC3);
+			utils::hook::set<uint8_t>(0x140A78910, 0xC3);
+
+			// remove emblem stuff
+			utils::hook::set<uint8_t>(0x14003B9A0, 0xC3);
+
+			// remove customization xmodel stuff
+			utils::hook::set<uint8_t>(0x1405D0690, 0xC3);
 
 			// UI patches
 			utils::hook::set<uint8_t>(0x140615090, 0xC3); // LUI_CoD_Init
+			utils::hook::set<uint8_t>(0x140348A90, 0xC3); // CL_InitUI
 
 			// IW7 patches
 			utils::hook::set(0x140E06060, 0xC3C033); // directx
@@ -372,7 +425,7 @@ namespace dedicated
 			// recipe save threads
 			utils::hook::set<uint8_t>(0x140E7C970, 0xC3);
 
-			// set game mode
+			// start game mode
 			scheduler::once([]()
 			{
 				if (utils::flags::has_flag("cpMode") || utils::flags::has_flag("zombies"))
@@ -390,9 +443,9 @@ namespace dedicated
 			{
 				initialize();
 
-				console::info("==================================\n");
-				console::info("Server started!\n");
-				console::info("==================================\n");
+				console::important("==================================\n");
+				console::important("Server started!\n");
+				console::important("==================================\n");
 
 				// remove disconnect command
 				game::Cmd_RemoveCommand("disconnect");
@@ -401,10 +454,13 @@ namespace dedicated
 
 				// Send heartbeat to dpmaster
 				scheduler::once(send_heartbeat, scheduler::pipeline::server);
-				scheduler::loop(send_heartbeat, scheduler::pipeline::server, 10min);
+				scheduler::loop(send_heartbeat, scheduler::pipeline::server, 1min);
 				command::add("heartbeat", send_heartbeat);
+			}, scheduler::pipeline::main, 100ms);
 
-			}, scheduler::pipeline::main, 1s);
+			utils::hook::jump(0x140B7C3B0, execute_buffer_stub);
+			utils::hook::set<uint8_t>(0x1405AC6A0, 0xC3); // Com_ExecLobbyDefaultConfigs
+			utils::hook::set<uint8_t>(0x140CCD840, 0xC3); // Playlist_RunRules
 
 			// dedicated info
 			scheduler::loop([]()

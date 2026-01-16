@@ -22,7 +22,7 @@ namespace server_list
 {
 	namespace
 	{
-		const int server_limit = 100;
+		const int server_limit = 128;
 
 		struct server_info
 		{
@@ -50,23 +50,8 @@ namespace server_list
 		std::mutex mutex;
 		std::vector<server_info> servers;
 
-		size_t server_list_page = 0;
-		volatile bool update_server_list = false;
-		std::chrono::high_resolution_clock::time_point last_scroll{};
-
 		game::dvar_t* master_server_ip;
 		game::dvar_t* master_server_port;
-
-		size_t get_page_count()
-		{
-			const auto count = servers.size() / server_limit;
-			return count + (servers.size() % server_limit > 0);
-		}
-
-		size_t get_page_base_index()
-		{
-			return server_list_page * server_limit;
-		}
 
 		void refresh_server_list()
 		{
@@ -74,7 +59,6 @@ namespace server_list
 				std::lock_guard<std::mutex> _(mutex);
 				servers.clear();
 				master_state.queued_servers.clear();
-				server_list_page = 0;
 			}
 
 			party::reset_server_connection_state();
@@ -90,7 +74,7 @@ namespace server_list
 		{
 			std::lock_guard<std::mutex> _(mutex);
 
-			const auto i = static_cast<size_t>(index) + get_page_base_index();
+			const auto i = static_cast<size_t>(index);
 			if (i < servers.size())
 			{
 				static auto last_index = ~0ull;
@@ -105,17 +89,12 @@ namespace server_list
 			}
 		}
 
-		void trigger_refresh()
+		unsigned short node_index = 0;
+
+		const char* ui_feeder_item_text(int localClientNum, int feederID, const int index, const int column, 
+			float* s0, float* t0, float* s1, float* t1, game::Material** material)
 		{
-			update_server_list = true;
-		}
-
-
-		const char* ui_feeder_item_text(int arg0, int arg1, const int index, const int column, char* name)
-		{
-			std::lock_guard<std::mutex> _(mutex);
-
-			const auto i = get_page_base_index() + index;
+			const auto i = index;
 			if (i >= servers.size())
 			{
 				return "";
@@ -124,7 +103,9 @@ namespace server_list
 			switch (column)
 			{
 			case 2:
+			{
 				return servers[i].host_name.empty() ? "" : servers[i].host_name.data();
+			}
 			case 3:
 			{
 				const auto& map_name = servers[i].map_name;
@@ -134,7 +115,7 @@ namespace server_list
 				}
 
 				auto map_display_name = game::UI_GetMapDisplayName(map_name.data());
-				if (!fastfiles::exists(map_name)) // TODO: add "false" 2nd parameter if usermaps come
+				if (!fastfiles::exists(map_name))
 				{
 					map_display_name = utils::string::va("^1%s", map_display_name);
 				}
@@ -147,27 +128,61 @@ namespace server_list
 					servers[i].clients);
 			}
 			case 5:
+			{
 				return servers[i].game_type.empty() ? "" : servers[i].game_type.data();
-			//case 10:
-			//{
-			//	const auto ping = servers[i].ping ? servers[i].ping : 999;
-			//	if (ping < 75)
-			//	{
-			//		return utils::string::va("^2%d", ping);
-			//	}
-			//	else if (ping < 150)
-			//	{
-			//		return utils::string::va("^3%d", ping);
-			//	}
-			//	return utils::string::va("^1%d", ping);
-			//}
+			}
+			case 6:
+			{
+				return servers[i].mod_name.empty() ? "" : servers[i].mod_name.data();
+			}
+			case 7:
+			{
+				const auto ping = servers[i].ping ? servers[i].ping : 999;
+				if (ping < 75)
+				{
+					return utils::string::va("^2%d", ping);
+				}
+				else if (ping < 150)
+				{
+					return utils::string::va("^3%d", ping);
+				}
+				return utils::string::va("^1%d", ping);
+			}
+			case 8:
+			{
+				return servers[i].is_private ? "Yes" : "No";
+			}
 			case 10:
+			{
+				// add custom feeder values here
+				game::Material* material_[2];
+				
+				const char* val = nullptr;
+				unsigned short n_index = 0;
+
+				val = ui_feeder_item_text(0, 0, i, 6, 0, 0, 0, 0, material_);
+				n_index = game::LUI_Model_CreateModelFromPath(node_index, "mod");
+				game::LUI_Model_SetString(n_index, val);
+
+				val = ui_feeder_item_text(0, 0, i, 7, 0, 0, 0, 0, material_);
+				n_index = game::LUI_Model_CreateModelFromPath(node_index, "ping");
+				game::LUI_Model_SetString(n_index, val);
+
+				val = ui_feeder_item_text(0, 0, i, 8, 0, 0, 0, 0, material_);
+				n_index = game::LUI_Model_CreateModelFromPath(node_index, "priv");
+				game::LUI_Model_SetString(n_index, val);
+
 				return servers[i].in_game ? "0" : "1";
-			//case 6:
-			//	return servers[i].mod_name.empty() ? "" : servers[i].mod_name.data();
+			}
 			default:
 				return "";
 			}
+		}
+
+		unsigned short lui_model_create_model_from_path_stub(const unsigned short parentNodeIndex, const char* path)
+		{
+			node_index = game::LUI_Model_CreateModelFromPath(parentNodeIndex, path);
+			return node_index;
 		}
 
 		void sort_serverlist()
@@ -196,7 +211,6 @@ namespace server_list
 			std::lock_guard<std::mutex> _(mutex);
 			servers.emplace_back(std::move(server));
 			sort_serverlist();
-			trigger_refresh();
 		}
 
 		void do_frame_work()
@@ -238,49 +252,15 @@ namespace server_list
 			return game::Menu_IsMenuOpenAndVisible(0, "SystemLinkMenu");
 		}
 
-		bool is_scrolling_disabled()
-		{
-			return update_server_list || (std::chrono::high_resolution_clock::now() - last_scroll) < 500ms;
-		}
-
-		bool scroll_down()
-		{
-			if (!is_server_list_open())
-			{
-				return false;
-			}
-
-			if (!is_scrolling_disabled() && server_list_page + 1 < get_page_count())
-			{
-				last_scroll = std::chrono::high_resolution_clock::now();
-				++server_list_page;
-				trigger_refresh();
-			}
-
-			return true;
-		}
-
-		bool scroll_up()
-		{
-			if (!is_server_list_open())
-			{
-				return false;
-			}
-
-			if (!is_scrolling_disabled() && server_list_page > 0)
-			{
-				last_scroll = std::chrono::high_resolution_clock::now();
-				--server_list_page;
-				trigger_refresh();
-			}
-
-			return true;
-		}
-
 		utils::hook::detour lui_open_menu_hook;
 
 		void lui_open_menu_stub(int controllerIndex, const char* menuName, int isPopup, int isModal, unsigned int isExclusive)
 		{
+			if (!strcmp(menuName, "LobbyMission"))
+			{
+				menuName = "SystemLinkMenu";
+			}
+
 			if (!strcmp(menuName, "SystemLinkMenu"))
 			{
 				refresh_server_list();
@@ -288,33 +268,6 @@ namespace server_list
 
 			lui_open_menu_hook.invoke<void>(controllerIndex, menuName, isPopup, isModal, isExclusive);
 		}
-
-		void check_refresh()
-		{
-			if (update_server_list)
-			{
-				update_server_list = false;
-				ui_scripting::notify("updateGameList", {});
-			}
-		}
-	}
-
-	bool sl_key_event(const int key, const int down)
-	{
-		if (down)
-		{
-			if (key == game::keyNum_t::K_MWHEELUP)
-			{
-				return !scroll_up();
-			}
-
-			if (key == game::keyNum_t::K_MWHEELDOWN)
-			{
-				return !scroll_down();
-			}
-		}
-
-		return true;
 	}
 
 	bool get_master_server(game::netadr_s& address)
@@ -377,7 +330,7 @@ namespace server_list
 		server_info server{};
 		server.address = address;
 		server.host_name = info.get("hostname");
-		server.map_name = info.get("mapname"); // UI_GetMapDisplayName?
+		server.map_name = info.get("mapname");
 		server.game_type = game::UI_GetGameTypeDisplayName(info.get("gametype").data());
 		server.mod_name = info.get("fs_game");
 		server.play_mode = playmode;
@@ -386,12 +339,7 @@ namespace server_list
 		server.bots = atoi(info.get("bots").data());
 		server.ping = std::min(now - start_time, 999);
 		server.is_private = atoi(info.get("isPrivate").data()) == 1;
-
 		server.in_game = 1;
-
-#ifdef DEBUG
-		console::debug("inserting server \"%s\"\n", server.host_name.data());
-#endif
 
 		insert_server(std::move(server));
 	}
@@ -466,9 +414,9 @@ namespace server_list
 
 			utils::hook::call(0x14069E45E, get_server_count);
 			utils::hook::jump(0x140CC5F00, ui_feeder_item_text);
+			utils::hook::call(0x14069E4D7, lui_model_create_model_from_path_stub);
 
 			scheduler::loop(do_frame_work, scheduler::pipeline::main);
-			scheduler::loop(check_refresh, scheduler::pipeline::lui, 10ms);
 
 			network::on("getServersResponse", [](const game::netadr_s& target, const std::string_view& data)
 			{

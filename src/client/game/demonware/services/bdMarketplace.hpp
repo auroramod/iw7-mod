@@ -20,6 +20,7 @@ namespace demonware
 		void getBalanceV2(service_server* server, byte_buffer* buffer) const;
 		void getInventoryPaginated(service_server* server, byte_buffer* buffer) const;
 		void putPlayersInventoryItems(service_server* server, byte_buffer* buffer) const;
+		void pawnItems(service_server* server, byte_buffer* buffer) const;
 		void getEntitlements(service_server* server, byte_buffer* buffer) const;
 	};
 }

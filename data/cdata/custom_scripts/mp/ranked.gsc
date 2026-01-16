@@ -1,11 +1,29 @@
 main()
 {
-	// Rank fixes.
+    if (!getdvarint("xblive_privatematch"))
+    {
+        level.onlinegame = 1;
+        level.rankedmatch = 1;
+
+        setdvar("systemlink", 0);
+        setdvar("onlinegame", 1);
+
+        replacefunc(scripts\mp\utility::rankingenabled, ::rankingenabled);
+    }
+
     replacefunc(scripts\mp\menus::addtoteam, ::addtoteam_stub);
     replacefunc(scripts\mp\menus::watchforteamchange, ::watchforteamchange_stub);
 	
-	// Bypass check for sessionteam
-	replacefunc(scripts\mp\playerlogic::connect_validateplayerteam, ::connect_validateplayerteam_stub);
+    // Bypass check for sessionteam
+    replacefunc(scripts\mp\playerlogic::connect_validateplayerteam, ::connect_validateplayerteam_stub);
+
+    // fix rankingenabled returning 0 on bots, killing the mission teams loop
+    replacefunc(scripts\mp\intel::onplayerconnect, ::intel_onplayerconnect_stub);
+}
+
+rankingenabled()
+{
+    return !(!isplayer( self ) || isai( self ));
 }
 
 addtoteam_stub( team, firstConnect, changeTeamsWithoutRespawning )
@@ -154,4 +172,47 @@ connect_validateplayerteam_stub()
 {
     if ( !isdefined( self ) )
         return;
+}
+
+intel_onplayerconnect_stub()
+{
+    level endon("game_ended"); // and end the loop properly...
+
+    for(;;)
+    {
+        level waittill("connected", player);
+
+        print(va("[intel_onplayerconnect_stub]: %s b4", player.name));
+
+        if ( !level.rankedmatch )
+            return;
+
+        if ( !player scripts\mp\utility::rankingenabled() )
+            continue; // this was return before, which is bad for bots
+
+        if ( isai( player ) )
+            continue;
+
+        var_1 = player getrankedplayerdata( "mp", "activeMissionTeam" );
+        var_2 = player getrankedplayerdata( "mp", "missionTeams", var_1, "activeSlot" );
+        var_3 = player getrankedplayerdata( "mp", "missionTeams", var_1, "currentMission", var_2 );
+        setmatchdata( "players", player.clientid, "activeMissionTeam", var_1 );
+        setmatchdata( "players", player.clientid, "missionTeamData_activeSlot", var_2 );
+        setmatchdata( "players", player.clientid, "missionTeamData_currentMission", var_3 );
+
+        for ( i = 0; i < 5; i++ )
+        {
+            current_mission = player getrankedplayerdata( "mp", "missionTeams", var_1, "currentMission", i );
+            setmatchdata( "players", player.clientid, "missionTeamData_availableMissions", i, current_mission );
+        }
+
+        var_6 = player getrankedplayerdata( "mp", "missionTeams", var_1, "level" );
+        var_7 = player getrankedplayerdata( "mp", "missionTeams", var_1, "missionXP" );
+        setmatchdata( "players", player.clientid, "missionTeamData_startLevel", var_6 );
+        setmatchdata( "players", player.clientid, "missionTeamData_startMissionXP", var_7 );
+        setmatchdata( "players", player.clientid, "tierComplete", -1 );
+        
+        player._id_B8D4 = var_1;
+        player thread scripts\mp\intel::_id_8370( var_3, var_1 ); // thread this now too
+    }
 }
