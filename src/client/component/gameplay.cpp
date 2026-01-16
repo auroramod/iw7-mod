@@ -195,10 +195,10 @@ namespace gameplay
 			dvars::bg_playerEjection = game::Dvar_RegisterBool("bg_playerEjection", true, game::DVAR_FLAG_REPLICATED, "Flag whether player ejection is on or off");
 			utils::hook::call(0x140AFA739, stuck_in_client_stub);
 
-			// Implement bounces dvar
-			dvars::bg_bounces = game::Dvar_RegisterBool("bg_bounces", false, game::DVAR_FLAG_REPLICATED, "Enables bounces");
-			utils::hook::jump(0x14070FBB7, bg_bounces_stub(), true);
-			utils::hook::jump(0x14070FBE1, force_bounce_stub(), true);
+			// TODO: Implement bounces dvar (collision becomes very funky on the ground)
+			dvars::bg_bounces = game::Dvar_RegisterBool("bg_bounces", false, game::DVAR_FLAG_READ, "Enables bounces (currently disabled due to issues)");
+			//utils::hook::jump(0x14070FBB7, bg_bounces_stub(), true);
+			//utils::hook::jump(0x14070FBE1, force_bounce_stub(), true);
 
 			// Modify gravity dvar
 			dvars::override::register_float("bg_gravity", 800.0f, 1.0f, 1000.0f, 0xC0 | game::DVAR_FLAG_REPLICATED);
