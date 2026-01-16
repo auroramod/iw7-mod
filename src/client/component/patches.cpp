@@ -46,7 +46,7 @@ namespace patches
 			}
 			else
 			{
-				com_maxfps = game::Dvar_RegisterInt("com_maxfps", 0, 0, 250, game::DVAR_FLAG_SAVED, "Cap frames per second");
+				com_maxfps = game::Dvar_RegisterInt("com_maxfps", 0, 0, 1000, game::DVAR_FLAG_SAVED, "Cap frames per second");
 			}
 
 			*reinterpret_cast<game::dvar_t**>(0x146005758) = com_maxfps;
