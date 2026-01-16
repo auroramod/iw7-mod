@@ -428,6 +428,9 @@ namespace patches
 		
 			// re-direct some dvars to others for backwards compatibility on configurations
 			utils::hook::call(0x140BB241C, dvar_set_command_stub);
+
+			// disable the cipher code as its not working
+			game::Dvar_RegisterBool("online_qrm5tr_cipher_enabled", false, game::DVAR_FLAG_READ, "Is the cipher available in the Quartermaster");
 		}
 	};
 }
