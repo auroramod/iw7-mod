@@ -452,6 +452,8 @@ namespace ui_scripting
 
 			// replace LUA engine calls
 			utils::hook::set(0x1414B4D98, lua_calls::is_development_build_stub); // IsDevelopmentBuild
+
+			game::Dvar_RegisterBool("ui_showList", false, game::DVAR_FLAG_SAVED, "Show the current menus on the UI stack");
 		}
 	};
 }
