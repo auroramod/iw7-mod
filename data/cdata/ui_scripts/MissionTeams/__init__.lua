@@ -1,4 +1,4 @@
-if not Engine.InFrontEnd() then
+if not Engine.InFrontend() then
     orig_FinalizeMission = LUI.PostGameManager.FinalizeMission
 
     LUI.PostGameManager.FinalizeMission = function(f11_arg0)
