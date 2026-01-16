@@ -125,7 +125,7 @@ namespace demonware
 			// give the plyer 60 keys daily for logins
 			if (is_new_day)
 			{
-				json_reply["BasicPacks"][0]["Currencies"]["11"] = TRUE_KEY_AMOUNT(60);
+				json_reply["BasicPacks"][0]["Currencies"]["11"] = TRUE_KEY_AMOUNT(60 + (login_day_count * 3));
 
 				auto current_keys = loot::get_currency_balance(loot::CurrencyType::keys);
 				loot::set_currency_balance( loot::CurrencyType::keys, current_keys + (TRUE_KEY_AMOUNT(60)) );
@@ -149,10 +149,15 @@ namespace demonware
 			// Items
 			json_reply["Items"] = nlohmann::json::value_type::array();
 
-			// mp/loot/iw7_loot_crate_loot_master.csv (TODO: check this out again)
-			json_reply["Items"][0]["ItemId"] = loot::LootBoxType::LOOT_COMMON_CRATE;
-			json_reply["Items"][0]["Collision"] = 0; // not sure what this does
-			json_reply["Items"][0]["Balance"] = loot::get_item_balance(loot::LootBoxType::LOOT_COMMON_CRATE);
+			// mp/loot/iw7_loot_crate_loot_master.csv
+			for (auto i = 0; i < 6; ++i)
+			{
+				auto item_id = 70000 + i;
+				json_reply["Items"][i]["ItemId"] = item_id;
+				json_reply["Items"][i]["Collision"] = 0; // not sure what this does
+				auto amount = loot::get_item_balance(item_id);
+				json_reply["Items"][i]["Balance"] = amount;
+			}
 
 			// Currencies
 			json_reply["Currencies"] = nlohmann::json::value_type::array();
@@ -204,7 +209,7 @@ namespace demonware
 			}
 
 			const auto new_crate_balance = crate_balance - 1;
-			console::demonware("[DW]: new crate balance is %d for %d\n", crate_balance, crate_id);
+			console::demonware("[DW]: new crate balance is %d for %d\n", new_crate_balance, crate_id);
 
 			json_reply["Items"][itemidx]["ItemId"] = crate_id;
 			json_reply["Items"][itemidx]["Collision"] = 0; // not sure what this does
