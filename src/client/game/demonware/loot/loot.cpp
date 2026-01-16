@@ -464,6 +464,20 @@ namespace demonware
 				}
 			}
 
+			for (auto& crate : lootcrates)
+			{
+				const auto crate_id = crate.first;
+				if (get_item_balance(crate_id))
+				{
+					Item crate_item{};
+					crate_item.id = crate_id;
+					crate_item.quality = 0;
+					crate_item.salvageReturned = 0;
+					crate_item.cost = 0;
+					items.push_back(crate_item);
+				}
+			}
+
 			return items;
 		}
 
