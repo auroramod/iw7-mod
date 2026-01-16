@@ -232,7 +232,7 @@ namespace game
 
 	void G_LogPrintf(const char* fmt, ...)
 	{
-		if (!dvars::logfile->current.enabled)
+		if (!dvars::logfile || !dvars::logfile->current.enabled)
 		{
 			return;
 		}

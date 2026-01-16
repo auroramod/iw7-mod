@@ -22,7 +22,7 @@ namespace gameplay
 
 		void stuck_in_client_stub(void* entity)
 		{
-			if (dvars::bg_playerEjection->current.enabled)
+			if (dvars::bg_playerEjection && dvars::bg_playerEjection->current.enabled)
 			{
 				utils::hook::invoke<void>(0x140AFD9B0, entity);
 			}
@@ -154,6 +154,8 @@ namespace gameplay
 			origin[1] += valueZ * glob->viewModelAxis[2][1];
 			origin[2] += valueZ * glob->viewModelAxis[2][2];
 
+			if(!dvars::cg_gun_x || !dvars::cg_gun_y || !dvars::cg_gun_z) return;
+
 			// Apply dvar values
 			origin[0] += dvars::cg_gun_x->current.value * glob->viewModelAxis[0][0];
 			origin[1] += dvars::cg_gun_x->current.value * glob->viewModelAxis[0][1];
@@ -179,7 +181,7 @@ namespace gameplay
 		utils::hook::detour pm_crashland_hook;
 		void pm_crashland_stub(void* ps, void* pml)
 		{
-			if (dvars::jump_enableFallDamage->current.enabled)
+			if (dvars::jump_enableFallDamage && dvars::jump_enableFallDamage->current.enabled)
 			{
 				pm_crashland_hook.invoke<void>(ps, pml);
 			}

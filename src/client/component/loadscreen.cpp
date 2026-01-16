@@ -18,11 +18,11 @@ namespace loadscreen
 
 		void UI_DrawLoadScreenInfo()
 		{
-			auto* mapname = game::Dvar_FindVar("ui_mapname")->current.string;
-			auto* gametype = game::Dvar_FindVar("ui_gametype")->current.string;
+			const auto* mapname = game::Dvar_FindVar("ui_mapname");
+			const auto* gametype = game::Dvar_FindVar("ui_gametype");
 
-			auto* mapname_ui = game::UI_GetMapDisplayName(mapname);
-			auto* gametype_ui = game::UI_GetGameTypeDisplayName(gametype);
+			auto* mapname_ui = game::UI_GetMapDisplayName(mapname ? mapname->current.string : "");
+			auto* gametype_ui = game::UI_GetGameTypeDisplayName(gametype ? gametype->current.string : "");
 
 			const auto* placement = game::ScrPlace_GetActivePlacement();
 

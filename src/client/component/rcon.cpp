@@ -48,7 +48,7 @@ namespace rcon
 		void send_rcon_command(const std::string& password, const std::string& data)
 		{
 			// If you are the server, don't bother with rcon and just execute the command
-			if (game::Dvar_FindVar("sv_running")->current.enabled)
+			if (const auto* sv_running = game::Dvar_FindVar("sv_running"); sv_running && sv_running->current.enabled)
 			{
 				game::Cbuf_AddText(0, data.data());
 				return;
@@ -74,10 +74,11 @@ namespace rcon
 
 		std::string build_status_buffer()
 		{
-			const auto* mapname = game::Dvar_FindVar("mapname");
+			static const game::dvar_t* mapname_dvar = nullptr;
+			if (!mapname_dvar) mapname_dvar = game::Dvar_FindVar("mapname");
 
 			std::string buffer{};
-			buffer.append(utils::string::va("map: %s\n", mapname->current.string));
+			buffer.append(utils::string::va("map: %s\n", mapname_dvar ? mapname_dvar->current.string : ""));
 			buffer.append(
 				"num score bot ping guid                             name             address               qport\n");
 			buffer.append(

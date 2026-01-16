@@ -195,6 +195,12 @@ namespace network
 			const auto net_ip = game::Dvar_FindVar("net_ip");
 			const auto net_port = game::Dvar_FindVar("net_port");
 
+			if (!net_ip || !net_port)
+			{
+				console::warn("WARNING: net_ip or net_port dvars are undefined!\n");
+				return;
+			}
+
 			auto port_diff = 0;
 			for (port_diff = 0; port_diff < 10; port_diff++)
 			{

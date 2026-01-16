@@ -31,8 +31,10 @@ namespace timescale
 
 			if (game::Com_GameMode_SupportsFeature(game::Com_GameMode_Feature::FEATURE_TIMESCALE))
 			{
-				auto com_timescale = game::Dvar_FindVar("com_timescale");
-				game::Dvar_SetFloat(com_timescale, 1.0f);
+				if(auto com_timescale = game::Dvar_FindVar("com_timescale"); com_timescale != nullptr)
+				{
+					game::Dvar_SetFloat(com_timescale,  1.0f);
+				}
 			}
 		}
 
@@ -45,8 +47,10 @@ namespace timescale
 			{
 				if (endTimescale == startTimescale)
 				{
-					auto com_timescale = game::Dvar_FindVar("com_timescale");
-					game::Dvar_SetFloat(com_timescale, endTimescale);
+					if(auto com_timescale = game::Dvar_FindVar("com_timescale"); com_timescale != nullptr)
+					{
+						game::Dvar_SetFloat(com_timescale, endTimescale);
+					}
 				}
 			}
 		}

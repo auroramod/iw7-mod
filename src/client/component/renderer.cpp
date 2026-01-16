@@ -16,7 +16,7 @@ namespace renderer
 
 		int get_fullbright_technique()
 		{
-			switch (dvars::r_fullbright->current.integer)
+			switch (dvars::r_fullbright ? dvars::r_fullbright->current.integer : 0)
 			{
 			case 2:
 				return game::TECHNIQUE_LIT;
@@ -27,10 +27,12 @@ namespace renderer
 
 		void gfxdrawmethod()
 		{
+			const auto fullbright = dvars::r_fullbright ? dvars::r_fullbright->current.integer : 0;
+
 			game::gfxDrawMethod->drawScene = game::GFX_DRAW_SCENE_STANDARD;
-			game::gfxDrawMethod->baseTechType = dvars::r_fullbright->current.integer ? get_fullbright_technique() : game::TECHNIQUE_LIT;
-			game::gfxDrawMethod->emissiveTechType = dvars::r_fullbright->current.integer ? get_fullbright_technique() : game::TECHNIQUE_EMISSIVE;
-			game::gfxDrawMethod->forceTechType = dvars::r_fullbright->current.integer ? get_fullbright_technique() : game::TECHNIQUE_LIT;
+			game::gfxDrawMethod->baseTechType = fullbright ? get_fullbright_technique() : game::TECHNIQUE_LIT;
+			game::gfxDrawMethod->emissiveTechType = fullbright ? get_fullbright_technique() : game::TECHNIQUE_EMISSIVE;
+			game::gfxDrawMethod->forceTechType = fullbright ? get_fullbright_technique() : game::TECHNIQUE_LIT;
 		}
 
 		void r_init_draw_method_stub()
@@ -40,7 +42,7 @@ namespace renderer
 
 		bool r_update_front_end_dvar_options_stub()
 		{
-			if (dvars::r_fullbright->modified)
+			if (dvars::r_fullbright && dvars::r_fullbright->modified)
 			{
 				game::Dvar_ClearModified(dvars::r_fullbright);
 				game::R_SyncRenderThread();
