@@ -7,8 +7,9 @@
 
 #define DW_MOTD               302
 #define DW_PLAYLISTS          303
+#define DW_PUBVARS            304
 
-#define TLS_DLL               304
+#define TLS_DLL               305
 
 #define ICON_IMAGE            306
 

@@ -429,4 +429,21 @@ namespace demonware
 			data->write_uint32(m_value);
 		}
 	};
+
+	class bdPublisherVariablesInfo final : public bdTaskResult
+	{
+	public:
+		uint16_t majorVersion;
+		uint16_t minorVersion;
+		std::string nameSpace;
+		std::string variables;
+
+		void serialize(byte_buffer* buffer) override
+		{
+			buffer->write_uint16(this->majorVersion);
+			buffer->write_uint16(this->minorVersion);
+			buffer->write_string(this->nameSpace);
+			buffer->write_string(this->variables);
+		}
+	};
 }
