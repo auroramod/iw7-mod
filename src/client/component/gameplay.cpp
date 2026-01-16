@@ -154,7 +154,7 @@ namespace gameplay
 			origin[1] += valueZ * glob->viewModelAxis[2][1];
 			origin[2] += valueZ * glob->viewModelAxis[2][2];
 
-			if(!dvars::cg_gun_x || !dvars::cg_gun_y || !dvars::cg_gun_z) return;
+			if (!dvars::cg_gun_x || !dvars::cg_gun_y || !dvars::cg_gun_z) return;
 
 			// Apply dvar values
 			origin[0] += dvars::cg_gun_x->current.value * glob->viewModelAxis[0][0];

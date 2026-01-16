@@ -10,7 +10,7 @@ namespace utils
 	{
 		int channels{};
 		auto* rgb_image = stbi_load_from_memory(reinterpret_cast<const uint8_t*>(image_data.data()), static_cast<int>(image_data.size()), &this->width, &this->height, &channels, 4);
-		if(!rgb_image)
+		if (!rgb_image)
 		{
 			throw std::runtime_error("Unable to load image");
 		}

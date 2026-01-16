@@ -388,7 +388,7 @@ namespace party
 			auto* ui_privateClients = game::Dvar_FindVar("ui_privateClients");
 			auto* ui_hardcore = game::Dvar_FindVar("ui_hardcore");
 
-			if(!ui_gametype)
+			if (!ui_gametype)
 			{
 				console::error("Failed to start map for party. ui_gametype was undefined");
 				return;
