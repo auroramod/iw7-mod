@@ -100,6 +100,7 @@ IMAGE_LOGO            BITMAP "resources/logo.bmp"
 
 DW_MOTD               RCDATA "resources/dw/motd-english.txt"
 DW_PLAYLISTS          RCDATA "resources/dw/playlists_tu23.aggr"
+DW_PUBVARS            RCDATA "resources/dw/publisher_variables.json"
 
 #ifdef _DEBUG
 TLS_DLL               RCDATA "../../build/bin/x64/Debug/tlsdll.dll"
