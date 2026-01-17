@@ -74,11 +74,15 @@ namespace rcon
 
 		std::string build_status_buffer()
 		{
-			static const game::dvar_t* mapname_dvar = nullptr;
-			if (!mapname_dvar) mapname_dvar = game::Dvar_FindVar("mapname");
-
 			std::string buffer{};
-			buffer.append(utils::string::va("map: %s\n", mapname_dvar ? mapname_dvar->current.string : ""));
+
+			const auto* mapname_dvar = game::Dvar_FindVar("mapname");
+			if (!mapname_dvar)
+			{
+				return buffer;
+			}
+
+			buffer.append(utils::string::va("map: %s\n", mapname_dvar->current.string));
 			buffer.append(
 				"num score bot ping guid                             name             address               qport\n");
 			buffer.append(
@@ -155,6 +159,12 @@ namespace rcon
 				}
 
 				auto status_buffer = build_status_buffer();
+				if (status_buffer.empty())
+				{
+					console::warn("Status was called, but server is migrating maps\n");
+					return;
+				}
+
 				console::info("%s", status_buffer.data());
 			});
 

@@ -141,6 +141,15 @@ namespace demonware
 				.cost = 0xFF,
 			};
 
+			LootCsv zombiecards
+			{
+				.file = "cp/loot/iw7_zombiecards_loot_master.csv",
+				.index = 0,
+				.quality = 2,
+				.salvageReturned = 0xFF,
+				.cost = 0xFF,
+			};
+
 			LootCrateCsv loot_crate
 			{
 				.file = "mp/loot/iw7_loot_crate_loot_master.csv",
@@ -163,6 +172,7 @@ namespace demonware
 		std::vector<std::uint32_t> lootmap_cosmetic_reticles;
 		std::vector<std::uint32_t> lootmap_cosmetic_rigs;
 		std::vector<std::uint32_t> lootmap_zombiefatefortune;
+		std::vector<std::uint32_t> lootmap_zombiecards;
 
 		std::unordered_map<std::uint32_t, Item> m_lootmap;
 
@@ -175,12 +185,15 @@ namespace demonware
 
 		std::unordered_map<std::uint32_t, LootCrate> lootcrates;
 
-		void read_loot_csv(csv::LootCsv& csv, std::vector<std::uint32_t>& lootmap)
+		void read_loot_csv(csv::LootCsv& csv, std::vector<std::uint32_t>& lootmap, bool should_ignore = true)
 		{
 			lootmap.clear();
 
 			const auto asset = game::DB_FindXAssetHeader(game::ASSET_TYPE_STRINGTABLE, csv.file.data(), 0).stringTable;
-			if (!asset) return;
+			if (!asset)
+			{
+				return;
+			}
 
 			for (auto row = 0; row < asset->rowCount; row++)
 			{
@@ -189,17 +202,19 @@ namespace demonware
 
 				std::uint32_t salvageReturned = 0;
 				std::uint32_t cost = 0;
+
 				if (csv.salvageReturned != 0xFF)
 				{
 					salvageReturned = std::atoi(game::StringTable_GetColumnValueForRow(asset, row, csv.salvageReturned));
 				}
+
 				if (csv.cost != 0xFF)
 				{
 					cost = std::atoi(game::StringTable_GetColumnValueForRow(asset, row, csv.cost));
 				}
 
 				// reward item, not from lootboxes
-				if (cost == 0 && salvageReturned == 0)
+				if (should_ignore && cost == 0 && salvageReturned == 0)
 					continue;
 
 				const Item loot = { id, quality, salvageReturned, cost };
@@ -265,7 +280,12 @@ namespace demonware
 
 		void read_zombiefatefortune_csv()
 		{
-			read_loot_csv(csv::zombiefatefortune, lootmap_zombiefatefortune);
+			read_loot_csv(csv::zombiefatefortune, lootmap_zombiefatefortune, false);
+		}
+
+		void read_zombiecards_csv()
+		{
+			read_loot_csv(csv::zombiecards, lootmap_zombiecards, false);
 		}
 
 		void read_loot_crate_csv()
@@ -308,52 +328,56 @@ namespace demonware
 
 			// cp
 			read_zombiefatefortune_csv();
+			read_zombiecards_csv();
 
 			// crates
 			read_loot_crate_csv();
 		}
 
-		// Brought to you by ChatGPT
 		std::vector<Item> get_random_loot_from_map(std::vector<std::uint32_t>& lootmap, const size_t itemAmount, const float luckFactor, std::uint32_t quaranteedQuality = 0)
 		{
-			// Edge case: if the vector is empty
-			if (lootmap.empty()) {
-				throw std::runtime_error("Lootmap is empty");
+			std::vector<Item> selectedItems;
+
+			if (lootmap.empty()) 
+			{
+				console::error("get_random_loot_from_map: Lootmap is empty");
+				return selectedItems;
 			}
 
-			// Edge case: if itemAmount is more than the number of available items
-			if (itemAmount > lootmap.size()) {
-				throw std::runtime_error("Item amount exceeds the number of available items");
+			if (itemAmount > lootmap.size())
+			{
+				console::error("get_random_loot_from_map: Item amount exceeds the number of available items");
+				return selectedItems;
 			}
 
-			// Validate the luckFactor (should be positive)
-			if (luckFactor <= 0) {
-				throw std::invalid_argument("Luck factor must be greater than zero");
+			if (luckFactor <= 0) 
+			{
+				console::error("get_random_loot_from_map: Luck factor must be greater than zero");
+				return selectedItems;
 			}
 
-			// Calculate the total weight based on adjusted rarity values
 			double totalWeight = 0;
 			std::vector<double> adjustedWeights(lootmap.size());
 
-			for (size_t i = 0; i < lootmap.size(); ++i) {
-				if (!get_loot(lootmap[i]).quality) continue;
+			for (size_t i = 0; i < lootmap.size(); ++i) 
+			{
+				if (!get_loot(lootmap[i]).quality)
+				{
+					continue;
+				}
 
-				// Calculate weight as inverse of rarity, adjusted by luckFactor
 				adjustedWeights[i] = 1.0 / std::pow(get_loot(lootmap[i]).quality, luckFactor);
 				totalWeight += adjustedWeights[i];
 			}
 
 			assert(adjustedWeights.size() >= itemAmount);
 
-			// Set up the random number generator
 			std::random_device rd;
 			std::mt19937 gen(rd());
 			std::uniform_real_distribution<> dis(0.0, totalWeight);
 
-			std::vector<Item> selectedItems;
-
-			// Select items
-			while (selectedItems.size() < itemAmount) {
+			while (selectedItems.size() < itemAmount) 
+			{
 				double randomValue = dis(gen);
 				double cumulativeWeight = 0;
 
@@ -440,6 +464,20 @@ namespace demonware
 				}
 			}
 
+			for (auto& crate : lootcrates)
+			{
+				const auto crate_id = crate.first;
+				if (get_item_balance(crate_id))
+				{
+					Item crate_item{};
+					crate_item.id = crate_id;
+					crate_item.quality = 0;
+					crate_item.salvageReturned = 0;
+					crate_item.cost = 0;
+					items.push_back(crate_item);
+				}
+			}
+
 			return items;
 		}
 
@@ -501,17 +539,17 @@ namespace demonware
 
 			switch (lootbox_id)
 			{
-			case 70000: // CommonCrate
+			case LootBoxType::LOOT_COMMON_CRATE:
 				return get_random_loot_CommonCrate();
-			case 70001: // RareCrate
+			case LootBoxType::LOOT_RARE_CRATE:
 				return get_random_loot_RareCrate();
-			case 70002: // ZombieCrate
+			case LootBoxType::ZOMBIE_COMMON_CRATE:
 				return get_random_loot_ZombieCrate();
-			case 70003: // ZombieRareCrate
+			case LootBoxType::ZOMBIE_RARE_CRATE:
 				return get_random_loot_ZombieRareCrate();
-			case 70004: // ZombieCardPack
+			case LootBoxType::ZOMBIE_COMMON_CARD_PACK:
 				return get_random_loot_ZombieCardPack();
-			case 70005: // ZombieRareCardPack
+			case LootBoxType::ZOMBIE_RARE_CARD_PACK:
 				return get_random_loot_ZombieRareCardPack();
 			default:
 				printf("[DW]: Missing LootCrate logic for %d\n", lootbox_id);

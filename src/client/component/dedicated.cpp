@@ -290,7 +290,11 @@ namespace dedicated
 			// Disable load for renderer
 			dvars::override::register_bool("r_loadForRenderer", false, game::DVAR_FLAG_READ);
 
+			// Disable any intros
 			dvars::override::register_bool("intro", false, game::DVAR_FLAG_READ);
+
+			// Fix dedicated servers quickly ending game/showing blackscreen
+			game::Dvar_RegisterBool("scr_eom_combat", true, game::DVAR_FLAG_READ, "");
 
 			// Is party dedicated
 			utils::hook::jump(0x1405DFC10, party_is_server_dedicated_stub);

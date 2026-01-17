@@ -284,7 +284,7 @@ namespace demonware
 		{
 			console::demonware("[DW]: mission end requested...\n");
 
-			printf("%s\n", json_buffer.data());
+			console::demonware("%s\n", json_buffer.data());
 
 			[[maybe_unused]] const auto match_id = json["MatchId"].get<int>(); // always 0
 			[[maybe_unused]] const auto mission_id = json["MissionId"].get<int>();
@@ -301,13 +301,13 @@ namespace demonware
 			json_reply["Currencies"] = nlohmann::json::value_type::array();
 
 			send(json_reply);
-			printf("%s\n", json_reply.dump().data());
+			console::demonware("%s\n", json_reply.dump().data());
 		}
 		else if (action == "EndMissionSet") // aka EndContract
 		{
 			console::demonware("[DW]: contract end requested...\n");
 
-			printf("%s\n", json_buffer.data());
+			console::demonware("%s\n", json_buffer.data());
 
 			const auto mission_set_id = json["MissionSetId"].get<unsigned int>();
 			[[maybe_unused]] const auto mission_set_instance_id = json["MissionSetInstanceId"].get<unsigned int>();
@@ -323,20 +323,20 @@ namespace demonware
 			json_reply["Currencies"] = nlohmann::json::value_type::array();
 
 			send(json_reply);
-			printf("%s\n", json_reply.dump().data());
+			console::demonware("%s\n", json_reply.dump().data());
 		}
 		else if (action == "ResetMissions")
 		{
 			console::demonware("[DW]: mission reset requested...\n");
 
-			printf("%s\n", json_buffer.data());
+			console::demonware("%s\n", json_buffer.data());
 
 			mission_instanced_id_cache = 0;
 			mission_set_instanced_id_cache = 0;
 		}
 		else
 		{
-			printf("[DW]: unhandled reward action \"%s\"...\n", action.data());
+			console::demonware("[DW]: unhandled reward action \"%s\"...\n", action.data());
 		}
 
 		server->create_reply(this->task_id(), BD_NO_ERROR).send();
