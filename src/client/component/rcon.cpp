@@ -76,8 +76,8 @@ namespace rcon
 		{
 			std::string buffer{};
 
-			static const game::dvar_t* mapname_dvar = game::Dvar_FindVar("mapname");
-			if (!mapname_dvar || !mapname_dvar->current.string)
+			const auto* mapname_dvar = game::Dvar_FindVar("mapname");
+			if (!mapname_dvar)
 			{
 				return buffer;
 			}
