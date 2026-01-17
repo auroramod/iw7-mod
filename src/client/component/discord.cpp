@@ -109,7 +109,7 @@ namespace discord
 			static std::string mapname_str = "mp_frontend";
 			const char* mapname = mapname_str.c_str();
 
-			if (mapname_dvar && strcmp(mapname, mapname_dvar->current.string) == 0)
+			if (mapname_dvar && strcmp(mapname, mapname_dvar->current.string) != 0)
 			{
 				mapname_str = utils::string::copy(mapname_dvar->current.string, std::strlen(mapname_dvar->current.string));
 				mapname = mapname_str.c_str();
