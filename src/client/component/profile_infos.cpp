@@ -14,6 +14,7 @@
 #include <utils/hook.hpp>
 
 #include "game/utils/fragment_handler.hpp"
+#include "scheduler.hpp"
 
 namespace profile_infos
 {
@@ -143,13 +144,23 @@ namespace profile_infos
 
 	void send_all_profile_infos(const game::netadr_s& sender_addr)
 	{
-		profile_mapping.access([&](const profile_map& profiles)
-		{
-			for (const auto& entry : profiles)
-			{
-				send_profile_info(sender_addr, entry.first, entry.second);
+		std::vector<std::pair<std::uint64_t, profile_info>> to_send;
+		profile_mapping.access([&](const profile_map& profiles) {
+			for (const auto& entry : profiles) {
+				to_send.push_back(entry);
 			}
 		});
+
+		int stagger_ms = 50;
+		for (const auto& entry : to_send)
+		{
+			scheduler::once([=]
+			{
+				send_profile_info(sender_addr, entry.first, entry.second);
+			}, scheduler::async, std::chrono::milliseconds(stagger_ms));
+
+			stagger_ms += 50;
+		}
 	}
 
 	void send_profile_info_to_all_clients(const std::uint64_t user_id, const profile_info& info)
@@ -159,7 +170,9 @@ namespace profile_infos
 		{
 			if (svs_clients[i].header.state >= 1 && !game::SV_ClientIsBot(i) && !game::Session_IsHost(game::SV_MainMP_GetServerLobby(), i))
 			{
-				send_profile_info(svs_clients[i].remoteAddress, user_id, info);
+				scheduler::once([=] {
+					send_profile_info(svs_clients[i].remoteAddress, user_id, info);
+				}, scheduler::async, i * 50ms);
 			}
 		}
 	}
@@ -174,7 +187,9 @@ namespace profile_infos
 				auto self = load_profile_info();
 				if (self.has_value())
 				{
-					send_profile_info(addr, steam::SteamUser()->GetSteamID().bits, self.value());
+					scheduler::once([=] {
+						send_profile_info(addr, steam::SteamUser()->GetSteamID().bits, self.value());
+					}, scheduler::async, i * 50ms);
 					break;
 				}
 			}
@@ -221,8 +236,14 @@ namespace profile_infos
 				if (game::fragment_handler::handle(client_addr, buffer, final_packet))
 				{
 					buffer = utils::byte_buffer(final_packet);
-
 					const auto user_id = buffer.read<std::uint64_t>();
+
+					if (profile_mapping.access<bool>([&](profile_map& profiles) {
+						return profiles.count(user_id) > 0; // Do we already have their profile data?
+					}))
+					{
+						return;
+					}
 
 					const profile_info info(buffer);
 					if (info.m_memberplayer_card.empty())
