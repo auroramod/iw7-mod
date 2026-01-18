@@ -27,6 +27,12 @@ namespace logprint
 				cmd = "say";
 			}
 
+			const scripting::entity level{ *game::levelEntityId };
+			const scripting::entity player{ game::Scr_GetEntityId(ent->s.number, 0) };
+
+			scripting::notify(level, cmd, { player, chat_text });
+			scripting::notify(player, cmd, { chat_text });
+
 			game::G_LogPrintf("%s;%s;%i;%s;%s\n",
 				cmd,
 				game::SV_GameMP_GetGuid(ent->s.number),
