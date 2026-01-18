@@ -30,15 +30,18 @@ namespace logprint
 			const scripting::entity level{ *game::levelEntityId };
 			const scripting::entity player{ game::Scr_GetEntityId(ent->s.number, 0) };
 
-			scripting::notify(level, cmd, { player, chat_text });
-			scripting::notify(player, cmd, { chat_text });
+			std::string message(chat_text);
+			message.erase(0, 1);
+
+			scripting::notify(level, cmd, { player, message });
+			scripting::notify(player, cmd, { message });
 
 			game::G_LogPrintf("%s;%s;%i;%s;%s\n",
 				cmd,
 				game::SV_GameMP_GetGuid(ent->s.number),
 				ent->s.number,
 				ent->client->sess.cs.name,
-				&chat_text[1]);
+				message.data());
 
 			g_say_hook.invoke<void>(ent, target, mode, chat_text);
 		}
