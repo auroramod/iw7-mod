@@ -324,100 +324,100 @@ namespace dvars
 		}
 	}
 
-	void inline dvar_register_bool(const char* name, bool& value, unsigned int& flags, const char* description)
+	void inline dvar_register_bool(const char* name, bool* value, unsigned int* flags, const char* description)
 	{
 		auto* var = find_dvar(override::register_overrides[game::DvarType::boolean], name);
 		if (var)
 		{
-			value = var->value.enabled;
-			flags = var->flags;
+			*value = var->value.enabled;
+			*flags = var->flags;
 		}
 	}
 
-	void inline dvar_register_float(const char* name, float& value, float& min, float& max, unsigned int flags, const char* description)
+	void inline dvar_register_float(const char* name, float* value, float* min, float* max, unsigned int* flags, const char* description)
 	{
 		auto* var = find_dvar(override::register_overrides[game::DvarType::value], name);
 		if (var)
 		{
-			value = var->value.value;
-			min = var->limits.value.min;
-			max = var->limits.value.max;
-			flags = var->flags;
+			*value = var->value.value;
+			*min = var->limits.value.min;
+			*max = var->limits.value.max;
+			*flags = var->flags;
 		}
 	}
 
-	void inline dvar_register_int(const char* name, int& value, int& min, int& max, unsigned int& flags, const char* description)
+	void inline dvar_register_int(const char* name, int* value, int* min, int* max, unsigned int* flags, const char* description)
 	{
 		auto* var = find_dvar(override::register_overrides[game::DvarType::integer], name);
 		if (var)
 		{
-			value = var->value.integer;
-			min = var->limits.integer.min;
-			max = var->limits.integer.max;
-			flags = var->flags;
+			*value = var->value.integer;
+			*min = var->limits.integer.min;
+			*max = var->limits.integer.max;
+			*flags = var->flags;
 		}
 	}
 
-	void inline dvar_register_string(const char* name, const char* value, unsigned int& flags, const char* description)
+	void inline dvar_register_string(const char* name, const char* value, unsigned int* flags, const char* description)
 	{
 		auto* var = find_dvar(override::register_overrides[game::DvarType::string], name);
 		if (var)
 		{
 			value = var->string.data();
-			flags = var->flags;
+			*flags = var->flags;
 		}
 	}
 
-	void inline dvar_register_vector2(const char* name, float& x, float& y, float& min, float& max,
-		unsigned int& flags, const char* description)
+	void inline dvar_register_vector2(const char* name, float* x, float* y, float* min, float* max,
+		unsigned int* flags, const char* description)
 	{
 		auto* var = find_dvar(override::register_overrides[game::DvarType::vec2], name);
 		if (var)
 		{
-			x = var->value.vector[0];
-			y = var->value.vector[1];
-			min = var->limits.vector.min;
-			max = var->limits.vector.max;
-			flags = var->flags;
+			*x = var->value.vector[0];
+			*y = var->value.vector[1];
+			*min = var->limits.vector.min;
+			*max = var->limits.vector.max;
+			*flags = var->flags;
 		}
 	}
 
-	void inline dvar_register_vector3(const char* name, float& x, float& y, float& z, float& min,
-		float& max, unsigned int& flags, const char* description)
+	void inline dvar_register_vector3(const char* name, float* x, float* y, float* z, float* min,
+		float* max, unsigned int* flags, const char* description)
 	{
 		auto* var = find_dvar(override::register_overrides[game::DvarType::vec3], name);
 		if (var)
 		{
-			x = var->value.vector[0];
-			y = var->value.vector[1];
-			z = var->value.vector[2];
-			min = var->limits.vector.min;
-			max = var->limits.vector.max;
-			flags = var->flags;
+			*x = var->value.vector[0];
+			*y = var->value.vector[1];
+			*z = var->value.vector[2];
+			*min = var->limits.vector.min;
+			*max = var->limits.vector.max;
+			*flags = var->flags;
 		}
 	}
 
-	void inline check_dvar_overrides(const char* name, game::DvarType& type, unsigned int& flags, game::DvarValue* value, game::DvarLimits* domain, const char* description)
+	void inline check_dvar_overrides(const char* name, game::DvarType& type, unsigned int* flags, game::DvarValue* value, game::DvarLimits* domain, const char* description)
 	{
 		switch (type)
 		{
 		case game::DvarType::boolean:
-			dvar_register_bool(name, value->enabled, flags, description);
+			dvar_register_bool(name, &value->enabled, flags, description);
 			break;
 		case game::DvarType::value:
-			dvar_register_float(name, value->value, domain->value.min, domain->value.max, flags, description);
+			dvar_register_float(name, &value->value, &domain->value.min, &domain->value.max, flags, description);
 			break;
 		case game::DvarType::integer:
-			dvar_register_int(name, value->integer, domain->integer.min, domain->integer.max, flags, description);
+			dvar_register_int(name, &value->integer, &domain->integer.min, &domain->integer.max, flags, description);
 			break;
 		case game::DvarType::string:
 			dvar_register_string(name, value->string, flags, description);
 			break;
 		case game::DvarType::vec2:
-			dvar_register_vector2(name, value->vector[0], value->vector[1], domain->vector.min, domain->vector.max, flags, description);
+			dvar_register_vector2(name, &value->vector[0], &value->vector[1], &domain->vector.min, &domain->vector.max, flags, description);
 			break;
 		case game::DvarType::vec3:
-			dvar_register_vector3(name, value->vector[0], value->vector[1], value->vector[2], domain->vector.min, domain->vector.max, flags, description);
+			dvar_register_vector3(name, &value->vector[0], &value->vector[1], &value->vector[2], &domain->vector.min, &domain->vector.max, flags, description);
 			break;
 		default:
 			break;
@@ -493,7 +493,7 @@ namespace dvars
 	game::dvar_t* dvar_register_variant(const char* name, unsigned int checksum, game::DvarType type, unsigned int flags,
 		game::DvarValue* value, game::DvarLimits* domain, const char* description)
 	{
-		check_dvar_overrides(name, type, flags, value, domain, description);
+		check_dvar_overrides(name, type, &flags, value, domain, description);
 
 		auto* dvar = dvar_register_variant_hook.invoke<game::dvar_t*>(name, checksum, type, flags, value, domain, description);
 

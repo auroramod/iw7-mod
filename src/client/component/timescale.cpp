@@ -61,8 +61,8 @@ namespace timescale
 	public:
 		void post_unpack() override
 		{
-			dvars::override::register_float("timescale", 1.0f, 0.1f, 1000.0f, game::DVAR_FLAG_CHEAT);
-			dvars::override::register_float("com_timescale", 1.0f, 0.1f, 1000.0f, game::DVAR_FLAG_CHEAT | 0x40 | game::DVAR_FLAG_READ);
+			dvars::override::register_float("timescale", 1.0f, 0.1f, 1000.0f, game::DVAR_FLAG_CHEAT | game::DVAR_FLAG_REPLICATED);
+			dvars::override::register_float("com_timescale", 1.0f, 0.1f, 1000.0f, game::DVAR_FLAG_CHEAT | 0x40 | game::DVAR_FLAG_READ | game::DVAR_FLAG_REPLICATED);
 
 			// reset com_timeScale dvar in Com_Restart
 			utils::hook::call(0x140BAF16D, com_init_dobj_stub);
