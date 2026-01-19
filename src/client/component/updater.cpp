@@ -468,15 +468,20 @@ namespace updater
 				}
 			});
 
-			if (!download_failed && is_binary_modified)
+			if (!download_failed)
 			{
-				if (!utils::flags::has_flag("update-only"))
-				{
-					console::important("[Updater] Restarting\n");
-					utils::nt::relaunch_self();
-				}
+				console::redudant("[Updater] Update check complete");
 
-				utils::nt::terminate();
+				if (is_binary_modified)
+				{
+					if (!utils::flags::has_flag("update-only"))
+					{
+						console::important("[Updater] Restarting\n");
+						utils::nt::relaunch_self();
+					}
+
+					utils::nt::terminate();
+				}
 			}
 		}
 	}
