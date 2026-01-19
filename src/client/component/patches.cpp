@@ -23,14 +23,7 @@ namespace patches
 
 		std::string get_login_username()
 		{
-			char username[UNLEN + 1];
-			DWORD username_len = UNLEN + 1;
-			if (!GetUserNameA(username, &username_len))
-			{
-				return "Unknown Soldier";
-			}
-
-			return std::string{ username, username_len - 1 };
+			return "Unknown Soldier";
 		}
 
 		void com_register_common_dvars_stub()
