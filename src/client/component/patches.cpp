@@ -379,6 +379,8 @@ namespace patches
 
 			msg_readlong_hook.create(0x140BB37D0, msg_readlong_stub);
 
+			cmd_lui_notify_server_hook.create(0x140B10B00, cmd_lui_notify_server_stub);
+
 			// register custom dvars
 			com_register_common_dvars_hook.create(0x140BADF30, com_register_common_dvars_stub);
 
