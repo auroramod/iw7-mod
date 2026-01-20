@@ -348,26 +348,30 @@ namespace stats
 	public:
 		void post_unpack() override
 		{
-			if (game::environment::is_dedi())
+			if (!game::environment::is_dedi())
 			{
-				return;
+				command::add("unlockstats", unlock_stats);
+				command::add("unlockall", unlock_stats);
+				command::add("unlockstatsEE", unlock_stats_ee);
+				command::add("unlockallEE", unlock_stats_ee);
+				command::add("director_cut", director_cut);
 			}
 
-			command::add("unlockstats", unlock_stats);
-			command::add("unlockall", unlock_stats);
-			command::add("unlockstatsEE", unlock_stats_ee);
-			command::add("unlockallEE", unlock_stats_ee);
-			command::add("director_cut", director_cut);
-
 			// register dvars
-			scheduler::once([]()
+			auto default_value = false;
+			auto default_flag = game::DVAR_FLAG_SAVED;
+
+			if (game::environment::is_dedi())
 			{
-				dvars::cg_unlockall_items = game::Dvar_RegisterBool("cg_unlockall_items", false, game::DVAR_FLAG_SAVED, "Whether items should be locked based on the player's stats or always unlocked.");
-				game::Dvar_RegisterBool("cg_unlockall_classes", false, game::DVAR_FLAG_SAVED, "Whether classes should be locked based on the player's stats or always unlocked."); // TODO: need LUI scripting
-				dvars::cg_unlockall_loot = game::Dvar_RegisterBool("cg_unlockall_loot", false, game::DVAR_FLAG_SAVED, "Whether loot should be locked based on the player's stats or always unlocked.");
-				
-				cg_loot_count = game::Dvar_RegisterInt("cg_loot_count", 1, 1, 99999, game::DVAR_FLAG_SAVED, "Amount of loot to give for items");
-			}, scheduler::main);
+				default_value = true;
+				default_flag = game::DVAR_FLAG_READ;
+			}
+
+			dvars::cg_unlockall_items = game::Dvar_RegisterBool("cg_unlockall_items", default_value, default_flag, "Whether items should be locked based on the player's stats or always unlocked.");
+			game::Dvar_RegisterBool("cg_unlockall_classes", default_value, default_flag, "Whether classes should be locked based on the player's stats or always unlocked."); // TODO: need LUI scripting
+			dvars::cg_unlockall_loot = game::Dvar_RegisterBool("cg_unlockall_loot", default_value, default_flag, "Whether loot should be locked based on the player's stats or always unlocked.");
+
+			cg_loot_count = game::Dvar_RegisterInt("cg_loot_count", 1, 1, 99999, game::DVAR_FLAG_SAVED, "Amount of loot to give for items");
 
 			// unlockables
 			is_item_unlocked_hook.create(0x14034E020, is_item_unlocked_stub);
@@ -376,10 +380,13 @@ namespace stats
 			// loot
 			item_quantity_hook.create(0x14051DBE0, item_quantity_stub);
 
-			// GetPlayerData print
-			utils::hook::jump(0x140B84F00, com_ddl_print_state); // Com_DDL_PrintState
+			if (!game::environment::is_dedi())
+			{
+				// GetPlayerData print
+				utils::hook::jump(0x140B84F00, com_ddl_print_state); // Com_DDL_PrintState
 
-			utils::hook::set<byte>(0x140B86230, 0xEB); // Allow setting stats with connstate > 9
+				utils::hook::set<byte>(0x140B86230, 0xEB); // Allow setting stats with connstate > 9
+			}
 		}
 	};
 }
