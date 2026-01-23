@@ -26,11 +26,11 @@ local function setupSystemLinkMenu(menu, controller, index)
 
     if isAliensMode then
         Engine.SetFrontEndSceneSection("zm_main", 1)
-        menu.MenuTitle.MenuBreadcrumbs:setText(ToUpperCase(
-            Engine.Localize("LUA_MENU_BREADCRUMB_2_ITEMS", "IW7-Mod", "ZOMBIES")), 0)
+        menu.MenuTitle.MenuBreadcrumbs:setText(ToUpperCase(Engine.Localize("LUA_MENU_BREADCRUMB_2_ITEMS", "IW7-Mod",
+            "ZOMBIES")), 0)
     else
-        menu.MenuTitle.MenuBreadcrumbs:setText(ToUpperCase(
-            Engine.Localize("LUA_MENU_BREADCRUMB_2_ITEMS", "IW7-Mod", "MULTIPLAYER")), 0)
+        menu.MenuTitle.MenuBreadcrumbs:setText(ToUpperCase(Engine.Localize("LUA_MENU_BREADCRUMB_2_ITEMS", "IW7-Mod",
+            "MULTIPLAYER")), 0)
     end
 
     menu.addButtonHelperFunction = function(helperMenu, helperController)
@@ -66,6 +66,8 @@ local function setupSystemLinkMenu(menu, controller, index)
         end)
 
         menu.bindButton:addEventHandler("button_alt1", function(buttonHandler, buttonEvent)
+            menu.PlayerCount:setText("Players: " .. serverlist:getplayercount())
+            menu.ServerCount:setText("Servers: " .. serverlist:getservercount())
             Lobby.RefreshServerList(controller)
             ACTIONS.PlaySoundSetSound(menu, "selectAlt", false)
         end)
@@ -197,11 +199,34 @@ MenuBuilder.m_types["SystemLinkMenu"] = function(menu, controller)
     self:addElement(ServerBrowser)
     self.ServerBrowser = ServerBrowser
 
+    local f6_local1 = CoD.TextSettings.ButtonHelperFont
+
+    local playercount = LUI.UIText.new()
+    playercount.id = "playercount"
+    playercount:SetFontSize(20 * _1080p)
+    playercount:SetFont(FONTS.GetFont(FONTS.MainMedium.File))
+    playercount:SetAlignment(LUI.Alignment.Left)
+    playercount:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 130, _1080p * 630, _1080p * 942, _1080p * 970)
+    playercount:setText("Players: " .. serverlist:getplayercount())
+    self:addElement(playercount)
+    self.PlayerCount = playercount
+
+    local servercount = LUI.UIText.new()
+    servercount.id = "servercount"
+    servercount:SetFontSize(20 * _1080p)
+    servercount:SetFont(FONTS.GetFont(FONTS.MainMedium.File))
+    servercount:SetAlignment(LUI.Alignment.Left)
+    servercount:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * (130 + 175), _1080p * (630 + 175), _1080p * 942, _1080p * 970)
+    servercount:setText("Servers: " .. serverlist:getservercount())
+    self:addElement(servercount)
+    self.ServerCount = servercount
+
     self._animationSets.DefaultAnimationSet = function()
         ServerBrowser:RegisterAnimationSequence("DefaultSequence", {{function()
             return self.ServerBrowser:SetAlpha(1, 0)
         end}, {function()
-            return self.ServerBrowser:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 130, _1080p * 1790, _1080p * 216, _1080p * 885, 0)
+            return self.ServerBrowser:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 130, _1080p * 1790, _1080p * 216,
+                _1080p * 885, 0)
         end}})
         self._sequences.DefaultSequence = function()
             ServerBrowser:AnimateSequence("DefaultSequence")
@@ -210,7 +235,8 @@ MenuBuilder.m_types["SystemLinkMenu"] = function(menu, controller)
         ServerBrowser:RegisterAnimationSequence("IntroCore", {{function()
             return self.ServerBrowser:SetAlpha(1, 0)
         end}, {function()
-            return self.ServerBrowser:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 130, _1080p * 1790, _1080p * 216, _1080p * 885, 0)
+            return self.ServerBrowser:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 130, _1080p * 1790, _1080p * 216,
+                _1080p * 885, 0)
         end}})
         self._sequences.IntroCore = function()
             ServerBrowser:AnimateSequence("IntroCore")
@@ -220,11 +246,12 @@ MenuBuilder.m_types["SystemLinkMenu"] = function(menu, controller)
     self._animationSets.ThirdGameModeAnimationSet = function()
         self._sequences.DefaultSequence = function()
         end
-        
+
         ServerBrowser:RegisterAnimationSequence("Intro", {{function()
             return self.ServerBrowser:SetAlpha(0, 0)
         end}, {function()
-            return self.ServerBrowser:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 130, _1080p * 1790, _1080p * 216, _1080p * 885, 0)
+            return self.ServerBrowser:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 130, _1080p * 1790, _1080p * 216,
+                _1080p * 885, 0)
         end}})
 
         self._sequences.Intro = function()
@@ -236,7 +263,8 @@ MenuBuilder.m_types["SystemLinkMenu"] = function(menu, controller)
         end, function()
             return self.ServerBrowser:SetAlpha(1, 80)
         end}, {function()
-            return self.ServerBrowser:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 130, _1080p * 1790, _1080p * 216, _1080p * 885, 0)
+            return self.ServerBrowser:SetAnchorsAndPosition(0, 1, 0, 1, _1080p * 130, _1080p * 1790, _1080p * 216,
+                _1080p * 885, 0)
         end}})
         self._sequences.DisplayServerBrowser = function()
             ServerBrowser:AnimateSequence("DisplayServerBrowser")
@@ -285,8 +313,8 @@ MenuBuilder.m_types["SystemLinkMenu"] = function(menu, controller)
         ACTIONS.AnimateSequence(self, "Intro")
     end
     if CONDITIONS.IsCoreMultiplayer(self) then
-    ACTIONS.SetAnimationSet(self, "DefaultAnimationSet")
-    ACTIONS.AnimateSequence(self, "IntroCore")
+        ACTIONS.SetAnimationSet(self, "DefaultAnimationSet")
+        ACTIONS.AnimateSequence(self, "IntroCore")
     end
 
     return self
