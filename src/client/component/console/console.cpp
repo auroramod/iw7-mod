@@ -11,6 +11,8 @@
 #include "terminal.hpp"
 #include "syscon.hpp"
 
+#include <utils/io.hpp>
+
 namespace game_console
 {
 	void print(int type, const std::string& data);
@@ -111,6 +113,13 @@ namespace console
 		{
 			return;
 		}
+
+		auto out = message;
+		if (out.empty() || out.back() != '\n')
+		{
+			out.push_back('\n');
+		}
+		utils::io::write_file("iw7-mod/logs/console.log", out, true);
 
 		if (console::is_enabled())
 		{
