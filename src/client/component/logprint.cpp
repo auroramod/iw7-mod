@@ -36,6 +36,8 @@ namespace logprint
 			scripting::notify(level, cmd, { player, message });
 			scripting::notify(player, cmd, { message });
 
+			console::redudant("%s: %s\n", ent->client->sess.cs.name, message.c_str());
+
 			game::G_LogPrintf("%s;%s;%i;%s;%s\n",
 				cmd,
 				game::SV_GameMP_GetGuid(ent->s.number),
