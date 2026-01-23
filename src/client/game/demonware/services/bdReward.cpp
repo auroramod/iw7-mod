@@ -3,6 +3,8 @@
 
 #include "steam/steam.hpp"
 
+#include "game/dvars.hpp"
+
 #include "component/console/console.hpp"
 
 #include "utils/json.hpp"
@@ -190,7 +192,6 @@ namespace demonware
 			json_reply["Currencies"] = nlohmann::json::value_type::array();
 
 			// Items, Packs
-
 			const auto rule_id = json["RuleId"].is_number_integer() ? json["RuleId"].get<int>() : 0;
 			const auto crate_id = 70000 + rule_id;
 
@@ -201,15 +202,26 @@ namespace demonware
 			auto crate_balance = loot::get_item_balance(crate_id);
 			console::demonware("[DW]: crate balance is %d for %d\n", crate_balance, crate_id);
 
-			if (!crate_balance)
+			const auto has_unlock_all_loot = dvars::cg_unlockall_loot && dvars::cg_unlockall_loot->current.enabled;
+
+			if (!has_unlock_all_loot && !crate_balance)
 			{
-				console::error("[%s] ClaimLootCrates: crate_balance is 0\n", __func__);
+				console::error("ClaimLootCrates: crate_balance is 0\n");
 				server->create_reply(this->task_id(), BD_MARKETPLACE_INSUFFICIENT_ITEM_QUANTITY).send();
 				return;
 			}
 
-			const auto new_crate_balance = crate_balance - 1;
-			console::demonware("[DW]: new crate balance is %d for %d\n", new_crate_balance, crate_id);
+			auto new_crate_balance = crate_balance;
+
+			if (has_unlock_all_loot)
+			{
+				console::demonware("[DW]: ignoring crate balance");
+			}
+			else
+			{
+				new_crate_balance = crate_balance - 1;
+				console::demonware("[DW]: new crate balance is %d for %d\n", new_crate_balance, crate_id);
+			}
 
 			json_reply["Items"][itemidx]["ItemId"] = crate_id;
 			json_reply["Items"][itemidx]["Collision"] = 0; // not sure what this does
@@ -219,6 +231,12 @@ namespace demonware
 			loot::set_item_balance(crate_id, new_crate_balance);
 
 			auto loot = loot::get_random_loot(crate_id);
+			if (loot.empty())
+			{
+				console::error("ClaimLootCrates: missing LootCrate logic for %d, this may be supported later!\n", crate_id);
+				server->create_reply(this->task_id(), BD_MARKETPLACE_ERROR).send();
+				return;
+			}
 
 			for (auto i = 0; i < loot.size(); i++)
 			{

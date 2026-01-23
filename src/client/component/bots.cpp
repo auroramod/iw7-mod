@@ -79,12 +79,12 @@ namespace bots
 		utils::hook::detour sv_kick_client_num_hook;
 		void sv_kick_client_num_stub(const int client_num, const char* reason, bool kicked_for_inactivity)
 		{
-			// Don't kick bot to equalize team balance.
-			if (reason == "EXE_PLAYERKICKED_BOT_BALANCE"s)
+			if (!strcmp(reason, "EXE_PLAYERKICKED_BOT_BALANCE"))
 			{
 				return;
 			}
-			return sv_kick_client_num_hook.invoke<void>(client_num, reason, kicked_for_inactivity);
+
+			sv_kick_client_num_hook.invoke<void>(client_num, reason, kicked_for_inactivity);
 		}
 
 		void add_bots(unsigned int num_bots)
@@ -102,6 +102,7 @@ namespace bots
 			game::Dvar_RegisterBool("bots_enabled", true, game::DVAR_FLAG_READ, "Enable bots and activate bot management systems");
 			game::Dvar_RegisterInt("bot_difficulty", 0, 0, 5, game::DVAR_FLAG_NONE, "Bot difficulty. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
 
+			// don't kick bot to equalize team balance
 			sv_kick_client_num_hook.create(game::SV_CmdsMP_KickClientNum, sv_kick_client_num_stub);
 
 			get_bot_name_hook.create(game::SV_BotGetRandomName, get_random_bot_name);

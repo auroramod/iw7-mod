@@ -552,7 +552,6 @@ namespace demonware
 			case LootBoxType::ZOMBIE_RARE_CARD_PACK:
 				return get_random_loot_ZombieRareCardPack();
 			default:
-				printf("[DW]: Missing LootCrate logic for %d\n", lootbox_id);
 				return {};
 			}
 		}

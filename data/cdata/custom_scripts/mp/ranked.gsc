@@ -182,8 +182,6 @@ intel_onplayerconnect_stub()
     {
         level waittill("connected", player);
 
-        print(va("[intel_onplayerconnect_stub]: %s b4", player.name));
-
         if ( !level.rankedmatch )
             return;
 

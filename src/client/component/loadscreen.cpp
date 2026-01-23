@@ -2,7 +2,9 @@
 #include "loader/component_loader.hpp"
 
 #include "game/game.hpp"
+
 #include "dvars.hpp"
+#include "party.hpp"
 
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
@@ -85,6 +87,26 @@ namespace loadscreen
 
 				auto scale = 0.25f;
 				auto* font = game::UI_GetFontHandle(placement, game::FONT_TYPE_TEXT_FONT, scale);
+
+				if (party::get_server_connection_state()->hostDefined)
+				{
+					auto* motd = party::get_server_connection_state()->motd.data();
+					auto motd_width = game::UI_TextWidth(motd, 0, font, scale);
+
+					game::UI_DrawText(
+						placement,
+						motd,
+						std::numeric_limits<int>::max(),
+						font,
+						(640.0f - (float)motd_width) * 0.5f,
+						400.0f,
+						0,
+						0,
+						scale,
+						game::colorWhite,
+						game::FONT_STYLE_SHADOW);
+				}
+
 				auto width = game::UI_TextWidth(s, 0, font, scale);
 
 				game::UI_DrawText(

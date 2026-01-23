@@ -40,10 +40,11 @@ namespace fov
 				return;
 			}
 			
-			cg_fov = game::Dvar_RegisterFloat("cg_fov", 65.0f, 1.0f, 160.f, game::DVAR_FLAG_SAVED,
+			cg_fov = game::Dvar_RegisterFloat("cg_fov", 65.f, 1.f, 160.f, game::DVAR_FLAG_SAVED,
 				"The field of view angle in degrees");
-			cg_fovScale = game::Dvar_RegisterFloat("cg_fovScale", 1.0f, 0.1f, 2.0f, game::DVAR_FLAG_SAVED,
+			cg_fovScale = game::Dvar_RegisterFloat("cg_fovScale", 1.f, 0.1f, 2.f, game::DVAR_FLAG_SAVED,
 				"Scale applied to the field of view");
+			dvars::override::register_float("cg_fovMin", 1.f, 1.f, 160.f, game::DVAR_FLAG_SAVED);
 
 			*reinterpret_cast<game::dvar_t**>(0x141FA6DA0) = cg_fov;
 			dvars::disable::re_register("cg_fov");

@@ -23,14 +23,7 @@ namespace patches
 
 		std::string get_login_username()
 		{
-			char username[UNLEN + 1];
-			DWORD username_len = UNLEN + 1;
-			if (!GetUserNameA(username, &username_len))
-			{
-				return "Unknown Soldier";
-			}
-
-			return std::string{ username, username_len - 1 };
+			return "Unknown Soldier";
 		}
 
 		void com_register_common_dvars_stub()
@@ -379,6 +372,8 @@ namespace patches
 
 			msg_readlong_hook.create(0x140BB37D0, msg_readlong_stub);
 
+			cmd_lui_notify_server_hook.create(0x140B10B00, cmd_lui_notify_server_stub);
+
 			// register custom dvars
 			com_register_common_dvars_hook.create(0x140BADF30, com_register_common_dvars_stub);
 
@@ -479,8 +474,8 @@ namespace patches
 			utils::hook::nop(0x140E6A30C, 2); // ^
 
 			// Patch crash caused by the server trying to kick players for 'invalid password'
-			utils::hook::nop(0x140B2215B, 18);
-			utils::hook::jump(0x140B2215B, update_last_seen_players_stub(), true);
+			//utils::hook::nop(0x140B2215B, 18);
+			//utils::hook::jump(0x140B2215B, update_last_seen_players_stub(), true);
 
 			// Start match without the timer
 			utils::hook::jump(0x1409AA7F5, request_start_match);
