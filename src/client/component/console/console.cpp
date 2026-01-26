@@ -4,6 +4,7 @@
 #include "game/game.hpp"
 
 #include "component/rcon.hpp"
+#include "component/scheduler.hpp"
 
 #include <utils/flags.hpp>
 
@@ -29,6 +30,8 @@ namespace console
 		con_type_game = con_type_syscon,
 		con_type_default = con_type_terminal,
 	} con_type;
+
+	game::dvar_t* console_log = nullptr;
 
 	void init_console_type()
 	{
@@ -109,7 +112,7 @@ namespace console
 
 	void dispatch_message(const int type, const std::string& message)
 	{
-		if (rcon::message_redirect(message))
+		if (rcon::message_redirect(message) || !console_log)
 		{
 			return;
 		}
@@ -119,7 +122,8 @@ namespace console
 		{
 			out.push_back('\n');
 		}
-		utils::io::write_file("iw7-mod/logs/console.log", out, true);
+
+		utils::io::write_file(console_log->current.string, out, true);
 
 		if (console::is_enabled())
 		{
@@ -196,5 +200,10 @@ namespace console
 		{
 			::syscon::init();
 		}
+
+		scheduler::once([]()
+		{
+			console_log = game::Dvar_RegisterString("g_consoleLog", "iw7-mod/logs/console.log", game::DVAR_FLAG_SAVED, "Where to write the console log");
+		});
 	}
 }
