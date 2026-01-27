@@ -112,7 +112,7 @@ namespace console
 
 	void dispatch_message(const int type, const std::string& message)
 	{
-		if (rcon::message_redirect(message) || !console_log)
+		if (rcon::message_redirect(message))
 		{
 			return;
 		}
@@ -123,7 +123,8 @@ namespace console
 			out.push_back('\n');
 		}
 
-		utils::io::write_file(console_log->current.string, out, true);
+		if (console_log)
+			utils::io::write_file(console_log->current.string, out, true);
 
 		if (console::is_enabled())
 		{
@@ -204,6 +205,6 @@ namespace console
 		scheduler::once([]()
 		{
 			console_log = game::Dvar_RegisterString("g_consoleLog", "iw7-mod/logs/console.log", game::DVAR_FLAG_SAVED, "Where to write the console log");
-		});
+		}, scheduler::main);
 	}
 }
