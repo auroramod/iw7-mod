@@ -12,11 +12,26 @@
 #include <utils/hook.hpp>
 #include <utils/flags.hpp>
 
+#include "scheduler.hpp"
+
 namespace gameplay
 {
 	namespace
 	{
 		game::dvar_t* player_sustain_ammo = nullptr;
+		game::dvar_t* bg_disableBarrierClips = nullptr;
+
+		utils::hook::detour pmove_single_hook;
+		void pmove_single_stub(void* pm)
+		{
+			if (bg_disableBarrierClips && bg_disableBarrierClips->current.enabled && pm)
+			{
+				int* tracemask = reinterpret_cast<int*>(reinterpret_cast<char*>(pm) + 0x100);
+				*tracemask &= ~0x10000;
+				*tracemask |= 0x400;
+			}
+			pmove_single_hook.invoke<void>(pm);
+		}
 
 		utils::hook::detour pm_weapon_use_ammo_hook;
 
@@ -228,6 +243,11 @@ namespace gameplay
 			// Implement fall damage dvar
 			dvars::jump_enableFallDamage = game::Dvar_RegisterBool("jump_enableFallDamage", true, game::DVAR_FLAG_REPLICATED, "Enable fall damage");
 			pm_crashland_hook.create(0x1406F9860, pm_crashland_stub);
+
+			// Implement PmoveSingle stub
+			bg_disableBarrierClips = game::Dvar_RegisterBool("bg_disablebarrierclips", false, game::DVAR_FLAG_REPLICATED, "Disables barrier clips in pmove");
+			
+			pmove_single_hook.create(0x14070F530, pmove_single_stub);
 		}
 	};
 }
