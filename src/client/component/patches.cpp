@@ -488,6 +488,26 @@ namespace patches
 
 			return LUI_PushPlayerName_Hook.invoke<bool>(localClientNum, clientNum, playerNameSize, outPlayerName);
 		}
+
+		utils::hook::detour playertag_hook;
+		bool playertag_stub(int localClientNum, int clientNum, char* gamerTag, int gamerTagLength, char* clanAbbrev, int clanTagLength)
+		{
+			auto result = playertag_hook.invoke<bool>(localClientNum, clientNum, gamerTag, gamerTagLength, clanAbbrev, clanTagLength);
+			
+			if (clientNum < 18)
+			{
+				auto lobbyMember = game::Lobby_GetMember(clientNum);
+				if (!lobbyMember || lobbyMember->status < 5) return result;
+
+				auto lobbyMemberClanAbbrev = lobbyMember->info.clanAbbrev;
+				if (lobbyMemberClanAbbrev && *lobbyMemberClanAbbrev)
+				{
+					strcpy_s(clanAbbrev, clanTagLength, utils::string::va("[%s]", lobbyMemberClanAbbrev));
+				}
+			}
+
+			return result;
+		}
 	}
 
 	class component final : public component_interface
@@ -500,6 +520,7 @@ namespace patches
 			ClientUserinfoChanged_Hook.create(0x140B008A0, ClientUserinfoChanged_Stub); // Add clanAbbrev to clientState
 			PlayerCmd_GetClanTag_Hook.create(0x140B0C9D0, PlayerCmd_GetClanTag_Stub); // Return clantag to gsc functions
 			LUI_PushPlayerName_Hook.create(0x140504E70, LUI_PushPlayerName_Stub); // UI Elements
+			playertag_hook.create(0x1409BDB20, playertag_stub); // Player Tags in-game
 
 			utils::hook::jump(0x140C0E9F5, utils::hook::assemble(op_wait_entry_stub), true);
 
