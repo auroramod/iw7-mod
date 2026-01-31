@@ -888,13 +888,14 @@ namespace game
 
 		struct pmove_t
 		{
-			void* unk;
-			playerState_s* ps;
-			usercmd_s cmd;
-			usercmd_s oldcmd;
-			char __pad0[312];
-			void* weaponMap;
-			unsigned char handler;
+			void* unk;			// 0
+			playerState_s* ps;	// 8
+			usercmd_s cmd;		// 16
+			usercmd_s oldcmd;	// 136
+			int tracemask;		// 256
+			char __pad1[304];	// 264
+			void* weaponMap;	// 568
+			unsigned char handler;	// 576
 		};
 		assert_offsetof(pmove_t, handler, 576);
 		assert_offsetof(pmove_t, weaponMap, 568);

@@ -21,6 +21,7 @@ namespace stats
 		utils::hook::detour item_quantity_hook;
 
 		game::dvar_t* cg_loot_count = nullptr;
+		game::dvar_t* director_cut_dvar = nullptr;
 
 		bool is_item_unlocked_stub(__int64 a1, int a2, const char* unlock_table, unsigned __int8* value)
 		{
@@ -320,27 +321,6 @@ namespace stats
 			command::execute("uploadstats", true); // needed to update stats i think
 			console::debug("unlocked all easter egg stats!\n");
 		}
-
-		void director_cut(const command::params& params)
-		{
-			if (!can_run_command())
-			{
-				return;
-			}
-
-			if (params.size() < 2)
-			{
-				console::info("usage: \"/director_cut 0/1\"\n");
-				return;
-			}
-
-			const auto is_enabled = params.get(1);
-			command::execute(utils::string::va("setCoopPlayerData dc %s", is_enabled), true);
-			command::execute(utils::string::va("setCoopPlayerData dc_available %s", is_enabled), true);
-
-			command::execute("uploadstats", true); // needed to update stats i think
-			console::debug("directors cut set to %s\n", is_enabled);
-		}
 	}
 
 	class component final : public component_interface
@@ -354,7 +334,15 @@ namespace stats
 				command::add("unlockall", unlock_stats);
 				command::add("unlockstatsEE", unlock_stats_ee);
 				command::add("unlockallEE", unlock_stats_ee);
-				command::add("director_cut", director_cut);
+
+				director_cut_dvar = game::Dvar_RegisterBool("director_cut", false, game::DVAR_FLAG_SAVED, "Whether the Directors Cut features and perks should be enabled or disabled.");
+				dvars::callback::on_new_value("director_cut", [](game::DvarValue* value)
+				{
+					const auto is_enabled = value->integer;
+					command::execute(utils::string::va("setCoopPlayerData dc %d", is_enabled), true);
+					command::execute(utils::string::va("setCoopPlayerData dc_available %d", is_enabled), true);
+					command::execute("uploadstats", true);
+				});
 			}
 
 			// register dvars

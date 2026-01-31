@@ -113,6 +113,27 @@ MenuBuilder.registerType("StatsMenuButtons", function(menu, controller)
 	self.UnlockLoot = UnlockLoot
 	self:addElement(UnlockLoot)
 
+	local DirectorsCut = GenericArrowButton(
+		controllerIndex,
+		"DirectorsCut",
+		"Toggle Directors Cut",
+		"Whether the Directors Cut features and perks should be enabled or disabled."
+	)
+
+	local labels = {Engine.Localize("LUA_MENU_ENABLED"), Engine.Localize("LUA_MENU_DISABLED")}
+
+	LUI.AddUIArrowTextButtonLogic(DirectorsCut, controllerIndex, {
+		labels = labels,
+		wrapAround = true,
+		defaultValue = Engine.GetDvarBool("director_cut") and 1 or 2,
+		action = function(valueIndex)
+			Engine.SetDvarBool("director_cut", valueIndex == 1)
+		end
+	})
+
+	self.DirectorsCut = DirectorsCut
+	self:addElement(DirectorsCut)
+
 	self:addSpacer(10)
 
 	local isAliens = Engine.IsAliensMode()

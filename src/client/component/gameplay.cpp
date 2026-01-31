@@ -17,6 +17,7 @@ namespace gameplay
 	namespace
 	{
 		game::dvar_t* player_sustain_ammo = nullptr;
+		game::dvar_t* bg_disable_barrier_clips = nullptr;
 
 		utils::hook::detour pm_weapon_use_ammo_hook;
 
@@ -186,6 +187,18 @@ namespace gameplay
 				pm_crashland_hook.invoke<void>(ps, pml);
 			}
 		}
+
+		utils::hook::detour pmove_single_hook;
+		void pmove_single_stub(game::pmove_t* pm, void* a2, unsigned int a3, int a4, int a5)
+		{
+			if (bg_disable_barrier_clips && bg_disable_barrier_clips->current.enabled && pm)
+			{
+				pm->tracemask &= ~0x10000;
+				pm->tracemask |= 0x400;
+			}
+
+			pmove_single_hook.invoke<void>(pm, a2, a3, a4, a5);
+		}
 	}
 
 	class component final : public component_interface
@@ -228,6 +241,10 @@ namespace gameplay
 			// Implement fall damage dvar
 			dvars::jump_enableFallDamage = game::Dvar_RegisterBool("jump_enableFallDamage", true, game::DVAR_FLAG_REPLICATED, "Enable fall damage");
 			pm_crashland_hook.create(0x1406F9860, pm_crashland_stub);
+
+			// Add a feature to toggle barrier clips on maps
+			bg_disable_barrier_clips = game::Dvar_RegisterBool("bg_disableBarrierClips", false, game::DVAR_FLAG_REPLICATED, "(Experimental) Disables barrier clips in maps to access things easily");
+			pmove_single_hook.create(0x14070F530, pmove_single_stub);
 		}
 	};
 }

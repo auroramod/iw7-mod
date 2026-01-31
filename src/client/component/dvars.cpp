@@ -1,6 +1,8 @@
 #include <std_include.hpp>
 #include "loader/component_loader.hpp"
+
 #include "dvars.hpp"
+#include "dvar_cheats.hpp"
 
 #include "game/game.hpp"
 #include "game/dvars.hpp"
@@ -308,6 +310,8 @@ namespace dvars
 		std::unordered_map<std::string, std::function<void()>> dvar_on_re_register_function_map;
 		std::unordered_map<std::string, std::function<void()>> dvar_on_de_register_function_map;
 
+		std::unordered_map<std::string, std::function<void(game::DvarValue*)>> dvar_new_value_callbacks;
+
 		void on_register(const std::string& name, const std::function<void()>& callback)
 		{
 			dvar_on_register_function_map[name] = callback;
@@ -321,6 +325,11 @@ namespace dvars
 		void on_de_register(const std::string& name, const std::function<void()>& callback)
 		{
 			dvar_on_de_register_function_map[name] = callback;
+		}
+
+		void on_new_value(const std::string& name, const std::function<void(game::DvarValue* value)>& callback)
+		{
+			dvar_new_value_callbacks[name] = callback;
 		}
 	}
 
@@ -431,6 +440,8 @@ namespace dvars
 	utils::hook::detour dvar_de_register_hook;
 	utils::hook::detour dvar_register_variant_hook;
 
+	utils::hook::detour dvar_set_variant_hook;
+
 	game::dvar_t* dvar_register_new(const char* name, unsigned int checksum, game::DvarType type, unsigned int flags,
 		game::DvarValue* value, game::DvarLimits* domain, char level, const char* description)
 	{
@@ -512,6 +523,17 @@ namespace dvars
 		return dvar;
 	}
 
+	void dvar_set_variant_stub(const game::dvar_t* dvar, game::DvarValue* value, game::DvarSetSource source)
+	{
+		dvar_set_variant_hook.invoke<void>(dvar, value, source);
+
+		const auto name = dvars::dvar_get_name(dvar);
+		if (dvars::callback::dvar_new_value_callbacks.contains(name) && dvar_cheats::dvar_flag_checks(dvar, source, true))
+		{
+			dvars::callback::dvar_new_value_callbacks[name](value);
+		}
+	}
+
 	game::dvar_t* fps_labels_register_stub(const char*, bool, unsigned int, const char*)
 	{
 		return game::Dvar_RegisterBool("cg_drawFPS", false, game::DVAR_FLAG_READ, "cg_drawFPS is deprecated, use cg_fpsCounter instead");
@@ -526,6 +548,8 @@ namespace dvars
 			dvar_re_register_hook.create(0x140CEC210, dvar_re_register);
 			dvar_de_register_hook.create(0x140CE9F30, dvar_de_register);
 			dvar_register_variant_hook.create(0x140CEBDD0, dvar_register_variant);
+
+			dvar_set_variant_hook.create(0x140CED850, dvar_set_variant_stub);
 
 			// We need to apply these straight away
 			MH_ApplyQueued();
