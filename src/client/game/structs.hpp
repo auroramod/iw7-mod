@@ -24,6 +24,7 @@ namespace game
 	{
 		FEATURE_GRAVITY = 33,
 		FEATURE_TIMESCALE = 69,
+		FEATURE_CLANTAG = 75,
 		FEATURE_RANDOM_PLAYERCARD_WHEN_MISSING = 163,
 	};
 
@@ -691,6 +692,14 @@ namespace game
 		static_assert(offsetof(clientUIActive_t, frontEndSceneState) == 32);
 		static_assert(offsetof(clientUIActive_t, cgameInitialized) == 33);
 
+		struct centity_s
+		{
+			char _pad0[1932];
+			int otherEntityNum;
+		};
+
+		assert_offsetof(centity_s, otherEntityNum, 1932);
+
 		struct entityState_t
 		{
 			__int16 number; // 0
@@ -940,6 +949,8 @@ namespace game
 			team_t team;
 			char __pad0[108];
 			char name[32];
+			char __pad1[68];
+			char clanAbbrev[8];
 		};
 
 		struct clientSession_t
@@ -967,6 +978,7 @@ namespace game
 		assert_offsetof(gclient_s, sess.cs, 19420);
 		assert_offsetof(gclient_s, sess.cs.team, 19424);
 		assert_offsetof(gclient_s, sess.cs.name, 19536);
+		assert_offsetof(gclient_s, sess.cs.clanAbbrev, 19636);
 
 		static_assert(offsetof(gclient_s, flags) == 20924);
 
@@ -1491,6 +1503,29 @@ namespace game
 			PRELOAD_MAP_INITIATED = 0x1,
 			PRELOAD_MAP_STARTED = 0x2,
 			PRELOAD_MAP_COUNT = 0x3,
+		};
+#pragma pack(push, 1)
+		struct ClientAuthoritativeMemberInfo
+		{
+			char privatePartyId[8];
+			int32_t rank_mp;
+			int32_t prestige_mp;
+			int32_t rank_zm;
+			int32_t prestige_zm;
+			int32_t availableMapPackFlags;
+			int32_t playerCardPatch;
+			char _pad0[40];
+			char gamertag[32];
+			char clanAbbrev[5];
+		};
+#pragma pack(pop)
+		assert_offsetof(ClientAuthoritativeMemberInfo, gamertag, 0x48);
+		assert_offsetof(ClientAuthoritativeMemberInfo, clanAbbrev, 0x68);
+
+		struct PartyMember
+		{
+			int status;
+			ClientAuthoritativeMemberInfo info;
 		};
 
 		struct PartyData

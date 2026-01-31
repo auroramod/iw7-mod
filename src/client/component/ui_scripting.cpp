@@ -182,6 +182,24 @@ namespace ui_scripting
 				localized_strings::override(string, value);
 			};
 			*/
+			game_type["getplayerclantag"] = [](const game&, const int& clientIndex)
+			{
+				if (clientIndex < 18)
+				{
+					auto lobbyMember = ::game::Lobby_GetMember(clientIndex);
+
+					if (!lobbyMember || lobbyMember->status < 5) return "";
+
+					auto lobbyMemberClanAbbrev = lobbyMember->info.clanAbbrev;
+
+					if (!lobbyMemberClanAbbrev || !*lobbyMemberClanAbbrev)
+						return "";
+
+					return (const char*)lobbyMemberClanAbbrev;
+				}
+
+				return "";
+			};
 
 			game_type["getcurrentgamelanguage"] = [](const game&)
 			{

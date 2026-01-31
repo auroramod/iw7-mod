@@ -361,6 +361,133 @@ namespace patches
 			a.bind(script_error);
 			a.jmp(0x140C0EB63);
 		}
+
+		utils::hook::detour Party_FillInOurMemberInfo_Hook;
+		void Party_FillInOurMemberInfo_Stub(game::PartyData* party, int localControllerIndex, game::ClientAuthoritativeMemberInfo* memberInfo)
+		{
+			strncpy_s(memberInfo->clanAbbrev, game::GamerProfile_GetClanName(localControllerIndex), 4);
+			memberInfo->clanAbbrev[4] = 0;
+			memberInfo->gamertag[31] = 0;
+			return Party_FillInOurMemberInfo_Hook.invoke(party, localControllerIndex, memberInfo);
+		}
+
+		utils::hook::detour ClientUserinfoChanged_Hook;
+		void ClientUserinfoChanged_Stub(signed int clientNum)
+		{
+			auto client = game::g_entities[clientNum].client;
+			if (!client) return;
+
+			char s[1024];
+			char destination[1024];
+
+			game::SV_GetUserinfo(clientNum, s, 1024);
+			if (!game::Info_Validate(s))
+			{
+				strcpy_s(s, "\\name\\badinfo");
+			}
+
+			auto isLocalClient = game::SV_IsLocalClient((unsigned int)clientNum);
+			bool isConnected = (client->sess.connected == 2);
+			*(DWORD*)&client->sess.__pad0[0x114] = isLocalClient;
+
+			if (isConnected && game::dword_143CA1588)
+			{
+				char* nameVal = game::Info_ValueForKey(s, "name");
+				game::Com_CleanName(nameVal, client->sess.name, 32);
+			}
+			else
+			{
+				strncpy_s(destination, client->sess.cs.name, 0x3FFu);
+				destination[1023] = 0;
+				char* nameVal = game::Info_ValueForKey(s, "name");
+				game::Com_CleanName(nameVal, client->sess.cs.name, 32);
+
+				strncpy_s(client->sess.name, client->sess.cs.name, 31);
+				client->sess.name[31] = 0;
+
+				auto clanVal = game::Info_ValueForKey(s, "clanAbbrev");
+
+				if (clanVal && *clanVal)
+				{
+					strncpy_s(client->sess.cs.clanAbbrev, clanVal, 7);
+					client->sess.cs.clanAbbrev[7] = 0;
+				}
+				else 
+				{
+					memset(client->sess.cs.clanAbbrev, 0, sizeof(client->sess.cs.clanAbbrev));
+				}
+
+				*(DWORD*)&client->__pad1[76] = atol(game::Info_ValueForKey(s, "mlg_spectator")) == 1;
+				*(DWORD*)&client->__pad1[68] = atol(game::Info_ValueForKey(s, "pph"));
+				*(DWORD*)&client->__pad1[72] = atol(game::Info_ValueForKey(s, "pps"));
+			}
+
+			uintptr_t managerAddr = *(uintptr_t*)game::qword_143F25A88;
+			if (managerAddr) 
+			{
+				uintptr_t* vtable = *(uintptr_t**)managerAddr;
+				auto GetClientObj = (uintptr_t(__fastcall*)(uintptr_t, int))vtable[4];
+				auto Finalize = (uintptr_t(__fastcall*)(uintptr_t, int))vtable[6];
+
+				uintptr_t clientObj = GetClientObj(managerAddr, clientNum);
+				if (clientObj)
+				{
+					// Copy the finalized name to the UI object
+					strncpy_s((char*)(clientObj + 4), 32, client->sess.cs.name, 31);
+					*(char*)(clientObj + 35) = 0;
+					strncpy_s((char*)(clientObj + 52), 8, client->sess.cs.clanAbbrev, 7);
+					*(char*)(clientObj + 59) = 0;
+				}
+
+				uintptr_t result = Finalize(managerAddr, clientNum);
+				if (result)
+				{
+					*(int*)(result + 12) = client->sess.cs.team;
+				}
+			}
+		}
+
+		utils::hook::detour PlayerCmd_GetClanTag_Hook;
+		void PlayerCmd_GetClanTag_Stub(game::scr_entref_t entref)
+		{
+			auto entnum = entref.entnum;
+			if (entref.classnum)
+			{
+				game::Scr_ErrorInternal();
+				return;
+			}
+
+			auto entity = &game::g_entities[entnum];
+			if (entity->client == nullptr)
+			{
+				game::Scr_ErrorInternal();
+				return;
+			}
+
+			auto clanAbbrev = entity->client->sess.cs.clanAbbrev;
+			game::Scr_AddString(clanAbbrev);
+		}
+
+		utils::hook::detour LUI_PushPlayerName_Hook;
+		bool LUI_PushPlayerName_Stub(int localClientNum, int clientNum, int playerNameSize, char* outPlayerName)
+		{
+			if (clientNum < 18)
+			{
+				auto lobbyMember = game::Lobby_GetMember(clientNum);
+
+				if (!lobbyMember || lobbyMember->status < 5) return LUI_PushPlayerName_Hook.invoke<bool>(localClientNum, clientNum, playerNameSize, outPlayerName);
+
+				auto lobbyMemberClanAbbrev = lobbyMember->info.clanAbbrev;
+
+				if (lobbyMemberClanAbbrev && *lobbyMemberClanAbbrev)
+				{
+					strcpy_s(outPlayerName, 43, utils::string::va("[%s]%s", lobbyMemberClanAbbrev, lobbyMember->info.gamertag));
+					return true;
+				}
+			}
+
+			return LUI_PushPlayerName_Hook.invoke<bool>(localClientNum, clientNum, playerNameSize, outPlayerName);
+		}
 	}
 
 	class component final : public component_interface
@@ -368,6 +495,12 @@ namespace patches
 	public:
 		void post_unpack() override
 		{
+			utils::hook::nop(0x1409CB794, 6); // Stop clantag from being unset
+			Party_FillInOurMemberInfo_Hook.create(0x1409CB720, Party_FillInOurMemberInfo_Stub); // Set clantag in memberinfo
+			ClientUserinfoChanged_Hook.create(0x140B008A0, ClientUserinfoChanged_Stub); // Add clanAbbrev to clientState
+			PlayerCmd_GetClanTag_Hook.create(0x140B0C9D0, PlayerCmd_GetClanTag_Stub); // Return clantag to gsc functions
+			LUI_PushPlayerName_Hook.create(0x140504E70, LUI_PushPlayerName_Stub); // UI Elements
+
 			utils::hook::jump(0x140C0E9F5, utils::hook::assemble(op_wait_entry_stub), true);
 
 			msg_readlong_hook.create(0x140BB37D0, msg_readlong_stub);

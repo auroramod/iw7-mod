@@ -38,6 +38,7 @@ namespace game
 	WEAK symbol<GameModeType()> Com_GameMode_GetActiveGameMode{ 0x1405AFD50 };
 	WEAK symbol<bool(const char* name)> Com_GameMode_SupportsMap{ 0x1405AFE10 };
 	WEAK symbol<bool(Com_GameMode_Feature)> Com_GameMode_SupportsFeature{ 0x1405AFDE0 };
+	WEAK symbol<bool(int)> Com_GameMode_SupportsFeatureInt{ 0x1405AFDE0 };
 
 	WEAK symbol<bool()> Com_IsAnyLocalServerStarting{ 0x140BAD9C0 };
 	WEAK symbol<bool()> Com_IsAnyLocalServerRunning{ 0x140BAD9A0 };
@@ -251,6 +252,7 @@ namespace game
 		unsigned int paramcount)> Scr_NotifyId{ 0x140C0C2B0 };
 	WEAK symbol<const float* (const float* v)> Scr_AllocVector{ 0x140C06960 };
 	WEAK symbol<void(int)> Scr_AddInt{ 0x140C0A580 };
+	WEAK symbol<__int64(const char*)> Scr_AddString{ 0x140C0A660 };
 	WEAK symbol<bool(VariableValue* value)> Scr_CastString{ 0x140C06AE0 };
 	WEAK symbol<void()> Scr_ClearOutParams{ 0x140C0ABC0 };
 	WEAK symbol<unsigned int(int classnum, unsigned int entnum)> Scr_GetEntityId{ 0x140C08FA0 };
@@ -259,6 +261,8 @@ namespace game
 	WEAK symbol<int()> Scr_GetInt{ 0x140C0B950 };
 	WEAK symbol<void()> Scr_ErrorInternal{ 0x140C0AC30 };
 	WEAK symbol<void(const char* str)> Scr_AllocGlobalString{ 0x140C03C70 };
+
+	WEAK symbol<const char*(unsigned int index, const char** outStringValue)> NetConstStringMap_GetStringAtIndex{ 0x1406D50A0 };
 
 	WEAK symbol<ScreenPlacement* ()> ScrPlace_GetViewPlacement{ 0x1409E4090 };
 	WEAK symbol<ScreenPlacement* ()> ScrPlace_GetActivePlacement{ 0x1409E4060 };
@@ -338,6 +342,15 @@ namespace game
 	WEAK symbol<void(msg_t* msg, const void* data, std::int32_t length)> MSG_WriteData{ 0x140BB4340 };
 	WEAK symbol<void(msg_t* msg, std::int32_t data)> MSG_WriteByte{ 0x140BB4320 };
 	WEAK symbol<void(msg_t* msg, std::uint64_t data)> MSG_WriteInt64{ 0x140BB4570 };
+
+	WEAK symbol<const char*(int localControllerIndex)> GamerProfile_GetClanName{ 0x140344740 };
+	WEAK symbol<void(int index, char* buffer, int bufferSize)> SV_GetUserinfo{ 0x140C50A90 };
+	WEAK symbol<bool(const char* s)> Info_Validate{ 0x140CFB960 };
+	WEAK symbol<bool(int clientNum)> SV_IsLocalClient{ 0x140C50EA0 };
+	WEAK symbol<char*(char* s, const char* key)> Info_ValueForKey{ 0x140CFB9A0 };
+	WEAK symbol<char*(const char* in, char* out, int outSize)> Com_CleanName{ 0x140CFA700 };
+	WEAK symbol<PartyMember*(unsigned int clientNum)> Lobby_GetMember{ 0x1409C3E00 };
+	WEAK symbol<centity_s*(unsigned int localClientNum, int clientNum)> CG_GetEntity{ 0x140080400 };
 
 	/***************************************************************
 	 * Variables
@@ -429,6 +442,11 @@ namespace game
 	WEAK symbol<GfxScene> scene{ 0x149BD1300 };
 
 	WEAK symbol<GfxWorld*> g_world{ 0x148B2D7E0 };
+
+	WEAK symbol<void*> off_143D22780{ 0x143D22780 };
+	WEAK symbol<void*> dword_143CA1588{ 0x143CA1588 };
+	WEAK symbol<uintptr_t> qword_143F25A88{ 0x143F25A88 };
+	WEAK symbol<uintptr_t> qword_141FAEE58{ 0x141FAEE58 };
 
 	namespace hks
 	{
