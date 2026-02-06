@@ -20,6 +20,16 @@ namespace party
 		std::string image_text;
 	};
 
+	struct fake_member_info_t
+	{
+		std::string xuid;
+		std::string name;
+		std::string clanTag;
+	};
+
+	extern fake_member_info_t g_clientMemberInfo[18];
+	extern bool g_clientMemberInfoValid[18];
+
 	//void user_download_response(bool response);
 
 	void info_response_error(const std::string& error);

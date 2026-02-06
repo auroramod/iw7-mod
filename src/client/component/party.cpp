@@ -25,6 +25,9 @@
 
 namespace party
 {
+	fake_member_info_t g_clientMemberInfo[18]; 
+	bool g_clientMemberInfoValid[18];
+
 	namespace
 	{
 		std::string get_dvar_string(const std::string& dvar)
@@ -703,6 +706,17 @@ namespace party
 		return server_discord_info;
 	}
 
+	static int find_client_num_by_adr(const game::netadr_s& from) 
+	{ 
+		for (int i = 0; i < *game::svs_numclients; i++) 
+		{ 
+			auto client = game::svs_clients[i];
+			if (game::NET_CompareAdr(from, client->remoteAddress))
+				return i; 
+		} 
+		return -1; 
+	}
+
 	class component final : public component_interface
 	{
 	public:
@@ -1042,10 +1056,61 @@ namespace party
 				network::send(target, "infoResponse", info.build(), '\n');
 			});
 
+			network::on("clientinfo", [](const game::netadr_s& target, const std::string_view& data)
+			{
+				utils::info_string info{ data };
+				const std::string xuid = info.get("xuid");
+				const std::string name = info.get("gamertag");
+				const std::string clanTag = info.get("clanAbbrev");
+				const int clientNum = find_client_num_by_adr(target);
+				if (clientNum < 0 || !game::g_entities[clientNum].client || game::g_entities[clientNum].client->sess.connected == game::CON_DISCONNECTED)
+				{ 
+					console::debug("clientInfo: received from unknown client\n");
+					return; 
+				}
+
+				console::info("clientInfo: %s (%s) [%s] on slot %d\n", name.c_str(), xuid.c_str(), clanTag.c_str(), clientNum); 
+
+				utils::info_string new_info{};
+				new_info.set("clientNum", std::to_string(clientNum));
+				new_info.set("xuid", xuid);
+				new_info.set("gamertag", name);
+				new_info.set("clanAbbrev", clanTag);
+
+				for (int i = 0; i < *game::svs_numclients; i++)
+				{
+					auto client = game::svs_clients[i];
+					if (client->header.state >= 1 && !game::SV_ClientIsBot(i) && !game::Session_IsHost(game::SV_MainMP_GetServerLobby(), i))
+					{
+						network::send(client->remoteAddress, "memberInfoUpdate", new_info.build(), '\n');
+					}
+				}
+			});
+
 			if (game::environment::is_dedi())
 			{
 				return;
 			}
+
+			network::on("memberInfoUpdate", [](const game::netadr_s&, const std::string_view& data)
+			{
+				utils::info_string info{ data }; 
+				int clientNum = std::stoi(info.get("clientNum"));
+				
+				if (clientNum < 0 || clientNum >= 18) 
+					return; 
+
+				g_clientMemberInfo[clientNum] = 
+				{ 
+					info.get("xuid"), 
+					info.get("gamertag"),
+					info.get("clanAbbrev") 
+				};
+
+				g_clientMemberInfoValid[clientNum] = true;
+
+				console::info("Stored memberInfo for client %d: %s [%s]\n", clientNum, g_clientMemberInfo[clientNum].name.c_str(), g_clientMemberInfo[clientNum].clanTag.c_str());
+			});
 
 			network::on("infoResponse", [](const game::netadr_s& target, const std::string_view& data)
 			{

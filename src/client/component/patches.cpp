@@ -4,6 +4,8 @@
 #include "game/game.hpp"
 #include "game/dvars.hpp"
 #include "command.hpp"
+#include "party.hpp"
+#include "network.hpp"
 
 #include "fastfiles.hpp"
 #include "filesystem.hpp"
@@ -11,6 +13,7 @@
 
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
+#include <utils/info_string.hpp>
 
 namespace patches
 {
@@ -365,10 +368,9 @@ namespace patches
 		utils::hook::detour Party_FillInOurMemberInfo_Hook;
 		void Party_FillInOurMemberInfo_Stub(game::PartyData* party, int localControllerIndex, game::ClientAuthoritativeMemberInfo* memberInfo)
 		{
+			Party_FillInOurMemberInfo_Hook.invoke(party, localControllerIndex, memberInfo);
 			strncpy_s(memberInfo->clanAbbrev, game::GamerProfile_GetClanName(localControllerIndex), 4);
 			memberInfo->clanAbbrev[4] = 0;
-			memberInfo->gamertag[31] = 0;
-			return Party_FillInOurMemberInfo_Hook.invoke(party, localControllerIndex, memberInfo);
 		}
 
 		utils::hook::detour ClientUserinfoChanged_Hook;
@@ -434,15 +436,22 @@ namespace patches
 				{
 					// Copy the finalized name to the UI object
 					strncpy_s((char*)(clientObj + 4), 32, client->sess.cs.name, 31);
-					*(char*)(clientObj + 35) = 0;
 					strncpy_s((char*)(clientObj + 52), 8, client->sess.cs.clanAbbrev, 7);
-					*(char*)(clientObj + 59) = 0;
 				}
 
 				uintptr_t result = Finalize(managerAddr, clientNum);
 				if (result)
 				{
 					*(int*)(result + 12) = client->sess.cs.team;
+				}
+
+				clientObj = GetClientObj(managerAddr, clientNum);
+				if (clientObj)
+				{
+					// Offset 52 (0x34) is the exact spot LUI checks
+					strncpy_s((char*)(clientObj + 0x34), 8, client->sess.cs.clanAbbrev, 7);
+					// Also ensure the Name is correct at +4
+					strncpy_s((char*)(clientObj + 0x04), 32, client->sess.cs.name, 31);
 				}
 			}
 		}
@@ -473,15 +482,16 @@ namespace patches
 		{
 			if (clientNum < 18)
 			{
-				auto lobbyMember = game::Lobby_GetMember(clientNum);
+				auto lobbyMember = &party::g_clientMemberInfo[clientNum];
+				auto lobbyMemberValid = &party::g_clientMemberInfoValid[clientNum];
 
-				if (!lobbyMember || lobbyMember->status < 5) return LUI_PushPlayerName_Hook.invoke<bool>(localClientNum, clientNum, playerNameSize, outPlayerName);
+				if (!lobbyMember || !lobbyMemberValid) return LUI_PushPlayerName_Hook.invoke<bool>(localClientNum, clientNum, playerNameSize, outPlayerName);
 
-				auto lobbyMemberClanAbbrev = lobbyMember->info.clanAbbrev;
+				auto lobbyMemberClanAbbrev = lobbyMember->clanTag.c_str();
 
 				if (lobbyMemberClanAbbrev && *lobbyMemberClanAbbrev)
 				{
-					strcpy_s(outPlayerName, 43, utils::string::va("[%s]%s", lobbyMemberClanAbbrev, lobbyMember->info.gamertag));
+					strcpy_s(outPlayerName, 43, utils::string::va("[%s]%s", lobbyMemberClanAbbrev, lobbyMember->name.c_str()));
 					return true;
 				}
 			}
@@ -496,10 +506,11 @@ namespace patches
 			
 			if (clientNum < 18)
 			{
-				auto lobbyMember = game::Lobby_GetMember(clientNum);
-				if (!lobbyMember || lobbyMember->status < 5) return result;
+				auto lobbyMember = &party::g_clientMemberInfo[clientNum];
+				auto lobbyMemberValid = &party::g_clientMemberInfoValid[clientNum];
+				if (!lobbyMember || !lobbyMemberValid) return result;
 
-				auto lobbyMemberClanAbbrev = lobbyMember->info.clanAbbrev;
+				auto lobbyMemberClanAbbrev = lobbyMember->clanTag.c_str();
 				if (lobbyMemberClanAbbrev && *lobbyMemberClanAbbrev)
 				{
 					strcpy_s(clanAbbrev, clanTagLength, utils::string::va("[%s]", lobbyMemberClanAbbrev));
@@ -507,6 +518,38 @@ namespace patches
 			}
 
 			return result;
+		}
+
+		void send_member_info(const game::netadr_s& target)
+		{
+			game::ClientAuthoritativeMemberInfo memberInfo;
+			memset(&memberInfo, 0, sizeof(memberInfo));
+			auto party = game::Lobby_GetPartyData();
+			game::Party_FillInOurMemberInfo(party, 0, &memberInfo);
+
+			utils::info_string info{};
+			char xuidStr[32]{};
+			auto xuid = game::Live_GetXuid(0);
+			game::XUIDToString(&xuid, xuidStr);
+			info.set("xuid", xuidStr);
+			info.set("gamertag", memberInfo.gamertag);
+			info.set("clanAbbrev", memberInfo.clanAbbrev);
+
+			network::send(target, "clientInfo", info.build(), '\n');
+		}
+
+		utils::hook::detour cl_parse_gamestate_hook;
+		void cl_parse_gamestate_stub(int localClientNum, game::msg_t* msg, __int64 a3)
+		{
+			for (auto i = 0; i < 18; i++)
+			{
+				party::g_clientMemberInfo[i] = {};
+				party::g_clientMemberInfoValid[i] = false;
+			}
+			cl_parse_gamestate_hook.invoke(localClientNum, msg, a3);
+			auto* server_connection_state = party::get_server_connection_state();
+			if (!game::Com_FrontEnd_IsInFrontEnd())
+				send_member_info(server_connection_state->host);
 		}
 	}
 
@@ -521,6 +564,11 @@ namespace patches
 			PlayerCmd_GetClanTag_Hook.create(0x140B0C9D0, PlayerCmd_GetClanTag_Stub); // Return clantag to gsc functions
 			LUI_PushPlayerName_Hook.create(0x140504E70, LUI_PushPlayerName_Stub); // UI Elements
 			playertag_hook.create(0x1409BDB20, playertag_stub); // Player Tags in-game
+
+			if (!game::environment::is_dedi())
+			{
+				cl_parse_gamestate_hook.create(0x1409B6EE0, cl_parse_gamestate_stub);
+			}
 
 			utils::hook::jump(0x140C0E9F5, utils::hook::assemble(op_wait_entry_stub), true);
 

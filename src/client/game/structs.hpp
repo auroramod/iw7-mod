@@ -1505,48 +1505,150 @@ namespace game
 			PRELOAD_MAP_STARTED = 0x2,
 			PRELOAD_MAP_COUNT = 0x3,
 		};
+
 #pragma pack(push, 1)
 		struct ClientAuthoritativeMemberInfo
 		{
-			char privatePartyId[8];
-			int32_t rank_mp;
-			int32_t prestige_mp;
-			int32_t rank_zm;
-			int32_t prestige_zm;
-			int32_t availableMapPackFlags;
-			int32_t playerCardPatch;
-			char _pad0[40];
-			char gamertag[32];
-			char clanAbbrev[5];
+			char privatePartyId[8];         // 0x00
+			int8_t playerCardUpdate;        // 0x08
+			char _pad_pc[3];                // 0x09
+			int32_t rank_mp;                // 0x0C
+			int32_t prestige_mp;            // 0x10
+			int32_t rank_zm;                // 0x14
+			int32_t prestige_zm;            // 0x18
+			int32_t availableMapPackFlags;  // 0x1C
+			int32_t playerCardPatch;        // 0x20
+			uint8_t gameBattlesCommitReady; // 0x24
+			char _pad_gb[3];                // 0x25
+			uint32_t zombieConsumable[5];   // 0x28 (20 bytes)
+			uint32_t alien_readyUpFlag;     // 0x3C
+			char _pad_pre_name[8];          // 0x40
+			char gamertag[32];              // 0x48 - ASSERT 0x48 (72)
+			char clanAbbrev[5];             // 0x68 - ASSERT 0x68 (104)
+			uint8_t clanTagType;            // 0x6D
+			char _pad_tag_gap[2];           // 0x6E
+			int32_t teamSelection;          // 0x70 - ASSERT 0x70 (112)
+			int32_t lobbyFlags;             // 0x74
+			char _pad_stat_gap[4];          // 0x78
+			int32_t bestWeaponIndex;        // 0x7C
+			int32_t wins;                   // 0x80
+			int32_t kdRatio;                // 0x84
+			int32_t currentWinStreak;       // 0x88
+			int32_t gamesPlayed;            // 0x8C
+			int32_t winLossRatio;           // 0x90
+			int32_t timePlayedTotal;        // 0x94
+			uint8_t killsHistory[5];        // 0x98
+			uint8_t deathsHistory[5];       // 0x9D
+			char _pad_presence_gap[2];      // 0xA2
+			char presenceData[24];          // 0xA4
+			uint8_t isAway;                 // 0xBC
+			char _pad_tail[31];             // 0xBD
+			int32_t isMemberValid;          // 0xDC
+			uint8_t mlgSpectator;           // 0xE0
+			uint8_t numSpecialEntries;      // 0xE1
+			uint16_t specialEntryKeys[5];   // 0xE2
+			uint8_t specialEntryValues[5];  // 0xEC
+			char _pad_final_alignment[23];  // 0xF1 -> 0x108 (Total: 264 Bytes)
 		};
 #pragma pack(pop)
 		assert_offsetof(ClientAuthoritativeMemberInfo, gamertag, 0x48);
 		assert_offsetof(ClientAuthoritativeMemberInfo, clanAbbrev, 0x68);
+		assert_offsetof(ClientAuthoritativeMemberInfo, teamSelection, 0x70);
+		assert_sizeof(ClientAuthoritativeMemberInfo, 264);
 
 		struct PartyMember
 		{
-			int status;
+			int32_t status;
 			ClientAuthoritativeMemberInfo info;
+			char _pad_internal[232];
+			int32_t lastPacketTime;
 		};
+		assert_sizeof(PartyMember, 504);
+
+		enum NetConnection_Type : __int32
+		{
+			TYPE_NONE = 0x0,
+			TYPE_PARTY = 0x1,
+			TYPE_LOBBY = 0x2,
+			TYPE_JOIN = 0x3,
+			TYPE_FRONTEND = 0x4,
+			TYPE_GAME = 0x5,
+		};
+
+		struct NetConnection
+		{
+			void* m_endpoint;
+			void* m_channel;
+			netsrc_t m_localId;
+			netsrc_t m_remoteId;
+			NetConnection_Type m_type;
+		};
+#pragma pack(push, 4)
+		struct PartyHostDetails
+		{
+			NetConnection connections[2];
+			int lastPacketTime;
+			int lastPacketSentTime;
+			int hostNum;
+			bool accepted;
+			char _alignment_pad[3];
+		};
+#pragma pack(pop)
 
 		struct PartyData
 		{
 			SessionData* session;
-			char __pad0[11436];
-			PartyPreloadMapStage preloadingMapStage;
-			char __pad1[92];
-			int party_systemActive;
+			char __pad_start[96];
+			PartyMember partyMembers[18];
+			char __pad_next[2068];
+			PartyHostDetails currentHost;
+			char __pad_after_host[4];
+			int32_t currentHost_lastPacketTime;
+			int32_t currentHost_lastPacketSentTime;
+			char __pad_after_heartbeat[92];
+			int32_t partyStateChangeTime;
+			char __pad_after_statechangetime[4];
+			int32_t partyStateLastSendTime;
+			char __pad_after_statelastsendtime[4];
+			int32_t preloadingMapStage;
+			char __pad_pre_id[28];
+			int32_t partyId;
+			char __pad_post_id[20];
+			int32_t lastPartyStateTime;
+			int32_t gameStartTime;
+			char __pad_to_host[20];
+			int32_t areWeHost;
+			char __pad3[4];
+			int32_t inParty;
+			int32_t party_systemActive;
 			char __pad1_2[5];
 			bool m_gameStartSkipCountdown;
-			char __pad2[110];
-			int lobbyFlags;
+			char __pad_to_timer[70];
+			int32_t lastMemberInfoTime;
+			char __pad_to_flags[24];
+			int32_t hostTimeouts;
+			char __pad_after_timeouts[8];
+			int32_t lobbyFlags;
 			bool gameStartRequested;
+			char __pad_to_local_data[9359];
+			int32_t desiredTeamSelection[2];
 		};
+
+		static_assert(offsetof(PartyData, currentHost) == 0x2BEC);
+		static_assert(offsetof(PartyData, areWeHost) == 0x2D08);
+		static_assert(offsetof(PartyData, inParty) == 0x2D10);
 		static_assert(offsetof(PartyData, preloadingMapStage) == 11444);
 		static_assert(offsetof(PartyData, party_systemActive) == 11540);
 		static_assert(offsetof(PartyData, m_gameStartSkipCountdown) == 11549);
 		static_assert(offsetof(PartyData, lobbyFlags) == 11660);
 		static_assert(offsetof(PartyData, gameStartRequested) == 11664);
+		static_assert(offsetof(PartyData, desiredTeamSelection) == 21024);
+
+		struct PartyActiveClient
+		{
+			int localClientNum;
+			unsigned int localControllerIndex;
+		};
 	}
 	using namespace party;
 

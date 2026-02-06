@@ -196,6 +196,7 @@ namespace game
 	WEAK symbol<int(netadr_s a, netadr_s b)> NET_CompareBaseAdr{ 0x140BB4A00 };
 
 	WEAK symbol<PartyData* ()> Party_GetActiveParty{ 0x1409CC010 };
+	WEAK symbol<int (const PartyData* party, uint64_t player)> Party_FindMemberByXUID{ 0x1409CBA70 };
 
 	WEAK symbol<void(const unsigned int controllerIndex, XUID xuid)> PlayercardCache_AddToDownload{ 0x140DB72E0 };
 
@@ -220,6 +221,10 @@ namespace game
 
 	WEAK symbol<std::uint64_t(const void* session, const int clientNum)> Session_GetXuid{ 0x140C72AB0 };
 	WEAK symbol<bool(const SessionData* session, const int memberIndex)> Session_IsHost{ 0x140D9B470 };
+	WEAK symbol<bool(const SessionData* session, const int memberIndex)> Session_IsUserRegistered{ 0x140C72BA0 };
+	WEAK symbol<PartyData* ()> Party_GetServerSession{ 0x1409B2840 };
+	WEAK symbol<__int64 (msg_t* msg, ClientAuthoritativeMemberInfo* memberInfo, unsigned __int64 xuid)> Party_ReadMemberInfo{ 0x1409CEA30 };
+	WEAK symbol<bool(PartyData* partyData, PartyActiveClient* activeClient, int ms)> PartyClient_Frame{ 0x1409C9950 };
 
 	WEAK symbol<char* ()> Sys_Cwd{ 0x140CFE5A0 };
 	
@@ -295,6 +300,7 @@ namespace game
 	WEAK symbol<bool(const char* name)> SV_MapExists{ 0x140CDB620 };
 	WEAK symbol<playerState_s* (int num)> SV_GetPlayerstateForClientNum{ 0x140C123A0 };
 	WEAK symbol<void(unsigned int index, const char* val)> SV_SetConfigString{ 0x140C11CD0 };
+	WEAK symbol<const char* (unsigned int index)> CL_GetConfigString{ 0x1400941D0 };
 
 	WEAK symbol<gentity_s* (const char* bot_name, unsigned int head, unsigned int body, unsigned int helmet)> SV_AddBot{ 0x140C4E340 };
 	WEAK symbol<bool(int clientNum)> SV_BotIsBot{ 0x140C3BC90 };
@@ -351,6 +357,8 @@ namespace game
 	WEAK symbol<char*(const char* in, char* out, int outSize)> Com_CleanName{ 0x140CFA700 };
 	WEAK symbol<PartyMember*(unsigned int clientNum)> Lobby_GetMember{ 0x1409C3E00 };
 	WEAK symbol<centity_s*(unsigned int localClientNum, int clientNum)> CG_GetEntity{ 0x140080400 };
+	WEAK symbol<void(PartyData* partyData, unsigned int localControllerIndex,
+		ClientAuthoritativeMemberInfo* memberInfo)> Party_FillInOurMemberInfo{ 0x1409CB720 };
 
 	/***************************************************************
 	 * Variables
@@ -391,6 +399,7 @@ namespace game
 	WEAK symbol<clientUIActive_t> clientUIActives{ 0x142246C30 };
 
 	WEAK symbol<connection_data*> cl_con_data{ 0x141FE58B8 };
+	WEAK symbol<PartyData> g_partyData{ 0x145254DA0 };
 
 	WEAK symbol<int> sv_map_restart{ 0x146B2C9D4 };
 	WEAK symbol<int> sv_loadScripts{ 0x146B2C9D8 };

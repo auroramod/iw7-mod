@@ -232,7 +232,6 @@ namespace auth
 			}
 
 			game::SV_ClientMP_DirectConnect(from);
-
 		}
 
 		void* get_direct_connect_stub()
