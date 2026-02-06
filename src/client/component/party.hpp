@@ -27,6 +27,9 @@ namespace party
 		std::string clanTag;
 	};
 
+	extern fake_member_info_t g_memberInfo[18];
+	extern bool g_memberInfoValid[18];
+
 	extern fake_member_info_t g_clientMemberInfo[18];
 	extern bool g_clientMemberInfoValid[18];
 

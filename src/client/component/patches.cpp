@@ -6,6 +6,7 @@
 #include "command.hpp"
 #include "party.hpp"
 #include "network.hpp"
+#include "console/console.hpp"
 
 #include "fastfiles.hpp"
 #include "filesystem.hpp"
@@ -214,6 +215,11 @@ namespace patches
 		void disconnect()
 		{
 			utils::hook::invoke<void>(0x140C58E20); // SV_MainMP_MatchEnd
+			for (int i = 0; i < 18; i++)
+			{
+				party::g_memberInfo[i] = {};
+				party::g_memberInfoValid[i] = false;
+			}
 		}
 
 		void* update_last_seen_players_stub()
@@ -551,6 +557,47 @@ namespace patches
 			if (!game::Com_FrontEnd_IsInFrontEnd() && server_connection_state->hostDefined)
 				send_member_info(server_connection_state->host);
 		}
+
+		int get_client_num_from_ptr(game::client_t* client)
+		{
+			for (unsigned int i = 0; i < *game::svs_numclients; i++)
+			{
+				if (game::svs_clients[i] == client) return i;
+			}
+			return -1;
+		}
+
+		utils::hook::detour sv_drop_client_hook;
+		void sv_drop_client_stub(game::client_t* client, const char* reason, bool tellThem)
+		{
+			sv_drop_client_hook.invoke(client, reason, tellThem);
+			if (game::Com_FrontEnd_IsInFrontEnd()) return;
+			auto clientNum = get_client_num_from_ptr(client);
+			if (clientNum >= 0 && clientNum < 18)
+			{
+				party::g_clientMemberInfo[clientNum] = {};
+				party::g_clientMemberInfoValid[clientNum] = false;
+			}
+		}
+
+		utils::hook::detour g_sayto_hook;
+		void g_sayto_stub(game::gentity_s* ent, game::gentity_s* other, int mode, int color,
+			const char* teamString, const char* cleanname, const char* message)
+		{
+			char finalName[64]{};
+			auto clanAbbrev = ent->client->sess.cs.clanAbbrev;
+
+			if (clanAbbrev && *clanAbbrev)
+			{
+				strcpy_s(finalName, utils::string::va("[%s]%s", clanAbbrev, cleanname));
+			}
+			else
+			{
+				strcpy_s(finalName, cleanname);
+			}
+
+			g_sayto_hook.invoke(ent, other, mode, color, teamString, finalName, message);
+		}
 	}
 
 	class component final : public component_interface
@@ -569,6 +616,9 @@ namespace patches
 			{
 				cl_parse_gamestate_hook.create(0x1409B6EE0, cl_parse_gamestate_stub);
 			}
+
+			sv_drop_client_hook.create(game::SV_DropClient, sv_drop_client_stub);
+			g_sayto_hook.create(game::G_SayTo, g_sayto_stub);
 
 			utils::hook::jump(0x140C0E9F5, utils::hook::assemble(op_wait_entry_stub), true);
 

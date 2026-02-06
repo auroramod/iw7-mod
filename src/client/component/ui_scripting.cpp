@@ -182,15 +182,17 @@ namespace ui_scripting
 				localized_strings::override(string, value);
 			};
 			*/
+
 			game_type["getplayerclantag"] = [](const game&, const int& clientIndex)
 			{
 				if (clientIndex < 18)
 				{
-					auto lobbyMember = ::game::Lobby_GetMember(clientIndex);
+					auto lobbyMember = &party::g_clientMemberInfo[clientIndex];
+					auto lobbyMemberValid = &party::g_clientMemberInfoValid[clientIndex];
 
-					if (!lobbyMember || lobbyMember->status < 5) return "";
+					if (!lobbyMember || !lobbyMemberValid)return "";
 
-					auto lobbyMemberClanAbbrev = lobbyMember->info.clanAbbrev;
+					auto lobbyMemberClanAbbrev = lobbyMember->clanTag.c_str();
 
 					if (!lobbyMemberClanAbbrev || !*lobbyMemberClanAbbrev)
 						return "";

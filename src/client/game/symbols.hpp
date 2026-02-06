@@ -348,6 +348,14 @@ namespace game
 	WEAK symbol<void(msg_t* msg, const void* data, std::int32_t length)> MSG_WriteData{ 0x140BB4340 };
 	WEAK symbol<void(msg_t* msg, std::int32_t data)> MSG_WriteByte{ 0x140BB4320 };
 	WEAK symbol<void(msg_t* msg, std::uint64_t data)> MSG_WriteInt64{ 0x140BB4570 };
+	
+	WEAK symbol<void(gentity_s* ent,
+		gentity_s* other,
+		int mode,
+		int color,
+		const char* teamString,
+		const char* cleanname,
+		const char* message)> G_SayTo{ 0x140B10DB0 };
 
 	WEAK symbol<const char*(int localControllerIndex)> GamerProfile_GetClanName{ 0x140344740 };
 	WEAK symbol<void(int index, char* buffer, int bufferSize)> SV_GetUserinfo{ 0x140C50A90 };

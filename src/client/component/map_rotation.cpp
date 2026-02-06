@@ -3,6 +3,7 @@
 
 #include "command.hpp"
 #include "scheduler.hpp"
+#include "party.hpp"
 #include "console/console.hpp"
 
 #include "game/game.hpp"
@@ -115,6 +116,12 @@ namespace map_rotation
 			{
 				scheduler::on_game_initialized(perform_map_rotation, scheduler::pipeline::main, 1s);
 				return;
+			}
+
+			for (int i = 0; i < 18; i++) 
+			{ 
+				party::g_memberInfo[i] = {}; 
+				party::g_memberInfoValid[i] = false;
 			}
 
 			const auto rotation = parse_current_map_rotation();

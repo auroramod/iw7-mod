@@ -26,7 +26,9 @@
 namespace party
 {
 	fake_member_info_t g_clientMemberInfo[18]; 
+	fake_member_info_t g_memberInfo[18];
 	bool g_clientMemberInfoValid[18];
+	bool g_memberInfoValid[18];
 
 	namespace
 	{
@@ -898,6 +900,9 @@ namespace party
 					return;
 				}
 
+				party::g_memberInfo[client_num] = {};
+				party::g_memberInfoValid[client_num] = false;
+
 				scheduler::once([client_num, reason]()
 				{
 					game::SV_CmdsMP_KickClientNum(client_num, reason.data(), false);
@@ -1065,9 +1070,17 @@ namespace party
 				const int clientNum = find_client_num_by_adr(target);
 				if (clientNum < 0 || !game::g_entities[clientNum].client || game::g_entities[clientNum].client->sess.connected == game::CON_DISCONNECTED)
 				{ 
+					if (clientNum >= 0)
+					{
+						party::g_memberInfo[clientNum] = {};
+						party::g_memberInfoValid[clientNum] = false;
+					}
 					console::debug("clientInfo: received from unknown client\n");
 					return; 
 				}
+
+				g_memberInfo[clientNum] = { xuid, name, clanTag };
+				g_memberInfoValid[clientNum] = true;
 
 				console::info("clientInfo: %s (%s) [%s] on slot %d\n", name.c_str(), xuid.c_str(), clanTag.c_str(), clientNum); 
 
@@ -1084,6 +1097,17 @@ namespace party
 					{
 						network::send(client->remoteAddress, "memberInfoUpdate", new_info.build(), '\n');
 					}
+				}
+
+				for (unsigned int i = 0; i < *game::svs_numclients; i++) 
+				{ 
+					if (!g_memberInfoValid[i]) continue; 
+					utils::info_string snapshot{}; 
+					snapshot.set("clientNum", std::to_string(i));
+					snapshot.set("xuid", g_memberInfo[i].xuid); 
+					snapshot.set("gamertag", g_memberInfo[i].name); 
+					snapshot.set("clanAbbrev", g_memberInfo[i].clanTag); 
+					network::send(target, "memberInfoUpdate", snapshot.build(), '\n');
 				}
 			});
 
