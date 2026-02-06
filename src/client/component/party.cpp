@@ -706,9 +706,9 @@ namespace party
 		return server_discord_info;
 	}
 
-	static int find_client_num_by_adr(const game::netadr_s& from) 
+	static int find_client_num_by_adr(const game::netadr_s& from)
 	{ 
-		for (int i = 0; i < *game::svs_numclients; i++) 
+		for (unsigned int i = 0; i < *game::svs_numclients; i++) 
 		{ 
 			auto client = game::svs_clients[i];
 			if (game::NET_CompareAdr(from, client->remoteAddress))
@@ -1077,7 +1077,7 @@ namespace party
 				new_info.set("gamertag", name);
 				new_info.set("clanAbbrev", clanTag);
 
-				for (int i = 0; i < *game::svs_numclients; i++)
+				for (unsigned int i = 0; i < *game::svs_numclients; i++)
 				{
 					auto client = game::svs_clients[i];
 					if (client->header.state >= 1 && !game::SV_ClientIsBot(i) && !game::Session_IsHost(game::SV_MainMP_GetServerLobby(), i))
