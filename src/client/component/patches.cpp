@@ -548,7 +548,7 @@ namespace patches
 			}
 			cl_parse_gamestate_hook.invoke(localClientNum, msg, a3);
 			auto* server_connection_state = party::get_server_connection_state();
-			if (!game::Com_FrontEnd_IsInFrontEnd())
+			if (!game::Com_FrontEnd_IsInFrontEnd() && server_connection_state->hostDefined)
 				send_member_info(server_connection_state->host);
 		}
 	}
