@@ -1082,7 +1082,7 @@ namespace party
 				g_memberInfo[clientNum] = { xuid, name, clanTag };
 				g_memberInfoValid[clientNum] = true;
 
-				console::info("clientInfo: %s (%s) [%s] on slot %d\n", name.c_str(), xuid.c_str(), clanTag.c_str(), clientNum); 
+				console::debug("clientInfo: %s (%s) [%s] on slot %d\n", name.c_str(), xuid.c_str(), clanTag.c_str(), clientNum); 
 
 				utils::info_string new_info{};
 				new_info.set("clientNum", std::to_string(clientNum));
@@ -1133,7 +1133,7 @@ namespace party
 
 				g_clientMemberInfoValid[clientNum] = true;
 
-				console::info("Stored memberInfo for client %d: %s [%s]\n", clientNum, g_clientMemberInfo[clientNum].name.c_str(), g_clientMemberInfo[clientNum].clanTag.c_str());
+				console::debug("Stored memberInfo for client %d: %s [%s]\n", clientNum, g_clientMemberInfo[clientNum].name.c_str(), g_clientMemberInfo[clientNum].clanTag.c_str());
 			});
 
 			network::on("infoResponse", [](const game::netadr_s& target, const std::string_view& data)

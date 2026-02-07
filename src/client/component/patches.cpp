@@ -450,15 +450,6 @@ namespace patches
 				{
 					*(int*)(result + 12) = client->sess.cs.team;
 				}
-
-				clientObj = GetClientObj(managerAddr, clientNum);
-				if (clientObj)
-				{
-					// Offset 52 (0x34) is the exact spot LUI checks
-					strncpy_s((char*)(clientObj + 0x34), 8, client->sess.cs.clanAbbrev, 7);
-					// Also ensure the Name is correct at +4
-					strncpy_s((char*)(clientObj + 0x04), 32, client->sess.cs.name, 31);
-				}
 			}
 		}
 
