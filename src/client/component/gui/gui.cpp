@@ -317,12 +317,10 @@ namespace gui
 			return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
 		}
 
-		HRESULT __stdcall d3d11_present_stub(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flags)
+		HRESULT __stdcall d3d11_present_stub(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
 		{
 			if (!initialized)
 			{
-				console::debug("[ImGui] Doing D3D stuff\n");
-
 				auto hr = pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&device);
 				if (SUCCEEDED(hr))
 				{
@@ -352,13 +350,15 @@ namespace gui
 			return d3d11_present_original(pSwapChain, SyncInterval, Flags);
 		}
 
-		HRESULT resize_buffers_stub(IDXGISwapChain* pThis, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags) {
+		HRESULT resize_buffers_stub(IDXGISwapChain* pThis, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags) 
+		{
 			if (!initialized || !device)
 			{
 				return oResizeBuffers(pThis, BufferCount, Width, Height, NewFormat, SwapChainFlags);
 			}
 
-			if (render_target_view) {
+			if (render_target_view) 
+			{
 				device_context->OMSetRenderTargets(0, 0, 0);
 				render_target_view->Release();
 				render_target_view = nullptr;
@@ -377,7 +377,6 @@ namespace gui
 
 			device_context->OMSetRenderTargets(1, &render_target_view, NULL);
 
-			// Set up the viewport.
 			D3D11_VIEWPORT vp;
 			vp.Width = static_cast<FLOAT>(Width);
 			vp.Height = static_cast<FLOAT>(Height);
@@ -403,6 +402,7 @@ namespace gui
 			*reinterpret_cast<int*>(0x14779C73D) = 1;
 			*game::keyCatchers &= ~0x10;
 		}
+
 		toggled = !toggled;
 	}
 
