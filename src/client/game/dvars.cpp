@@ -45,6 +45,9 @@ namespace dvars
 	game::dvar_t* bg_bounceMinFallSpeed = nullptr;
 	game::dvar_t* bg_playerEjection = nullptr;
 	game::dvar_t* bg_disable_barrier_clips = nullptr;
+	game::dvar_t* bg_omnimovement = nullptr;
+	game::dvar_t* bg_sprintUnlimited = nullptr;
+	game::dvar_t* bg_airControl = nullptr;
 
 	game::dvar_t* logfile = nullptr;
 	game::dvar_t* g_log = nullptr;

@@ -42,6 +42,9 @@ namespace dvars
 	extern game::dvar_t* bg_bounceMinFallSpeed;
 	extern game::dvar_t* bg_playerEjection;
 	extern game::dvar_t* bg_disable_barrier_clips;
+	extern game::dvar_t* bg_omnimovement;
+	extern game::dvar_t* bg_sprintUnlimited;
+	extern game::dvar_t* bg_airControl;
 
 	extern game::dvar_t* logfile;
 	extern game::dvar_t* g_log;
