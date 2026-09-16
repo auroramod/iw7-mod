@@ -19,7 +19,7 @@ namespace renderer
 			switch (dvars::r_fullbright ? dvars::r_fullbright->current.integer : 0)
 			{
 			case 2:
-				return game::TECHNIQUE_LIT;
+				return game::TECHNIQUE_DEBUG_BUMPMAP;
 			default:
 				return game::TECHNIQUE_UNLIT;
 			}
