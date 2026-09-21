@@ -860,9 +860,14 @@ namespace game
 			int packedBobCycle[2];
 			vec3_t origin;
 			vec3_t velocity;
-			char __pad0[68];
-			vec3_t delta_angles;
-			char __pad1[200];
+			char __pad0[56];
+			int gravity;
+			int speed;
+			float delta_angles[3];
+			int groundEntityNum;
+			char __pad1[12];
+			int jumpTime;
+			char __pad1_0[184];
 			GameModeFlagContainer<EntityStateFlagsCommon, EntityStateFlagsSP, EntityStateFlagsMP, 32> eFlags;
 			char __pad2[92];
 			vec3_t viewangles;
@@ -874,16 +879,66 @@ namespace game
 			char __pad5[0x4000];
 		}; // unk size
 		assert_offsetof(playerState_s, pm_type, 4);
-		assert_offsetof(playerState_s, delta_angles, 132);
+		assert_offsetof(playerState_s, groundEntityNum, 140);
 		assert_offsetof(playerState_s, eFlags, 344);
 		assert_offsetof(playerState_s, viewangles, 440);
 		assert_offsetof(playerState_s, weapState, 1620);
 		assert_offsetof(playerState_s, weapFlags, 2188);
 
+		enum TraceHitType : std::int32_t
+		{
+			TRACE_HITTYPE_NONE = 0x0,
+			TRACE_HITTYPE_ENTITY = 0x1,
+			TRACE_HITTYPE_DYNENT_MODEL = 0x2,
+			TRACE_HITTYPE_DYNENT_BRUSH = 0x3,
+			TRACE_HITTYPE_GLASS = 0x4,
+		};
+
+		enum TraceHitSubType
+		{
+			TRACE_HITSUBTYPE_NONE = 0x0,
+			TRACE_HITSUBTYPE_COVERWALL = 0x1,
+		};
+
+		struct TraceSubTypeData_CoverWall
+		{
+			unsigned __int16 id;
+		};
+
+		union TraceHitSubTypeData
+		{
+			TraceSubTypeData_CoverWall coverWall;
+		};
+
+		struct trace_t
+		{
+			float fraction;
+			vec3_t position;
+			vec3_t normal;
+			int surfaceFlags;
+			int contents;
+			TraceHitType hitType;
+			TraceHitSubType hitSubType;
+			unsigned short hitId;
+			unsigned short modelIndex;
+			scr_string_t partName;
+			unsigned short partGroup;
+			TraceHitSubTypeData subTypeData;
+			bool allsolid;
+			bool startsolid;
+			bool walkable;
+			bool getPenetration;
+			bool removePitchAndRollRotations;
+		};
+
 		struct usercmd_s
 		{
 			unsigned __int64 buttons;
-			char __pad0[112];
+			int serverTime;
+			char __pad0[40];
+			char forwardmove;
+			char rightmove;
+			char __pad1[66];
 		}; assert_sizeof(usercmd_s, 120);
 
 		struct pmove_t
@@ -910,13 +965,18 @@ namespace game
 			int walking;
 			int groundPlane;
 			int almostGroundPlane;
-			int groundTrace;
+			trace_t groundTrace;
 			float impactSpeed;
+			int unk;
 			float previous_origin[3];
 			float previous_velocity[3];
 			float wishdir[3];
 			unsigned int holdrand;
+			float platformUp[3];
+			int flinch;
+			int turning;
 		};
+
 		assert_offsetof(pml_t, msec, 40);
 
 		enum clientConnected_t

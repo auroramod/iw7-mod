@@ -6,7 +6,7 @@
 #include "game/game.hpp"
 #include "game/dvars.hpp"
 
-#include "dvars.hpp"
+#include "console/console.hpp"
 
 #include <utils/nt.hpp>
 #include <utils/hook.hpp>
@@ -16,9 +16,6 @@ namespace gameplay
 {
 	namespace
 	{
-		game::dvar_t* player_sustain_ammo = nullptr;
-		game::dvar_t* bg_disable_barrier_clips = nullptr;
-
 		utils::hook::detour pm_weapon_use_ammo_hook;
 
 		void stuck_in_client_stub(void* entity)
@@ -33,26 +30,36 @@ namespace gameplay
 		{
 			return utils::hook::assemble([](utils::hook::assembler& a)
 			{
-				const auto no_bounce = a.newLabel();
-				const auto loc_70FB6F = a.newLabel();
+				const auto compare = a.newLabel();
+				const auto original = a.newLabel();
 
 				a.push(rax);
+				a.push(rcx);
 
 				a.mov(rax, qword_ptr(reinterpret_cast<int64_t>(&dvars::bg_bounces)));
 				a.mov(al, byte_ptr(rax, 0x10));
-				a.cmp(ptr(rbp, -0x66), al);
+				a.test(al, al);
+				a.jz(compare);
 
+				a.mov(rcx, reinterpret_cast<std::uint64_t>(&dvars::bg_bounceMinFallSpeed));
+				a.mov(rcx, qword_ptr(rcx));
+				a.mov(ecx, dword_ptr(rcx, 0x10));
+				a.or_(ecx, 0x80000000);
+				a.cmp(dword_ptr(r15, 0x3C), ecx);
+				a.jae(compare);
+
+				a.xor_(al, al);
+
+				a.bind(compare);
+				a.cmp(byte_ptr(rbp, -0x66), al);
+
+				a.pop(rcx);
 				a.pop(rax);
-				a.jz(no_bounce);
+				a.jz(original);
 				a.jmp(0x14070FBF0);
 
-				a.bind(no_bounce);
-				a.cmp(ptr(rsp, 0x44), r14d);
-				a.jnz(loc_70FB6F);
-				a.jmp(0x14070FBE1);
-
-				a.bind(loc_70FB6F);
-				a.jmp(0x14070FB6F);
+				a.bind(original);
+				a.jmp(0x14070FBBD);
 			});
 		}
 
@@ -60,8 +67,7 @@ namespace gameplay
 		{
 			return utils::hook::assemble([](utils::hook::assembler& a)
 			{
-				const auto do_bounce = a.newLabel();
-				const auto no_bounce = a.newLabel();
+				const auto bounce = a.newLabel();
 
 				// check dvar value
 				a.push(rax);
@@ -69,27 +75,19 @@ namespace gameplay
 				a.mov(al, byte_ptr(rax, 0x10));
 				a.test(al, al);
 				a.pop(rax);
-				a.jnz(do_bounce);
+				a.jnz(bounce);
 
 				// original code
 				a.push(rax);
 				a.mov(rax, 0x14143E5A0);
 				a.comiss(xmm0, dword_ptr(rax));
 				a.pop(rax);
-				a.jb(no_bounce);
+				a.jb(bounce);
 
-				// go to next instruction
-				a.mov(rax, 0x14070FBEA);
-				a.jmp(rax);
+				a.jmp(0x14070FBEA);
 
-				// force bounce by forcing jmp
-				a.bind(do_bounce);
-				a.mov(rax, 0x14070FB6F);
-				a.jmp(rax);
-
-				a.bind(no_bounce);
-				a.mov(rax, 0x14070FB6F);
-				a.jmp(rax);
+				a.bind(bounce);
+				a.jmp(0x14070FB6F);
 			});
 		}
 
@@ -98,8 +96,8 @@ namespace gameplay
 			return utils::hook::assemble([](utils::hook::assembler& a)
 			{
 				a.mov(rax, qword_ptr(reinterpret_cast<int64_t>(&*reinterpret_cast<game::dvar_t**>(0x145209290))));
-				a.movss(xmm6, dword_ptr(rax, 0x10));
-				a.cvtss2si(eax, xmm6);
+
+				a.cvtss2si(eax, dword_ptr(rax, 0x10));
 				a.mov(dword_ptr(rdi, 0x78), eax);
 
 				a.mov(rcx, rsi);
@@ -173,7 +171,7 @@ namespace gameplay
 
 		void pm_weapon_use_ammo_stub(void* ps, const void* weapon, bool isAlternate, int amount, int hand)
 		{
-			if (!player_sustain_ammo || !player_sustain_ammo->current.enabled)
+			if (!dvars::player_sustain_ammo || !dvars::player_sustain_ammo->current.enabled)
 			{
 				pm_weapon_use_ammo_hook.invoke<void>(ps, weapon, isAlternate, amount, hand);
 			}
@@ -191,13 +189,61 @@ namespace gameplay
 		utils::hook::detour pmove_single_hook;
 		void pmove_single_stub(game::pmove_t* pm, void* a2, unsigned int a3, int a4, int a5)
 		{
-			if (bg_disable_barrier_clips && bg_disable_barrier_clips->current.enabled && pm)
+			if (dvars::bg_disable_barrier_clips && dvars::bg_disable_barrier_clips->current.enabled && pm)
 			{
 				pm->tracemask &= ~0x10000;
 				pm->tracemask |= 0x400;
 			}
 
 			pmove_single_hook.invoke<void>(pm, a2, a3, a4, a5);
+		}
+
+		constexpr auto mantle_surface_flags = 0x6000000;   // SURF_MANTLEON | SURF_MANTLEOVER
+		constexpr auto mantle_legacy_contents = 0x1000000; // IW6 CONTENTS_MANTLE
+
+		constexpr auto mantle_angle_limit = 0x1414B8D8C; // acosf limit: 75 in IW7, 60 in IW6
+		constexpr auto mantle_reach_base = 0x1414B8D84;  // 20.0 -> 34.9 reach; IW6 reaches 54.9
+		constexpr auto mantle_reach_bias = 14.9f;        // the 15.0 - 0.1 the game adds to it
+		constexpr auto mantle_stock_angle = 75.0f;
+		constexpr auto mantle_stock_reach = 34.9f;
+
+		void mantle_pm_tracehandler_stub(__int64 handler, game::trace_t* results, float* start, float* end, 
+			game::Bounds* bounds, int passEntityNum, int contentMask, game::playerState_s* ps)
+		{
+			const auto legacy = dvars::mantle_legacy && dvars::mantle_legacy->current.enabled;
+
+			const auto mask = legacy ? mantle_legacy_contents : contentMask;
+			utils::hook::invoke<void>(0x140707C90, handler, results, start, end, bounds, passEntityNum, mask, ps);
+
+			const auto surface_flags = results->surfaceFlags;
+			const auto mantleable = (surface_flags & mantle_surface_flags) != 0;
+
+			if (legacy && !mantleable)
+			{
+				results->fraction = 1.0f;
+			}
+
+			if (dvars::mantle_legacyMaxAngle && dvars::mantle_legacyReach)
+			{
+				const auto angle = legacy ? dvars::mantle_legacyMaxAngle->current.value : mantle_stock_angle;
+				const auto reach = (legacy ? dvars::mantle_legacyReach->current.value : mantle_stock_reach)
+					- mantle_reach_bias;
+
+				static auto written_angle = mantle_stock_angle;
+				static auto written_reach = mantle_stock_reach - mantle_reach_bias;
+
+				if (angle != written_angle)
+				{
+					written_angle = angle;
+					utils::hook::set<float>(mantle_angle_limit, angle);
+				}
+
+				if (reach != written_reach)
+				{
+					written_reach = reach;
+					utils::hook::set<float>(mantle_reach_base, reach);
+				}
+			}
 		}
 	}
 
@@ -210,10 +256,10 @@ namespace gameplay
 			dvars::bg_playerEjection = game::Dvar_RegisterBool("bg_playerEjection", true, game::DVAR_FLAG_REPLICATED, "Flag whether player ejection is on or off");
 			utils::hook::call(0x140AFA739, stuck_in_client_stub);
 
-			// TODO: Implement bounces dvar (collision becomes very funky on the ground)
-			dvars::bg_bounces = game::Dvar_RegisterBool("bg_bounces", false, game::DVAR_FLAG_READ, "Enables bounces (currently disabled due to issues)");
-			//utils::hook::jump(0x14070FBB7, bg_bounces_stub(), true);
-			//utils::hook::jump(0x14070FBE1, force_bounce_stub(), true);
+			dvars::bg_bounces = game::Dvar_RegisterBool("bg_bounces", false, game::DVAR_FLAG_REPLICATED, "Keep your velocity when landing on a walkable surface at speed");
+			dvars::bg_bounceMinFallSpeed = game::Dvar_RegisterFloat("bg_bounceMinFallSpeed", 200.0f, 0.0f, 1000.0f, game::DVAR_FLAG_REPLICATED, "Minimum downward speed before bg_bounces takes effect");
+			utils::hook::jump(0x14070FBB7, bg_bounces_stub());
+			utils::hook::jump(0x14070FBE1, force_bounce_stub());
 
 			// Modify gravity dvar
 			dvars::override::register_float("bg_gravity", 800.0f, 1.0f, 1000.0f, 0xC0 | game::DVAR_FLAG_REPLICATED);
@@ -235,16 +281,34 @@ namespace gameplay
 			dvars::override::register_float("cl_yawspeed", 140.0f, std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max(), game::DVAR_FLAG_SAVED);
 
 			// Add toggle for keeping your clip ammo
-			player_sustain_ammo = game::Dvar_RegisterBool("player_sustainAmmo", false, game::DVAR_FLAG_REPLICATED, "Firing weapon will not decrease clip ammo");
+			dvars::player_sustain_ammo = game::Dvar_RegisterBool("player_sustainAmmo", false, game::DVAR_FLAG_REPLICATED, "Firing weapon will not decrease clip ammo");
 			pm_weapon_use_ammo_hook.create(0x1407330E0, pm_weapon_use_ammo_stub);
 
 			// Implement fall damage dvar
 			dvars::jump_enableFallDamage = game::Dvar_RegisterBool("jump_enableFallDamage", true, game::DVAR_FLAG_REPLICATED, "Enable fall damage");
 			pm_crashland_hook.create(0x1406F9860, pm_crashland_stub);
 
+			// Make min/max falldamage dvars work on all gamemodes
+			utils::hook::nop(0x1406F6265, 2);
+			utils::hook::nop(0x1406F6285, 2);
+
 			// Add a feature to toggle barrier clips on maps
-			bg_disable_barrier_clips = game::Dvar_RegisterBool("bg_disableBarrierClips", false, game::DVAR_FLAG_REPLICATED, "(Experimental) Disables barrier clips in maps to access things easily");
+			dvars::bg_disable_barrier_clips = game::Dvar_RegisterBool("bg_disableBarrierClips", false, game::DVAR_FLAG_REPLICATED, "(Experimental) Disables barrier clips in maps to access things easily");
 			pmove_single_hook.create(0x14070F530, pmove_single_stub);
+
+			// Make ladder velocity 0.5 for each gamemode
+			utils::hook::nop(0x1406FD240, 2);
+
+			// Make mantle_enable work on all gamemodes
+			utils::hook::nop(0x1406E2676, 2); // Mantle_CanMantle
+			utils::hook::nop(0x1406E4CDE, 2); // Mantle_Update
+
+			// Make mantle behave like older games if we want
+			dvars::mantle_legacy = game::Dvar_RegisterBool("mantle_legacy", false, game::DVAR_FLAG_REPLICATED, "Enable legacy mantle behavior");
+			dvars::mantle_legacyMaxAngle = game::Dvar_RegisterFloat("mantle_legacyMaxAngle", 60.0f, 0.0f, 90.0f, game::DVAR_FLAG_REPLICATED, "Ledge angle limit while legacy mantling (IW6 uses 60, IW7 75)");
+			dvars::mantle_legacyReach = game::Dvar_RegisterFloat("mantle_legacyReach", 54.9f, 16.0f, 128.0f, game::DVAR_FLAG_REPLICATED, "Forward reach of the mantle sweep while legacy mantling (IW6 uses 54.9, IW7 34.9)");
+			utils::hook::call(0x1406E398D, mantle_pm_tracehandler_stub);
+			utils::hook::set<uint32_t>(0x1406E3AB8 + 4, mantle_surface_flags);
 		}
 	};
 }
