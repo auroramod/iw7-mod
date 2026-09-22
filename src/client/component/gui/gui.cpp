@@ -7,8 +7,10 @@
 #include "game/dvars.hpp"
 
 #include <component/console/console.hpp>
+#include <component/scheduler.hpp>
 
 #include "gui.hpp"
+#include "kiero.hpp"
 #include "component/directx.hpp"
 
 #include <utils/string.hpp>
@@ -25,6 +27,7 @@ namespace gui
 
 	ID3D11Device* device;
 	ID3D11DeviceContext* device_context;
+	ID3D11RenderTargetView* render_target_view;
 
 	namespace
 	{
@@ -57,16 +60,17 @@ namespace gui
 		bool initialized = false;
 		bool toggled = false;
 
+		static bool attached = false;
+
+		static HWND window = NULL;
+
 		void initialize_gui_context()
 		{
-			// directx owns device creation (plain D3D11 or D3D11On12 with -d3d12)
-			device = dx::device;
-			device_context = dx::deviceContext;
-
 			ImGui::CreateContext();
+
 			ImGui::StyleColorsDark();
 
-			ImGui_ImplWin32_Init(*reinterpret_cast<HWND*>(0x1477A02D0));
+			ImGui_ImplWin32_Init(window);
 			ImGui_ImplDX11_Init(device, device_context);
 
 			initialized = true;
@@ -159,6 +163,7 @@ namespace gui
 		{
 			ImGui::EndFrame();
 			ImGui::Render();
+			device_context->OMSetRenderTargets(1, &render_target_view, nullptr);
 			ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 		}
 
@@ -251,37 +256,24 @@ namespace gui
 
 		void gui_on_frame()
 		{
-			/*
-			if (!utils::hook::invoke<bool>(0x140BB5E70)) // is database ready
+			if (!utils::hook::invoke<bool>(0x140BB5E70)) // is database ready to start showing
 			{
 				return;
 			}
-			*/
 
-			if (initialized && device != dx::device)
+			static auto logged = false;
+			if (!logged)
 			{
-				// the game recreated its device (device loss), the imgui resources belong to the old one
-				shutdown_gui();
+				console::debug("[ImGui] Rendering frames\n");
+				logged = true;
 			}
 
-			if (!initialized)
-			{
-				if (!dx::device || !dx::deviceContext)
-				{
-					return;
-				}
-
-				console::debug("[ImGui] Initializing\n");
-				initialize_gui_context();
-			}
-			else
-			{
-				new_gui_frame();
-				run_frame_callbacks();
-				end_gui_frame();
-			}
+			new_gui_frame();
+			run_frame_callbacks();
+			end_gui_frame();
 		}
 		
+		/*
 		void gui_on_frame_wrapper(utils::hook::assembler& a)
 		{
 			a.pushad64();
@@ -308,6 +300,115 @@ namespace gui
 
 			return wnd_proc_hook.invoke<LRESULT>(hWnd, msg, wParam, lParam);
 		}
+		*/
+
+		typedef HRESULT(__stdcall* Present) (IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
+		Present d3d11_present_original;
+
+		typedef HRESULT(__stdcall* ResizeBuffers)(IDXGISwapChain* pThis, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags);
+		ResizeBuffers oResizeBuffers;
+
+		WNDPROC oWndProc;
+
+		LRESULT __stdcall WndProc_stub(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+			if (true && ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam))
+				return true;
+
+			return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
+		}
+
+		HRESULT __stdcall d3d11_present_stub(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
+		{
+			// directx owns device creation (plain D3D11 or D3D11On12 with -d3d12)
+			static ID3D11Device* game_device = nullptr;
+
+			if (initialized && game_device != dx::device)
+			{
+				// the game recreated its device (device loss), the imgui resources belong to the old one
+				if (render_target_view)
+				{
+					render_target_view->Release();
+					render_target_view = nullptr;
+				}
+
+				shutdown_gui();
+			}
+
+			if (!initialized)
+			{
+				auto hr = pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&device);
+				if (SUCCEEDED(hr))
+				{
+					game_device = dx::device;
+					device->GetImmediateContext(&device_context);
+
+					DXGI_SWAP_CHAIN_DESC desc;
+					pSwapChain->GetDesc(&desc);
+					window = desc.OutputWindow;
+
+					initialize_gui_context();
+
+					ID3D11Texture2D* pBackBuffer;
+					pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+					device->CreateRenderTargetView(pBackBuffer, NULL, &render_target_view);
+					pBackBuffer->Release();
+					if (!oWndProc)
+					{
+						// only subclass once, re-initializing after a device loss would chain WndProc_stub into itself
+						oWndProc = (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)WndProc_stub);
+					}
+
+					console::debug("[ImGui] Initializing\n");
+				}
+
+				// fallback/when done
+				return d3d11_present_original(pSwapChain, SyncInterval, Flags);
+			}
+
+			gui_on_frame();
+
+			return d3d11_present_original(pSwapChain, SyncInterval, Flags);
+		}
+
+		HRESULT resize_buffers_stub(IDXGISwapChain* pThis, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags) 
+		{
+			if (!initialized || !device)
+			{
+				return oResizeBuffers(pThis, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+			}
+
+			if (render_target_view) 
+			{
+				device_context->OMSetRenderTargets(0, 0, 0);
+				render_target_view->Release();
+				render_target_view = nullptr;
+			}
+
+			HRESULT hr = oResizeBuffers(pThis, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+
+			ID3D11Texture2D* pBuffer;
+			pThis->GetBuffer(0, __uuidof(ID3D11Texture2D),
+				(void**)&pBuffer);
+
+			device->CreateRenderTargetView(pBuffer, NULL,
+				&render_target_view);
+
+			pBuffer->Release();
+
+			device_context->OMSetRenderTargets(1, &render_target_view, NULL);
+
+			D3D11_VIEWPORT vp;
+			vp.Width = static_cast<FLOAT>(Width);
+			vp.Height = static_cast<FLOAT>(Height);
+			vp.MinDepth = 0.0f;
+			vp.MaxDepth = 1.0f;
+			vp.TopLeftX = 0;
+			vp.TopLeftY = 0;
+			device_context->RSSetViewports(1, &vp);
+
+			return hr;
+		}
 	}
 
 	void toggle()
@@ -322,14 +423,12 @@ namespace gui
 			*reinterpret_cast<int*>(0x14779C73D) = 1;
 			*game::keyCatchers &= ~0x10;
 		}
+
 		toggled = !toggled;
 	}
 
 	bool gui_key_event(const int local_client_num, const int key, const int down)
 	{
-		return true;
-
-		/*
 		if (key == game::K_F11 && down)
 		{
 			toggle();
@@ -343,17 +442,16 @@ namespace gui
 		}
 
 		return !toggled;
-		*/
 	}
 
 	bool gui_char_event(const int local_client_num, const int key)
 	{
-		return true; // !toggled;
+		return !toggled;
 	}
 
 	bool gui_mouse_event(const int local_client_num, int x, int y)
 	{
-		return true; // !toggled;
+		return !toggled;
 	}
 
 	void on_frame(const std::function<void()>& callback, bool always)
@@ -446,9 +544,23 @@ namespace gui
 				return;
 			}
 
-			// TODO: this hook won't work :(
-			utils::hook::jump(0x140E59B91, utils::hook::assemble(gui_on_frame_wrapper), true);
-			wnd_proc_hook.create(0x140D5A680, wnd_proc_stub);
+			scheduler::loop([&]
+			{
+				if (!attached)
+				{
+					auto result = kiero::init(kiero::RenderType::D3D11);
+
+					console::debug("[GUI] kiero result is %s\n", kiero::status_to_str(result).c_str());
+
+					if (result == kiero::Status::Success)
+					{
+						attached = true;
+
+						kiero::bind(8, (void**)&d3d11_present_original, d3d11_present_stub);
+						kiero::bind(13, (void**)&oResizeBuffers, resize_buffers_stub);
+					}
+				}
+			}, scheduler::renderer);
 
 			on_frame([]
 			{
@@ -469,5 +581,5 @@ namespace gui
 	};
 }
 
-//REGISTER_COMPONENT(gui::component)
+REGISTER_COMPONENT(gui::component)
 #endif
