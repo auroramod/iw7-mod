@@ -10,7 +10,6 @@
 #include <component/scheduler.hpp>
 
 #include "gui.hpp"
-#include "kiero.hpp"
 #include "component/directx.hpp"
 
 #include <utils/string.hpp>
@@ -27,7 +26,6 @@ namespace gui
 
 	ID3D11Device* device;
 	ID3D11DeviceContext* device_context;
-	ID3D11RenderTargetView* render_target_view;
 
 	namespace
 	{
@@ -35,6 +33,7 @@ namespace gui
 		{
 			std::function<void()> callback;
 			bool always;
+			bool needs_db;
 		};
 
 		struct event
@@ -59,8 +58,6 @@ namespace gui
 
 		bool initialized = false;
 		bool toggled = false;
-
-		static bool attached = false;
 
 		static HWND window = NULL;
 
@@ -159,12 +156,31 @@ namespace gui
 			ImGui::NewFrame();
 		}
 
-		void end_gui_frame()
+		void end_gui_frame(IDXGISwapChain* swap_chain)
 		{
 			ImGui::EndFrame();
 			ImGui::Render();
+
+			ID3D11Texture2D* back_buffer = nullptr;
+			if (FAILED(swap_chain->GetBuffer(0, IID_PPV_ARGS(&back_buffer))))
+			{
+				return;
+			}
+
+			ID3D11RenderTargetView* render_target_view = nullptr;
+			const auto hr = device->CreateRenderTargetView(back_buffer, nullptr, &render_target_view);
+			back_buffer->Release();
+
+			if (FAILED(hr))
+			{
+				return;
+			}
+
 			device_context->OMSetRenderTargets(1, &render_target_view, nullptr);
 			ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+			device_context->OMSetRenderTargets(0, nullptr, nullptr);
+
+			render_target_view->Release();
 		}
 
 		void toggle_menu(const std::string& name)
@@ -222,12 +238,17 @@ namespace gui
 			ImGui::Checkbox(name.data(), &enabled_menus[menu]);
 		}
 
-		void run_frame_callbacks()
+		void run_frame_callbacks(const bool db_ready)
 		{
-			on_frame_callbacks.access([](std::vector<frame_callback>& callbacks)
+			on_frame_callbacks.access([db_ready](std::vector<frame_callback>& callbacks)
 			{
 				for (const auto& callback : callbacks)
 				{
+					if (callback.needs_db && !db_ready)
+					{
+						continue;
+					}
+
 					if (callback.always || toggled)
 					{
 						callback.callback();
@@ -254,12 +275,10 @@ namespace gui
 			}
 		}
 
-		void gui_on_frame()
+		void gui_on_frame(IDXGISwapChain* swap_chain)
 		{
-			if (!utils::hook::invoke<bool>(0x140BB5E70)) // is database ready to start showing
-			{
-				return;
-			}
+			// false while fastfiles load, keep drawing but skip whatever reads assets
+			const auto db_ready = utils::hook::invoke<bool>(0x140BB5E70); // Sys_IsDatabaseReady
 
 			static auto logged = false;
 			if (!logged)
@@ -269,8 +288,8 @@ namespace gui
 			}
 
 			new_gui_frame();
-			run_frame_callbacks();
-			end_gui_frame();
+			run_frame_callbacks(db_ready);
+			end_gui_frame(swap_chain);
 		}
 		
 		/*
@@ -302,12 +321,6 @@ namespace gui
 		}
 		*/
 
-		typedef HRESULT(__stdcall* Present) (IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
-		Present d3d11_present_original;
-
-		typedef HRESULT(__stdcall* ResizeBuffers)(IDXGISwapChain* pThis, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags);
-		ResizeBuffers oResizeBuffers;
-
 		WNDPROC oWndProc;
 
 		LRESULT __stdcall WndProc_stub(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -318,7 +331,18 @@ namespace gui
 			return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
 		}
 
-		HRESULT __stdcall d3d11_present_stub(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
+		IDXGISwapChain* get_swap_chain()
+		{
+			const auto active_window = *reinterpret_cast<int*>(0x148B1BE34);
+			if (active_window < 0)
+			{
+				return nullptr;
+			}
+
+			return reinterpret_cast<IDXGISwapChain**>(0x148B1BE48)[12 * active_window];
+		}
+
+		void draw_gui(IDXGISwapChain* swap_chain)
 		{
 			// directx owns device creation (plain D3D11 or D3D11On12 with -d3d12)
 			static ID3D11Device* game_device = nullptr;
@@ -326,88 +350,51 @@ namespace gui
 			if (initialized && game_device != dx::device)
 			{
 				// the game recreated its device (device loss), the imgui resources belong to the old one
-				if (render_target_view)
-				{
-					render_target_view->Release();
-					render_target_view = nullptr;
-				}
-
 				shutdown_gui();
 			}
 
 			if (!initialized)
 			{
-				auto hr = pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&device);
-				if (SUCCEEDED(hr))
+				if (FAILED(swap_chain->GetDevice(IID_PPV_ARGS(&device))))
 				{
-					game_device = dx::device;
-					device->GetImmediateContext(&device_context);
-
-					DXGI_SWAP_CHAIN_DESC desc;
-					pSwapChain->GetDesc(&desc);
-					window = desc.OutputWindow;
-
-					initialize_gui_context();
-
-					ID3D11Texture2D* pBackBuffer;
-					pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
-					device->CreateRenderTargetView(pBackBuffer, NULL, &render_target_view);
-					pBackBuffer->Release();
-					if (!oWndProc)
-					{
-						// only subclass once, re-initializing after a device loss would chain WndProc_stub into itself
-						oWndProc = (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)WndProc_stub);
-					}
-
-					console::debug("[ImGui] Initializing\n");
+					return;
 				}
 
-				// fallback/when done
-				return d3d11_present_original(pSwapChain, SyncInterval, Flags);
+				game_device = dx::device;
+				device->GetImmediateContext(&device_context);
+
+				DXGI_SWAP_CHAIN_DESC desc{};
+				swap_chain->GetDesc(&desc);
+				window = desc.OutputWindow;
+
+				initialize_gui_context();
+
+				if (!oWndProc)
+				{
+					oWndProc = (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)WndProc_stub);
+				}
+
+				console::debug("[ImGui] Initializing\n");
+				return;
 			}
 
-			gui_on_frame();
-
-			return d3d11_present_original(pSwapChain, SyncInterval, Flags);
+			gui_on_frame(swap_chain);
 		}
 
-		HRESULT resize_buffers_stub(IDXGISwapChain* pThis, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags) 
+		utils::hook::detour r_present_frame_hook;
+
+		void r_present_frame_stub(const char a1)
 		{
-			if (!initialized || !device)
+			auto* const swap_chain = get_swap_chain();
+			if (swap_chain && dx::device)
 			{
-				return oResizeBuffers(pThis, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+				const auto mutex = *reinterpret_cast<HANDLE*>(0x148B1BC98);
+				WaitForSingleObject(mutex, INFINITE);
+				draw_gui(swap_chain);
+				ReleaseMutex(mutex);
 			}
 
-			if (render_target_view) 
-			{
-				device_context->OMSetRenderTargets(0, 0, 0);
-				render_target_view->Release();
-				render_target_view = nullptr;
-			}
-
-			HRESULT hr = oResizeBuffers(pThis, BufferCount, Width, Height, NewFormat, SwapChainFlags);
-
-			ID3D11Texture2D* pBuffer;
-			pThis->GetBuffer(0, __uuidof(ID3D11Texture2D),
-				(void**)&pBuffer);
-
-			device->CreateRenderTargetView(pBuffer, NULL,
-				&render_target_view);
-
-			pBuffer->Release();
-
-			device_context->OMSetRenderTargets(1, &render_target_view, NULL);
-
-			D3D11_VIEWPORT vp;
-			vp.Width = static_cast<FLOAT>(Width);
-			vp.Height = static_cast<FLOAT>(Height);
-			vp.MinDepth = 0.0f;
-			vp.MaxDepth = 1.0f;
-			vp.TopLeftX = 0;
-			vp.TopLeftY = 0;
-			device_context->RSSetViewports(1, &vp);
-
-			return hr;
+			r_present_frame_hook.invoke<void>(a1);
 		}
 	}
 
@@ -429,9 +416,15 @@ namespace gui
 
 	bool gui_key_event(const int local_client_num, const int key, const int down)
 	{
-		if (key == game::K_F11 && down)
+		if (key == game::K_F11)
 		{
-			toggle();
+			static auto held = false;
+			if (down && !held)
+			{
+				toggle();
+			}
+
+			held = down != 0;
 			return false;
 		}
 
@@ -454,11 +447,11 @@ namespace gui
 		return !toggled;
 	}
 
-	void on_frame(const std::function<void()>& callback, bool always)
+	void on_frame(const std::function<void()>& callback, bool always, bool needs_db)
 	{
-		on_frame_callbacks.access([always, callback](std::vector<frame_callback>& callbacks)
+		on_frame_callbacks.access([always, needs_db, callback](std::vector<frame_callback>& callbacks)
 		{
-			callbacks.emplace_back(callback, always);
+			callbacks.emplace_back(callback, always, needs_db);
 		});
 	}
 
@@ -544,29 +537,13 @@ namespace gui
 				return;
 			}
 
-			scheduler::loop([&]
-			{
-				if (!attached)
-				{
-					auto result = kiero::init(kiero::RenderType::D3D11);
-
-					console::debug("[GUI] kiero result is %s\n", kiero::status_to_str(result).c_str());
-
-					if (result == kiero::Status::Success)
-					{
-						attached = true;
-
-						kiero::bind(8, (void**)&d3d11_present_original, d3d11_present_stub);
-						kiero::bind(13, (void**)&oResizeBuffers, resize_buffers_stub);
-					}
-				}
-			}, scheduler::renderer);
+			r_present_frame_hook.create(0x140E59A40, r_present_frame_stub);
 
 			on_frame([]
 			{
 				show_notifications();
 				draw_main_menu_bar();
-			});
+			}, false, false);
 		}
 
 		void pre_destroy() override
