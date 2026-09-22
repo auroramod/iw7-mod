@@ -18,9 +18,11 @@ namespace demonware
 		{
 			namespace
 			{
-				// keys given at the end of every match
+				// keys and salvage given at the end of every match
 				constexpr std::uint32_t match_base_keys = 8;
 				constexpr std::uint32_t match_victory_keys = 4;
+				constexpr std::uint32_t match_base_salvage = 200;
+				constexpr std::uint32_t match_victory_salvage = 200;
 				constexpr std::int32_t match_min_time_played = 60; // seconds
 
 				enum Quality : std::uint32_t
@@ -361,6 +363,22 @@ namespace demonware
 				}
 
 				return TRUE_KEY_AMOUNT(keys);
+			}
+
+			std::uint32_t get_match_salvage(const std::int32_t time_played, const std::int32_t mission_result)
+			{
+				if (time_played < match_min_time_played)
+				{
+					return 0;
+				}
+
+				auto salvage = match_base_salvage;
+				if (mission_result == 1)
+				{
+					salvage += match_victory_salvage;
+				}
+
+				return salvage;
 			}
 
 			Reward give_mission_team_reward(const std::uint32_t mission_team)

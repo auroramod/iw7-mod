@@ -315,9 +315,13 @@ namespace demonware
 			const auto keys_earned = loot::missions::get_match_keys(time_played, mission_result);
 			const auto key_balance = loot::get_currency_balance(loot::CurrencyType::keys) + keys_earned;
 			loot::set_currency_balance(loot::CurrencyType::keys, key_balance);
+
+			// the client ignores salvage in this response, it picks up the new balance from getBalanceV2 after the match
+			const auto salvage_earned = loot::missions::get_match_salvage(time_played, mission_result);
+			loot::set_currency_balance(loot::CurrencyType::salvage, loot::get_currency_balance(loot::CurrencyType::salvage) + salvage_earned);
 			loot::save();
 
-			console::demonware("[DW]: giving %d keys for match (time played %d, result %d)\n", keys_earned / 100, time_played, mission_result);
+			console::demonware("[DW]: giving %d keys and %d salvage for match (time played %d, result %d)\n", keys_earned / 100, salvage_earned, time_played, mission_result);
 
 			nlohmann::json json_reply;
 			json_reply["Action"] = "EndMissionResponse";
