@@ -21,3 +21,13 @@ MenuBuilder.m_types["online_friends_widget"] = function(menu, controller)
 	self.id = "online_friends_widget"
 	return self
 end
+
+if Loot and Loot.IsOwned then
+	local IsOwned = Loot.IsOwned
+	Loot.IsOwned = function(...)
+		if Engine.GetDvarBool("cg_unlockall_loot") then
+			return true
+		end
+		return IsOwned(...)
+	end
+end

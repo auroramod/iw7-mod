@@ -26,10 +26,11 @@ Bot.GetBotsTeamLimit = function(team)
 	else
 		botcount = Engine.GetDvarInt("bot_free")
 	end
-	if tonumber(botcount) <= 0 then
+	botcount = tonumber(botcount) or 0
+	if botcount <= 0 then
 		botcount = 0
 	end
-	return tonumber(botcount)
+	return botcount
 end
 
 Bot.SetBotsDifficulty = function(team, difficulty)
@@ -43,7 +44,7 @@ Bot.SetBotsDifficulty = function(team, difficulty)
 end
 
 Bot.GetBotsDifficulty = function(team)
-	local difficulty = 4
+	local difficulty = 0
 	if team == Bot.BotTeams.Friendly then
 		difficulty = Engine.GetDvarInt("bot_difficulty_allies")
 	elseif team == Bot.BotTeams.Enemy then
@@ -51,10 +52,12 @@ Bot.GetBotsDifficulty = function(team)
 	else
 		difficulty = Engine.GetDvarInt("bot_difficulty_free")
 	end
-	if not difficulty then
-		difficulty = 4
+	-- 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran
+	difficulty = tonumber(difficulty) or 0
+	if difficulty < 0 or difficulty > 4 then
+		difficulty = 0
 	end
-	return tonumber(difficulty)
+	return difficulty
 end
 
 Bot.SetBotsTeamLimit = function(team, size)

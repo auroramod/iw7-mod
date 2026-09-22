@@ -581,6 +581,60 @@ namespace command
 
 				cmd_take(client_num, params.get_all());
 			});
+
+			add_sv("getviewpos", [](const int client_num, const params_sv& params)
+			{
+				console::info("%f, %f, %f\n",
+					game::g_entities[client_num].client->ps.origin[0],
+					game::g_entities[client_num].client->ps.origin[1],
+					game::g_entities[client_num].client->ps.origin[2]);
+			});
+
+			add_sv("setviewpos", [](const int client_num, const params_sv& params)
+			{
+				if (!game::shared::cheats_ok(client_num, true))
+				{
+					return;
+				}
+
+				if (params.size() < 4)
+				{
+					game::SV_GameSendServerCommand(client_num, game::SV_CMD_RELIABLE,
+						"f \"You did not specify the correct number of coordinates\"");
+					return;
+				}
+
+				game::g_entities[client_num].client->ps.origin[0] = std::strtof(params.get(1), nullptr);
+				game::g_entities[client_num].client->ps.origin[1] = std::strtof(params.get(2), nullptr);
+				game::g_entities[client_num].client->ps.origin[2] = std::strtof(params.get(3), nullptr);
+			});
+
+			add_sv("getviewang", [](const int client_num, const params_sv& params)
+			{
+				console::info("%f, %f, %f\n",
+					game::g_entities[client_num].client->ps.delta_angles[0],
+					game::g_entities[client_num].client->ps.delta_angles[1],
+					game::g_entities[client_num].client->ps.delta_angles[2]);
+			});
+
+			add_sv("setviewang", [](const int client_num, const params_sv& params)
+			{
+				if (!game::shared::cheats_ok(client_num, true))
+				{
+					return;
+				}
+
+				if (params.size() < 4)
+				{
+					game::SV_GameSendServerCommand(client_num, game::SV_CMD_RELIABLE,
+						"f \"You did not specify the correct number of coordinates\"");
+					return;
+				}
+
+				game::g_entities[client_num].client->ps.delta_angles[0] = std::strtof(params.get(1), nullptr);
+				game::g_entities[client_num].client->ps.delta_angles[1] = std::strtof(params.get(2), nullptr);
+				game::g_entities[client_num].client->ps.delta_angles[2] = std::strtof(params.get(3), nullptr);
+			});
 		}
 	};
 }

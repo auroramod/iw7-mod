@@ -96,6 +96,9 @@ namespace updater
 		constexpr auto max_download_threads = 4;
 		constexpr auto max_download_attempts = 3;
 
+		constexpr auto update_process_flag = "update-process";
+		constexpr auto update_process_binary_modified = 2u;
+
 		std::unordered_map<std::string, git_branch> git_branches =
 		{
 			{"develop", branch_develop},
@@ -402,7 +405,8 @@ namespace updater
 			}
 		}
 		
-		void run_update()
+		// returns true if the binary was replaced and a restart is required
+		bool run_update()
 		{
 			console::redudant("[Updater] Checking for updates... (this may take a few seconds)");
 
@@ -410,7 +414,7 @@ namespace updater
 			if (file_list.empty())
 			{
 				console::warn("[Updater] Update aborted\n");
-				return;
+				return false;
 			}
 
 			delete_garbage_files(file_list);
@@ -433,7 +437,7 @@ namespace updater
 			if (files_to_download.size() == 0)
 			{
 				console::redudant("[Updater] Update check complete");
-				return;
+				return false;
 			}
 
 			const auto thread_count = std::min<std::size_t>(max_download_threads, files_to_download.size());
@@ -479,7 +483,7 @@ namespace updater
 			if (download_failed)
 			{
 				console::warn("[Updater] Update aborted\n");
-				return;
+				return false;
 			}
 
 			std::vector<file_data_previous> previous_data;
@@ -504,21 +508,49 @@ namespace updater
 				}
 			});
 
-			if (!download_failed)
+			if (download_failed)
 			{
-				console::redudant("[Updater] Update check complete");
-
-				if (is_binary_modified)
-				{
-					if (!utils::flags::has_flag("update-only"))
-					{
-						console::important("[Updater] Restarting\n");
-						utils::nt::relaunch_self();
-					}
-
-					utils::nt::terminate();
-				}
+				return false;
 			}
+
+			console::redudant("[Updater] Update check complete");
+			return is_binary_modified;
+		}
+
+		std::optional<bool> run_update_in_child_process()
+		{
+			const utils::nt::library self;
+
+			STARTUPINFOA startup_info{};
+			PROCESS_INFORMATION process_info{};
+			startup_info.cb = sizeof(startup_info);
+
+			char current_dir[MAX_PATH]{};
+			GetCurrentDirectoryA(sizeof(current_dir), current_dir);
+
+			auto command_line = std::format("{} -{}", GetCommandLineA(), update_process_flag);
+
+			// share our console so the output is still visible
+			if (!CreateProcessA(self.get_path().data(), command_line.data(), nullptr, nullptr, false,
+				0, nullptr, current_dir, &startup_info, &process_info))
+			{
+				return {};
+			}
+
+			WaitForSingleObject(process_info.hProcess, INFINITE);
+
+			DWORD exit_code{};
+			const auto has_exit_code = GetExitCodeProcess(process_info.hProcess, &exit_code);
+
+			CloseHandle(process_info.hThread);
+			CloseHandle(process_info.hProcess);
+
+			if (!has_exit_code)
+			{
+				return {};
+			}
+
+			return exit_code == update_process_binary_modified;
 		}
 	}
 
@@ -529,11 +561,39 @@ namespace updater
 		{
 			delete_old_file();
 
-			if (!utils::flags::has_flag("noupdate"))
+			if (utils::flags::has_flag("noupdate"))
 			{
-				run_update();
+				return;
+			}
 
-				is_debugging_updater = utils::flags::has_flag("debugupdate");
+			is_debugging_updater = utils::flags::has_flag("debugupdate");
+
+			if (utils::flags::has_flag(update_process_flag))
+			{
+				const auto binary_modified = run_update();
+				utils::nt::terminate(binary_modified ? update_process_binary_modified : 0);
+			}
+
+			auto binary_modified = false;
+			if (utils::nt::is_wine())
+			{
+				const auto result = run_update_in_child_process();
+				binary_modified = result.has_value() ? result.value() : run_update();
+			}
+			else
+			{
+				binary_modified = run_update();
+			}
+
+			if (binary_modified)
+			{
+				if (!utils::flags::has_flag("update-only"))
+				{
+					console::important("[Updater] Restarting\n");
+					utils::nt::relaunch_self();
+				}
+
+				utils::nt::terminate();
 			}
 		}
 

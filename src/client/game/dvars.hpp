@@ -35,13 +35,20 @@ namespace dvars
 	extern game::dvar_t* r_fullbright;
 
 	extern game::dvar_t* bg_bounces;
+	extern game::dvar_t* bg_bounceMinFallSpeed;
 	extern game::dvar_t* bg_playerEjection;
+	extern game::dvar_t* bg_disable_barrier_clips;
 
 	extern game::dvar_t* logfile;
 	extern game::dvar_t* g_log;
 	extern game::dvar_t* dlog_enabled;
 
 	extern game::dvar_t* jump_enableFallDamage;
+	extern game::dvar_t* player_sustain_ammo;
+	
+	extern game::dvar_t* mantle_legacy;
+	extern game::dvar_t* mantle_legacyMaxAngle;
+	extern game::dvar_t* mantle_legacyReach;
 
 	std::string dvar_get_vector_domain(const int components, const game::DvarLimits& domain);
 	std::string dvar_get_domain(const game::DvarType type, const game::DvarLimits& domain);
