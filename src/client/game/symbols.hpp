@@ -59,6 +59,9 @@ namespace game
 	WEAK symbol<bool(int localClientNum, const playerState_s* ps, vec3_t* outOrigin)> CG_GetPlayerViewOrigin{ 0x1408EC810 };
 	WEAK symbol<bool(int localClientNum, const ScreenPlacement* scrPlace, const float* worldPos, float* outScreenPos)> CG_WorldPosToScreenPosReal{ 0x1407A5490 };
 
+	WEAK symbol<int(int localClientNum, int serverTime, int demoType, int cubemapShot, int cubemapSize,
+		int renderScreen, unsigned int drawType)> CG_DrawActiveFrame{ 0x14026CB50 };
+
 	WEAK symbol<void(int localClientNum, const char* msg, int flags)> CG_Utils_GameMessage{ 0x1401D7FC0 };
 	WEAK symbol<void(int localClientNum, const char* msg, int flags)> CG_Utils_BoldGameMessage{ 0x1401D7F10 };
 
@@ -206,6 +209,11 @@ namespace game
 	WEAK symbol<int(GfxFont* font)> R_GetFontHeight{ 0x1412727B0 };
 	WEAK symbol<FontGlowStyle* (int style)> R_Font_GetLegacyFontStyle{ 0x140DFBD00 };
 	WEAK symbol<void()> R_SyncRenderThread{ 0x140E27EE0 };
+	WEAK symbol<void()> R_BeginFrame{ 0x140E26490 };
+	WEAK symbol<void()> R_EndFrame{ 0x140E267B0 };
+	WEAK symbol<void(int localClientNum)> R_ToggleSmpFrame{ 0x140E27FE0 };
+	WEAK symbol<void(int type)> R_IssueRenderCommandsBegin{ 0x140E26E30 };
+	WEAK symbol<void()> R_IssueRenderCommandsEnd{ 0x140E26EF0 };
 	WEAK symbol<void(float x, float y, float width, float height, float s0, float t0, float s1, float t1,
 		float* color, Material* material, int unk)> R_AddCmdDrawStretchPic{ 0x140E24DC0 };
 	WEAK symbol<void* (const char* text, int maxChars, GfxFont* font, int fontHeight, float x,
@@ -468,6 +476,10 @@ namespace game
 	WEAK symbol<void*> dword_143CA1588{ 0x143CA1588 };
 	WEAK symbol<uintptr_t> qword_143F25A88{ 0x143F25A88 };
 	WEAK symbol<uintptr_t> qword_141FAEE58{ 0x141FAEE58 };
+
+	WEAK symbol<GUtils*> ms_gUtils{0x143F26EB0};
+	WEAK symbol<cg_s> cg{0x141FA6C88};
+	WEAK symbol<vidConfig_t> vidConfig{0x148B9D7A8};
 
 	namespace hks
 	{

@@ -50,3 +50,6 @@
 [submodule "deps/imgui"]
 	path = deps/imgui
 	url = https://github.com/alicealys/imgui
+[submodule "deps/DirectXTex"]
+	path = deps/DirectXTex
+	url = https://github.com/microsoft/DirectXTex.git

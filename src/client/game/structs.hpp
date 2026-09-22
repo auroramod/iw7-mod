@@ -651,6 +651,57 @@ namespace game
 		char vertAlign;
 	};
 
+	struct GfxViewport
+	{
+		unsigned int x;
+		unsigned int y;
+		unsigned int width;
+		unsigned int height;
+	};
+
+	struct RefdefView
+	{
+		float tanHalfFovX;
+		float tanHalfFovY;
+		float org[3];
+		float axis[3][3];
+		float zNear;
+		float unk[2];
+	};
+
+	struct refdef_t
+	{
+		GfxViewport displayViewport;
+		RefdefView view;
+		float viewOffset[3];
+		float viewOffsetPrev[3];
+	};
+
+	struct vidConfig_t
+	{
+		unsigned int sceneWidth;
+		unsigned int sceneHeight;
+		unsigned int displayWidth;
+		unsigned int displayHeight;
+		unsigned short shadowTileResSmall;
+		unsigned short shadowTileResLarge;
+		int isHiDefValid;
+		float windowAspectRatio;
+		float sceneAspectRatio;
+		float displayAspectRatio;
+		float aspectRatioScenePixel;
+		float aspectRatioDisplayPixel;
+	};
+
+	struct GfxCmdBufState
+	{
+		char __pad0[88];
+		Material* material;
+		MaterialTechnique* technique;
+		MaterialPass* pass;
+	};
+	assert_offsetof(GfxCmdBufState, pass, 104);
+
 	namespace entity
 	{
 		enum connstate_t : std::uint32_t
@@ -1134,10 +1185,12 @@ namespace game
 	{
 		void* dummy;
 		playerState_s predictedPlayerState;
-		char __pad0[19160 - sizeof(playerState_s) - 8];
+		char __pad0[568];
 		CubemapShot cubemapShot;
 		int cubemapSize;
-		char __pad1[305200];
+		char __pad11[88];
+		refdef_t refdef;
+		char __pad1[305112 - sizeof(refdef_t)];
 		float viewModelAxis[4][3];
 		char __pad2[168476];
 		int renderScreen;
@@ -2236,4 +2289,45 @@ namespace game
 			HksError m_error;
 		};
 	}
+
+	class GUtils
+	{
+	public:
+		virtual ~GUtils() = default;
+
+		virtual bool EntAttach(gentity_s* ent, const char* modelName, scr_string_t tagName, bool ignoreCollision, bool allowEmptyTag) = 0;
+		virtual bool EntDetach(gentity_s* ent, const char* modelName, scr_string_t tagName) = 0;
+		virtual void EntDetachAll(gentity_s* ent) = 0;
+		virtual void InitGentity(gentity_s* ent) = 0;
+		virtual void FreeEntity(gentity_s* ent) = 0;
+		virtual void FreeEntityRefs(gentity_s* ent) = 0;
+		virtual void SetEntityPerk(const gentity_s* ent, unsigned int perkIndex) = 0;
+		virtual void UnsetEntityPerk(const gentity_s* ent, unsigned int perkIndex) = 0;
+		virtual void ClearEntityPerks(const gentity_s* ent) = 0;
+		virtual void SetEntitySuit(const gentity_s* ent, unsigned int suitIndex) = 0;
+		virtual void EntityStateSetPartBits(gentity_s* ent, const void* partBits) = 0;
+		virtual bool IsTransientCustomizationModel(const char* modelName) = 0;
+		virtual bool ShouldCreateEntityPhysicsOnInit(const gentity_s* ent) = 0;
+		virtual XModel* GetWeaponWorldModels(const int* weapon) = 0;
+		virtual void EntTagInfoChanged(gentity_s* ent) = 0;
+		virtual bool PlayerButtonsPressed(const gentity_s* ent, unsigned __int64 buttons) = 0;
+		virtual void SetPlayerViewAngles(gentity_s* ent, const vec3_t* angles) = 0;
+		virtual void SetPlayerOrigin(gentity_s* ent, const vec3_t* origin, int a3) = 0;
+		virtual void BotStuckCheck(const vec3_t* origin, const vec3_t* velocity, const playerState_s* ps, float radius, bool checkGround) = 0;
+		virtual void BotSetAlmostGroundPlane(const playerState_s* ps, bool almostGroundPlane) = 0;
+		virtual void DObjUpdate(gentity_s* ent, int link) = 0;
+		virtual bool MayThrowbackGrenade(const gentity_s* ent, const gentity_s* grenade) = 0;
+		virtual bool MayUseEntity(const gentity_s* ent, const gentity_s* useEnt) = 0;
+		virtual bool MayActivateHoldEntity(const gentity_s* ent) = 0;
+		virtual void UnlinkUpdateCorpse(gentity_s* ent) = 0;
+		virtual bool GetPIPElemField(void* scrContext, int entNum, int fieldIndex) = 0;
+		virtual bool SetPIPElemField(void* scrContext, int entNum, int fieldIndex) = 0;
+		virtual team_t GetEntityTeam(const gentity_s* ent) = 0;
+		virtual const char* GetDebugTeamName(const gentity_s* ent) = 0;
+		virtual team_t GetTeamFromDebugString(const char* teamName) = 0;
+
+		unsigned int m_entitySpawnMinFreeTime;
+		bool m_disableCreateEntityPhysicsOnInit;
+		bool m_disableCreateEntityScriptableOnInit;
+	};
 }
