@@ -92,6 +92,12 @@
 #include <asmjit/x86/x86assembler.h>
 
 #include <d3d11.h>
+#include <d3d12.h>
+#include <dxgi.h>
+#pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
+
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <backends/imgui_impl_dx11.h>

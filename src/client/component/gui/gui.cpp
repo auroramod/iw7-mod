@@ -11,6 +11,7 @@
 
 #include "gui.hpp"
 #include "kiero.hpp"
+#include "component/directx.hpp"
 
 #include <utils/string.hpp>
 #include <utils/hook.hpp>
@@ -319,11 +320,27 @@ namespace gui
 
 		HRESULT __stdcall d3d11_present_stub(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
 		{
+			// directx owns device creation (plain D3D11 or D3D11On12 with -d3d12)
+			static ID3D11Device* game_device = nullptr;
+
+			if (initialized && game_device != dx::device)
+			{
+				// the game recreated its device (device loss), the imgui resources belong to the old one
+				if (render_target_view)
+				{
+					render_target_view->Release();
+					render_target_view = nullptr;
+				}
+
+				shutdown_gui();
+			}
+
 			if (!initialized)
 			{
 				auto hr = pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&device);
 				if (SUCCEEDED(hr))
 				{
+					game_device = dx::device;
 					device->GetImmediateContext(&device_context);
 
 					DXGI_SWAP_CHAIN_DESC desc;
@@ -336,7 +353,11 @@ namespace gui
 					pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
 					device->CreateRenderTargetView(pBackBuffer, NULL, &render_target_view);
 					pBackBuffer->Release();
-					oWndProc = (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)WndProc_stub);
+					if (!oWndProc)
+					{
+						// only subclass once, re-initializing after a device loss would chain WndProc_stub into itself
+						oWndProc = (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)WndProc_stub);
+					}
 
 					console::debug("[ImGui] Initializing\n");
 				}
@@ -512,7 +533,7 @@ namespace gui
 
 		initialized = false;
 	}
-	
+
 	class component final : public component_interface
 	{
 	public:

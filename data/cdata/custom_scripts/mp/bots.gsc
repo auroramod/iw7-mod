@@ -19,9 +19,70 @@ init()
     level thread on_player_connect();
 }
 
-get_difficulty_for_team(team)
+get_bot_difficulty_for_number(difficulty)
 {
-    return getdvarint( va("bot_difficulty_%s", team), 0 );
+    switch (difficulty)
+    {
+        case 4:
+            return "veteran";
+        case 3:
+            return "hardened";
+        case 2:
+            return "regular";
+        case 1:
+            return "recruit";
+        case 0:
+        default:
+            return "default"; // mixed, picked from level.bot_difficulty_defaults
+    }
+}
+
+get_team_bot_difficulty(is_enemy)
+{
+    if (!level.teambased)
+        return get_bot_difficulty_for_number(getdvarint("bot_difficulty_free", 0));
+
+    if (is_enemy)
+        return get_bot_difficulty_for_number(getdvarint("bot_difficulty_enemies", 0));
+
+    return get_bot_difficulty_for_number(getdvarint("bot_difficulty_allies", 0));
+}
+
+get_host_team()
+{
+    host = gethostplayer();
+    if (isdefined(host))
+    {
+        team = host bot_get_player_team();
+        if (isdefined(team) && team != "spectator")
+            return team;
+    }
+
+    return "allies";
+}
+
+get_bot_difficulty() // self = bot
+{
+    return get_team_bot_difficulty(self.team != get_host_team());
+}
+
+apply_bot_difficulty(difficulty) // self = bot
+{
+    // var_2D32 is bot_chosen_difficulty (https://github.com/mjkzy/iw6-gsc-dump/blob/main/maps/mp/bots/_bots_util.gsc#L232)
+    if (difficulty != "default")
+        self.var_2D32 = undefined;
+
+    if (difficulty != self botgetdifficulty())
+        self scripts\mp\bots\bots_util::bot_set_difficulty(difficulty);
+}
+
+update_bots_difficulty()
+{
+    foreach (player in level.players)
+    {
+        if (isbot(player) && isdefined(player.team))
+            player apply_bot_difficulty(player get_bot_difficulty());
+    }
 }
 
 on_player_spawned()
@@ -33,34 +94,10 @@ on_player_spawned()
     {
         self waittill("spawned_player");
 
-        // check if is a bot
         if (isbot(self))
         {
-            // get the difficulty for their team via the dvar, and then change it
-            raw_bot_difficulty = get_difficulty_for_team(self.team);
-            bot_difficulty = get_bot_difficulty_for_number(raw_bot_difficulty);
-
-            self.var_2D32 = bot_difficulty; // this is bot_chosen_difficulty variable (checked here https://github.com/mjkzy/iw6-gsc-dump/blob/main/maps/mp/bots/_bots_util.gsc#L232)
-            self scripts\mp\bots\bots_util::bot_set_difficulty(bot_difficulty);
+            self apply_bot_difficulty(self get_bot_difficulty());
         }
-    }
-}
-
-get_bot_difficulty_for_number(difficulty)
-{
-    switch (difficulty)
-    {
-        case 4:
-        case 3:
-            return "veteran";
-        case 2:
-            return "regular";
-        case 1:
-            return "recruit";
-        case 0:
-        default:
-            random_difficulty = ["recruit", "regular", "hardened", "veteran"];
-            return random_difficulty[ randomintrange(0, 3) ];
     }
 }
 
@@ -275,16 +312,8 @@ bot_connect_monitor_stub( num_ally_bots, num_enemy_bots )
         max_ally_bots_absolute = botgetteamlimit( 0 );
         max_enemy_bots_absolute = botgetteamlimit( 1 );
 
-        if ( level.rankedmatch )
-        {
-            var_6 = "default";
-            var_7 = "default";
-        }
-        else
-        {
-            var_6 = botgetteamdifficulty( 0 );
-            var_7 = botgetteamdifficulty( 1 );
-        }
+        var_6 = get_team_bot_difficulty( false );
+        var_7 = get_team_bot_difficulty( true );
 
         team_ally = "allies";	// team_ally is the team that the human player is on
 		team_enemy = "axis";	// team_enemy is the enemy team (opposed to the team the human player is on)
@@ -495,11 +524,7 @@ bot_connect_monitor_stub( num_ally_bots, num_enemy_bots )
                 level waittill( "spawned_allies" );
         }
 
-        if ( var_7 != var_6 )
-        {
-            bots_update_difficulty( team_enemy, var_7 );
-            bots_update_difficulty( team_ally, var_6 );
-        }
+        update_bots_difficulty();
 
         scripts\mp\hostmigration::waitlongdurationwithhostmigrationpause( bot_connect_monitor_update_time );
     }
