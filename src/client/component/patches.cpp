@@ -706,6 +706,8 @@ namespace patches
 
 			dvars::override::register_bool("cg_drawSpectatorMessages", true, game::DVAR_FLAG_NONE);
 
+			dvars::override::register_bool("ui_opensummary", false, game::DVAR_FLAG_NONE);
+
 			// disable host migration
 			utils::hook::jump(0x140C5A200, disconnect);
 
