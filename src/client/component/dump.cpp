@@ -293,6 +293,25 @@ namespace dump
 				});
 			});
 
+			command::add("localizeDump", []()
+			{
+				std::string buffer;
+				auto count = 0;
+
+				game::DB_EnumXAssets(game::XAssetType::ASSET_TYPE_LOCALIZE_ENTRY, [&](game::XAssetHeader header)
+				{
+					if (const auto asset = header.localize; asset != nullptr && asset->name != nullptr)
+					{
+						const auto value = utils::string::replace(asset->value ? asset->value : "", "\n", "\\n");
+						buffer.append(std::format("{},{}\n", asset->name, value));
+						count++;
+					}
+				});
+
+				utils::io::write_file("iw7-mod/dump/localize.csv", buffer);
+				console::info("dumped %d localized strings\n", count);
+			});
+
 			command::add("commandDump", []()
 			{
 				game::cmd_function_s* cmd = (*game::cmd_functions);
