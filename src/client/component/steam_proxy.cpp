@@ -64,7 +64,10 @@ namespace steam_proxy
 
 		void load_client()
 		{
-			SetEnvironmentVariableA("SteamAppId", std::to_string(steam::SteamUtils()->GetAppID()).data());
+			const auto app_id = std::to_string(steam::SteamUtils()->GetAppID());
+			SetEnvironmentVariableA("SteamAppId", app_id.data());
+			SetEnvironmentVariableA("SteamGameId", app_id.data());
+			SetEnvironmentVariableA("SteamOverlayGameId", app_id.data());
 
 			const std::filesystem::path steam_path = steam::SteamAPI_GetSteamInstallPath();
 			if (steam_path.empty()) return;

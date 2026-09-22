@@ -122,6 +122,11 @@ namespace steam
 		const std::filesystem::path steam_path = steam::SteamAPI_GetSteamInstallPath();
 		if (steam_path.empty()) return false;
 
+		const auto app_id = std::to_string(SteamUtils()->GetAppID());
+		SetEnvironmentVariableA("SteamAppId", app_id.data());
+		SetEnvironmentVariableA("SteamGameId", app_id.data());
+		SetEnvironmentVariableA("SteamOverlayGameId", app_id.data());
+
 		::utils::nt::library::load(steam_path / "tier0_s64.dll");
 		::utils::nt::library::load(steam_path / "vstdlib_s64.dll");
 		::utils::nt::library::load(steam_path / "gameoverlayrenderer64.dll");
