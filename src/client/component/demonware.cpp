@@ -438,6 +438,22 @@ namespace demonware
 
 			va_end(ap);
 		}
+
+		// CG_ServerCmdMP_ParsePlayerInfos resolves the xnaddr of every non-host player, which registers a DW addr handle
+		// and starts NAT traversal to that peer. Nothing here talks peer to peer (everything goes through the server), and
+		// bots have an empty xnaddr that gets parsed from uninitialized stack, so it just retries forever on garbage addresses.
+		bool xnet_xnaddr_to_inaddr_stub(const char* xnaddr, uint32_t* in_addr, uint16_t* port)
+		{
+			const auto* local_xnaddr = utils::hook::invoke<const char*>(0x140DC6650, true); // SV_ClientMP_GetXNAddr
+			if (!std::memcmp(xnaddr, local_xnaddr, 0x25))
+			{
+				return utils::hook::invoke<bool>(0x140D57F20, xnaddr, in_addr, port);
+			}
+
+			*in_addr = 0;
+			*port = 0;
+			return false;
+		}
 	}
 
 	class component final : public component_interface
@@ -520,6 +536,9 @@ namespace demonware
 
 			// Remove Online_Dailylogin check
 			utils::hook::set(0x140533390, 0xC300000001B8);
+
+			// Don't NAT traverse to other players in CG_ServerCmdMP_ParsePlayerInfos
+			utils::hook::call(0x140852EEE, xnet_xnaddr_to_inaddr_stub);
 
 			// Increase Demonware connection timeouts
 			dvars::override::register_int("demonwareConsideredConnectedTime", 300000, 0, 0x7FFFFFFF, 0x0); // 5s -> 5min
