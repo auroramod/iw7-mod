@@ -452,30 +452,26 @@ namespace demonware
 			return items;
 		};
 
+		void read_json_data();
+
 		std::vector<Item> get_all_loot_owned()
 		{
-			auto lootmap = get_all_lootmaps();
-			std::vector<Item> items{};
-			for (size_t i = 0; i < lootmap.size(); i++)
-			{
-				if (get_item_balance(lootmap[i]))
-				{
-					items.push_back(get_loot(lootmap[i]));
-				}
-			}
+			cache_loot();
+			read_json_data();
 
-			for (auto& crate : lootcrates)
+			// report everything in loot.json, reward items (mission teams, contracts, currency packs) aren't in the lootmaps
+			std::vector<Item> items{};
+			for (const auto& entry : json_buffer["Loot"].items())
 			{
-				const auto crate_id = crate.first;
-				if (get_item_balance(crate_id))
+				const auto id = static_cast<std::uint32_t>(std::strtoul(entry.key().data(), nullptr, 10));
+				if (!id || !get_item_balance(id))
 				{
-					Item crate_item{};
-					crate_item.id = crate_id;
-					crate_item.quality = 0;
-					crate_item.salvageReturned = 0;
-					crate_item.cost = 0;
-					items.push_back(crate_item);
+					continue;
 				}
+
+				auto item = get_loot(id);
+				item.id = id;
+				items.push_back(item);
 			}
 
 			return items;
