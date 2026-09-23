@@ -1,6 +1,7 @@
 #include <std_include.hpp>
 #include "../dw_include.hpp"
 
+#include <utils/io.hpp>
 #include <utils/nt.hpp>
 
 namespace demonware
@@ -16,8 +17,13 @@ namespace demonware
 		buffer->read_string(&context);
 		buffer->read_string(&nameSpace);
 
-		static std::string data = utils::nt::load_resource(DW_PUBVARS);
+		static std::string data;
 
+		if (!utils::io::read_file(std::filesystem::current_path().string() + "/"s + "iw7-mod"s + "publisher_variables.json", &data))
+		{
+			data = utils::nt::load_resource(DW_PUBVARS);
+		}
+		
 		auto result = std::make_unique<bdPublisherVariablesInfo>();
 		result->majorVersion = 1;
 		result->minorVersion = 0;

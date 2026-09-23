@@ -831,6 +831,14 @@ namespace party
 			utils::hook::jump(0x140E7B480, private_map_rotation_set_initial_map_selection);
 			party_host_start_match_internal_hook.create(0x1409D97D0, party_host_start_match_internal);
 
+			// enable xpartygo in public match
+			utils::hook::nop(0x1409AA7D0, 6); 
+			utils::hook::nop(0x1409D8931, 0x13);
+
+			// skips cpu and bandwidth requirements to host a public match
+			utils::hook::set(0x140DC65B0, 0xC301B0); 
+			utils::hook::set(0x140DC6580, 0xC301B0);
+
 			command::add("map", [](const command::params& args)
 			{
 				if (args.size() != 2)

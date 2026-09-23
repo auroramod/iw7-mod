@@ -434,6 +434,11 @@ namespace demonware
 		void bd_logger_stub(int /*type*/, const char* const /*channelName*/, const char* /*fileLoc*/, const char* const /*file*/,
 			const char* const function, const unsigned int /*line*/, const char* const msg, ...)
 		{
+			if (!msg)
+			{
+				return;
+			}
+
 			char buffer[2048];
 
 			va_list ap;
@@ -441,7 +446,7 @@ namespace demonware
 
 			vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, msg, ap);
 
-			console::demonware("%s: %s\n", function, buffer);
+			console::demonware("%s: %s\n", function ? function : "unknown", buffer);
 
 			va_end(ap);
 		}
@@ -457,6 +462,12 @@ namespace demonware
 			*in_addr = 0;
 			*port = 0;
 			return false;
+		}
+
+		bool bdNATTypeDiscoveryClient__isRunning(__int64 a1)
+		{
+			*(DWORD *)(a1 + 0x1A4) = 4; //BD_NTDCS_FINI
+			return (unsigned int)(*(DWORD *)(a1 + 0x1A4) - 1) <= 2;
 		}
 	}
 
@@ -543,6 +554,10 @@ namespace demonware
 
 			// Don't NAT traverse to other players (CG_ServerCmdMP_ParsePlayerInfos)
 			utils::hook::call(0x140852EEE, xnet_xnaddr_to_inaddr_stub);
+
+			// disable NAT/QoS pumps
+			utils::hook::set<byte>(0x1412923C0, 0xC3); // bdSocketRouter::pump
+			utils::hook::jump(0x1412947C9, bdNATTypeDiscoveryClient__isRunning);
 
 			// Increase Demonware connection timeouts
 			dvars::override::register_int("demonwareConsideredConnectedTime", 300000, 0, 0x7FFFFFFF, 0x0); // 5s -> 5min

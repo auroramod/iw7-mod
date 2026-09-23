@@ -369,7 +369,7 @@ namespace network
 			utils::hook::set<int>(0x140BB4E3D, max_packet_size);
 
 			// increase cl_maxpackets
-			dvars::override::register_int("cl_maxpackets", 1000, 1, 1000, game::DVAR_FLAG_NONE);
+			dvars::override::register_int("cl_maxpackets", 1000, 15, 1000, game::DVAR_FLAG_NONE);
 
 			// increase snaps
 			dvars::override::register_int("sv_remote_client_snapshot_msec", 33, -1, 100, game::DVAR_FLAG_NONE);

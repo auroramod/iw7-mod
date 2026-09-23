@@ -319,6 +319,13 @@ namespace arxan
 			auto* const peb = PPEB(__readgsqword(0x60));
 			peb->BeingDebugged = false;
 			*reinterpret_cast<PDWORD>(LPSTR(peb) + 0xBC) &= ~0x70; // NtGlobalFlag
+
+			auto* const heap = *reinterpret_cast<PVOID*>(LPSTR(peb) + 0x30);
+			if (heap != nullptr)
+			{
+				*reinterpret_cast<PDWORD>(LPSTR(heap) + 0x70) = 2;   // Force HEAP_GROWABLE only
+				*reinterpret_cast<PDWORD>(LPSTR(heap) + 0x74) = 0;   // ForceFlags = 0
+			}
 		}
 
 		void remove_hardware_breakpoints()
