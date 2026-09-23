@@ -19,7 +19,7 @@ local set_matchmaking_dvars = function()
 	Engine.Exec("mming_minplayers_to_lobby 1")
 	Engine.Exec("scr_default_maxagents 24")
 	Engine.Exec("pt_migrateBeforeAdvertise 0")
-	Engine.Exec("party_minplayers 1") -- we are the only player
+	Engine.Exec("party_minplayers 1")
 end
 
 local MatchSimulator = {}
@@ -27,7 +27,7 @@ MatchSimulator.ShowGameOverScreen = function()
 	SyncCombatTrainingMatchRules()
 	Engine.Exec("party_minplayers 1")
 	LUI.UIRoot.BlockButtonInput(Engine.GetLuiRoot(), false, "TransitionToGame")
-	Engine.Exec("exec start") -- TODO: figure out how to start public match correctly. This is terrible.
+	Engine.Exec("xpartygo")
 end
 
 local LobbyMissionButtons = function(menu, controller)
@@ -62,7 +62,7 @@ local LobbyMissionButtons = function(menu, controller)
 		LUI.UIRoot.BlockButtonInput(Engine.GetLuiRoot(), false, "TransitionToGame")
 		SyncCombatTrainingMatchRules()
 		Engine.Exec("party_minplayers 1")
-		Engine.Exec("exec start")
+		Engine.Exec("xpartygo")
 	end)
 
 	local GameSetupButton = MenuBuilder.BuildRegisteredType("GenericButton", {
