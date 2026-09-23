@@ -154,7 +154,7 @@ namespace ui_scripting
 		}
 
 		const auto top = state->m_apistack.top;
-		game::hks::hksi_lua_pushlstring(state, value, static_cast<unsigned int>(len));
+		game::hks::hksi_lua_pushlstring(state, value, static_cast<uint64_t>(len));
 		obj = state->m_apistack.top[-1];
 		state->m_apistack.top = top;
 

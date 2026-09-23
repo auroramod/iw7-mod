@@ -677,6 +677,9 @@ namespace patches
 			dvars::override::register_bool("killswitch_cp_leaderboards", true, game::DVAR_FLAG_READ);
 			dvars::override::register_bool("killswitch_streak_variants", false, game::DVAR_FLAG_READ);
 			dvars::override::register_bool("killswitch_blood_anvil", false, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_net_health_icons", false, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("should_show_post_game_survey", false, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("survey_enabled", false, game::DVAR_FLAG_READ);
 
 			// announcer packs
 			if (!game::environment::is_dedi())
