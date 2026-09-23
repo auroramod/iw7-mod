@@ -1762,6 +1762,49 @@ namespace game
 			int localClientNum;
 			unsigned int localControllerIndex;
 		};
+
+		struct MatchRules;
+
+		struct MPBotPlayerDataContainer
+		{
+			char unk[0x48];
+		};
+		
+		struct LobbyMapRotationEntry
+		{
+			char name[16];
+			int weight;
+		};
+
+		struct LobbyMapRotation
+		{
+			unsigned int entryCount;
+			LobbyMapRotationEntry entry[16];
+			unsigned int lastPlayedIndex;
+			unsigned int nextIndex;
+		};
+
+		struct GameStateInfo
+		{
+			int unk0;
+			int activeGameMode;
+			bool usingRecipe;
+			MatchRules* matchRules;
+			int usingRotation;
+			int usingIntermission;
+			LobbyMapRotation* mapRotation;
+			int botSystemEnabled;
+			uint8_t usingBotsConnectType;
+			uint8_t usingBotsDifficulty[2];
+			uint8_t usingBotsTeamLimit[2];
+			MPBotPlayerDataContainer botMMInfo[18];
+			bool mpBotsEnableGameLaunchWithBots;
+			bool mpBotDataInitialized;
+			int agentMaxCount;
+		};
+		static_assert(offsetof(GameStateInfo, matchRules) == 0x10);
+		static_assert(offsetof(GameStateInfo, mapRotation) == 0x20);
+		static_assert(offsetof(GameStateInfo, usingBotsDifficulty) == 0x2D);
 	}
 	using namespace party;
 
