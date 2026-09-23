@@ -767,6 +767,14 @@ namespace party
 			utils::hook::call(0x1409B70A1, cl_initialize_gamestate_stub);
 			sv_set_player_info_string_hook.create(0x140C57360, sv_set_player_info_string_stub);
 
+			// enable xpartygo in public match
+			utils::hook::nop(0x1409AA7D0, 6); 
+			utils::hook::nop(0x1409D8931, 0x13);
+
+			// skips cpu and bandwidth requirements to host a public match
+			utils::hook::set(0x140DC65B0, 0xC301B0); 
+			utils::hook::set(0x140DC6580, 0xC301B0);
+
 			command::add("map", [](const command::params& args)
 			{
 				if (args.size() != 2)

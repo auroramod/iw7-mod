@@ -100,7 +100,13 @@ namespace bots
 		{
 			// register bot dvars
 			game::Dvar_RegisterBool("bots_enabled", true, game::DVAR_FLAG_READ, "Enable bots and activate bot management systems");
+			game::Dvar_RegisterInt("bot_allies", 0, 0, 17, game::DVAR_FLAG_NONE, "Max bot count on allies team");
+			game::Dvar_RegisterInt("bot_enemies", 0, 0, 17, game::DVAR_FLAG_NONE, "Max bot count on enemy team");
+			game::Dvar_RegisterInt("bot_free", 0, 0, 17, game::DVAR_FLAG_NONE, "Max bot count");
 			game::Dvar_RegisterInt("bot_difficulty", 0, 0, 4, game::DVAR_FLAG_NONE, "Bot difficulty. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
+			game::Dvar_RegisterInt("bot_difficulty_allies", 0, 0, 4, game::DVAR_FLAG_NONE, "Bot difficulty. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
+			game::Dvar_RegisterInt("bot_difficulty_enemies", 0, 0, 4, game::DVAR_FLAG_NONE, "Bot difficulty. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
+			game::Dvar_RegisterInt("bot_difficulty_free", 0, 0, 4, game::DVAR_FLAG_NONE, "Bot difficulty. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
 
 			// don't kick bot to equalize team balance
 			sv_kick_client_num_hook.create(game::SV_CmdsMP_KickClientNum, sv_kick_client_num_stub);
