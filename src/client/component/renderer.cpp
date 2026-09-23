@@ -122,7 +122,7 @@ namespace renderer
 			r_init_draw_method_hook.create(0x140DE9260, r_init_draw_method_stub);
 			utils::hook::call(0x140E264B3, r_update_front_end_dvar_options_stub);
 
-			// Fix particle effect flickering on AMD GPUs.
+			// fix particle effect flickering on AMD GPUs
 			utils::hook::jump(0x140E29757, utils::hook::assemble(half_res_emissive_compare_stub));
 		}
 	};

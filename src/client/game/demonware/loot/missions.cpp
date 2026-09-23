@@ -18,113 +18,71 @@ namespace demonware
 		{
 			namespace
 			{
-				// keys and salvage given at the end of every match
-				constexpr std::uint32_t match_base_keys = 8;
-				constexpr std::uint32_t match_victory_keys = 4;
-				constexpr std::uint32_t match_base_salvage = 200;
-				constexpr std::uint32_t match_victory_salvage = 200;
-				constexpr std::int32_t match_min_time_played = 60; // seconds
+				constexpr std::uint32_t match_base_keys 		= 8;
+				constexpr std::uint32_t match_victory_keys 		= 4;
+				constexpr std::uint32_t match_base_salvage 		= 200;
+				constexpr std::uint32_t match_victory_salvage 	= 200;
+				constexpr std::int32_t match_min_time_played 	= 60; // seconds
 
-				enum Quality : std::uint32_t
-				{
-					common = 1,
-					rare = 2,
-					legendary = 3,
-					epic = 4,
-				};
+				const loot_table weapons{ "mp/loot/iw7_weapon_loot_master.csv", 6, 7, 3, 4 };
+				const loot_table rigs{ "mp/loot/iw7_cosmetic_rigs_loot_master.csv", 2, 7, 4, 5 };
+				const loot_table emotes{ "mp/loot/iw7_cosmetic_emotes_loot_master.csv", 2, 3, 4, 5 };
+				const loot_table camos{ "mp/loot/iw7_cosmetic_camos_loot_master.csv", 2, 7, 4, 5 };
+				const loot_table calling_cards{ "mp/loot/iw7_cosmetic_calling_cards_loot_master.csv", 2, 7, 4, 5 };
+				const loot_table accessories{ "mp/loot/iw7_cosmetic_attachments_loot_master.csv", 2, 7, 4, 5 };
+				const loot_table emblems{ "mp/loot/iw7_cosmetic_emblems_loot_master.csv", 2, 7, 4, 5 };
+				const loot_table reticles{ "mp/loot/iw7_cosmetic_reticles_loot_master.csv", 2, 7, 4, 5 };
 
-				struct LootTable
-				{
-					const char* file;
-					int quality;
-					int category;
-					int salvageReturned;
-					int cost;
-				};
-
-				const LootTable weapons{ "mp/loot/iw7_weapon_loot_master.csv", 6, 7, 3, 4 };
-				const LootTable rigs{ "mp/loot/iw7_cosmetic_rigs_loot_master.csv", 2, 7, 4, 5 };
-				const LootTable emotes{ "mp/loot/iw7_cosmetic_emotes_loot_master.csv", 2, 3, 4, 5 };
-				const LootTable camos{ "mp/loot/iw7_cosmetic_camos_loot_master.csv", 2, 7, 4, 5 };
-				const LootTable calling_cards{ "mp/loot/iw7_cosmetic_calling_cards_loot_master.csv", 2, 7, 4, 5 };
-				const LootTable accessories{ "mp/loot/iw7_cosmetic_attachments_loot_master.csv", 2, 7, 4, 5 };
-				const LootTable emblems{ "mp/loot/iw7_cosmetic_emblems_loot_master.csv", 2, 7, 4, 5 };
-				const LootTable reticles{ "mp/loot/iw7_cosmetic_reticles_loot_master.csv", 2, 7, 4, 5 };
-
-				constexpr int weapon_mk2_column = 8; // Y/N
-				constexpr int weapon_collection_column = 10; // RnG = QR-M5TR collection
-
-				enum class PickType
-				{
-					weapon,
-					rig,
-					emote,
-					camo,
-					calling_card,
-					accessory,
-					cosmetic,
-					item, // fixed id (supply drops, currency packs)
-				};
-
-				struct Pick
-				{
-					PickType type;
-					std::uint32_t count;
-					std::uint32_t min_quality = common;
-					std::uint32_t max_quality = epic;
-					std::vector<std::string> categories{}; // category column prefixes, empty = any
-					bool mk2 = false;
-					bool qm_collection = false;
-					std::uint32_t id = 0; // PickType::item only
-				};
+				constexpr int weapon_mk2_column 		= 8; // Y/N
+				constexpr int weapon_collection_column 	= 10; // RnG = QR-M5TR collection
 
 				// MP_CONTRACTS_CRATE_0NN, contents from MP_CONTRACTS_CRATE_0NN_DESC
 				const std::unordered_map<std::uint32_t, std::vector<Pick>> contract_crates =
 				{
-					{ 1, { { PickType::weapon, 1, rare, epic, { "Pistol" } } } },
-					{ 2, { { PickType::weapon, 1, legendary, legendary, { "Sniper" } } } },
-					{ 3, { { PickType::weapon, 1, legendary, legendary }, { PickType::accessory, 1, epic, epic } } },
-					{ 4, { { PickType::weapon, 1, legendary, legendary, { "LMG" }, true } } },
-					{ 5, { { PickType::weapon, 1, legendary, legendary, { "SMG" }, true } } },
-					{ 6, { { PickType::weapon, 2, legendary, legendary } } },
-					{ 7, { { PickType::weapon, 1, rare, legendary, {}, false, true } } },
-					{ 8, { { PickType::weapon, 1, epic, epic } } },
-					{ 9, { { PickType::rig, 1, common, epic, { "Warfighter" } } } },
-					{ 10, { { PickType::rig, 1, common, epic, { "Merc" } } } },
-					{ 11, { { PickType::rig, 1, common, epic, { "Synaptic" } } } },
-					{ 12, { { PickType::rig, 1, common, epic, { "FTL" } } } },
-					{ 13, { { PickType::rig, 1, common, epic, { "Stryker" } } } },
-					{ 14, { { PickType::rig, 1, common, epic, { "Phantom" } } } },
-					{ 15, { { PickType::accessory, 1, legendary, epic } } },
-					{ 16, { { PickType::accessory, 1, epic, epic } } },
-					{ 17, { { PickType::emote, 1, common, epic, { "gesture", "taunt" } } } },
-					{ 18, { { PickType::emote, 1, epic, epic, { "gesture", "taunt" } } } },
-					{ 19, { { PickType::emote, 1, rare, epic, { "gesture" } } } },
-					{ 20, { { PickType::emote, 1, rare, epic, { "taunt" } } } },
-					{ 21, { { PickType::camo, 2 } } },
-					{ 22, { { PickType::camo, 1, legendary, legendary } } },
-					{ 23, { { PickType::camo, 1, legendary, legendary, { "SMG" } } } },
-					{ 24, { { PickType::camo, 1, legendary, legendary, { "AssaultRifle" } } } },
-					{ 25, { { PickType::camo, 2, legendary, legendary } } },
-					{ 26, { { PickType::camo, 3, rare, rare } } },
-					{ 27, { { PickType::camo, 1, epic, epic, { "LMG" } } } },
-					{ 28, { { PickType::calling_card, 1, epic, epic } } },
-					{ 29, { { PickType::calling_card, 1, legendary, epic } } },
-					{ 30, { { PickType::cosmetic, 3 } } },
-					{ 31, { { PickType::item, 2, common, epic, {}, false, false, LOOT_RARE_CRATE } } },
-					{ 32, { { PickType::item, 3, common, epic, {}, false, false, LOOT_RARE_CRATE } } },
-					{ 33, { { PickType::item, 2, common, epic, {}, false, false, LOOT_RARE_CRATE } } },
-					{ 34, { { PickType::item, 3, common, epic, {}, false, false, LOOT_RARE_CRATE } } },
-					{ 35, { { PickType::item, 1, common, epic, {}, false, false, 80431 } } }, // Keys_Contract_01
-					{ 36, { { PickType::item, 1, common, epic, {}, false, false, 80432 } } }, // Keys_Contract_02
-					{ 37, { { PickType::item, 1, common, epic, {}, false, false, 80433 } } }, // Keys_Contract_03
-					{ 38, { { PickType::item, 1, common, epic, {}, false, false, 80427 } } }, // Salv_Contract_01
-					{ 39, { { PickType::item, 1, common, epic, {}, false, false, 80428 } } }, // Salv_Contract_02
-					{ 40, { { PickType::item, 1, common, epic, {}, false, false, 80429 } } }, // Salv_Contract_03
-					{ 41, { { PickType::item, 1, common, epic, {}, false, false, 80430 } } }, // Salv_Contract_04
+					{ 1, { { pick_type::weapon, 1, rare, epic, { "Pistol" } } } },
+					{ 2, { { pick_type::weapon, 1, legendary, legendary, { "Sniper" } } } },
+					{ 3, { { pick_type::weapon, 1, legendary, legendary }, { pick_type::accessory, 1, epic, epic } } },
+					{ 4, { { pick_type::weapon, 1, legendary, legendary, { "LMG" }, true } } },
+					{ 5, { { pick_type::weapon, 1, legendary, legendary, { "SMG" }, true } } },
+					{ 6, { { pick_type::weapon, 2, legendary, legendary } } },
+					{ 7, { { pick_type::weapon, 1, rare, legendary, {}, false, true } } },
+					{ 8, { { pick_type::weapon, 1, epic, epic } } },
+					{ 9, { { pick_type::rig, 1, common, epic, { "Warfighter" } } } },
+					{ 10, { { pick_type::rig, 1, common, epic, { "Merc" } } } },
+					{ 11, { { pick_type::rig, 1, common, epic, { "Synaptic" } } } },
+					{ 12, { { pick_type::rig, 1, common, epic, { "FTL" } } } },
+					{ 13, { { pick_type::rig, 1, common, epic, { "Stryker" } } } },
+					{ 14, { { pick_type::rig, 1, common, epic, { "Phantom" } } } },
+					{ 15, { { pick_type::accessory, 1, legendary, epic } } },
+					{ 16, { { pick_type::accessory, 1, epic, epic } } },
+					{ 17, { { pick_type::emote, 1, common, epic, { "gesture", "taunt" } } } },
+					{ 18, { { pick_type::emote, 1, epic, epic, { "gesture", "taunt" } } } },
+					{ 19, { { pick_type::emote, 1, rare, epic, { "gesture" } } } },
+					{ 20, { { pick_type::emote, 1, rare, epic, { "taunt" } } } },
+					{ 21, { { pick_type::camo, 2 } } },
+					{ 22, { { pick_type::camo, 1, legendary, legendary } } },
+					{ 23, { { pick_type::camo, 1, legendary, legendary, { "SMG" } } } },
+					{ 24, { { pick_type::camo, 1, legendary, legendary, { "AssaultRifle" } } } },
+					{ 25, { { pick_type::camo, 2, legendary, legendary } } },
+					{ 26, { { pick_type::camo, 3, rare, rare } } },
+					{ 27, { { pick_type::camo, 1, epic, epic, { "LMG" } } } },
+					{ 28, { { pick_type::calling_card, 1, epic, epic } } },
+					{ 29, { { pick_type::calling_card, 1, legendary, epic } } },
+					{ 30, { { pick_type::cosmetic, 3 } } },
+					{ 31, { { pick_type::item, 2, common, epic, {}, false, false, LOOT_RARE_CRATE } } },
+					{ 32, { { pick_type::item, 3, common, epic, {}, false, false, LOOT_RARE_CRATE } } },
+					{ 33, { { pick_type::item, 2, common, epic, {}, false, false, LOOT_RARE_CRATE } } },
+					{ 34, { { pick_type::item, 3, common, epic, {}, false, false, LOOT_RARE_CRATE } } },
+					{ 35, { { pick_type::item, 1, common, epic, {}, false, false, 80431 } } }, // Keys_Contract_01
+					{ 36, { { pick_type::item, 1, common, epic, {}, false, false, 80432 } } }, // Keys_Contract_02
+					{ 37, { { pick_type::item, 1, common, epic, {}, false, false, 80433 } } }, // Keys_Contract_03
+					{ 38, { { pick_type::item, 1, common, epic, {}, false, false, 80427 } } }, // Salv_Contract_01
+					{ 39, { { pick_type::item, 1, common, epic, {}, false, false, 80428 } } }, // Salv_Contract_02
+					{ 40, { { pick_type::item, 1, common, epic, {}, false, false, 80429 } } }, // Salv_Contract_03
+					{ 41, { { pick_type::item, 1, common, epic, {}, false, false, 80430 } } }, // Salv_Contract_04
 				};
 
-				// zombies contracts 160-164 / 260-264 (cp/loot/iw7_zombie_loot_contract_set.csv) -> ZContracts_* currency packs
+				// zombies contracts 160-164 and 260-264 (cp/loot/iw7_zombie_loot_contract_set.csv) -> ZContracts_* currency packs
 				// 30 keys, 60 keys, 90 keys, 250 salvage, 500 salvage
 				std::optional<std::uint32_t> get_zombie_contract_pack(const std::uint32_t mission_set_id)
 				{
@@ -189,7 +147,6 @@ namespace demonware
 					const auto balance = get_item_balance(id) + 1;
 					set_item_balance(id, balance);
 
-					// currency packs stay in the inventory so Loot.IsOwned sees them as claimed
 					if (const auto pack = get_currency_pack(id))
 					{
 						const auto [currency_id, amount] = *pack;
@@ -219,7 +176,7 @@ namespace demonware
 					});
 				}
 
-				void collect_candidates(const LootTable& loot_table, const Pick& pick, std::vector<std::uint32_t>& candidates)
+				void collect_candidates(const loot_table& loot_table, const Pick& pick, std::vector<std::uint32_t>& candidates)
 				{
 					const auto table = get_table(loot_table.file);
 					if (!table)
@@ -269,25 +226,25 @@ namespace demonware
 
 					switch (pick.type)
 					{
-					case PickType::weapon:
+					case pick_type::weapon:
 						collect_candidates(weapons, pick, candidates);
 						break;
-					case PickType::rig:
+					case pick_type::rig:
 						collect_candidates(rigs, pick, candidates);
 						break;
-					case PickType::emote:
+					case pick_type::emote:
 						collect_candidates(emotes, pick, candidates);
 						break;
-					case PickType::camo:
+					case pick_type::camo:
 						collect_candidates(camos, pick, candidates);
 						break;
-					case PickType::calling_card:
+					case pick_type::calling_card:
 						collect_candidates(calling_cards, pick, candidates);
 						break;
-					case PickType::accessory:
+					case pick_type::accessory:
 						collect_candidates(accessories, pick, candidates);
 						break;
-					case PickType::cosmetic:
+					case pick_type::cosmetic:
 						for (const auto* loot_table : { &rigs, &emotes, &camos, &calling_cards, &accessories, &emblems, &reticles })
 						{
 							collect_candidates(*loot_table, pick, candidates);
@@ -302,7 +259,7 @@ namespace demonware
 
 				void give_pick(Reward& reward, const Pick& pick)
 				{
-					if (pick.type == PickType::item)
+					if (pick.type == pick_type::item)
 					{
 						for (auto i = 0u; i < pick.count; i++)
 						{
@@ -460,7 +417,6 @@ namespace demonware
 				}
 				else
 				{
-					// mission team xp contracts are handled by the client
 					console::demonware("[DW]: mission set %d (%s) has no loot\n", mission_set_id, name.data());
 				}
 

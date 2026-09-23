@@ -5,6 +5,8 @@ main()
     replaceFunc(scripts\mp\bots\bots_loadout::bot_loadout_choose_from_camotable, ::bot_loadout_choose_from_camotable);
     replaceFunc(scripts\mp\bots\bots_loadout::init_bot_camotable, ::init_bot_camotable);
     replaceFunc(scripts\mp\bots\bots_loadout::init_class_table, ::init_class_table);
+
+    // lets bots use weapon & scorestreak variants
     replaceFunc(scripts\mp\class::loadout_updateclasscallback, ::loadout_updateclasscallback);
 }
 
@@ -169,7 +171,6 @@ init_class_table()
     }
 }
 
-// lets bots use weapon & scorestreak variants
 loadout_updateclasscallback( var_0 )
 {
     if ( !isdefined( self.classcallback ) )
@@ -282,9 +283,9 @@ bot_loadout_apply_variants( loadout )
     loadout._id_AE73 = scripts\mp\killstreak_loot::getpassiveperk( loadout.loadoutkillstreak3variantid );
 }
 
-// variant ids per weapon root, only ones that are real loot items
 init_bot_weapon_variants()
 {
+    // variant ids per weapon root, only ones that are real loot items
     loot_table = "mp/loot/iw7_weapon_loot_master.csv";
     level.bot_weapon_variants = [];
 

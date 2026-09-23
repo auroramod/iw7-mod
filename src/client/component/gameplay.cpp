@@ -198,14 +198,14 @@ namespace gameplay
 			pmove_single_hook.invoke<void>(pm, a2, a3, a4, a5);
 		}
 
-		constexpr auto mantle_surface_flags = 0x6000000;   // SURF_MANTLEON | SURF_MANTLEOVER
-		constexpr auto mantle_legacy_contents = 0x1000000; // IW6 CONTENTS_MANTLE
+		constexpr auto mantle_surface_flags 	= 0x6000000;   	// SURF_MANTLEON | SURF_MANTLEOVER
+		constexpr auto mantle_legacy_contents 	= 0x1000000; 	// IW6 CONTENTS_MANTLE
 
-		constexpr auto mantle_angle_limit = 0x1414B8D8C; // acosf limit: 75 in IW7, 60 in IW6
-		constexpr auto mantle_reach_base = 0x1414B8D84;  // 20.0 -> 34.9 reach; IW6 reaches 54.9
-		constexpr auto mantle_reach_bias = 14.9f;        // the 15.0 - 0.1 the game adds to it
-		constexpr auto mantle_stock_angle = 75.0f;
-		constexpr auto mantle_stock_reach = 34.9f;
+		constexpr auto mantle_angle_limit 	= 0x1414B8D8C; 	// acosf limit: 75 in IW7, 60 in IW6
+		constexpr auto mantle_reach_base 	= 0x1414B8D84;  // 20.0 -> 34.9 reach; IW6 reaches 54.9
+		constexpr auto mantle_reach_bias 	= 14.9f;        // the 15.0 - 0.1 the game adds to it
+		constexpr auto mantle_stock_angle 	= 75.0f;
+		constexpr auto mantle_stock_reach 	= 34.9f;
 
 		void mantle_pm_tracehandler_stub(__int64 handler, game::trace_t* results, float* start, float* end, 
 			game::Bounds* bounds, int passEntityNum, int contentMask, game::playerState_s* ps)
@@ -303,7 +303,7 @@ namespace gameplay
 			utils::hook::nop(0x1406E2676, 2); // Mantle_CanMantle
 			utils::hook::nop(0x1406E4CDE, 2); // Mantle_Update
 
-			// Make mantle behave like older games if we want
+			// Make mantle behave like older games
 			dvars::mantle_legacy = game::Dvar_RegisterBool("mantle_legacy", false, game::DVAR_FLAG_REPLICATED, "Enable legacy mantle behavior");
 			dvars::mantle_legacyMaxAngle = game::Dvar_RegisterFloat("mantle_legacyMaxAngle", 60.0f, 0.0f, 90.0f, game::DVAR_FLAG_REPLICATED, "Ledge angle limit while legacy mantling (IW6 uses 60, IW7 75)");
 			dvars::mantle_legacyReach = game::Dvar_RegisterFloat("mantle_legacyReach", 54.9f, 16.0f, 128.0f, game::DVAR_FLAG_REPLICATED, "Forward reach of the mantle sweep while legacy mantling (IW6 uses 54.9, IW7 34.9)");

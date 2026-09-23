@@ -381,16 +381,16 @@ namespace demonware
 				double randomValue = dis(gen);
 				double cumulativeWeight = 0;
 
-				// Find the item corresponding to the random value
-				for (size_t i = 0; i < lootmap.size(); ++i) {
+				for (size_t i = 0; i < lootmap.size(); ++i) 
+				{
 					cumulativeWeight += adjustedWeights[i];
-					if (randomValue < cumulativeWeight) {
+					if (randomValue < cumulativeWeight) 
+					{
 						if (quaranteedQuality && get_loot(lootmap[i]).quality < quaranteedQuality)
 							continue;
 						else
 							quaranteedQuality = 0;
 
-						// Add item to the result if it's not already selected
 						if (std::find(selectedItems.begin(), selectedItems.end(), get_loot(lootmap[i])) == selectedItems.end()) {
 							selectedItems.push_back(get_loot(lootmap[i]));
 							break;
@@ -459,7 +459,6 @@ namespace demonware
 			cache_loot();
 			read_json_data();
 
-			// report everything in loot.json, reward items (mission teams, contracts, currency packs) aren't in the lootmaps
 			std::vector<Item> items{};
 			for (const auto& entry : json_buffer["Loot"].items())
 			{
@@ -655,12 +654,9 @@ namespace demonware
 			read_json_data();
 
 			const int64_t last_date_claimed = json_read<int64_t>(json_buffer["DailyLogin"]["LastDateClaimed"]);
-
-			// this may happen if the last date claimed doesn't exist yet
 			if (last_date_claimed == -1)
 				return true;
 
-			// check if its been a new day since the last claim
 			std::time_t now_time = std::time(nullptr);
 			std::time_t last_time = static_cast<std::time_t>(last_date_claimed);
 

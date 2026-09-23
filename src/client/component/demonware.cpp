@@ -424,11 +424,9 @@ namespace demonware
 			}
 		}
 
-		// xor eax, eax / inc eax / ret. Kept to 5 bytes on purpose: the game's obfuscated code is packed
-		// into the gaps right after short functions, so a patch must not write past the function's end.
-		// (The old utils::hook::set(address, 0xC300000001B8) wrote a full 8-byte value.)
 		void return_true(const size_t address)
 		{
+			// `xor eax, eax / inc eax / ret` that does not write past the function's end
 			static constexpr uint8_t code[] = {0x33, 0xC0, 0xFF, 0xC0, 0xC3};
 			utils::hook::copy(address, code, sizeof(code));
 		}
@@ -448,9 +446,6 @@ namespace demonware
 			va_end(ap);
 		}
 
-		// CG_ServerCmdMP_ParsePlayerInfos resolves the xnaddr of every non-host player, which registers a DW addr handle
-		// and starts NAT traversal to that peer. Nothing here talks peer to peer (everything goes through the server), and
-		// bots have an empty xnaddr that gets parsed from uninitialized stack, so it just retries forever on garbage addresses.
 		bool xnet_xnaddr_to_inaddr_stub(const char* xnaddr, uint32_t* in_addr, uint16_t* port)
 		{
 			const auto* local_xnaddr = utils::hook::invoke<const char*>(0x140DC6650, true); // SV_ClientMP_GetXNAddr
@@ -540,13 +535,13 @@ namespace demonware
 
 			// Remove Online_PatchStreamer checks
 			utils::hook::set<uint8_t>(0x14052A6D0, 0xC3);
-			return_true(0x14052AB60); // only 5 bytes long, WinMain's pointer decryption continues at 0x14052AB65
+			return_true(0x14052AB60);
 			return_true(0x14052B800);
 
 			// Remove Online_Dailylogin check
 			return_true(0x140533390);
 
-			// Don't NAT traverse to other players in CG_ServerCmdMP_ParsePlayerInfos
+			// Don't NAT traverse to other players (CG_ServerCmdMP_ParsePlayerInfos)
 			utils::hook::call(0x140852EEE, xnet_xnaddr_to_inaddr_stub);
 
 			// Increase Demonware connection timeouts

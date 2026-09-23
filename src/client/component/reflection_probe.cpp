@@ -118,7 +118,6 @@ namespace reflection_probes
 			file.write(reinterpret_cast<const char*>(data), static_cast<std::streamsize>(sizeof(T)) * count);
 		}
 
-		// zonetool asset dump: GfxImage array, name string, pixel data array
 		bool write_iw7_image(const std::filesystem::path& path, const DirectX::ScratchImage& image)
 		{
 			constexpr std::uint8_t dump_type_string = 6;
@@ -185,7 +184,6 @@ namespace reflection_probes
 				source = &resized;
 			}
 
-			// full chain down to 1x1, stock 128x128 arrays have 8 levels
 			auto levels = 1u;
 			while ((output_size >> (levels - 1)) > 1)
 			{

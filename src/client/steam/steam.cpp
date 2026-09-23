@@ -40,9 +40,9 @@ namespace steam
 			ULONG time_date_stamp;
 			void* entry_point_activation_context;
 			void* lock;
-			LIST_ENTRY* ddag_node; // starts with the node's module list
+			LIST_ENTRY* ddag_node;
 			LIST_ENTRY node_module_link;
-			std::uint8_t unused[0x200]; // rest of the loader's entry, left zeroed
+			std::uint8_t unused[0x200];
 		};
 
 		static_assert(offsetof(ldr_data_table_entry, dll_base) == 0x30);
@@ -70,7 +70,6 @@ namespace steam
 			return result;
 		}
 
-		// A minimal read-only image: PE headers whose debug directory holds a CodeView record naming `pdb_name`
 		void* create_stand_in_image(const char* pdb_name)
 		{
 			auto* base = static_cast<std::uint8_t*>(VirtualAlloc(nullptr, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
@@ -127,7 +126,6 @@ namespace steam
 			entry->in_initialization_order_links.Flink = entry->in_initialization_order_links.Blink = &entry->in_initialization_order_links;
 			entry->hash_links.Flink = entry->hash_links.Blink = &entry->hash_links;
 
-			// LdrpInitializeThread reads every entry's DDAG node, a zeroed one has state "not ready" so it's skipped
 			auto* ddag_node = reinterpret_cast<LIST_ENTRY*>(new std::uint8_t[0x100]{});
 			ddag_node->Flink = ddag_node->Blink = &entry->node_module_link;
 			entry->node_module_link.Flink = entry->node_module_link.Blink = ddag_node;
@@ -256,9 +254,7 @@ namespace steam
 		const std::filesystem::path steam_path = steam::SteamAPI_GetSteamInstallPath();
 		if (steam_path.empty() || ::utils::flags::has_flag("nosteam"))
 		{
-			// Without steamclient64.dll or gameoverlayrenderer64.dll WinMain quietly returns 0 right after Com_Init,
-			// and the teardown races the fastfile thread into "Memory Error 15 402". Only the name and PDB name matter.
-			// They're added this late and without a directory on purpose, added earlier (or in the game folder) they fail.
+			// without steamclient64.dll or gameoverlayrenderer64.dll, WinMain quietly returns 0 right after Com_Init. we add these here to combat this
 			add_ldr_entry(create_stand_in_image("steamclient64.pdb"), 0x1000, "steamclient64.dll");
 			add_ldr_entry(create_stand_in_image("GameOverlayRenderer64.pdb"), 0x1000, "gameoverlayrenderer64.dll");
 			return true;

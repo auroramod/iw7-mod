@@ -23,7 +23,6 @@ function SyncCombatTrainingMatchRules()
 	Engine.SetDvarBool("ui_combat_training", true)
 	MatchRules.SetUsingMatchRulesData(1)
 
-	-- the private game state also holds the bot team limits, keep them in sync with our bot dvars
 	Lobby.SetBotsTeamLimit(0, Engine.GetDvarInt("bot_allies"))
 	Lobby.SetBotsTeamLimit(1, Engine.GetDvarInt("bot_enemies"))
 	Lobby.SetBotsTeamLimit(2, Engine.GetDvarInt("bot_free"))

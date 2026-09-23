@@ -33,7 +33,7 @@ get_bot_difficulty_for_number(difficulty)
             return "recruit";
         case 0:
         default:
-            return "default"; // mixed, picked from level.bot_difficulty_defaults
+            return "default";
     }
 }
 

@@ -529,8 +529,6 @@ namespace updater
 			GetCurrentDirectoryA(sizeof(current_dir), current_dir);
 
 			auto command_line = std::format("{} -{}", GetCommandLineA(), update_process_flag);
-
-			// share our console so the output is still visible
 			if (!CreateProcessA(self.get_path().data(), command_line.data(), nullptr, nullptr, false,
 				0, nullptr, current_dir, &startup_info, &process_info))
 			{

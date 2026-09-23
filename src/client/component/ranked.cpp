@@ -35,7 +35,6 @@ namespace ranked
 			return game_state_info_get_hook.invoke<void*>();
 		}
 
-		// MatchRules.SetData and Lobby.SetBotsConnectType bail out when this says we're on the public game state
 		int game_state_info_is_public_stub()
 		{
 			if (use_private_game_state())
@@ -61,7 +60,6 @@ namespace ranked
 			if (game::environment::is_dedi())
 			{
 				dvars::override::register_bool("xblive_privatematch", false, game::DVAR_FLAG_REPLICATED | game::DVAR_FLAG_WRITE);
-
 				dvars::override::register_bool("onlinegame", true, game::DVAR_FLAG_READ);
 
 				// Fix sessionteam always returning none (SV_ClientMP_HasAssignedTeam_Internal)

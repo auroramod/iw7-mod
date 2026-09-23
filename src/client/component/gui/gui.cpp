@@ -344,12 +344,10 @@ namespace gui
 
 		void draw_gui(IDXGISwapChain* swap_chain)
 		{
-			// directx owns device creation (plain D3D11 or D3D11On12 with -d3d12)
 			static ID3D11Device* game_device = nullptr;
 
 			if (initialized && game_device != dx::device)
 			{
-				// the game recreated its device (device loss), the imgui resources belong to the old one
 				shutdown_gui();
 			}
 

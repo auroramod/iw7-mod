@@ -48,7 +48,6 @@ namespace dx
 
 		HRESULT create_d3d12_objects(IDXGIAdapter* adapter)
 		{
-			// recreate every time, the game creates a new device after a device loss and may pick another adapter
 			g_d3d12_queue.Reset();
 			g_d3d12_device.Reset();
 
@@ -86,14 +85,12 @@ namespace dx
 			D3D_FEATURE_LEVEL* out_feature_level,
 			ID3D11DeviceContext** out_immediate_context)
 		{
-			// the game creates its device with this flag, which RenderDoc takes as "don't hook this device",
-			// it then crashes when the game creates its swap chain on the unhooked device
 			if (GetModuleHandleA("renderdoc.dll"))
 			{
+				// the game creates its device with this flag, which crashes RenderDoc when the game creates its swap chain on the unhooked device
 				flags &= ~D3D11_CREATE_DEVICE_PREVENT_ALTERING_LAYER_SETTINGS_FROM_REGISTRY;
 			}
 
-			// the adapter enumeration loop only probes the feature level (no device/context out), keep that on plain d3d11
 			const auto real_device = out_device && out_immediate_context;
 			if (real_device && utils::flags::has_flag("d3d12"))
 			{
@@ -122,7 +119,6 @@ namespace dx
 					}
 				}
 
-				// the game doesn't check the result of its device creation, fall back instead of leaving it null
 				g_d3d12_queue.Reset();
 				g_d3d12_device.Reset();
 				store_dx12();

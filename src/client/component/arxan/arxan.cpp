@@ -519,7 +519,6 @@ namespace arxan
 	{
 		std::call_once(patch_once, []
 		{
-			// Integrity checks first: they checksum the code the trap patches modify
 			search_and_patch_integrity_checks();
 
 			if (should_patch_traps())
@@ -531,8 +530,7 @@ namespace arxan
 
 	PVOID WINAPI add_vectored_exception_handler_stub(const ULONG first, const PVECTORED_EXCEPTION_HANDLER handler)
 	{
-		// A guard registers its handler right before executing its trap, and this happens before
-		// post_unpack. Patch now, or a debugger catches the raw int 2Dh/ud2 and arxan sees it.
+		// a guard registers its handler right before executing its trap, which happens before post_unpack. patching here is intentional
 		patch_code();
 		return AddVectoredExceptionHandler(first, handler);
 	}
@@ -579,7 +577,7 @@ namespace arxan
 		void post_unpack() override
 		{
 			remove_hardware_breakpoints();
-			patch_code(); // no-op if a guard already triggered it
+			patch_code();
 
 			if (!utils::nt::is_wine() || utils::nt::is_sogen())
 			{
