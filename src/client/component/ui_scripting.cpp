@@ -20,6 +20,7 @@
 //#include "game/scripting/execution.hpp"
 
 #include "ui_scripting.hpp"
+#include "console/console.hpp"
 
 #include <utils/string.hpp>
 #include <utils/hook.hpp>
@@ -428,6 +429,21 @@ namespace ui_scripting
 
 			return 0;
 		}
+
+		utils::hook::detour hksi_luaL_error_hook;
+		void hksi_luaL_error_stub(game::hks::lua_State* state, const char* fmt, ...)
+		{
+			va_list va;
+			va_start(va, fmt);
+			char buffer[0x800];
+
+			vsprintf_s(buffer, fmt, va);
+			va_end(va);
+
+			console::error("%s (R:0x%llX)\n", buffer, (uint64_t)_ReturnAddress());
+
+			hksi_luaL_error_hook.invoke<void>(state, "%s", buffer);
+		}
 	}
 
 	table get_globals()
@@ -469,6 +485,7 @@ namespace ui_scripting
 			hks_package_require_hook.create(0x1411C7F00, hks_package_require_stub);
 			hks_start_hook.create(0x1406023A0, hks_start_stub);
 			hks_shutdown_hook.create(0x1406124B0, hks_shutdown_stub);
+			hksi_luaL_error_hook.create(game::hks::hksi_luaL_error.get(), hksi_luaL_error_stub);
 
 			// replace LUA engine calls
 			utils::hook::set(0x1414B4D98, lua_calls::is_development_build_stub); // IsDevelopmentBuild
