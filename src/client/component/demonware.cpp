@@ -458,6 +458,12 @@ namespace demonware
 			*port = 0;
 			return false;
 		}
+
+		bool bdNATTypeDiscoveryClient__isRunning(__int64 a1)
+		{
+			*(DWORD *)(a1 + 0x1A4) = 4; //BD_NTDCS_FINI
+			return (unsigned int)(*(DWORD *)(a1 + 0x1A4) - 1) <= 2;
+		}
 	}
 
 	class component final : public component_interface
@@ -543,6 +549,10 @@ namespace demonware
 
 			// Don't NAT traverse to other players (CG_ServerCmdMP_ParsePlayerInfos)
 			utils::hook::call(0x140852EEE, xnet_xnaddr_to_inaddr_stub);
+
+			// disable NAT/QoS pumps
+			utils::hook::set<byte>(0x1412923C0, 0xC3); // bdSocketRouter::pump
+			utils::hook::jump(0x1412947C9, bdNATTypeDiscoveryClient__isRunning);
 
 			// Increase Demonware connection timeouts
 			dvars::override::register_int("demonwareConsideredConnectedTime", 300000, 0, 0x7FFFFFFF, 0x0); // 5s -> 5min
