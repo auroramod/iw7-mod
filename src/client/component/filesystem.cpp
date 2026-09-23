@@ -157,6 +157,43 @@ namespace filesystem
 		return false;
 	}
 
+	std::vector<std::string> list_files(const std::string& dir, bool override_by_priority)
+	{
+		std::vector<std::string> files{};
+		std::unordered_set<std::string> seen{};
+
+		for (const auto& search_path : get_search_paths())
+		{
+			const auto full_dir = search_path + "/" + dir;
+			if (!utils::io::directory_exists(full_dir))
+			{
+				continue;
+			}
+
+			for (const auto& file : utils::io::list_files(full_dir))
+			{
+				if (!override_by_priority)
+				{
+					files.push_back(file);
+					continue;
+				}
+
+				const auto relative = utils::string::to_lower(
+					std::filesystem::path(file).lexically_relative(full_dir).generic_string());
+				if (seen.contains(relative))
+				{
+					// console::debug("[FS] Skipping '%s' (overridden by higher-priority path)\n", file.data());
+					continue;
+				}
+
+				seen.insert(relative);
+				files.push_back(file);
+			}
+		}
+
+		return files;
+	}
+
 	void register_path(const std::filesystem::path& path)
 	{
 		if (!initialized)
@@ -217,8 +254,6 @@ namespace filesystem
 				paths.push_back(utils::string::va("%s/%s", i->dir->path, i->dir->gamedir));
 			}
 		}
-
-		std::sort(paths.begin(), paths.end());
 
 		return paths;
 	}

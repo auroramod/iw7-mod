@@ -136,14 +136,9 @@ namespace ui_scripting
 			}
 		}
 
-		void load_scripts(const std::string& script_dir)
+		void load_scripts()
 		{
-			if (!utils::io::directory_exists(script_dir))
-			{
-				return;
-			}
-
-			const auto scripts = utils::io::list_files(script_dir);
+			const auto scripts = filesystem::list_files("ui_scripts/", true);
 
 			for (const auto& script : scripts)
 			{
@@ -298,10 +293,7 @@ namespace ui_scripting
 			load_script("lua_json", lua_json);
 			*/
 
-			for (const auto& path : filesystem::get_search_paths_rev())
-			{
-				load_scripts(path + "/ui_scripts/");		
-			}
+			load_scripts();
 		}
 
 		void try_start()
