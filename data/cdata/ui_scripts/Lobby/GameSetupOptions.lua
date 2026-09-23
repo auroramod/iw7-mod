@@ -34,6 +34,41 @@ function SyncCombatTrainingMatchRules()
 	end
 end
 
+local GetCombatTrainingGameTypeName = function()
+	local name = Engine.TableLookup(CSV.gameTypesTable.file, 0, Engine.GetDvarString("ui_gametype"), 1)
+	if name == nil or name == "" then
+		return Lobby.GameTypeNameAbbreviated()
+	end
+	return Engine.Localize(name)
+end
+
+local GetPlaylistName_original = Playlist.GetPlaylistName
+Playlist.GetPlaylistName = function(...)
+	if Engine.GetDvarBool("ui_combat_training") and LUI.FlowManager.IsInStack("LobbyMission") then
+		return GetCombatTrainingGameTypeName()
+	end
+	return GetPlaylistName_original(...)
+end
+
+local ModeButton_original = MenuBuilder.m_types["ModeButton"]
+assert(ModeButton_original)
+MenuBuilder.m_types["ModeButton"] = function(menu, controller)
+	local self = ModeButton_original(menu, controller)
+	if not Engine.GetDvarBool("ui_combat_training") then
+		return self
+	end
+
+	self.Button:registerEventHandler("button_action", function(f1_arg0, f1_arg1)
+		local gametype = self:GetDataSource().ref
+		if gametype ~= Engine.GetDvarString("ui_gametype") then
+			Engine.SetDvarString("ui_gametype", gametype)
+			SyncCombatTrainingMatchRules()
+		end
+		LUI.FlowManager.RequestLeaveMenu(self, true, true)
+	end)
+	return self
+end
+
 local updateOptionsButtonText = function(self)
 	local text = "PATCH_MENU_MATCHRULES_CUSTOM"
 	if MatchRules.AreMatchRulesDefaultFromFF() and MP.AreNonRecipeOptionsDefault() then
@@ -45,12 +80,15 @@ end
 local postLoadGameSetupButtonsSubMenu = function(self, f2_arg1, f2_arg2)
 	assert(self.MapsButton)
 	assert(self.MapsButton.DynamicText)
+	assert(self.ModesButton)
+	assert(self.ModesButton.DynamicText)
 	assert(self.OptionsButton)
 	assert(self.OptionsButton.DynamicText)
 	assert(self.BotSetup)
 
 	SyncCombatTrainingMatchRules()
 
+	self.ModesButton.DynamicText:setText(ToUpperCase(GetCombatTrainingGameTypeName()))
 	self.MapsButton.DynamicText:setText(ToUpperCase(Lobby.GetMapName()))
 	updateOptionsButtonText(self)
 	--self.BotSetup:SetButtonDisabled(1) -- TODO: finish custom bot management (gsc + engine changes required)
@@ -78,6 +116,17 @@ local GameSetupButtonsSubMenu = function(menu, controller)
 	MapsButton:SetAnchorsAndPosition(0, 1, 0, 1, 0, _1080p * 600, 0, _1080p * 30)
 	self:addElement(MapsButton)
 	self.MapsButton = MapsButton
+
+	local ModesButton = MenuBuilder.BuildRegisteredType("GenericDualLabelButton", {
+		controllerIndex = rootController,
+	})
+	ModesButton.id = "ModesButton"
+	ModesButton.buttonDescription = Engine.Localize("LUA_MENU_DESC_GAMEMODE")
+	ModesButton.Text:setText(ToUpperCase(Engine.Localize("LUA_MENU_MODE_CAPS")), 0)
+	ModesButton.DynamicText:setText("", 0)
+	ModesButton:SetAnchorsAndPosition(0, 1, 0, 1, 0, _1080p * 600, _1080p * 40, _1080p * 70)
+	self:addElement(ModesButton)
+	self.ModesButton = ModesButton
 
 	local OptionsButton = MenuBuilder.BuildRegisteredType("GenericDualLabelButton", {
 		controllerIndex = rootController,
@@ -110,6 +159,10 @@ local GameSetupButtonsSubMenu = function(menu, controller)
 
 	MapsButton:addEventHandler("button_action", function(f4_arg0, f4_arg1)
 		ACTIONS.OpenMenu("Maps", true, f4_arg1.controller or rootController)
+	end)
+	ModesButton:addEventHandler("button_action", function(f5_arg0, f5_arg1)
+		SyncCombatTrainingMatchRules()
+		ACTIONS.OpenMenu("GameModes", true, f5_arg1.controller or rootController)
 	end)
 	OptionsButton:addEventHandler("button_action", function(f6_arg0, f6_arg1)
 		SyncCombatTrainingMatchRules()
