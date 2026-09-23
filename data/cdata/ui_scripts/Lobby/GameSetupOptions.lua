@@ -17,6 +17,31 @@ local MenuOverride = function(oldmenu, postLoad)
 	return newmenu
 end
 
+function SyncCombatTrainingMatchRules()
+	local gametype = Engine.GetDvarString("ui_gametype")
+
+	Engine.SetDvarBool("ui_combat_training", true)
+	MatchRules.SetUsingMatchRulesData(1)
+
+	-- the private game state also holds the bot team limits, keep them in sync with our bot dvars
+	Lobby.SetBotsTeamLimit(0, Engine.GetDvarInt("bot_allies"))
+	Lobby.SetBotsTeamLimit(1, Engine.GetDvarInt("bot_enemies"))
+	Lobby.SetBotsTeamLimit(2, Engine.GetDvarInt("bot_free"))
+
+	if gametype ~= "" and MatchRules.GetData("gametype") ~= gametype then
+		MatchRules.SetData("gametype", gametype)
+		MatchRules.LoadMatchRulesDataDefault()
+	end
+end
+
+local updateOptionsButtonText = function(self)
+	local text = "PATCH_MENU_MATCHRULES_CUSTOM"
+	if MatchRules.AreMatchRulesDefaultFromFF() and MP.AreNonRecipeOptionsDefault() then
+		text = "PATCH_MENU_MATCHRULES_DEFAULT"
+	end
+	self.OptionsButton.DynamicText:setText(Engine.Localize(text))
+end
+
 local postLoadGameSetupButtonsSubMenu = function(self, f2_arg1, f2_arg2)
 	assert(self.MapsButton)
 	assert(self.MapsButton.DynamicText)
@@ -24,8 +49,10 @@ local postLoadGameSetupButtonsSubMenu = function(self, f2_arg1, f2_arg2)
 	assert(self.OptionsButton.DynamicText)
 	assert(self.BotSetup)
 
+	SyncCombatTrainingMatchRules()
+
 	self.MapsButton.DynamicText:setText(ToUpperCase(Lobby.GetMapName()))
-	self.OptionsButton:SetButtonDisabled(1) -- TODO: game settings are not applied and get rest on menu change.
+	updateOptionsButtonText(self)
 	--self.BotSetup:SetButtonDisabled(1) -- TODO: finish custom bot management (gsc + engine changes required)
 end
 
@@ -85,6 +112,7 @@ local GameSetupButtonsSubMenu = function(menu, controller)
 		ACTIONS.OpenMenu("Maps", true, f4_arg1.controller or rootController)
 	end)
 	OptionsButton:addEventHandler("button_action", function(f6_arg0, f6_arg1)
+		SyncCombatTrainingMatchRules()
 		ACTIONS.OpenMenu("GameSetupOptionsMenu", true, f6_arg1.controller or rootController)
 	end)
 	BotSetup:addEventHandler("button_action", function(f7_arg0, f7_arg1)

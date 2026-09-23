@@ -370,6 +370,8 @@ namespace party
 				return;
 			}
 
+			game::Dvar_SetFromStringByName("ui_combat_training", "0", game::DVAR_SOURCE_INTERNAL);
+
 			perform_game_initialization(sv_maxclients, private_match);
 
 			game::Dvar_SetFromStringByName("ui_mapname", mapname.data(), game::DVAR_SOURCE_INTERNAL);

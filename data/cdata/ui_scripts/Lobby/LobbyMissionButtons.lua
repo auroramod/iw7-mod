@@ -24,6 +24,7 @@ end
 
 local MatchSimulator = {}
 MatchSimulator.ShowGameOverScreen = function()
+	SyncCombatTrainingMatchRules()
 	Engine.Exec("party_minplayers 1")
 	LUI.UIRoot.BlockButtonInput(Engine.GetLuiRoot(), false, "TransitionToGame")
 	Engine.Exec("exec start") -- TODO: figure out how to start public match correctly. This is terrible.
@@ -59,6 +60,7 @@ local LobbyMissionButtons = function(menu, controller)
 	LobbyMissionVerticalLayout.StartButton = StartButton
 	StartButton:addEventHandler("button_action", function(f14_arg0, f14_arg1)
 		LUI.UIRoot.BlockButtonInput(Engine.GetLuiRoot(), false, "TransitionToGame")
+		SyncCombatTrainingMatchRules()
 		Engine.Exec("party_minplayers 1")
 		Engine.Exec("exec start")
 	end)
@@ -79,6 +81,7 @@ local LobbyMissionButtons = function(menu, controller)
 	end)
 
 	set_matchmaking_dvars()
+	SyncCombatTrainingMatchRules()
 
 	local CRMMain = MenuBuilder.BuildRegisteredType("CRMMain", {
 		controllerIndex = controller_index,
