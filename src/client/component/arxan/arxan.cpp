@@ -423,222 +423,119 @@ namespace arxan
 
 		namespace exceptions
 		{
-			std::unordered_map<PVOID, void*> handle_handler;
-
-			void fake_exception(void* address, _CONTEXT* fake_context, DWORD exception)
+			void patch_int2d_trap(const std::uint64_t address)
 			{
-				_EXCEPTION_POINTERS fake_info{};
-				_EXCEPTION_RECORD fake_record{};
-				fake_info.ExceptionRecord = &fake_record;
-				fake_info.ContextRecord = fake_context;
-
-				fake_record.ExceptionAddress = reinterpret_cast<void*>(reinterpret_cast<std::uint64_t>(address) + 3);
-				fake_record.ExceptionCode = exception;
-
-				for (auto& handler : handle_handler)
+				// int 2Dh / jmp continuation
+				const auto continuation = utils::hook::extract<void*>(reinterpret_cast<void*>(address + 3));
+				const auto stub = utils::hook::assemble([continuation](utils::hook::assembler& a)
 				{
-					if (handler.second)
-					{
-						auto result = utils::hook::invoke<LONG>(handler.second, &fake_info);
-						if (result)
-						{
-							memset(fake_context, 0, sizeof(_CONTEXT));
-							break;
-						}
-					}
-				}
-			}
-
-			void patch_int2d_trap(void* address)
-			{
-				const auto game_address = reinterpret_cast<std::uint64_t>(address);
-
-				const auto jump_target = utils::hook::extract<void*>(reinterpret_cast<void*>(game_address + 3));
-
-				_CONTEXT* fake_context = new _CONTEXT{};
-				const auto stub = utils::hook::assemble([address, jump_target, fake_context](utils::hook::assembler& a)
-				{
-					a.push(rcx);
-					a.mov(rcx, fake_context);
-					a.call_aligned(RtlCaptureContext);
-					a.pop(rcx);
-
-					a.pushad64();
-					a.mov(rcx, address);
-					a.mov(rdx, fake_context);
-					a.mov(r8, EXCEPTION_BREAKPOINT);
-					a.call_aligned(fake_exception);
-					a.popad64();
-
-					a.jmp(jump_target);
+					a.mov(qword_ptr(rax), 1);
+					a.jmp(continuation);
 				});
 
-				utils::hook::nop(game_address, 7);
-				utils::hook::jump(game_address, stub, false);
+				utils::hook::jump(address, stub);
 			}
 
-#ifdef PRECOMPUTED_BREAKPOINTS
-			void patch_breakpoints_precomputed()
+			void patch_illegal_instruction(const std::uint64_t address, void* continuation)
 			{
-				for (const auto i : int2d_breakpoint_addresses)
+				// lea rax, [rbp+x] / ud2, either directly or through a jmp
+				const auto frame_offset = *reinterpret_cast<std::int8_t*>(address + 3);
+				const auto stub = utils::hook::assemble([frame_offset, continuation](utils::hook::assembler& a)
 				{
-					patch_int2d_trap(reinterpret_cast<void*>(i));
-				}
-			}
-#endif
-
-			void patch_breakpoints()
-			{
-				static bool once = false;
-				if (once)
-				{
-					return;
-				}
-				once = true;
-
-#ifdef PRECOMPUTED_BREAKPOINTS
-				assert(game::base_address == 0x140000000);
-				patch_breakpoints_precomputed();
-#else
-				const auto int2d_results = utils::hook::signature("CD 2D E9 ? ? ? ?", game_module::get_game_module()).process();
-				for (auto* i : int2d_results)
-				{
-					patch_int2d_trap(i);
-				}
-#endif
-			}
-
-			void patch_illegal_instruction_intact(void* address)
-			{
-				const auto game_address = reinterpret_cast<std::uint64_t>(address);
-
-				const auto jump_target = game_address + 6;
-
-				const auto a1 = *reinterpret_cast<std::uint8_t*>(game_address + 3);
-
-				_CONTEXT* fake_context = new _CONTEXT{};
-				const auto stub = utils::hook::assemble([address, jump_target, fake_context, a1](utils::hook::assembler& a)
-				{
-					a.lea(rax, ptr(rbp, a1));
-
-					a.push(rcx);
-					a.mov(rcx, fake_context);
-					a.call_aligned(RtlCaptureContext);
-					a.pop(rcx);
-
-					a.pushad64();
-					a.mov(rcx, address);
-					a.mov(rdx, fake_context);
-					a.mov(r8, EXCEPTION_ILLEGAL_INSTRUCTION);
-					a.call_aligned(fake_exception);
-					a.popad64();
-
-					a.jmp(jump_target);
+					a.lea(rax, ptr(rbp, frame_offset));
+					a.mov(qword_ptr(rax), 1);
+					a.jmp(continuation);
 				});
 
-				utils::hook::nop(game_address, 6);
-				utils::hook::jump(game_address, stub, false);
+				utils::hook::jump(address, stub);
 			}
 
-			void patch_illegal_instruction_split(void* address)
+			void patch_illegal_instruction_intact(const std::uint64_t address)
 			{
-				const auto game_address = reinterpret_cast<std::uint64_t>(address);
+				patch_illegal_instruction(address, reinterpret_cast<void*>(address + 6));
+			}
 
-				const auto jump_target = utils::hook::extract<void*>(reinterpret_cast<void*>(game_address + 5));
-
-				if (*reinterpret_cast<std::uint16_t*>(jump_target) != 0x0B0F) // illegal instruction
+			void patch_illegal_instruction_split(const std::uint64_t address)
+			{
+				const auto ud2 = utils::hook::extract<std::uint8_t*>(reinterpret_cast<void*>(address + 5));
+				if (*reinterpret_cast<std::uint16_t*>(ud2) != 0x0B0F)
 				{
 					return; // false positive
 				}
 
-				const auto a1 = *reinterpret_cast<std::uint8_t*>(game_address + 3);
-
-				_CONTEXT* fake_context = new _CONTEXT{};
-				const auto stub = utils::hook::assemble([address, jump_target, fake_context, a1](utils::hook::assembler& a)
-				{
-					a.lea(rax, ptr(rbp, a1));
-
-					a.push(rcx);
-					a.mov(rcx, fake_context);
-					a.call_aligned(RtlCaptureContext);
-					a.pop(rcx);
-
-					a.pushad64();
-					a.mov(rcx, address);
-					a.mov(rdx, fake_context);
-					a.mov(r8, EXCEPTION_ILLEGAL_INSTRUCTION);
-					a.call_aligned(fake_exception);
-					a.popad64();
-
-					a.jmp(jump_target);
-				});
-
-				utils::hook::nop(game_address, 9);
-				utils::hook::nop(jump_target, 2);
-				utils::hook::jump(game_address, stub, false);
+				patch_illegal_instruction(address, ud2 + 2);
 			}
 
-#ifdef PRECOMPUTED_ILLEGAL_INSTRUCTIONS
-			void patch_illegal_instructions_precomputed()
+			void patch_traps()
 			{
-				for (const auto i : illegal_instructions_intact)
-				{
-					patch_illegal_instruction_intact(reinterpret_cast<void*>(i));
-				}
-
-				for (const auto i : illegal_instructions_split)
-				{
-					patch_illegal_instruction_split(reinterpret_cast<void*>(i));
-				}
-			}
-#endif
-
-			void patch_illegal_instructions()
-			{
-				static bool once = false;
-				if (once)
-				{
-					return;
-				}
-				once = true;
-
-#ifdef PRECOMPUTED_ILLEGAL_INSTRUCTIONS
+#if defined(PRECOMPUTED_BREAKPOINTS) && defined(PRECOMPUTED_ILLEGAL_INSTRUCTIONS)
 				assert(game::base_address == 0x140000000);
-				patch_illegal_instructions_precomputed();
-#else
-				const auto intact_results = utils::hook::signature("48 8D 45 ? 0F 0B", game_module::get_game_module()).process();
-				for (auto* i : intact_results)
+
+				for (const auto i : int2d_breakpoint_addresses)
+				{
+					patch_int2d_trap(i);
+				}
+
+				for (const auto i : illegal_instructions_intact)
 				{
 					patch_illegal_instruction_intact(i);
 				}
 
-				const auto split_results = utils::hook::signature("48 8D 45 ? E9 ? ? ?", game_module::get_game_module()).process();
-				for (auto* i : split_results)
+				for (const auto i : illegal_instructions_split)
 				{
 					patch_illegal_instruction_split(i);
 				}
+#else
+				const auto game = game_module::get_game_module();
+
+				for (auto* i : utils::hook::signature("CD 2D E9 ? ? ? ?", game).process())
+				{
+					patch_int2d_trap(reinterpret_cast<std::uint64_t>(i));
+				}
+
+				for (auto* i : utils::hook::signature("48 8D 45 ? 0F 0B", game).process())
+				{
+					patch_illegal_instruction_intact(reinterpret_cast<std::uint64_t>(i));
+				}
+
+				for (auto* i : utils::hook::signature("48 8D 45 ? E9 ? ? ? ?", game).process())
+				{
+					patch_illegal_instruction_split(reinterpret_cast<std::uint64_t>(i));
+				}
 #endif
-			}
-
-			PVOID WINAPI add_vectored_exception_handler_stub(ULONG first, PVECTORED_EXCEPTION_HANDLER handler)
-			{
-				exceptions::patch_breakpoints();
-				exceptions::patch_illegal_instructions();
-
-				auto handle = AddVectoredExceptionHandler(first, handler);
-				handle_handler[handle] = handler;
-
-				return handle;
-			}
-
-			ULONG WINAPI remove_vectored_exception_handler_stub(PVOID handle)
-			{
-				handle_handler[handle] = nullptr;
-				return RemoveVectoredExceptionHandler(handle);
 			}
 		}
 	}
 	using namespace anti_debug;
+
+	std::once_flag patch_once;
+
+	bool should_patch_traps()
+	{
+		return !utils::nt::is_wine() || utils::nt::is_sogen();
+	}
+
+	void patch_code()
+	{
+		std::call_once(patch_once, []
+		{
+			// Integrity checks first: they checksum the code the trap patches modify
+			search_and_patch_integrity_checks();
+
+			if (should_patch_traps())
+			{
+				exceptions::patch_traps();
+			}
+		});
+	}
+
+	PVOID WINAPI add_vectored_exception_handler_stub(const ULONG first, const PVECTORED_EXCEPTION_HANDLER handler)
+	{
+		// A guard registers its handler right before executing its trap, and this happens before
+		// post_unpack. Patch now, or a debugger catches the raw int 2Dh/ud2 and arxan sees it.
+		patch_code();
+		return AddVectoredExceptionHandler(first, handler);
+	}
 
 	class component final : public component_interface
 	{
@@ -650,16 +547,9 @@ namespace arxan
 				return set_thread_context_stub;
 			}
 
-			if (!utils::nt::is_wine() || utils::nt::is_sogen())
+			if (function == "AddVectoredExceptionHandler" && should_patch_traps())
 			{
-				if (function == "AddVectoredExceptionHandler")
-				{
-					return exceptions::add_vectored_exception_handler_stub;
-				}
-				else if (function == "RemoveVectoredExceptionHandler")
-				{
-					return exceptions::remove_vectored_exception_handler_stub;
-				}
+				return add_vectored_exception_handler_stub;
 			}
 
 			return nullptr;
@@ -689,7 +579,8 @@ namespace arxan
 		void post_unpack() override
 		{
 			remove_hardware_breakpoints();
-			search_and_patch_integrity_checks();
+			patch_code(); // no-op if a guard already triggered it
+
 			if (!utils::nt::is_wine() || utils::nt::is_sogen())
 			{
 				restore_debug_functions();

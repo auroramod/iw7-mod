@@ -424,6 +424,15 @@ namespace demonware
 			}
 		}
 
+		// xor eax, eax / inc eax / ret. Kept to 5 bytes on purpose: the game's obfuscated code is packed
+		// into the gaps right after short functions, so a patch must not write past the function's end.
+		// (The old utils::hook::set(address, 0xC300000001B8) wrote a full 8-byte value.)
+		void return_true(const size_t address)
+		{
+			static constexpr uint8_t code[] = {0x33, 0xC0, 0xFF, 0xC0, 0xC3};
+			utils::hook::copy(address, code, sizeof(code));
+		}
+
 		void bd_logger_stub(int /*type*/, const char* const /*channelName*/, const char* /*fileLoc*/, const char* const /*file*/,
 			const char* const function, const unsigned int /*line*/, const char* const msg, ...)
 		{
@@ -527,15 +536,15 @@ namespace demonware
 
 			// Skip bdAuth::validateResponseSignature
 			utils::hook::set(0x14129D200, 0xC301B0); // bdRSAKey::importKey
-			utils::hook::set(0x14129D360, 0xC300000001B8); // bdRSAKey::verifySignatureSHA256
+			return_true(0x14129D360); // bdRSAKey::verifySignatureSHA256
 
 			// Remove Online_PatchStreamer checks
 			utils::hook::set<uint8_t>(0x14052A6D0, 0xC3);
-			utils::hook::set(0x14052AB60, 0xC300000001B8);
-			utils::hook::set(0x14052B800, 0xC300000001B8);
+			return_true(0x14052AB60); // only 5 bytes long, WinMain's pointer decryption continues at 0x14052AB65
+			return_true(0x14052B800);
 
 			// Remove Online_Dailylogin check
-			utils::hook::set(0x140533390, 0xC300000001B8);
+			return_true(0x140533390);
 
 			// Don't NAT traverse to other players in CG_ServerCmdMP_ParsePlayerInfos
 			utils::hook::call(0x140852EEE, xnet_xnaddr_to_inaddr_stub);
