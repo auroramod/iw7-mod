@@ -434,6 +434,11 @@ namespace demonware
 		void bd_logger_stub(int /*type*/, const char* const /*channelName*/, const char* /*fileLoc*/, const char* const /*file*/,
 			const char* const function, const unsigned int /*line*/, const char* const msg, ...)
 		{
+			if (!msg)
+			{
+				return;
+			}
+
 			char buffer[2048];
 
 			va_list ap;
@@ -441,7 +446,7 @@ namespace demonware
 
 			vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, msg, ap);
 
-			console::demonware("%s: %s\n", function, buffer);
+			console::demonware("%s: %s\n", function ? function : "unknown", buffer);
 
 			va_end(ap);
 		}
