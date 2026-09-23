@@ -520,6 +520,73 @@ namespace party
 			console::info("Setting client %i XUID to %s\n", clientNum, xuidString);
 			sv_set_player_info_string_hook.invoke<void>(clientNum, xuidString, xnaddrString, natTypeString, npIdString, partyIpString);
 		}
+
+		utils::hook::detour party_host_start_match_internal_hook;
+		void party_host_start_match_internal(uintptr_t party, const uintptr_t mainActiveClient)
+		{
+			const auto* mapname = game::Dvar_FindVar("ui_mapname");
+			if (!game::DB_FileExists(mapname->current.string))
+			{
+				game::UI_MissingMapError();
+			}
+			else
+			{
+				party_host_start_match_internal_hook.invoke<void>(party, mainActiveClient);
+			}
+		}
+
+		bool content_do_we_have_content_pack(int idx)
+		{
+			return true;
+		}
+
+		bool party_host_map_is_acceptable(uintptr_t party, const char* mapname, const int playlistId)
+		{
+			if (game::Live_GetMapIndex(mapname) < 0 || game::DB_FileExists(mapname))
+			{
+				return 1;
+			}
+			return 0;
+		}
+
+		void private_map_rotation_set_initial_map_selection(game::LobbyMapRotation* mapRot, unsigned int initialMapIndex)
+		{
+			if (!mapRot) return;
+			mapRot->lastPlayedIndex = 0xFFFF;
+			mapRot->nextIndex = initialMapIndex;
+
+			const auto count = std::min(mapRot->entryCount, static_cast<unsigned int>(ARRAYSIZE(mapRot->entry)));
+
+			std::vector<unsigned int> installed;
+			for (unsigned int i = 0; i < count; ++i)
+			{
+				const char* mapname = mapRot->entry[i].name;
+				if (mapname && *mapname && game::DB_FileExists(mapname))
+				{
+					mapRot->entry[i].weight = 1;
+					installed.push_back(i);
+				}
+				else
+				{
+					mapRot->entry[i].weight = 0;
+				}
+			}
+
+			if (installed.empty()) return;
+
+			// Pick a random installed map so the initial selection varies instead of
+			// always landing on the same (first) entry
+			const auto picked = installed[utils::cryptography::random::get_integer() % installed.size()];
+			mapRot->nextIndex = picked;
+			game::Dvar_SetFromStringByName("ui_mapname", mapRot->entry[picked].name, game::DVAR_SOURCE_INTERNAL);
+		}
+
+		utils::hook::detour party_are_we_server_hook;
+		BOOL party_are_we_server(uintptr_t party)
+		{
+			auto res = party_are_we_server_hook.invoke<BOOL>(party);
+			return res || game::environment::is_dedi();
+		}
 	}
 
 	game::GameModeType get_game_mode_from_mapname(const std::string& mapname)
@@ -766,6 +833,14 @@ namespace party
 
 			utils::hook::call(0x1409B70A1, cl_initialize_gamestate_stub);
 			sv_set_player_info_string_hook.create(0x140C57360, sv_set_player_info_string_stub);
+
+			game::Dvar_RegisterBool("lui_checkIfLevelInFileSystem", true, game::DVAR_FLAG_NONE, "check if map fastfile exists");
+			utils::hook::jump(0x140CE8550, content_do_we_have_content_pack); // do not check content bits. instead check for fastfile existence
+			utils::hook::jump(0x1409D7680, party_host_map_is_acceptable); // mapvote only choose maps that are installed
+			utils::hook::jump(0x140E7B480, private_map_rotation_set_initial_map_selection);
+			party_host_start_match_internal_hook.create(0x1409D97D0, party_host_start_match_internal);
+
+			// party_are_we_server_hook.create(0x1409CA9D0, party_are_we_server); // todo: investigate this
 
 			command::add("map", [](const command::params& args)
 			{

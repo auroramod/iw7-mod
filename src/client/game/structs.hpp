@@ -1762,6 +1762,20 @@ namespace game
 			int localClientNum;
 			unsigned int localControllerIndex;
 		};
+
+		struct LobbyMapRotationEntry
+		{
+			char name[16];
+			int weight;
+		};
+
+		struct LobbyMapRotation
+		{
+			unsigned int entryCount;
+			LobbyMapRotationEntry entry[16];
+			unsigned int lastPlayedIndex;
+			unsigned int nextIndex;
+		};
 	}
 	using namespace party;
 

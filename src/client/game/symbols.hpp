@@ -182,6 +182,8 @@ namespace game
 
 	WEAK symbol<unsigned int(int controllerIndex)> Live_SyncOnlineDataFlags{ 0x140DC5CE0 };
 	WEAK symbol<std::uint64_t(int controllerIndex)> Live_GetXuid{ 0x140D32A20 };
+	WEAK symbol<int(const int mapIndex)> Live_GetMapSource{ 0x140CE7340 };
+	WEAK symbol<int(const char* mapname)> Live_GetMapIndex{ 0x140CE72C0 };
 
 	WEAK symbol<float()> LoadBar_GetLoadedFraction{ 0x1405DE190 };
 
@@ -200,6 +202,8 @@ namespace game
 	WEAK symbol<int(netadr_s a, netadr_s b)> NET_CompareBaseAdr{ 0x140BB4A00 };
 
 	WEAK symbol<PartyData* ()> Party_GetActiveParty{ 0x1409CC010 };
+	WEAK symbol<const char*()> Party_GetGametype{ 0x1409CC570 };
+	WEAK symbol<void(PartyData*)> Party_StopParty{ 0x1409D07B0 };
 	WEAK symbol<int (const PartyData* party, uint64_t player)> Party_FindMemberByXUID{ 0x1409CBA70 };
 
 	WEAK symbol<void(const unsigned int controllerIndex, XUID xuid)> PlayercardCache_AddToDownload{ 0x140DB72E0 };
@@ -319,6 +323,7 @@ namespace game
 	WEAK symbol<void(int)> SND_StopSounds{ 0x140CA06E0 };
 	WEAK symbol<void(const char*)> SND_SetMusicState{ 0x140C9E110 };
 
+	WEAK symbol<void()> UI_MissingMapError{ 0x140CC7800 };
 	WEAK symbol<const char* (const char*)> UI_GetMapDisplayName{ 0x140CC6270 };
 	WEAK symbol<const char* (const char*)> UI_GetGameTypeDisplayName{ 0x140CC61C0 };
 	WEAK symbol<void(unsigned int localClientNum, const char** args)> UI_RunMenuScript{ 0x140CC9710 };
@@ -348,6 +353,7 @@ namespace game
 	
 	WEAK symbol<char*(char* dest, const char* src, int dest_size)> I_strncpyz{0x1412C3560};
 	
+	WEAK symbol<bool(const char* name)> DB_FileExists{0x1403BCF10};
 	WEAK symbol<const char*(const int zoneIndex)> DB_Zones_GetZoneNameFromIndex{0x1403BC410};
 	WEAK symbol<bool(const int zoneIndex)> DB_Zones_IsValidZoneIndex{0x1403BC730};
 	
