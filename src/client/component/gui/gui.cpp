@@ -1,6 +1,5 @@
 #include <std_include.hpp>
 
-#ifdef _DEBUG
 #include "loader/component_loader.hpp"
 
 #include "game/game.hpp"
@@ -14,6 +13,7 @@
 
 #include <utils/string.hpp>
 #include <utils/hook.hpp>
+#include <utils/nt.hpp>
 #include <utils/concurrency.hpp>
 
 #include <asmjit/asmjit.h>
@@ -59,6 +59,20 @@ namespace gui
 		bool initialized = false;
 		bool toggled = false;
 
+#ifdef _DEBUG
+		std::atomic_bool enabled = true;
+#else
+		std::atomic_bool enabled = false;
+#endif
+
+		ImFont* console_font = nullptr;
+
+		std::mutex capture_mutex;
+		std::unordered_set<std::string> capture_owners;
+		std::optional<std::uint8_t> saved_mouse_state;
+
+		auto& mouse_active = *reinterpret_cast<std::uint8_t*>(0x14779C73D);
+
 		static HWND window = NULL;
 
 		void initialize_gui_context()
@@ -66,6 +80,19 @@ namespace gui
 			ImGui::CreateContext();
 
 			ImGui::StyleColorsDark();
+
+			auto& io = ImGui::GetIO();
+			io.FontAllowUserScaling = true;
+			io.Fonts->AddFontDefault();
+
+			static auto console_font_data = utils::nt::load_resource(FONT_JETBRAINS_MONO);
+			if (!console_font_data.empty())
+			{
+				ImFontConfig config{};
+				config.FontDataOwnedByAtlas = false;
+				console_font = io.Fonts->AddFontFromMemoryTTF(console_font_data.data(),
+					static_cast<int>(console_font_data.size()), 17.0f, &config);
+			}
 
 			ImGui_ImplWin32_Init(window);
 			ImGui_ImplDX11_Init(device, device_context);
@@ -145,7 +172,7 @@ namespace gui
 
 		void new_gui_frame()
 		{
-			ImGui::GetIO().MouseDrawCursor = toggled;
+			ImGui::GetIO().MouseDrawCursor = is_capturing_input();
 
 			update_colors();
 
@@ -183,11 +210,6 @@ namespace gui
 			render_target_view->Release();
 		}
 
-		void toggle_menu(const std::string& name)
-		{
-			enabled_menus[name] = !enabled_menus[name];
-		}
-
 		std::string truncate(const std::string& text, const size_t length, const std::string& end)
 		{
 			return text.size() <= length
@@ -222,8 +244,8 @@ namespace gui
 
 					ImGui::SetWindowPos(ImVec2(10, 30.f + static_cast<float>(index) * 60.f));
 					ImGui::SetWindowSize(ImVec2(250, 0));
-					ImGui::Text(title.data());
-					ImGui::Text(text.data());
+					ImGui::TextUnformatted(title.data());
+					ImGui::TextUnformatted(text.data());
 
 					ImGui::End();
 
@@ -233,10 +255,13 @@ namespace gui
 			});
 		}
 
+#ifdef _DEBUG
 		void menu_checkbox(const std::string& name, const std::string& menu)
 		{
 			ImGui::Checkbox(name.data(), &enabled_menus[menu]);
 		}
+
+#endif
 
 		void run_frame_callbacks(const bool db_ready)
 		{
@@ -257,6 +282,7 @@ namespace gui
 			});
 		}
 
+#ifdef _DEBUG
 		void draw_main_menu_bar()
 		{
 			if (ImGui::BeginMainMenuBar())
@@ -274,11 +300,12 @@ namespace gui
 				ImGui::EndMainMenuBar();
 			}
 		}
+#endif
 
 		void gui_on_frame(IDXGISwapChain* swap_chain)
 		{
 			// false while fastfiles load, keep drawing but skip whatever reads assets
-			const auto db_ready = utils::hook::invoke<bool>(0x140BB5E70); // Sys_IsDatabaseReady
+			const auto db_ready = game::Sys_IsDatabaseReady();
 
 			static auto logged = false;
 			if (!logged)
@@ -353,6 +380,11 @@ namespace gui
 
 			if (!initialized)
 			{
+				if (!enabled)
+				{
+					return;
+				}
+
 				if (FAILED(swap_chain->GetDevice(IID_PPV_ARGS(&device))))
 				{
 					return;
@@ -398,22 +430,71 @@ namespace gui
 
 	void toggle()
 	{
-		if (!toggled)
+		toggled = !toggled;
+
+		if (toggled)
 		{
-			*reinterpret_cast<int*>(0x14779C73D) = 0;
 			*game::keyCatchers |= 0x10;
 		}
 		else
 		{
-			*reinterpret_cast<int*>(0x14779C73D) = 1;
 			*game::keyCatchers &= ~0x10;
 		}
 
-		toggled = !toggled;
+		set_input_capture("menu", toggled);
+	}
+
+	void enable()
+	{
+		enabled = true;
+	}
+
+	void set_input_capture(const std::string& owner, const bool capture)
+	{
+		std::lock_guard _(capture_mutex);
+
+		const auto was_capturing = !capture_owners.empty();
+		if (capture)
+		{
+			capture_owners.insert(owner);
+		}
+		else
+		{
+			capture_owners.erase(owner);
+		}
+
+		const auto is_capturing = !capture_owners.empty();
+		if (is_capturing == was_capturing)
+		{
+			return;
+		}
+
+		if (is_capturing)
+		{
+			saved_mouse_state = mouse_active;
+			mouse_active = 0;
+		}
+		else
+		{
+			mouse_active = saved_mouse_state.value_or(1);
+			saved_mouse_state.reset();
+		}
+	}
+
+	bool is_capturing_input()
+	{
+		std::lock_guard _(capture_mutex);
+		return !capture_owners.empty();
+	}
+
+	ImFont* get_console_font()
+	{
+		return console_font;
 	}
 
 	bool gui_key_event(const int local_client_num, const int key, const int down)
 	{
+#ifdef _DEBUG
 		if (key == game::K_F11)
 		{
 			static auto held = false;
@@ -431,6 +512,7 @@ namespace gui
 			toggle();
 			return false;
 		}
+#endif
 
 		return !toggled;
 	}
@@ -442,7 +524,7 @@ namespace gui
 
 	bool gui_mouse_event(const int local_client_num, int x, int y)
 	{
-		return !toggled;
+		return !is_capturing_input();
 	}
 
 	void on_frame(const std::function<void()>& callback, bool always, bool needs_db)
@@ -523,6 +605,7 @@ namespace gui
 		}
 
 		initialized = false;
+		console_font = nullptr;
 	}
 
 	class component final : public component_interface
@@ -540,7 +623,9 @@ namespace gui
 			on_frame([]
 			{
 				show_notifications();
+#ifdef _DEBUG
 				draw_main_menu_bar();
+#endif
 			}, false, false);
 		}
 
@@ -557,4 +642,3 @@ namespace gui
 }
 
 REGISTER_COMPONENT(gui::component)
-#endif

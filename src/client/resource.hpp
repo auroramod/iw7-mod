@@ -13,6 +13,8 @@
 
 #define ICON_IMAGE            306
 
+#define FONT_JETBRAINS_MONO   310
+
 /*
 #define LUI_COMMON            307
 #define LUI_UPDATER           308

@@ -110,6 +110,8 @@ TLS_DLL               RCDATA "../../build/bin/x64/Release/tlsdll.dll"
 
 ICON_IMAGE            RCDATA "resources/icon.png"
 
+FONT_JETBRAINS_MONO   RCDATA "resources/fonts/JetBrainsMono-Regular.ttf"
+
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 

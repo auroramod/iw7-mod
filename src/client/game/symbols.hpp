@@ -242,6 +242,7 @@ namespace game
 	WEAK symbol<char* ()> Sys_Cwd{ 0x140CFE5A0 };
 	
 	WEAK symbol<int()> Sys_Milliseconds{ 0x140D58110 };
+	WEAK symbol<bool()> Sys_IsDatabaseReady{ 0x140BB5E70 };
 
 	WEAK symbol<HANDLE(Sys_Folder folder, const char* baseFilename)> Sys_CreateFile{ 0x140CFDF50 };
 

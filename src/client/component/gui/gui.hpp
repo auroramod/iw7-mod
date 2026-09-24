@@ -1,4 +1,3 @@
-#ifdef _DEBUG
 #pragma once
 
 namespace gui
@@ -30,9 +29,15 @@ namespace gui
 
 	void register_callback(const std::function<void()>& callback, bool always = false);
 
+	void enable();
+
+	void set_input_capture(const std::string& owner, bool capture);
+	bool is_capturing_input();
+
+	ImFont* get_console_font();
+
 	bool InputU8(const char* label, unsigned char* v, int step = 1, int step_fast = 100, ImGuiInputTextFlags flags = 0);
 	bool InputUInt6(const char* label, unsigned int v[6], ImGuiInputTextFlags flags = 0);
 
 	void shutdown_gui();
 }
-#endif
