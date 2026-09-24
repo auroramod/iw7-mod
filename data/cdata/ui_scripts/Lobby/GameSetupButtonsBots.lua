@@ -40,6 +40,7 @@ Bot.SetBotsDifficulty = function(team, difficulty)
 	else
 		Engine.Exec("set bot_difficulty_free " .. tostring(difficulty))
 	end
+	Engine.Exec("xsyncbots")
 end
 
 Bot.GetBotsDifficulty = function(team)
@@ -58,7 +59,6 @@ Bot.GetBotsDifficulty = function(team)
 end
 
 Bot.SetBotsTeamLimit = function(team, size)
-	Lobby.SetBotsTeamLimit(team, size)
 	if team == Bot.BotTeams.Friendly then
 		Engine.Exec("set bot_allies " .. tostring(size))
 	elseif team == Bot.BotTeams.Enemy then
@@ -66,6 +66,7 @@ Bot.SetBotsTeamLimit = function(team, size)
 	else
 		Engine.Exec("set bot_free " .. tostring(size))
 	end
+	Engine.Exec("xsyncbots")
 end
 
 local update_button = function(f1_arg0, f1_arg1, f1_arg2)
@@ -371,7 +372,7 @@ end
 
 local GameSetupButtonsBotsCustomGames = package.loaded["frontEnd.mp.GameSetupButtonsBots"].GameSetupButtonsBots
 GameSetupButtonsBotsOverride = function(menu, controller)
-	if CONDITIONS.InFrontendPublicMP then
+	if Engine.GetDvarBool("ui_combat_training") then
 		return GameSetupButtonsBotsCombatTraining(menu, controller)
 	else
 		return GameSetupButtonsBotsCustomGames(menu, controller)

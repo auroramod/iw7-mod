@@ -108,8 +108,11 @@ namespace bots
 			game::Dvar_RegisterInt("bot_difficulty_enemies", 0, 0, 4, game::DVAR_FLAG_NONE, "Bot difficulty. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
 			game::Dvar_RegisterInt("bot_difficulty_free", 0, 0, 4, game::DVAR_FLAG_NONE, "Bot difficulty. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
 
-			// don't kick bot to equalize team balance
-			sv_kick_client_num_hook.create(game::SV_CmdsMP_KickClientNum, sv_kick_client_num_stub);
+			if (game::environment::is_dedi())
+			{
+				// don't kick bot to equalize team balance
+				sv_kick_client_num_hook.create(game::SV_CmdsMP_KickClientNum, sv_kick_client_num_stub);
+			}
 
 			get_bot_name_hook.create(game::SV_BotGetRandomName, get_random_bot_name);
 

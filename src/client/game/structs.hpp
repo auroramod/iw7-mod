@@ -1708,6 +1708,14 @@ namespace game
 		};
 #pragma pack(pop)
 
+		// may not be real names to pdb
+		enum PartyLobbyState
+		{
+			PARTY_LOBBY_STATE_IDLE = 0x4,
+			PARTY_LOBBY_STATE_MAP_VOTE = 0x40,
+			PARTY_LOBBY_STATE_MASK = 0x7C,
+		};
+
 		struct PartyData
 		{
 			SessionData* session;
@@ -1724,24 +1732,30 @@ namespace game
 			int32_t partyStateLastSendTime;
 			char __pad_after_statelastsendtime[4];
 			int32_t preloadingMapStage;
-			char __pad_pre_id[28];
+			char __pad_pre_vote[20];
+			bool mapVotePassed;
+			char __pad_after_vote_passed[3];
+			int32_t mapVoteEndTime; // now + party_minVoteTime
 			int32_t partyId;
 			char __pad_post_id[20];
 			int32_t lastPartyStateTime;
 			int32_t gameStartTime;
-			char __pad_to_host[20];
+			int32_t lobbyEndTime; // now + party_minLobbyTime
+			char __pad_to_host[16];
 			int32_t areWeHost;
 			char __pad3[4];
 			int32_t inParty;
 			int32_t party_systemActive;
 			char __pad1_2[5];
 			bool m_gameStartSkipCountdown;
-			char __pad_to_timer[70];
+			char __pad_to_vote_cast[58];
+			int32_t mapVoteCast;
+			char __pad_to_timer[8];
 			int32_t lastMemberInfoTime;
 			char __pad_to_flags[24];
 			int32_t hostTimeouts;
 			char __pad_after_timeouts[8];
-			int32_t lobbyFlags;
+			int32_t lobbyFlags; // lobby state is (lobbyFlags & PARTY_LOBBY_STATE_MASK)
 			bool gameStartRequested;
 			char __pad_to_local_data[9359];
 			int32_t desiredTeamSelection[2];
@@ -1751,6 +1765,12 @@ namespace game
 		static_assert(offsetof(PartyData, areWeHost) == 0x2D08);
 		static_assert(offsetof(PartyData, inParty) == 0x2D10);
 		static_assert(offsetof(PartyData, preloadingMapStage) == 11444);
+		static_assert(offsetof(PartyData, mapVotePassed) == 0x2CCC);
+		static_assert(offsetof(PartyData, mapVoteEndTime) == 0x2CD0);
+		static_assert(offsetof(PartyData, gameStartTime) == 0x2CF0);
+		static_assert(offsetof(PartyData, lobbyEndTime) == 0x2CF4);
+		static_assert(offsetof(PartyData, mapVoteCast) == 0x2D58);
+		static_assert(offsetof(PartyData, lastMemberInfoTime) == 0x2D64);
 		static_assert(offsetof(PartyData, party_systemActive) == 11540);
 		static_assert(offsetof(PartyData, m_gameStartSkipCountdown) == 11549);
 		static_assert(offsetof(PartyData, lobbyFlags) == 11660);
@@ -1797,11 +1817,16 @@ namespace game
 			uint8_t usingBotsConnectType;
 			uint8_t usingBotsDifficulty[2];
 			uint8_t usingBotsTeamLimit[2];
+			char __pad_bots[3];
 			MPBotPlayerDataContainer botMMInfo[18];
 			bool mpBotsEnableGameLaunchWithBots;
 			bool mpBotDataInitialized;
-			int agentMaxCount;
+			uint8_t agentMaxCount; // SV_AgentSetupAgentCount (SV_MemoryMP_Init allocates this)
 		};
+
+		static_assert(offsetof(GameStateInfo, usingBotsConnectType) == 0x2C);
+		static_assert(offsetof(GameStateInfo, mpBotsEnableGameLaunchWithBots) == 0x544);
+		static_assert(offsetof(GameStateInfo, agentMaxCount) == 0x546);
 		static_assert(offsetof(GameStateInfo, matchRules) == 0x10);
 		static_assert(offsetof(GameStateInfo, mapRotation) == 0x20);
 		static_assert(offsetof(GameStateInfo, usingBotsDifficulty) == 0x2D);

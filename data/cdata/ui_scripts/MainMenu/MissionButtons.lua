@@ -9,6 +9,7 @@ function MissionsButtons(menu, controller)
 	assert(f1_local1)
 
 	Engine.SetDvarBool("ui_combat_training", false)
+	CombatTrainingVoteRequested = false
 
 	local MissionsVerticalLayout = MenuBuilder.BuildRegisteredType("MissionsVerticalLayout", {
 		controllerIndex = f1_local1,

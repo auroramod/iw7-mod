@@ -83,6 +83,11 @@ local LobbyMissionButtons = function(menu, controller)
 	set_matchmaking_dvars()
 	SyncCombatTrainingMatchRules()
 
+	if not CombatTrainingVoteRequested then
+		CombatTrainingVoteRequested = true
+		Engine.Exec("xpartystartvote 15")
+	end
+
 	local CRMMain = MenuBuilder.BuildRegisteredType("CRMMain", {
 		controllerIndex = controller_index,
 	})

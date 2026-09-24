@@ -204,6 +204,16 @@ namespace game
 	WEAK symbol<PartyData* ()> Party_GetActiveParty{ 0x1409CC010 };
 	WEAK symbol<const char*()> Party_GetGametype{ 0x1409CC570 };
 	WEAK symbol<void(PartyData*)> Party_StopParty{ 0x1409D07B0 };
+	WEAK symbol<bool(const PartyData* party)> Party_IsRunning{ 0x1409CDCF0 };
+	WEAK symbol<bool(const PartyData* party)> Party_AreWeHost{ 0x1409CA9A0 };
+	WEAK symbol<void(PartyData* party)> PartyHost_GamestateChanged{ 0x1409D6590 };
+
+	WEAK symbol<void(int connectType)> BG_SetBotsConnectType{ 0x1406F35D0 };
+	WEAK symbol<void(int relativeTeam, int difficulty)> BG_SetBotsDifficulty{ 0x1406F35F0 };
+	WEAK symbol<void(int relativeTeam, int teamLimit)> BG_SetBotsTeamLimit{ 0x1406F3620 };
+	WEAK symbol<void(PartyData* party)> PartyHost_ClearMapVotes{ 0x1409D5D10 };
+	WEAK symbol<void(PartyData* party, int controllerIndex)> PartyHost_ConcludeMapVote{ 0x1409D59D0 };
+	WEAK symbol<void(int controllerIndex)> PartyHost_ChooseMapVoteEntries{ 0x1409CB1D0 };
 	WEAK symbol<int (const PartyData* party, uint64_t player)> Party_FindMemberByXUID{ 0x1409CBA70 };
 
 	WEAK symbol<void(const unsigned int controllerIndex, XUID xuid)> PlayercardCache_AddToDownload{ 0x140DB72E0 };

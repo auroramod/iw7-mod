@@ -21,11 +21,10 @@ function SyncCombatTrainingMatchRules()
 	local gametype = Engine.GetDvarString("ui_gametype")
 
 	Engine.SetDvarBool("ui_combat_training", true)
+	Engine.Exec("set ui_combat_training_dirty 1")
 	MatchRules.SetUsingMatchRulesData(1)
 
-	Lobby.SetBotsTeamLimit(0, Engine.GetDvarInt("bot_allies"))
-	Lobby.SetBotsTeamLimit(1, Engine.GetDvarInt("bot_enemies"))
-	Lobby.SetBotsTeamLimit(2, Engine.GetDvarInt("bot_free"))
+	Engine.Exec("xsyncbots")
 
 	if gametype ~= "" and MatchRules.GetData("gametype") ~= gametype then
 		MatchRules.SetData("gametype", gametype)
@@ -252,13 +251,22 @@ local CombatTrainingGameSetup = function(menu, controller)
 	return self
 end
 
+function ResetCombatTrainingState()
+	Engine.SetDvarBool("ui_combat_training", false)
+	if Engine.GetDvarInt("ui_combat_training_dirty") == 1 then
+		Engine.Exec("set ui_combat_training_dirty 0")
+		MatchRules.LoadMatchRulesDataDefault()
+	end
+end
+
 -- don't do local play things in public lobby
 local SetupPrivateMatchLobbyScene_original = Lobby.SetupPrivateMatchLobbyScene
 local SetupPrivateMatchLobbyScene_stub = function(a1)
-	if CONDITIONS.InFrontendPublicMP then
+	if Engine.GetDvarBool("ui_combat_training") then
 		LUI.FlowManager.RegisterStackPopBehaviour("Maps", function() end)
 		LUI.FlowManager.RegisterStackPopBehaviour("GameSetupOptionsMenu", function() end)
 	else
+		ResetCombatTrainingState()
 		SetupPrivateMatchLobbyScene_original(a1)
 	end
 end
