@@ -270,6 +270,7 @@ namespace fastfiles
 		void db_init_thread_stub()
 		{
 			reallocate_asset_pool(game::ASSET_TYPE_STRINGTABLE, 800); // originally 400
+			reallocate_asset_pool(game::ASSET_TYPE_FX, 2048); // originally 16, iw6 uses 2048
 
 #define INIT_ASSET_POOL(x) \
     pool_inits[x] = pool_init_wrapper<x>;

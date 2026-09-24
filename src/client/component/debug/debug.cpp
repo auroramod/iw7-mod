@@ -5,6 +5,8 @@
 #include "../dvars.hpp"
 #include "../scheduler.hpp"
 
+#include "../fx/fx.hpp"
+
 #include "game/game.hpp"
 #include "game/dvars.hpp"
 
@@ -305,8 +307,10 @@ namespace debug
 
 	namespace
 	{
-		game::dvar_t* r_drawLightOrigins;
 		game::dvar_t* r_drawModelNames;
+		game::dvar_t* r_drawLightInfo;
+		game::dvar_t* r_drawFxInfo;
+		game::dvar_t* r_drawVfxInfo;
 		game::dvar_t* r_playerDrawDebugDistance;
 
 		enum model_draw_e : int
@@ -353,46 +357,6 @@ namespace debug
 				if (font)
 				{
 					game::R_AddCmdDrawText(name, 0x7FFFFFFF, font, screen[0], screen[1], 1.f, 1.f, 0.0f, color, 6);
-				}
-			}
-		}
-
-		void debug_draw_light_origins()
-		{
-			if (!r_drawLightOrigins || !r_drawLightOrigins->current.enabled)
-			{
-				return;
-			}
-
-			auto player = game::SV_GetPlayerstateForClientNum(0);
-			float playerPosition[3]{ player->origin[0], player->origin[1], player->origin[2] };
-
-			auto mapname = game::Dvar_FindVar("mapname");
-			std::string asset_name = utils::string::va("maps/%s.d3dbsp", mapname->current.string);
-			if (game::Com_GameMode_GetActiveGameMode() != game::GAME_MODE_SP)
-			{
-				asset_name = utils::string::va("maps/%s/%s.d3dbsp", game::Com_GameMode_GetActiveGameModeStr(), mapname->current.string);
-			}
-
-			auto comWorld = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_COMWORLD, asset_name.data(), 0).comWorld;
-			if (comWorld == nullptr)
-			{
-				return;
-			}
-
-			auto distance = r_playerDrawDebugDistance->current.integer;
-			auto sqrDist = distance * static_cast<float>(distance);
-
-			float textColor[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
-
-			for (size_t i = 0; i < comWorld->primaryLightCount; i++)
-			{
-				auto light = comWorld->primaryLights[i];
-				const auto dist = Vec3SqrDistance(playerPosition, light.origin);
-				if (dist < static_cast<float>(sqrDist))
-				{
-					const auto text = utils::string::va("%f, %f, %f (%d)", light.origin[0], light.origin[1], light.origin[2], i);
-					draw_text(text, light.origin, textColor);
 				}
 			}
 		}
@@ -482,6 +446,153 @@ namespace debug
 				break;
 			}
 		}
+
+		void debug_draw_light_info()
+		{
+			if (!r_drawLightInfo || !r_drawLightInfo->current.enabled)
+			{
+				return;
+			}
+
+			auto player = game::SV_GetPlayerstateForClientNum(0);
+			float playerPosition[3]{ player->origin[0], player->origin[1], player->origin[2] };
+
+			auto mapname = game::Dvar_FindVar("mapname");
+			std::string asset_name = utils::string::va("maps/%s.d3dbsp", mapname->current.string);
+			if (game::Com_GameMode_GetActiveGameMode() != game::GAME_MODE_SP)
+			{
+				asset_name = utils::string::va("maps/%s/%s.d3dbsp", game::Com_GameMode_GetActiveGameModeStr(), mapname->current.string);
+			}
+
+			auto comWorld = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_COMWORLD, asset_name.data(), 0).comWorld;
+			if (comWorld == nullptr)
+			{
+				return;
+			}
+
+			auto distance = r_playerDrawDebugDistance->current.integer;
+			auto sqrDist = distance * static_cast<float>(distance);
+
+			for (size_t i = 0; i < comWorld->primaryLightCount; i++)
+			{
+				auto light = comWorld->primaryLights[i];
+				const auto dist = Vec3SqrDistance(playerPosition, light.origin);
+				if (dist < static_cast<float>(sqrDist))
+				{
+					const auto max_channel = std::max({ light.color[0], light.color[1], light.color[2] });
+					float textColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f };
+					if (max_channel > 0.0f)
+					{
+						textColor[0] = light.color[0] / max_channel;
+						textColor[1] = light.color[1] / max_channel;
+						textColor[2] = light.color[2] / max_channel;
+					}
+
+					const char* light_types[] =
+					{
+						"none",
+						"dir",
+						"spot",
+						"omni",
+						"dir_shadowmap",
+						"spot_shadowmap",
+						"omni_shadowmap",
+						"spot_shadowmap_cucoloris",
+					};
+
+					const auto text = utils::string::va("%s(%d): %f, %f, %f ", light_types[light.type], i, light.origin[0], light.origin[1], light.origin[2]);
+					draw_text(text, light.origin, textColor);
+				}
+			}
+		}
+
+		void debug_draw_fx_info()
+		{
+			if (!r_drawFxInfo || r_drawFxInfo->current.enabled == 0)
+			{
+				return;
+			}
+
+			const auto fxSystem = fx::engine::FX_GetSystem(0);
+			if ((fxSystem->systemFlags & 0x3) != 0)
+			{
+				return;
+			}
+
+			auto player = game::SV_GetPlayerstateForClientNum(0);
+			float playerPosition[3]{ player->origin[0], player->origin[1], player->origin[2] };
+
+			auto distance = r_playerDrawDebugDistance->current.integer;
+			auto sqrDist = distance * static_cast<float>(distance);
+
+			static float fxInfoColor[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
+
+			fx::engine::FX_WaitEnterReadSystemLock(fxSystem->lock);
+
+			for (auto i = fxSystem->firstActiveEffect; i != fxSystem->firstNewEffect; ++i)
+			{
+				auto effectHandle = fxSystem->allEffectHandles[i & 0x7FF];
+				auto effect = (fx::FxEffect*)((char*)fxSystem->effects + (unsigned int)(16 * effectHandle));
+
+				if (!effect->def)
+					continue;
+
+				if (Vec3SqrDistance(playerPosition, effect->frameNow.origin) < static_cast<float>(sqrDist))
+				{
+					draw_text(effect->def->name, effect->frameNow.origin, fxInfoColor);
+				}
+			}
+
+			fx::engine::FX_ExitReadSystemLock(fxSystem->lock);
+		}
+
+		constexpr auto PARTICLE_MANAGER_SYSTEM_COUNT = 0x79598;
+		constexpr auto PARTICLE_MANAGER_SYSTEMS = 0x795B8;
+		constexpr auto PARTICLE_SYSTEM_ORIGIN = 0x30;
+		constexpr auto PARTICLE_SYSTEM_DEF = 0x140;
+		void debug_draw_vfx_info()
+		{
+			if (!r_drawVfxInfo || r_drawVfxInfo->current.enabled == 0)
+			{
+				return;
+			}
+
+			const auto fxSystem = fx::engine::FX_GetSystem(0);
+
+			auto player = game::SV_GetPlayerstateForClientNum(0);
+			float playerPosition[3]{ player->origin[0], player->origin[1], player->origin[2] };
+
+			auto distance = r_playerDrawDebugDistance->current.integer;
+			auto sqrDist = distance * static_cast<float>(distance);
+
+			static float vfxInfoColor[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
+
+			const auto manager = &fx::engine::particleManagers.get()[0];
+
+			fx::engine::FX_WaitEnterReadSystemLock(fxSystem->lock);
+
+			const auto count = *reinterpret_cast<int*>(manager + PARTICLE_MANAGER_SYSTEM_COUNT);
+			const auto systems = *reinterpret_cast<char***>(manager + PARTICLE_MANAGER_SYSTEMS);
+
+			for (auto i = 0; systems && i < count; ++i)
+			{
+				const auto system = systems[i];
+				if (!system)
+					continue;
+
+				const auto def = *reinterpret_cast<game::ParticleSystemDef**>(system + PARTICLE_SYSTEM_DEF);
+				if (!def || !def->name)
+					continue;
+
+				const auto origin = reinterpret_cast<float*>(system + PARTICLE_SYSTEM_ORIGIN);
+				if (Vec3SqrDistance(playerPosition, origin) < static_cast<float>(sqrDist))
+				{
+					draw_text(def->name, *reinterpret_cast<game::vec3_t*>(origin), vfxInfoColor);
+				}
+			}
+
+			fx::engine::FX_ExitReadSystemLock(fxSystem->lock);
+		}
 	}
 
 	class component final : public component_interface
@@ -494,8 +605,10 @@ namespace debug
 				return;
 			}
 
-			r_drawLightOrigins = game::Dvar_RegisterBool("r_drawLightOrigins", false, game::DVAR_FLAG_CHEAT, "Draw comworld light origins");
 			r_drawModelNames = game::Dvar_RegisterEnum("r_drawModelNames", model_draw_s, model_draw_e::off, game::DVAR_FLAG_CHEAT, "Draw all model names");
+			r_drawLightInfo = game::Dvar_RegisterBool("r_drawLightInfo", false, game::DVAR_FLAG_CHEAT, "Draw comworld light info");
+			r_drawFxInfo = game::Dvar_RegisterBool("r_drawFxInfo", false, game::DVAR_FLAG_CHEAT, "Draw fx info");
+			r_drawVfxInfo = game::Dvar_RegisterBool("r_drawVfxInfo", false, game::DVAR_FLAG_CHEAT, "Draw vfx (particle system) info");
 			r_playerDrawDebugDistance = game::Dvar_RegisterInt("r_drawDebugDistance", 500, 0, 50000, game::DVAR_FLAG_NONE, "r_draw debug functions draw distance relative to the player");
 
 			cg_draw_material = game::Dvar_RegisterBool("cg_drawMaterial", false, game::DVAR_FLAG_NONE, "Draws material name on screen");
@@ -504,8 +617,10 @@ namespace debug
 			{
 				if (game::CL_IsGameClientActive(0))
 				{
-					debug_draw_light_origins();
 					debug_draw_model_names();
+					debug_draw_light_info();
+					debug_draw_fx_info();
+					debug_draw_vfx_info();
 
 					render_draw_material();
 				}
