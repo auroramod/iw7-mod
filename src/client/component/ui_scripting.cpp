@@ -166,6 +166,7 @@ namespace ui_scripting
 			lua["io"]["listfiles"] = utils::io::list_files;
 			lua["io"]["removefile"] = utils::io::remove_file;
 			lua["io"]["readfile"] = static_cast<std::string(*)(const std::string&)>(utils::io::read_file);
+			lua["io"]["zoneexists"] = fastfiles::exists;
 
 			using game = table;
 			auto game_type = game();
