@@ -273,8 +273,16 @@ namespace console_renderer
 				const auto height = static_cast<float>(lines) * line_height + hint_padding * 2.0f;
 				if (draw_list)
 				{
-					draw_list->AddRectFilled(ImVec2(origin.x, origin.y + y), ImVec2(origin.x + width, origin.y + y + height),
-						ImGui::GetColorU32(to_color(dvars::con_inputHintBoxColor)));
+					const auto color = to_color(dvars::con_inputHintBoxColor);
+					const auto border = ImGui::GetColorU32(ImVec4(color.x * 0.5f, color.y * 0.5f, color.z * 0.5f, color.w));
+					const auto min = ImVec2(origin.x, origin.y + y);
+					const auto max = ImVec2(origin.x + width, origin.y + y + height);
+
+					draw_list->AddRectFilled(min, max, ImGui::GetColorU32(color));
+					draw_list->AddRectFilled(min, ImVec2(min.x + 2.0f, max.y), border);
+					draw_list->AddRectFilled(ImVec2(max.x - 2.0f, min.y), max, border);
+					draw_list->AddRectFilled(min, ImVec2(max.x, min.y + 2.0f), border);
+					draw_list->AddRectFilled(ImVec2(min.x, max.y - 2.0f), max, border);
 				}
 
 				return height;
@@ -446,8 +454,8 @@ namespace console_renderer
 				const auto& match = matches[index];
 				const auto selected = index == result.selected;
 
-				const auto row_min = ImVec2(painter.origin.x + 2.0f, painter.line_pos(line).y);
-				const auto row_size = ImVec2(painter.width - 4.0f, painter.line_height);
+				const auto row_min = ImVec2(painter.origin.x + 4.0f, painter.line_pos(line).y);
+				const auto row_size = ImVec2(painter.width - 8.0f, painter.line_height);
 
 				ImGui::SetCursorScreenPos(row_min);
 				ImGui::PushID(index);
@@ -457,7 +465,8 @@ namespace console_renderer
 
 				if (selected || hovered)
 				{
-					painter.draw_list->AddRectFilled(row_min, ImVec2(row_min.x + row_size.x, row_min.y + row_size.y),
+					painter.draw_list->AddRectFilled(ImVec2(row_min.x, row_min.y - 1.0f),
+						ImVec2(row_min.x + row_size.x, row_min.y + row_size.y + 1.0f),
 						ImGui::GetColorU32(selected ? color_highlight : color_hover));
 				}
 

@@ -685,7 +685,7 @@ namespace autocomplete
 					{"ammo", "max ammo for the current weapon", match_type::argument},
 					{"allammo", "max ammo for all weapons", match_type::argument},
 					{"health", "restore health", match_type::argument},
-					{"all", "every loaded weapon", match_type::argument},
+					//{"all", "every loaded weapon", match_type::argument},
 				};
 
 				auto weapons = get_weapons();
