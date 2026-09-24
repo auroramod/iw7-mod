@@ -17,7 +17,6 @@
 #include <utils/cryptography.hpp>
 #include <utils/properties.hpp>
 #include <utils/io.hpp>
-#include <utils/flags.hpp>
 
 namespace auth
 {
@@ -27,12 +26,21 @@ namespace auth
 		{
 			static const auto suffix = []() -> std::string
 			{
-				for (auto i = 2; i <= 4; ++i)
+				// other player stuff starts at 2, not 1
+				for (auto i = 1; i <= 8; ++i)
 				{
-					if (utils::flags::has_flag(utils::string::va("player%d", i)))
+					const auto free_mutex = CreateMutexA(nullptr, FALSE, utils::string::va("iw7-mod-player-%d", i));
+					if (!free_mutex)
 					{
-						return utils::string::va("-%d", i);
+						break;
 					}
+
+					if (GetLastError() != ERROR_ALREADY_EXISTS)
+					{
+						return i == 1 ? std::string{} : utils::string::va("-%d", i);
+					}
+
+					CloseHandle(free_mutex);
 				}
 
 				return {};
