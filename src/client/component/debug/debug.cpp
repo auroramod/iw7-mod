@@ -397,7 +397,7 @@ namespace debug
 			static float dynEntModelsColor[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
 			static float sceneModelsColor[4] = { 1.0f, 1.0f, 0.0f, 1.0f };
 			static float dobjsColor[4] = { 0.0f, 1.0f, 1.0f, 1.0f };
-			auto scene = *game::scene;
+			auto* scene = game::scene.get();
 
 			switch (r_drawModelNames->current.integer)
 			{
@@ -431,14 +431,14 @@ namespace debug
 				}
 				if (r_drawModelNames->current.integer != model_draw_e::all) break;
 			case model_draw_e::scene_models:
-				for (int i = 0; i < scene.sceneModelCount; i++)
+				for (int i = 0; i < scene->sceneModelCount; i++)
 				{
-					if (!scene.sceneModel[i].model)
+					if (!scene->sceneModel[i].model)
 						continue;
 
-					if (Vec3SqrDistance(playerPosition, scene.sceneModel[i].placement.base.origin) < static_cast<float>(sqrDist))
+					if (Vec3SqrDistance(playerPosition, scene->sceneModel[i].placement.base.origin) < static_cast<float>(sqrDist))
 					{
-						draw_text(scene.sceneModel[i].model->name, scene.sceneModel[i].placement.base.origin, sceneModelsColor);
+						draw_text(scene->sceneModel[i].model->name, scene->sceneModel[i].placement.base.origin, sceneModelsColor);
 					}
 				}
 				break;
