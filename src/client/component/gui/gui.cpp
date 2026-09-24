@@ -83,6 +83,7 @@ namespace gui
 
 			auto& io = ImGui::GetIO();
 			io.FontAllowUserScaling = true;
+			io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 			io.Fonts->AddFontDefault();
 
 			static auto console_font_data = utils::nt::load_resource(FONT_JETBRAINS_MONO);
@@ -172,7 +173,18 @@ namespace gui
 
 		void new_gui_frame()
 		{
-			ImGui::GetIO().MouseDrawCursor = is_capturing_input();
+			auto& io = ImGui::GetIO();
+			const auto capturing = is_capturing_input();
+			io.MouseDrawCursor = capturing;
+
+			if (capturing)
+			{
+				io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
+			}
+			else
+			{
+				io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+			}
 
 			update_colors();
 
