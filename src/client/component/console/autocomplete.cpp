@@ -3,7 +3,6 @@
 
 #include "autocomplete.hpp"
 #include "component/scheduler.hpp"
-#include "component/fastfiles.hpp"
 
 #include "game/game.hpp"
 #include "game/dvars.hpp"
@@ -226,14 +225,53 @@ namespace autocomplete
 			return values;
 		}
 
-		constexpr const char* known_maps[] =
+		struct known_map
 		{
-			"mp_breakneck", "mp_desert", "mp_divide", "mp_fallen", "mp_frontier", "mp_metropolis", "mp_parkour",
-			"mp_proto", "mp_quarry", "mp_riot", "mp_rivet", "mp_skyway", "mp_dome_iw", "mp_dome_dusk", "mp_afghan",
-			"mp_geneva", "mp_neon", "mp_prime", "mp_marsoasis", "mp_flip", "mp_junk", "mp_mansion", "mp_turista2",
-			"mp_paris", "mp_pixel", "mp_overflow", "mp_nova", "mp_rally", "mp_codphish", "mp_depot", "mp_hawkwar",
-			"mp_permafrost2", "mp_renaissance2", "mp_carnage2",
-			"cp_zmb", "cp_rave", "cp_disco", "cp_town", "cp_final",
+			const char* name;
+			const char* alias;
+		};
+
+		constexpr known_map known_maps[] =
+		{
+			{"mp_frontier", "Frontier"},
+			{"mp_afghan", "Dominion"},
+			{"mp_depot", "Depot 22"},
+			{"mp_flip", "Excess"},
+			{"mp_geneva", "Renaissance"},
+			{"mp_renaissance2", "Renaissance (Free)"},
+			{"mp_hawkwar", "Heartland"},
+			{"mp_junk", "Scrap"},
+			{"mp_mansion", "Archive"},
+			{"mp_marsoasis", "Turista"},
+			{"mp_turista2", "Turista (Summer)"},
+			{"mp_neon", "Neon"},
+			{"mp_nova", "Bermuda"},
+			{"mp_overflow", "Permafrost"},
+			{"mp_permafrost2", "Permafrost (Free)"},
+			{"mp_paris", "Ember"},
+			{"mp_pixel", "Fore"},
+			{"mp_prime", "Noir"},
+			{"mp_rally", "Carnage"},
+			{"mp_carnage2", "Carnage (Free)"},
+			{"mp_parkour", "Breakout"},
+			{"mp_proto", "Frost"},
+			{"mp_quarry", "Crusher"},
+			{"mp_riot", "Retaliation"},
+			{"mp_rivet", "Skydock"},
+			{"mp_skyway", "Terminal"},
+			{"mp_breakneck", "Mayday"},
+			{"mp_codphish", "Altitude"},
+			{"mp_desert", "Grounded"},
+			{"mp_divide", "Scorch"},
+			{"mp_dome_iw", "Genesis"},
+			{"mp_dome_dusk", "Genesis Holiday"},
+			{"mp_fallen", "Throwback"},
+			{"mp_metropolis", "Precinct"},
+			{"cp_zmb", "Zombies in Spaceland"},
+			{"cp_disco", "Shaolin Shuffle"},
+			{"cp_final", "The Beast From Beyond"},
+			{"cp_rave", "Rave in the Redwoods"},
+			{"cp_town", "Radioactive Thing"},
 		};
 
 		const std::unordered_set<std::string> list_hidden_commands =
@@ -244,68 +282,22 @@ namespace autocomplete
 		std::vector<match> refresh_maps()
 		{
 			std::vector<match> maps;
-			std::unordered_set<std::string> seen;
+			std::error_code ec;
 
-			const auto add_map = [&](const std::string& name, const bool is_usermap = false)
+			for (const auto& map : known_maps)
 			{
-				const auto lower = utils::string::to_lower(name);
-				if (lower.empty() || seen.contains(lower) || (!is_usermap && !fastfiles::exists(lower)))
-				{
-					return;
-				}
-
-				seen.insert(lower);
-
-				const auto* display_name = game::UI_GetMapDisplayName(lower.data());
-				maps.emplace_back(lower, display_name && *display_name ? display_name : "", match_type::argument);
-			};
-
-			const auto add_from_table = [&](const char* table_name, const int column)
-			{
-				if (!game::DB_XAssetExists(game::ASSET_TYPE_STRINGTABLE, table_name))
-				{
-					return;
-				}
-
-				const auto* table = game::DB_FindXAssetHeader(game::ASSET_TYPE_STRINGTABLE, table_name, false).stringTable;
-				if (!table || !table->values || column >= table->columnCount)
-				{
-					return;
-				}
-
-				for (auto row = 0; row < table->rowCount; row++)
-				{
-					const auto* value = table->values[row * table->columnCount + column].string;
-					if (value)
-					{
-						add_map(value);
-					}
-				}
-			};
-
-			add_from_table("mp/mapInfo.csv", 0);
-			add_from_table("cp/zombies/levels.csv", 1);
-			add_from_table("sp/levels.csv", 1);
-
-			for (const auto* map : known_maps)
-			{
-				add_map(map);
+				maps.emplace_back(map.name, map.alias, match_type::argument);
 			}
 
-			std::error_code ec;
 			for (const auto& entry : std::filesystem::directory_iterator("usermaps", ec))
 			{
-				const auto name = entry.path().filename().string();
-				if (entry.is_directory(ec) && std::filesystem::exists(entry.path() / (name + ".ff"), ec))
+				const auto name = utils::string::to_lower(entry.path().filename().string());
+				if (entry.is_directory(ec) && std::filesystem::exists(entry.path() / (name + ".ff"), ec) &&
+					std::ranges::none_of(maps, [&](const match& map) { return map.name == name; }))
 				{
-					add_map(name, true);
+					maps.emplace_back(name, "", match_type::argument);
 				}
 			}
-
-			std::ranges::stable_partition(maps, [](const match& map)
-			{
-				return game::Com_GameMode_SupportsMap(map.name.data());
-			});
 
 			return maps;
 		}
@@ -433,7 +425,19 @@ namespace autocomplete
 
 		std::vector<match> get_maps()
 		{
-			return get_cached(maps_cache, 10s, scheduler::pipeline::main, refresh_maps);
+			auto maps = get_cached(maps_cache, 30s, scheduler::pipeline::async, refresh_maps);
+
+			const auto mode = game::Com_GameMode_GetActiveGameMode();
+			const auto* prefix = mode == game::GAME_MODE_CP ? "cp_" : mode == game::GAME_MODE_MP ? "mp_" : nullptr;
+			if (prefix)
+			{
+				std::ranges::stable_partition(maps, [prefix](const match& map)
+				{
+					return map.name.starts_with(prefix);
+				});
+			}
+
+			return maps;
 		}
 
 		std::vector<match> get_gametypes()
@@ -448,7 +452,7 @@ namespace autocomplete
 
 		std::vector<match> get_zones()
 		{
-			return get_cached(zones_cache, 60s, scheduler::pipeline::main, refresh_zones);
+			return get_cached(zones_cache, 60s, scheduler::pipeline::async, refresh_zones);
 		}
 
 		std::vector<match> get_menus()
