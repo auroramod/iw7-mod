@@ -666,168 +666,213 @@ namespace game_console
 		return true;
 	}
 
-	bool console_key_event(const int local_client_num, const int key, const int down)
+	namespace
 	{
-		if (is_new_console_enabled())
+		std::unordered_set<int> swallowed_keys;
+		bool last_new_console{};
+
+		void check_console_mode()
 		{
+			const auto new_console = is_new_console_enabled();
+			if (new_console == last_new_console)
+			{
+				return;
+			}
+
+			last_new_console = new_console;
+
+			clear();
+			history_index = -1;
+			con.output_visible = false;
+		}
+
+		bool handle_key_event(const int local_client_num, const int key, const int down)
+		{
+			if (is_new_console_enabled())
+			{
+				if (key == game::keyNum_t::K_GRAVE || key == game::keyNum_t::K_TILDE)
+				{
+					if (down)
+					{
+						toggle_console();
+					}
+
+					return false;
+				}
+
+				if (!is_console_open())
+				{
+					return true;
+				}
+
+				if (key == game::keyNum_t::K_ESCAPE && down)
+				{
+					toggle_console();
+				}
+
+				return false;
+			}
+
 			if (key == game::keyNum_t::K_GRAVE || key == game::keyNum_t::K_TILDE)
 			{
+				if (!down)
+				{
+					return false;
+				}
+
+				const auto shift_down = game::playerKeys[local_client_num].keys[game::keyNum_t::K_SHIFT].down;
+				if (shift_down)
+				{
+					if (!(*game::keyCatchers & 1))
+					{
+						toggle_console();
+					}
+
+					toggle_console_output();
+					return false;
+				}
+
+				toggle_console();
+
+				return false;
+			}
+
+			if (*game::keyCatchers & 1)
+			{
+				if (key == game::keyNum_t::K_ESCAPE && down)
+				{
+					toggle_console();
+					return false;
+				}
+
 				if (down)
 				{
-					toggle_console();
-				}
+					const auto& history = autocomplete::get_history();
 
-				return false;
-			}
-
-			if (!is_console_open())
-			{
-				return true;
-			}
-
-			if (key == game::keyNum_t::K_ESCAPE && down)
-			{
-				toggle_console();
-			}
-
-			return false;
-		}
-
-		if (key == game::keyNum_t::K_GRAVE || key == game::keyNum_t::K_TILDE)
-		{
-			if (!down)
-			{
-				return false;
-			}
-
-			const auto shift_down = game::playerKeys[local_client_num].keys[game::keyNum_t::K_SHIFT].down;
-			if (shift_down)
-			{
-				if (!(*game::keyCatchers & 1))
-				{
-					toggle_console();
-				}
-
-				toggle_console_output();
-				return false;
-			}
-
-			toggle_console();
-
-			return false;
-		}
-
-		if (*game::keyCatchers & 1)
-		{
-			if (down)
-			{
-				const auto& history = autocomplete::get_history();
-
-				if (key == game::keyNum_t::K_UPARROW)
-				{
-					if (++history_index >= static_cast<int>(history.size()))
+					if (key == game::keyNum_t::K_UPARROW)
 					{
-						history_index = static_cast<int>(history.size()) - 1;
+						if (++history_index >= static_cast<int>(history.size()))
+						{
+							history_index = static_cast<int>(history.size()) - 1;
+						}
+
+						clear();
+
+						if (history_index != -1)
+						{
+							set_buffer(history.at(history_index));
+						}
+					}
+					else if (key == game::keyNum_t::K_DOWNARROW)
+					{
+						if (--history_index < -1)
+						{
+							history_index = -1;
+						}
+
+						clear();
+
+						if (history_index != -1)
+						{
+							set_buffer(history.at(history_index));
+						}
 					}
 
-					clear();
+					if (key == game::keyNum_t::K_RIGHTARROW)
+					{
+						if (con.cursor < strlen(con.buffer))
+						{
+							con.cursor++;
+						}
 
-					if (history_index != -1)
-					{
-						set_buffer(history.at(history_index));
+						return false;
 					}
-				}
-				else if (key == game::keyNum_t::K_DOWNARROW)
-				{
-					if (--history_index < -1)
+
+					if (key == game::keyNum_t::K_LEFTARROW)
 					{
+						if (con.cursor > 0)
+						{
+							con.cursor--;
+						}
+
+						return false;
+					}
+
+					if (key == game::keyNum_t::K_HOME)
+					{
+						con.cursor = 0;
+						return false;
+					}
+
+					if (key == game::keyNum_t::K_END)
+					{
+						con.cursor = static_cast<int>(strlen(con.buffer));
+						return false;
+					}
+
+					if (key == game::keyNum_t::K_DEL)
+					{
+						const auto length = strlen(con.buffer);
+						if (static_cast<size_t>(con.cursor) < length)
+						{
+							memmove(con.buffer + con.cursor, con.buffer + con.cursor + 1, length - con.cursor);
+						}
+
+						return false;
+					}
+
+					//scroll through output
+					if (key == game::keyNum_t::K_MWHEELUP || key == game::keyNum_t::K_PGUP)
+					{
+						con.output.access([](output_queue& output)
+						{
+							if (output.size() > con.visible_line_count && con.display_line_offset > 0)
+							{
+								con.display_line_offset--;
+							}
+						});
+					}
+					else if (key == game::keyNum_t::K_MWHEELDOWN || key == game::keyNum_t::K_PGDN)
+					{
+						con.output.access([](output_queue& output)
+						{
+							if (output.size() > con.visible_line_count
+								&& con.display_line_offset < (output.size() - con.visible_line_count))
+							{
+								con.display_line_offset++;
+							}
+						});
+					}
+
+					if (key == game::keyNum_t::K_ENTER)
+					{
+						execute(con.buffer);
 						history_index = -1;
+						clear();
 					}
-
-					clear();
-
-					if (history_index != -1)
-					{
-						set_buffer(history.at(history_index));
-					}
-				}
-
-				if (key == game::keyNum_t::K_RIGHTARROW)
-				{
-					if (con.cursor < strlen(con.buffer))
-					{
-						con.cursor++;
-					}
-
-					return false;
-				}
-
-				if (key == game::keyNum_t::K_LEFTARROW)
-				{
-					if (con.cursor > 0)
-					{
-						con.cursor--;
-					}
-
-					return false;
-				}
-
-				if (key == game::keyNum_t::K_HOME)
-				{
-					con.cursor = 0;
-					return false;
-				}
-
-				if (key == game::keyNum_t::K_END)
-				{
-					con.cursor = static_cast<int>(strlen(con.buffer));
-					return false;
-				}
-
-				if (key == game::keyNum_t::K_DEL)
-				{
-					const auto length = strlen(con.buffer);
-					if (static_cast<size_t>(con.cursor) < length)
-					{
-						memmove(con.buffer + con.cursor, con.buffer + con.cursor + 1, length - con.cursor);
-					}
-
-					return false;
-				}
-
-				//scroll through output
-				if (key == game::keyNum_t::K_MWHEELUP || key == game::keyNum_t::K_PGUP)
-				{
-					con.output.access([](output_queue& output)
-					{
-						if (output.size() > con.visible_line_count && con.display_line_offset > 0)
-						{
-							con.display_line_offset--;
-						}
-					});
-				}
-				else if (key == game::keyNum_t::K_MWHEELDOWN || key == game::keyNum_t::K_PGDN)
-				{
-					con.output.access([](output_queue& output)
-					{
-						if (output.size() > con.visible_line_count
-							&& con.display_line_offset < (output.size() - con.visible_line_count))
-						{
-							con.display_line_offset++;
-						}
-					});
-				}
-
-				if (key == game::keyNum_t::K_ENTER)
-				{
-					execute(con.buffer);
-					history_index = -1;
-					clear();
 				}
 			}
+
+			return true;
+		}
+	}
+
+	bool console_key_event(const int local_client_num, const int key, const int down)
+	{
+		check_console_mode();
+
+		if (!down && swallowed_keys.erase(key))
+		{
+			return false;
 		}
 
-		return true;
+		const auto result = handle_key_event(local_client_num, key, down);
+		if (down && !result)
+		{
+			swallowed_keys.insert(key);
+		}
+
+		return result;
 	}
 
 	class component final : public component_interface
@@ -841,6 +886,7 @@ namespace game_console
 			}
 
 			scheduler::loop(draw_console, scheduler::pipeline::renderer);
+			scheduler::loop(check_console_mode, scheduler::pipeline::main);
 
 			// initialize our structs
 			con.cursor = 0;
