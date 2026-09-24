@@ -29,8 +29,8 @@ namespace auth
 				// other player stuff starts at 2, not 1
 				for (auto i = 1; i <= 8; ++i)
 				{
-					const auto free_mutex = CreateMutexA(nullptr, FALSE, utils::string::va("iw7-mod-player-%d", i));
-					if (!free_mutex)
+					const auto mutex = CreateMutexA(nullptr, FALSE, utils::string::va("iw7-mod-player-%d", i));
+					if (!mutex)
 					{
 						break;
 					}
@@ -40,7 +40,8 @@ namespace auth
 						return i == 1 ? std::string{} : utils::string::va("-%d", i);
 					}
 
-					CloseHandle(free_mutex);
+					ReleaseMutex(mutex);
+					CloseHandle(mutex);
 				}
 
 				return {};
