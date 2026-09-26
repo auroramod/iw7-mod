@@ -213,6 +213,23 @@ namespace utils::nt
 		return nullptr;
 	}
 
+	bool is_sogen()
+	{
+		static const auto result = []() -> bool
+		{
+			const auto sogen_gpu = CreateFileA(
+				"\\\\.\\SogenGpu", GENERIC_READ, 0,
+				nullptr, OPEN_EXISTING, 0, nullptr);
+			if (sogen_gpu != INVALID_HANDLE_VALUE)
+			{
+				CloseHandle(sogen_gpu);
+				return true;
+			}
+			return false;
+		}();
+		return result;
+	}
+
 	bool is_wine()
 	{
 		static const auto has_wine_export = []() -> bool
@@ -221,7 +238,7 @@ namespace utils::nt
 			return ntdll.get_proc<void*>("wine_get_version");
 		}();
 
-		return has_wine_export;
+		return has_wine_export || is_sogen();
 	}
 
 	bool is_shutdown_in_progress()

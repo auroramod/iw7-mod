@@ -165,6 +165,7 @@ namespace utils::nt
 		HANDLE handle_{ InvalidHandle };
 	};
 
+	bool is_sogen();
 	bool is_wine();
 
 	bool is_shutdown_in_progress();

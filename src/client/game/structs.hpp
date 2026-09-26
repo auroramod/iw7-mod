@@ -651,6 +651,57 @@ namespace game
 		char vertAlign;
 	};
 
+	struct GfxViewport
+	{
+		unsigned int x;
+		unsigned int y;
+		unsigned int width;
+		unsigned int height;
+	};
+
+	struct RefdefView
+	{
+		float tanHalfFovX;
+		float tanHalfFovY;
+		float org[3];
+		float axis[3][3];
+		float zNear;
+		float unk[2];
+	};
+
+	struct refdef_t
+	{
+		GfxViewport displayViewport;
+		RefdefView view;
+		float viewOffset[3];
+		float viewOffsetPrev[3];
+	};
+
+	struct vidConfig_t
+	{
+		unsigned int sceneWidth;
+		unsigned int sceneHeight;
+		unsigned int displayWidth;
+		unsigned int displayHeight;
+		unsigned short shadowTileResSmall;
+		unsigned short shadowTileResLarge;
+		int isHiDefValid;
+		float windowAspectRatio;
+		float sceneAspectRatio;
+		float displayAspectRatio;
+		float aspectRatioScenePixel;
+		float aspectRatioDisplayPixel;
+	};
+
+	struct GfxCmdBufState
+	{
+		char __pad0[88];
+		Material* material;
+		MaterialTechnique* technique;
+		MaterialPass* pass;
+	};
+	assert_offsetof(GfxCmdBufState, pass, 104);
+
 	namespace entity
 	{
 		enum connstate_t : std::uint32_t
@@ -860,9 +911,14 @@ namespace game
 			int packedBobCycle[2];
 			vec3_t origin;
 			vec3_t velocity;
-			char __pad0[68];
-			vec3_t delta_angles;
-			char __pad1[200];
+			char __pad0[56];
+			int gravity;
+			int speed;
+			float delta_angles[3];
+			int groundEntityNum;
+			char __pad1[12];
+			int jumpTime;
+			char __pad1_0[184];
 			GameModeFlagContainer<EntityStateFlagsCommon, EntityStateFlagsSP, EntityStateFlagsMP, 32> eFlags;
 			char __pad2[92];
 			vec3_t viewangles;
@@ -874,16 +930,66 @@ namespace game
 			char __pad5[0x4000];
 		}; // unk size
 		assert_offsetof(playerState_s, pm_type, 4);
-		assert_offsetof(playerState_s, delta_angles, 132);
+		assert_offsetof(playerState_s, groundEntityNum, 140);
 		assert_offsetof(playerState_s, eFlags, 344);
 		assert_offsetof(playerState_s, viewangles, 440);
 		assert_offsetof(playerState_s, weapState, 1620);
 		assert_offsetof(playerState_s, weapFlags, 2188);
 
+		enum TraceHitType : std::int32_t
+		{
+			TRACE_HITTYPE_NONE = 0x0,
+			TRACE_HITTYPE_ENTITY = 0x1,
+			TRACE_HITTYPE_DYNENT_MODEL = 0x2,
+			TRACE_HITTYPE_DYNENT_BRUSH = 0x3,
+			TRACE_HITTYPE_GLASS = 0x4,
+		};
+
+		enum TraceHitSubType
+		{
+			TRACE_HITSUBTYPE_NONE = 0x0,
+			TRACE_HITSUBTYPE_COVERWALL = 0x1,
+		};
+
+		struct TraceSubTypeData_CoverWall
+		{
+			unsigned __int16 id;
+		};
+
+		union TraceHitSubTypeData
+		{
+			TraceSubTypeData_CoverWall coverWall;
+		};
+
+		struct trace_t
+		{
+			float fraction;
+			vec3_t position;
+			vec3_t normal;
+			int surfaceFlags;
+			int contents;
+			TraceHitType hitType;
+			TraceHitSubType hitSubType;
+			unsigned short hitId;
+			unsigned short modelIndex;
+			scr_string_t partName;
+			unsigned short partGroup;
+			TraceHitSubTypeData subTypeData;
+			bool allsolid;
+			bool startsolid;
+			bool walkable;
+			bool getPenetration;
+			bool removePitchAndRollRotations;
+		};
+
 		struct usercmd_s
 		{
 			unsigned __int64 buttons;
-			char __pad0[112];
+			int serverTime;
+			char __pad0[40];
+			char forwardmove;
+			char rightmove;
+			char __pad1[66];
 		}; assert_sizeof(usercmd_s, 120);
 
 		struct pmove_t
@@ -910,13 +1016,18 @@ namespace game
 			int walking;
 			int groundPlane;
 			int almostGroundPlane;
-			int groundTrace;
+			trace_t groundTrace;
 			float impactSpeed;
+			int unk;
 			float previous_origin[3];
 			float previous_velocity[3];
 			float wishdir[3];
 			unsigned int holdrand;
+			float platformUp[3];
+			int flinch;
+			int turning;
 		};
+
 		assert_offsetof(pml_t, msec, 40);
 
 		enum clientConnected_t
@@ -1074,10 +1185,12 @@ namespace game
 	{
 		void* dummy;
 		playerState_s predictedPlayerState;
-		char __pad0[19160 - sizeof(playerState_s) - 8];
+		char __pad0[568];
 		CubemapShot cubemapShot;
 		int cubemapSize;
-		char __pad1[305200];
+		char __pad11[88];
+		refdef_t refdef;
+		char __pad1[305112 - sizeof(refdef_t)];
 		float viewModelAxis[4][3];
 		char __pad2[168476];
 		int renderScreen;
@@ -1595,6 +1708,14 @@ namespace game
 		};
 #pragma pack(pop)
 
+		// may not be real names to pdb
+		enum PartyLobbyState
+		{
+			PARTY_LOBBY_STATE_IDLE = 0x4,
+			PARTY_LOBBY_STATE_MAP_VOTE = 0x40,
+			PARTY_LOBBY_STATE_MASK = 0x7C,
+		};
+
 		struct PartyData
 		{
 			SessionData* session;
@@ -1611,24 +1732,30 @@ namespace game
 			int32_t partyStateLastSendTime;
 			char __pad_after_statelastsendtime[4];
 			int32_t preloadingMapStage;
-			char __pad_pre_id[28];
+			char __pad_pre_vote[20];
+			bool mapVotePassed;
+			char __pad_after_vote_passed[3];
+			int32_t mapVoteEndTime; // now + party_minVoteTime
 			int32_t partyId;
 			char __pad_post_id[20];
 			int32_t lastPartyStateTime;
 			int32_t gameStartTime;
-			char __pad_to_host[20];
+			int32_t lobbyEndTime; // now + party_minLobbyTime
+			char __pad_to_host[16];
 			int32_t areWeHost;
 			char __pad3[4];
 			int32_t inParty;
 			int32_t party_systemActive;
 			char __pad1_2[5];
 			bool m_gameStartSkipCountdown;
-			char __pad_to_timer[70];
+			char __pad_to_vote_cast[58];
+			int32_t mapVoteCast;
+			char __pad_to_timer[8];
 			int32_t lastMemberInfoTime;
 			char __pad_to_flags[24];
 			int32_t hostTimeouts;
 			char __pad_after_timeouts[8];
-			int32_t lobbyFlags;
+			int32_t lobbyFlags; // lobby state is (lobbyFlags & PARTY_LOBBY_STATE_MASK)
 			bool gameStartRequested;
 			char __pad_to_local_data[9359];
 			int32_t desiredTeamSelection[2];
@@ -1638,6 +1765,12 @@ namespace game
 		static_assert(offsetof(PartyData, areWeHost) == 0x2D08);
 		static_assert(offsetof(PartyData, inParty) == 0x2D10);
 		static_assert(offsetof(PartyData, preloadingMapStage) == 11444);
+		static_assert(offsetof(PartyData, mapVotePassed) == 0x2CCC);
+		static_assert(offsetof(PartyData, mapVoteEndTime) == 0x2CD0);
+		static_assert(offsetof(PartyData, gameStartTime) == 0x2CF0);
+		static_assert(offsetof(PartyData, lobbyEndTime) == 0x2CF4);
+		static_assert(offsetof(PartyData, mapVoteCast) == 0x2D58);
+		static_assert(offsetof(PartyData, lastMemberInfoTime) == 0x2D64);
 		static_assert(offsetof(PartyData, party_systemActive) == 11540);
 		static_assert(offsetof(PartyData, m_gameStartSkipCountdown) == 11549);
 		static_assert(offsetof(PartyData, lobbyFlags) == 11660);
@@ -1649,6 +1782,54 @@ namespace game
 			int localClientNum;
 			unsigned int localControllerIndex;
 		};
+
+		struct MatchRules;
+
+		struct MPBotPlayerDataContainer
+		{
+			char unk[0x48];
+		};
+		
+		struct LobbyMapRotationEntry
+		{
+			char name[16];
+			int weight;
+		};
+
+		struct LobbyMapRotation
+		{
+			unsigned int entryCount;
+			LobbyMapRotationEntry entry[16];
+			unsigned int lastPlayedIndex;
+			unsigned int nextIndex;
+		};
+
+		struct GameStateInfo
+		{
+			int unk0;
+			int activeGameMode;
+			bool usingRecipe;
+			MatchRules* matchRules;
+			int usingRotation;
+			int usingIntermission;
+			LobbyMapRotation* mapRotation;
+			int botSystemEnabled;
+			uint8_t usingBotsConnectType;
+			uint8_t usingBotsDifficulty[2];
+			uint8_t usingBotsTeamLimit[2];
+			char __pad_bots[3];
+			MPBotPlayerDataContainer botMMInfo[18];
+			bool mpBotsEnableGameLaunchWithBots;
+			bool mpBotDataInitialized;
+			uint8_t agentMaxCount; // SV_AgentSetupAgentCount (SV_MemoryMP_Init allocates this)
+		};
+
+		static_assert(offsetof(GameStateInfo, usingBotsConnectType) == 0x2C);
+		static_assert(offsetof(GameStateInfo, mpBotsEnableGameLaunchWithBots) == 0x544);
+		static_assert(offsetof(GameStateInfo, agentMaxCount) == 0x546);
+		static_assert(offsetof(GameStateInfo, matchRules) == 0x10);
+		static_assert(offsetof(GameStateInfo, mapRotation) == 0x20);
+		static_assert(offsetof(GameStateInfo, usingBotsDifficulty) == 0x2D);
 	}
 	using namespace party;
 
@@ -2176,4 +2357,45 @@ namespace game
 			HksError m_error;
 		};
 	}
+
+	class GUtils
+	{
+	public:
+		virtual ~GUtils() = default;
+
+		virtual bool EntAttach(gentity_s* ent, const char* modelName, scr_string_t tagName, bool ignoreCollision, bool allowEmptyTag) = 0;
+		virtual bool EntDetach(gentity_s* ent, const char* modelName, scr_string_t tagName) = 0;
+		virtual void EntDetachAll(gentity_s* ent) = 0;
+		virtual void InitGentity(gentity_s* ent) = 0;
+		virtual void FreeEntity(gentity_s* ent) = 0;
+		virtual void FreeEntityRefs(gentity_s* ent) = 0;
+		virtual void SetEntityPerk(const gentity_s* ent, unsigned int perkIndex) = 0;
+		virtual void UnsetEntityPerk(const gentity_s* ent, unsigned int perkIndex) = 0;
+		virtual void ClearEntityPerks(const gentity_s* ent) = 0;
+		virtual void SetEntitySuit(const gentity_s* ent, unsigned int suitIndex) = 0;
+		virtual void EntityStateSetPartBits(gentity_s* ent, const void* partBits) = 0;
+		virtual bool IsTransientCustomizationModel(const char* modelName) = 0;
+		virtual bool ShouldCreateEntityPhysicsOnInit(const gentity_s* ent) = 0;
+		virtual XModel* GetWeaponWorldModels(const int* weapon) = 0;
+		virtual void EntTagInfoChanged(gentity_s* ent) = 0;
+		virtual bool PlayerButtonsPressed(const gentity_s* ent, unsigned __int64 buttons) = 0;
+		virtual void SetPlayerViewAngles(gentity_s* ent, const vec3_t* angles) = 0;
+		virtual void SetPlayerOrigin(gentity_s* ent, const vec3_t* origin, int a3) = 0;
+		virtual void BotStuckCheck(const vec3_t* origin, const vec3_t* velocity, const playerState_s* ps, float radius, bool checkGround) = 0;
+		virtual void BotSetAlmostGroundPlane(const playerState_s* ps, bool almostGroundPlane) = 0;
+		virtual void DObjUpdate(gentity_s* ent, int link) = 0;
+		virtual bool MayThrowbackGrenade(const gentity_s* ent, const gentity_s* grenade) = 0;
+		virtual bool MayUseEntity(const gentity_s* ent, const gentity_s* useEnt) = 0;
+		virtual bool MayActivateHoldEntity(const gentity_s* ent) = 0;
+		virtual void UnlinkUpdateCorpse(gentity_s* ent) = 0;
+		virtual bool GetPIPElemField(void* scrContext, int entNum, int fieldIndex) = 0;
+		virtual bool SetPIPElemField(void* scrContext, int entNum, int fieldIndex) = 0;
+		virtual team_t GetEntityTeam(const gentity_s* ent) = 0;
+		virtual const char* GetDebugTeamName(const gentity_s* ent) = 0;
+		virtual team_t GetTeamFromDebugString(const char* teamName) = 0;
+
+		unsigned int m_entitySpawnMinFreeTime;
+		bool m_disableCreateEntityPhysicsOnInit;
+		bool m_disableCreateEntityScriptableOnInit;
+	};
 }

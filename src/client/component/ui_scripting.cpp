@@ -20,6 +20,7 @@
 //#include "game/scripting/execution.hpp"
 
 #include "ui_scripting.hpp"
+#include "console/console.hpp"
 
 #include <utils/string.hpp>
 #include <utils/hook.hpp>
@@ -136,14 +137,9 @@ namespace ui_scripting
 			}
 		}
 
-		void load_scripts(const std::string& script_dir)
+		void load_scripts()
 		{
-			if (!utils::io::directory_exists(script_dir))
-			{
-				return;
-			}
-
-			const auto scripts = utils::io::list_files(script_dir);
+			const auto scripts = filesystem::list_files("ui_scripts/", true);
 
 			for (const auto& script : scripts)
 			{
@@ -170,6 +166,7 @@ namespace ui_scripting
 			lua["io"]["listfiles"] = utils::io::list_files;
 			lua["io"]["removefile"] = utils::io::remove_file;
 			lua["io"]["readfile"] = static_cast<std::string(*)(const std::string&)>(utils::io::read_file);
+			lua["io"]["zoneexists"] = fastfiles::exists;
 
 			using game = table;
 			auto game_type = game();
@@ -298,10 +295,7 @@ namespace ui_scripting
 			load_script("lua_json", lua_json);
 			*/
 
-			for (const auto& path : filesystem::get_search_paths_rev())
-			{
-				load_scripts(path + "/ui_scripts/");		
-			}
+			load_scripts();
 		}
 
 		void try_start()
@@ -428,6 +422,21 @@ namespace ui_scripting
 
 			return 0;
 		}
+
+		utils::hook::detour hksi_luaL_error_hook;
+		void hksi_luaL_error_stub(game::hks::lua_State* state, const char* fmt, ...)
+		{
+			va_list va;
+			va_start(va, fmt);
+			char buffer[0x800];
+
+			vsprintf_s(buffer, fmt, va);
+			va_end(va);
+
+			console::error("%s (R:0x%llX)\n", buffer, (uint64_t)_ReturnAddress());
+
+			hksi_luaL_error_hook.invoke<void>(state, "%s", buffer);
+		}
 	}
 
 	table get_globals()
@@ -469,6 +478,7 @@ namespace ui_scripting
 			hks_package_require_hook.create(0x1411C7F00, hks_package_require_stub);
 			hks_start_hook.create(0x1406023A0, hks_start_stub);
 			hks_shutdown_hook.create(0x1406124B0, hks_shutdown_stub);
+			hksi_luaL_error_hook.create(game::hks::hksi_luaL_error.get(), hksi_luaL_error_stub);
 
 			// replace LUA engine calls
 			utils::hook::set(0x1414B4D98, lua_calls::is_development_build_stub); // IsDevelopmentBuild

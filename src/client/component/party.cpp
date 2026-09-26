@@ -338,6 +338,54 @@ namespace party
 			utils::hook::invoke<void>(0x1409D9940, partyData, 0, 0, flags, privateClients, availableSpots);
 		}
 
+		enum class vote_result
+		{
+			not_ready,
+			skipped,
+			started,
+		};
+
+		vote_result party_host_start_map_vote(const int controller, const int vote_time, const int lobby_time)
+		{
+			auto* party = game::Lobby_GetPartyData();
+			if (!party || !game::Party_IsRunning(party) || !game::Party_AreWeHost(party))
+			{
+				return vote_result::not_ready;
+			}
+
+			static const auto* xblive_privatematch = game::Dvar_FindVar("xblive_privatematch");
+			if (xblive_privatematch && xblive_privatematch->current.enabled)
+			{
+				return vote_result::skipped;
+			}
+
+			const auto state = party->lobbyFlags & game::PARTY_LOBBY_STATE_MASK;
+
+			if (state == game::PARTY_LOBBY_STATE_MAP_VOTE // already voting (returned from a match)
+				|| party->gameStartRequested)
+			{
+				return vote_result::skipped;
+			}
+
+			if (state != game::PARTY_LOBBY_STATE_IDLE)
+			{
+				return vote_result::not_ready;
+			}
+
+			game::PartyHost_ChooseMapVoteEntries(controller);
+			game::PartyHost_ClearMapVotes(party);
+
+			const auto now = game::Sys_Milliseconds();
+			party->mapVotePassed = false;
+			party->mapVoteEndTime = now + vote_time * 1000;
+			party->lobbyEndTime = now + std::max(lobby_time, vote_time) * 1000;
+			party->mapVoteCast = 0;
+			party->lobbyFlags = (party->lobbyFlags & ~0x3C) | game::PARTY_LOBBY_STATE_MAP_VOTE;
+
+			game::PartyHost_GamestateChanged(party);
+			return vote_result::started;
+		}
+
 		void perform_game_initialization(const int max_clients, const bool private_match)
 		{
 			const auto ui_maxclients = game::Dvar_FindVar("ui_maxclients");
@@ -370,13 +418,14 @@ namespace party
 				return;
 			}
 
+			game::Dvar_SetFromStringByName("ui_combat_training", "0", game::DVAR_SOURCE_INTERNAL);
+
 			perform_game_initialization(sv_maxclients, private_match);
 
 			game::Dvar_SetFromStringByName("ui_mapname", mapname.data(), game::DVAR_SOURCE_INTERNAL);
 			game::Dvar_SetFromStringByName("ui_gametype", gametype.data(), game::DVAR_SOURCE_INTERNAL);
 
-			// setup agent count
-			utils::hook::invoke<void>(0x140C19B00, gametype.data());
+			utils::hook::invoke<void>(0x140C19B00, gametype.data()); // setup agent count
 
 			preloaded_map = false;
 
@@ -518,6 +567,77 @@ namespace party
 			console::info("Setting client %i XUID to %s\n", clientNum, xuidString);
 			sv_set_player_info_string_hook.invoke<void>(clientNum, xuidString, xnaddrString, natTypeString, npIdString, partyIpString);
 		}
+
+		utils::hook::detour party_host_conclude_map_vote_hook;
+		void party_host_conclude_map_vote(game::PartyData* party, const int controller)
+		{
+			party_host_conclude_map_vote_hook.invoke<void>(party, controller);
+			game::Dvar_SetFromStringByName("ui_oldmapname", "", game::DVAR_SOURCE_INTERNAL);
+		}
+
+		utils::hook::detour party_host_start_match_internal_hook;
+		void party_host_start_match_internal(game::PartyData* party, const game::PartyActiveClient* mainActiveClient)
+		{
+			if (!game::environment::is_dedi() && !game::Dvar_FindVar("xblive_privatematch")->current.enabled
+				&& !party->mapVotePassed && (party->lobbyFlags & game::PARTY_LOBBY_STATE_MASK) == game::PARTY_LOBBY_STATE_MAP_VOTE)
+			{
+				game::PartyHost_ConcludeMapVote(party, static_cast<int>(mainActiveClient->localControllerIndex));
+			}
+
+			const auto* mapname = game::Dvar_FindVar("ui_mapname");
+			if (!game::DB_FileExists(mapname->current.string))
+			{
+				game::UI_MissingMapError();
+			}
+			else
+			{
+				party_host_start_match_internal_hook.invoke<void>(party, mainActiveClient);
+			}
+		}
+
+		bool content_do_we_have_content_pack(int idx)
+		{
+			return true;
+		}
+
+		bool party_host_map_is_acceptable(uintptr_t party, const char* mapname, const int playlistId)
+		{
+			if (game::Live_GetMapIndex(mapname) < 0 || game::DB_FileExists(mapname))
+			{
+				return 1;
+			}
+			return 0;
+		}
+
+		void private_map_rotation_set_initial_map_selection(game::LobbyMapRotation* mapRot, unsigned int initialMapIndex)
+		{
+			if (!mapRot) return;
+			mapRot->lastPlayedIndex = 0xFFFF;
+			mapRot->nextIndex = initialMapIndex;
+
+			const auto count = std::min(mapRot->entryCount, static_cast<unsigned int>(ARRAYSIZE(mapRot->entry)));
+
+			std::vector<unsigned int> installed;
+			for (unsigned int i = 0; i < count; ++i)
+			{
+				const char* mapname = mapRot->entry[i].name;
+				if (mapname && *mapname && game::DB_FileExists(mapname))
+				{
+					mapRot->entry[i].weight = 1;
+					installed.push_back(i);
+				}
+				else
+				{
+					mapRot->entry[i].weight = 0;
+				}
+			}
+
+			if (installed.empty()) return;
+
+			const auto picked = installed[utils::cryptography::random::get_integer() % installed.size()];
+			mapRot->nextIndex = picked;
+			game::Dvar_SetFromStringByName("ui_mapname", mapRot->entry[picked].name, game::DVAR_SOURCE_INTERNAL);
+		}
 	}
 
 	game::GameModeType get_game_mode_from_mapname(const std::string& mapname)
@@ -584,6 +704,11 @@ namespace party
 			console::info("Restarting map: %s\n", mapname.data());
 			command::execute("map_restart", false);
 			return;
+		}
+
+		if (!game::environment::is_dedi())
+		{
+			game::Dvar_SetFromStringByName("ui_combat_training", "0", game::DVAR_SOURCE_INTERNAL);
 		}
 
 		if (!game::Lobby_GetPartyData()->party_systemActive || game::Com_FrontEnd_IsInFrontEnd())
@@ -765,6 +890,21 @@ namespace party
 			utils::hook::call(0x1409B70A1, cl_initialize_gamestate_stub);
 			sv_set_player_info_string_hook.create(0x140C57360, sv_set_player_info_string_stub);
 
+			game::Dvar_RegisterBool("lui_checkIfLevelInFileSystem", true, game::DVAR_FLAG_NONE, "Filters the level select menu to display only those which are installed");
+			utils::hook::jump(0x140CE8550, content_do_we_have_content_pack); // do not check content bits. instead check for fastfile existence
+			utils::hook::jump(0x1409D7680, party_host_map_is_acceptable); // mapvote only choose maps that are installed
+			utils::hook::jump(0x140E7B480, private_map_rotation_set_initial_map_selection);
+			party_host_start_match_internal_hook.create(0x1409D97D0, party_host_start_match_internal);
+			party_host_conclude_map_vote_hook.create(game::PartyHost_ConcludeMapVote, party_host_conclude_map_vote);
+
+			// enable xpartygo in public match
+			utils::hook::nop(0x1409AA7D0, 6); 
+			utils::hook::nop(0x1409D8931, 0x13);
+
+			// skips cpu and bandwidth requirements to host a public match
+			utils::hook::set(0x140DC65B0, 0xC301B0); 
+			utils::hook::set(0x140DC6580, 0xC301B0);
+
 			command::add("map", [](const command::params& args)
 			{
 				if (args.size() != 2)
@@ -783,6 +923,22 @@ namespace party
 
 			if (!game::environment::is_dedi())
 			{
+				command::add("xpartystartvote", [](const command::params& args)
+				{
+					const auto vote_time = args.size() > 1 ? std::max(1, std::atoi(args.get(1))) : 15;
+					const auto lobby_time = args.size() > 2 ? std::atoi(args.get(2)) : vote_time;
+					const auto deadline = std::chrono::steady_clock::now() + 15s;
+
+					scheduler::schedule([=]()
+					{
+						if (party_host_start_map_vote(0, vote_time, lobby_time) != vote_result::not_ready)
+						{
+							return scheduler::cond_end;
+						}
+						return std::chrono::steady_clock::now() > deadline ? scheduler::cond_end : scheduler::cond_continue;
+					}, scheduler::pipeline::main, 100ms);
+				});
+
 				command::add("devmap", [](const command::params& args)
 				{
 					if (args.size() != 2)
@@ -1119,10 +1275,10 @@ namespace party
 			network::on("memberInfoUpdate", [](const game::netadr_s&, const std::string_view& data)
 			{
 				utils::info_string info{ data }; 
+
 				int clientNum = std::stoi(info.get("clientNum"));
-				
 				if (clientNum < 0 || clientNum >= 18) 
-					return; 
+					return;
 
 				g_clientMemberInfo[clientNum] = 
 				{ 

@@ -24,9 +24,16 @@ FARPROC loader::load(const utils::nt::library& library, const std::string& buffe
 	library.get_optional_header()->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT] = source
 		.get_optional_header()->DataDirectory[
 			IMAGE_DIRECTORY_ENTRY_IMPORT];
+
+	const auto stack_reserve = library.get_optional_header()->SizeOfStackReserve;
+	const auto stack_commit = library.get_optional_header()->SizeOfStackCommit;
+
 	std::memmove(library.get_nt_headers(), source.get_nt_headers(),
 	             sizeof(IMAGE_NT_HEADERS) + source.get_nt_headers()->FileHeader.NumberOfSections * sizeof(
 		             IMAGE_SECTION_HEADER));
+
+	library.get_optional_header()->SizeOfStackReserve = stack_reserve;
+	library.get_optional_header()->SizeOfStackCommit = stack_commit;
 
 	return FARPROC(library.get_ptr() + source.get_relative_entry_point());
 }
@@ -59,7 +66,7 @@ void loader::load_section(const utils::nt::library& target, const utils::nt::lib
 	void* target_ptr = target.get_ptr() + section->VirtualAddress;
 	const void* source_ptr = source.get_ptr() + section->PointerToRawData;
 
-	if (PBYTE(target_ptr) >= (target.get_ptr() + BINARY_PAYLOAD_SIZE))
+	if (section->VirtualAddress + section->Misc.VirtualSize > 0x1000 + BINARY_PAYLOAD_SIZE)
 	{
 		throw std::runtime_error("Section exceeds the binary payload size, please increase it!");
 	}

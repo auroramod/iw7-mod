@@ -589,6 +589,25 @@ namespace patches
 
 			g_sayto_hook.invoke(ent, other, mode, color, teamString, finalName, message);
 		}
+
+		utils::hook::detour apply_publisher_variables_hook;
+		void apply_publisher_variables(__int64 a1, const char* ns)
+		{
+			apply_publisher_variables_hook.invoke<void>(a1, ns);
+
+			game::Dvar_SetFromStringByName("online_mp_weapon_xpscale", "1", game::DVAR_SOURCE_INTERNAL);
+			game::Dvar_SetFromStringByName("online_zombie_party_weapon_xpscale", "1", game::DVAR_SOURCE_INTERNAL);
+			game::Dvar_SetFromStringByName("online_zombie_weapon_xpscale", "1", game::DVAR_SOURCE_INTERNAL);
+			game::Dvar_SetFromStringByName("online_zombie_party_xpscale", "1", game::DVAR_SOURCE_INTERNAL);
+			game::Dvar_SetFromStringByName("online_mp_xpscale", "1", game::DVAR_SOURCE_INTERNAL);
+			game::Dvar_SetFromStringByName("online_zombies_xpscale", "1", game::DVAR_SOURCE_INTERNAL);
+			game::Dvar_SetFromStringByName("online_mp_party_missionteam_xpscale", "1", game::DVAR_SOURCE_INTERNAL);
+			game::Dvar_SetFromStringByName("online_mp_party_weapon_xpscale", "1", game::DVAR_SOURCE_INTERNAL);
+			game::Dvar_SetFromStringByName("online_mp_party_xpscale", "1", game::DVAR_SOURCE_INTERNAL);
+			game::Dvar_SetFromStringByName("online_mp_missionteam_xpscale", "1", game::DVAR_SOURCE_INTERNAL);
+
+			game::Cbuf_ExecuteBuffer(0, 0, "exec publisher_variables_overide.cfg\n");
+		}
 	}
 
 	class component final : public component_interface
@@ -619,6 +638,9 @@ namespace patches
 
 			// register custom dvars
 			com_register_common_dvars_hook.create(0x140BADF30, com_register_common_dvars_stub);
+
+			// publisher variable overrides
+			apply_publisher_variables_hook.create(0x14053A9C0, apply_publisher_variables);
 
 			// patch some features
 			com_game_mode_supports_feature_hook.create(game::Com_GameMode_SupportsFeature, com_game_mode_supports_feature_stub);
@@ -677,6 +699,9 @@ namespace patches
 			dvars::override::register_bool("killswitch_cp_leaderboards", true, game::DVAR_FLAG_READ);
 			dvars::override::register_bool("killswitch_streak_variants", false, game::DVAR_FLAG_READ);
 			dvars::override::register_bool("killswitch_blood_anvil", false, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("killswitch_net_health_icons", false, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("should_show_post_game_survey", false, game::DVAR_FLAG_READ);
+			dvars::override::register_bool("survey_enabled", false, game::DVAR_FLAG_READ);
 
 			// announcer packs
 			if (!game::environment::is_dedi())
@@ -704,6 +729,10 @@ namespace patches
 			dvars::override::register_float("gpad_stick_pressed", 0.4f, 0, 1, game::DVAR_FLAG_SAVED);
 			dvars::override::register_float("gpad_stick_pressed_hysteresis", 0.1f, 0, 1, game::DVAR_FLAG_SAVED);
 
+			dvars::override::register_bool("cg_drawSpectatorMessages", true, game::DVAR_FLAG_NONE);
+
+			dvars::override::register_bool("ui_opensummary", false, game::DVAR_FLAG_NONE);
+
 			// disable host migration
 			utils::hook::jump(0x140C5A200, disconnect);
 
@@ -723,10 +752,6 @@ namespace patches
 			// Start match without the timer
 			utils::hook::jump(0x1409AA7F5, request_start_match);
 
-			// register bot difficulty script dvars
-			game::Dvar_RegisterInt("bot_difficulty_allies", 0, 0, 4, game::DVAR_FLAG_NONE, "Bot difficulty for friendly bots. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
-			game::Dvar_RegisterInt("bot_difficulty_enemies", 0, 0, 4, game::DVAR_FLAG_NONE, "Bot difficulty for enemy bots. 0: Mixed, 1: Recruit, 2: Regular, 3: Hardened, 4: Veteran");
-		
 			// re-direct some dvars to others for backwards compatibility on configurations
 			utils::hook::call(0x140BB241C, dvar_set_command_stub);
 

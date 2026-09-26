@@ -11,6 +11,7 @@
 #include <utils/flags.hpp>
 
 #include "../loot/loot.hpp"
+#include "../loot/missions.hpp"
 
 #define TRUE_KEY_AMOUNT(num) num * 100
 
@@ -305,11 +306,22 @@ namespace demonware
 			console::demonware("%s\n", json_buffer.data());
 
 			[[maybe_unused]] const auto match_id = json["MatchId"].get<int>(); // always 0
-			[[maybe_unused]] const auto mission_id = json["MissionId"].get<int>();
+			[[maybe_unused]] const auto mission_id = json["MissionId"].get<int>(); // 0 = mp, 1 = zombies
 			[[maybe_unused]] const auto mission_instance_id = json["MissionInstanceId"].get<unsigned int>();
-			[[maybe_unused]] const auto mission_result = json["MissionResult"].get<int>();
-			[[maybe_unused]] const auto time_played = json["TimePlayed"].get<int>();
+			const auto mission_result = json["MissionResult"].get<int>(); // 1 = won
+			const auto time_played = json["TimePlayed"].get<int>();
 			[[maybe_unused]] const auto client_tx = json["ClientTx"].get<std::string>();
+
+			const auto keys_earned = loot::missions::get_match_keys(time_played, mission_result);
+			const auto key_balance = loot::get_currency_balance(loot::CurrencyType::keys) + keys_earned;
+			loot::set_currency_balance(loot::CurrencyType::keys, key_balance);
+
+			// the client ignores salvage in this response, it picks up the new balance from getBalanceV2 after the match
+			const auto salvage_earned = loot::missions::get_match_salvage(time_played, mission_result);
+			loot::set_currency_balance(loot::CurrencyType::salvage, loot::get_currency_balance(loot::CurrencyType::salvage) + salvage_earned);
+			loot::save();
+
+			console::demonware("[DW]: giving %d keys and %d salvage for match (time played %d, result %d)\n", keys_earned / 100, salvage_earned, time_played, mission_result);
 
 			nlohmann::json json_reply;
 			json_reply["Action"] = "EndMissionResponse";
@@ -317,6 +329,10 @@ namespace demonware
 			json_reply["Packs"] = nlohmann::json::value_type::array();
 			json_reply["Items"] = nlohmann::json::value_type::array();
 			json_reply["Currencies"] = nlohmann::json::value_type::array();
+
+			// client only reads the first entry, as the new key balance
+			json_reply["Currencies"][0]["CurrencyId"] = loot::CurrencyType::keys;
+			json_reply["Currencies"][0]["Balance"] = key_balance;
 
 			send(json_reply);
 			console::demonware("%s\n", json_reply.dump().data());
@@ -331,6 +347,11 @@ namespace demonware
 			[[maybe_unused]] const auto mission_set_instance_id = json["MissionSetInstanceId"].get<unsigned int>();
 			[[maybe_unused]] const auto client_tx = json["ClientTx"].get<std::string>();
 
+			// < 100 is a mission team (client wants its next level reward), 100-299 are contracts
+			const auto reward = mission_set_id < 100
+				? loot::missions::give_mission_team_reward(mission_set_id)
+				: loot::missions::give_contract_reward(mission_set_id);
+
 			nlohmann::json json_reply;
 			json_reply["Action"] = "EndMissionSetResponse";
 
@@ -339,6 +360,36 @@ namespace demonware
 			json_reply["Packs"] = nlohmann::json::value_type::array();
 			json_reply["Items"] = nlohmann::json::value_type::array();
 			json_reply["Currencies"] = nlohmann::json::value_type::array();
+
+			for (const auto id : reward.packs)
+			{
+				json_reply["Packs"].push_back(id);
+			}
+
+			// client copies these into a fixed array of 10
+			for (const auto id : reward.items)
+			{
+				if (json_reply["Items"].size() >= 10)
+				{
+					console::error("[DW]: EndMissionSet reward has more than 10 items, dropping %d\n", id);
+					continue;
+				}
+
+				nlohmann::json item;
+				item["ItemId"] = id;
+				item["Collision"] = 0;
+				item["Balance"] = loot::get_item_balance(id);
+				json_reply["Items"].push_back(item);
+			}
+
+			// client sets these as the new balances
+			for (const auto& [currency_id, amount] : reward.currencies)
+			{
+				nlohmann::json currency;
+				currency["CurrencyId"] = currency_id;
+				currency["Balance"] = loot::get_currency_balance(currency_id);
+				json_reply["Currencies"].push_back(currency);
+			}
 
 			send(json_reply);
 			console::demonware("%s\n", json_reply.dump().data());

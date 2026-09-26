@@ -1,4 +1,3 @@
-#ifdef _DEBUG
 #pragma once
 
 namespace gui
@@ -20,7 +19,7 @@ namespace gui
 	bool gui_char_event(const int local_client_num, const int key);
 	bool gui_mouse_event(const int local_client_num, int x, int y);
 
-	void on_frame(const std::function<void()>& callback, bool always = false);
+	void on_frame(const std::function<void()>& callback, bool always = false, bool needs_db = true);
 	bool is_menu_open(const std::string& name);
 	void notification(const std::string& title, const std::string& text, const std::chrono::milliseconds duration = 3s);
 	void copy_to_clipboard(const std::string& text);
@@ -30,9 +29,15 @@ namespace gui
 
 	void register_callback(const std::function<void()>& callback, bool always = false);
 
+	void enable();
+
+	void set_input_capture(const std::string& owner, bool capture);
+	bool is_capturing_input();
+
+	ImFont* get_console_font();
+
 	bool InputU8(const char* label, unsigned char* v, int step = 1, int step_fast = 100, ImGuiInputTextFlags flags = 0);
 	bool InputUInt6(const char* label, unsigned int v[6], ImGuiInputTextFlags flags = 0);
 
 	void shutdown_gui();
 }
-#endif

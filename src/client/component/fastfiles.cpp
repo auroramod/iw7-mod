@@ -226,6 +226,142 @@ namespace fastfiles
 
 			game::DB_LoadXAssets(data.data(), static_cast<std::uint32_t>(data.size()), syncMode);
 		}
+
+		void reallocate_asset_pool(const game::XAssetType type, const unsigned int new_size)
+		{
+			const size_t element_size = game::DB_GetXAssetTypeSize(type);
+
+			auto* new_pool = utils::memory::get_allocator()->allocate(new_size * element_size);
+			std::memmove(new_pool, game::g_assetPool[type], game::g_poolSize[type] * element_size);
+
+			game::g_assetPool[type] = new_pool;
+			game::g_poolSize[type] = new_size;
+		}
+
+		void db_init_pool(void* pool, int count, size_t elemSize)
+		{
+			char* base = (char*)pool;
+
+			void* first = base + sizeof(void*);
+			*(void**)base = first;
+
+			void* current = first;
+
+			for (int i = 1; i < count; ++i)
+			{
+				void* next = base + sizeof(void*) + i * elemSize;
+				*(void**)current = next;
+				current = next;
+			}
+
+			*(void**)current = nullptr;
+		}
+
+		template<int Type>
+		void pool_init_wrapper(void* pool)
+		{
+			db_init_pool(
+				pool,
+				game::g_poolSize[Type],
+				game::DB_GetXAssetTypeSize((game::XAssetType)Type)
+			);
+		}
+
+		void db_init_thread_stub()
+		{
+			reallocate_asset_pool(game::ASSET_TYPE_STRINGTABLE, 800); // originally 400
+			reallocate_asset_pool(game::ASSET_TYPE_FX, 2048); // originally 16, iw6 uses 2048
+
+#define INIT_ASSET_POOL(x) \
+    pool_inits[x] = pool_init_wrapper<x>;
+
+			auto* pool_inits = reinterpret_cast<void(**)(void*)>(0x141466650);
+
+			INIT_ASSET_POOL(game::ASSET_TYPE_PHYSICSLIBRARY)
+			INIT_ASSET_POOL(game::ASSET_TYPE_PHYSICS_SFX_EVENT_ASSET)
+			INIT_ASSET_POOL(game::ASSET_TYPE_PHYSICS_VFX_EVENT_ASSET)
+			INIT_ASSET_POOL(game::ASSET_TYPE_PHYSICSASSET)
+			INIT_ASSET_POOL(game::ASSET_TYPE_PHYSICS_FX_PIPELINE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_PHYSICS_FX_SHAPE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_XANIMPARTS)
+			INIT_ASSET_POOL(game::ASSET_TYPE_XMODEL_SURFS)
+			INIT_ASSET_POOL(game::ASSET_TYPE_XMODEL)
+			INIT_ASSET_POOL(game::ASSET_TYPE_MAYHEM)
+			INIT_ASSET_POOL(game::ASSET_TYPE_MATERIAL)
+			INIT_ASSET_POOL(game::ASSET_TYPE_COMPUTESHADER)
+			INIT_ASSET_POOL(game::ASSET_TYPE_VERTEXSHADER)
+			INIT_ASSET_POOL(game::ASSET_TYPE_HULLSHADER)
+			INIT_ASSET_POOL(game::ASSET_TYPE_DOMAINSHADER)
+			INIT_ASSET_POOL(game::ASSET_TYPE_PIXELSHADER)
+			INIT_ASSET_POOL(game::ASSET_TYPE_VERTEXDECL)
+			INIT_ASSET_POOL(game::ASSET_TYPE_TECHNIQUE_SET)
+			INIT_ASSET_POOL(game::ASSET_TYPE_IMAGE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_SOUND_GLOBALS)
+			INIT_ASSET_POOL(game::ASSET_TYPE_SOUND_BANK)
+			INIT_ASSET_POOL(game::ASSET_TYPE_SOUND_BANK_TRANSIENT)
+			INIT_ASSET_POOL(game::ASSET_TYPE_CLIPMAP)
+			INIT_ASSET_POOL(game::ASSET_TYPE_COMWORLD)
+			INIT_ASSET_POOL(game::ASSET_TYPE_GLASSWORLD)
+			INIT_ASSET_POOL(game::ASSET_TYPE_PATHDATA)
+			INIT_ASSET_POOL(game::ASSET_TYPE_NAVMESH)
+			INIT_ASSET_POOL(game::ASSET_TYPE_MAP_ENTS)
+			INIT_ASSET_POOL(game::ASSET_TYPE_FXWORLD)
+			INIT_ASSET_POOL(game::ASSET_TYPE_GFXWORLD)
+			INIT_ASSET_POOL(game::ASSET_TYPE_GFXWORLD_TRANSIENT_ZONE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_IESPROFILE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_LIGHT_DEF)
+			INIT_ASSET_POOL(game::ASSET_TYPE_UI_MAP)
+			INIT_ASSET_POOL(game::ASSET_TYPE_ANIMCLASS)
+			INIT_ASSET_POOL(game::ASSET_TYPE_PLAYERANIM)
+			INIT_ASSET_POOL(game::ASSET_TYPE_GESTURE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_LOCALIZE_ENTRY)
+			INIT_ASSET_POOL(game::ASSET_TYPE_ATTACHMENT)
+			INIT_ASSET_POOL(game::ASSET_TYPE_WEAPON)
+			INIT_ASSET_POOL(game::ASSET_TYPE_VFX)
+			INIT_ASSET_POOL(game::ASSET_TYPE_FX)
+			INIT_ASSET_POOL(game::ASSET_TYPE_IMPACT_FX)
+			INIT_ASSET_POOL(game::ASSET_TYPE_SURFACE_FX)
+			INIT_ASSET_POOL(game::ASSET_TYPE_AITYPE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_MPTYPE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_CHARACTER)
+			INIT_ASSET_POOL(game::ASSET_TYPE_XMODELALIAS)
+			INIT_ASSET_POOL(game::ASSET_TYPE_RAWFILE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_SCRIPTFILE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_STRINGTABLE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_LEADERBOARD)
+			INIT_ASSET_POOL(game::ASSET_TYPE_VIRTUAL_LEADERBOARD)
+			INIT_ASSET_POOL(game::ASSET_TYPE_STRUCTURED_DATA_DEF)
+			INIT_ASSET_POOL(game::ASSET_TYPE_DDL)
+			INIT_ASSET_POOL(game::ASSET_TYPE_TRACER)
+			INIT_ASSET_POOL(game::ASSET_TYPE_VEHICLE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_ADDON_MAP_ENTS)
+			INIT_ASSET_POOL(game::ASSET_TYPE_NET_CONST_STRINGS)
+			INIT_ASSET_POOL(game::ASSET_TYPE_LUA_FILE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_SCRIPTABLE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_EQUIPMENT_SND_TABLE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_VECTORFIELD)
+			INIT_ASSET_POOL(game::ASSET_TYPE_PARTICLE_SIM_ANIMATION)
+			INIT_ASSET_POOL(game::ASSET_TYPE_STREAMING_INFO)
+			INIT_ASSET_POOL(game::ASSET_TYPE_LASER)
+			INIT_ASSET_POOL(game::ASSET_TYPE_TTF)
+			INIT_ASSET_POOL(game::ASSET_TYPE_SUIT)
+			INIT_ASSET_POOL(game::ASSET_TYPE_SUITANIMPACKAGE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_SPACESHIPTARGET)
+			INIT_ASSET_POOL(game::ASSET_TYPE_RUMBLE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_RUMBLE_GRAPH)
+			INIT_ASSET_POOL(game::ASSET_TYPE_ANIM_PACKAGE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_SFX_PACKAGE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_VFX_PACKAGE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_BEHAVIOR_TREE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_XANIM_ARCHETYPE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_XANIM_PROCEDURALBONES)
+			INIT_ASSET_POOL(game::ASSET_TYPE_RETICLE)
+			INIT_ASSET_POOL(game::ASSET_TYPE_GFXLIGHTMAP)
+
+#undef INIT_ASSET_POOL
+
+			utils::hook::invoke<void>(0x140A77DC0); // original call
+		}
 	}
 
 	namespace zone_loading
@@ -294,7 +430,6 @@ namespace fastfiles
 
 		return false;
 	}
-	
 
 	class component final : public component_interface
 	{
@@ -333,6 +468,9 @@ namespace fastfiles
 			utils::hook::call(0x1405ADB63, load_fastfiles1_stub);
 			// (code_post_gfx)
 			utils::hook::call(0x140E0624B, load_fastfiles2_stub);
+
+			// reallocate assets
+			utils::hook::call(0x140A77EA4, db_init_thread_stub);
 
 			command::add("loadzone", [](const command::params& params)
 			{

@@ -22,6 +22,20 @@ DWORD_PTR WINAPI set_thread_affinity_mask(HANDLE hThread, DWORD_PTR dwThreadAffi
 	return SetThreadAffinityMask(hThread, dwThreadAffinityMask);
 }
 
+#ifndef INJECT_HOST_AS_LIB
+void set_main_module_path(const std::filesystem::path& path)
+{
+	static const auto full_name = path.wstring();
+
+	auto* const ldr = NtCurrentTeb()->ProcessEnvironmentBlock->Ldr;
+	auto* const entry = CONTAINING_RECORD(ldr->InMemoryOrderModuleList.Flink, LDR_DATA_TABLE_ENTRY, InMemoryOrderLinks);
+
+	entry->FullDllName.Buffer = const_cast<PWSTR>(full_name.data());
+	entry->FullDllName.Length = static_cast<USHORT>(full_name.size() * sizeof(wchar_t));
+	entry->FullDllName.MaximumLength = static_cast<USHORT>(entry->FullDllName.Length + sizeof(wchar_t));
+}
+#endif
+
 FARPROC load_binary(uint64_t* base_address)
 {
 	loader loader;
@@ -60,7 +74,9 @@ FARPROC load_binary(uint64_t* base_address)
 	return loader.load_library(binary, base_address);
 #else
 	*base_address = 0x140000000;
-	return loader.load(self, data); // not working
+	const auto entry_point = loader.load(self, data);
+	set_main_module_path(std::filesystem::absolute(binary));
+	return entry_point;
 #endif
 }
 

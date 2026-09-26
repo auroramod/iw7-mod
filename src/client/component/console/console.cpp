@@ -102,6 +102,11 @@ namespace console
 
 	std::string format(va_list* ap, const char* message)
 	{
+		if (!message)
+		{
+			return {};
+		}
+
 		static thread_local char buffer[0x1000];
 
 		const auto count = _vsnprintf_s(buffer, sizeof(buffer), sizeof(buffer), message, *ap);
@@ -123,7 +128,7 @@ namespace console
 			out.push_back('\n');
 		}
 
-		if (console_log)
+		if (console_log && console_log->current.string)
 			utils::io::write_file(console_log->current.string, out, true);
 
 		if (console::is_enabled())
@@ -148,6 +153,11 @@ namespace console
 
 	void print(const int type, const char* fmt, ...)
 	{
+		if (!fmt)
+		{
+			return;
+		}
+
 		if (type == console::print_type_demonware)
 		{
 			static bool has_demonware_debug = utils::flags::has_flag("demonware_debug");

@@ -424,9 +424,21 @@ namespace demonware
 			}
 		}
 
+		void return_true(const size_t address)
+		{
+			// `xor eax, eax / inc eax / ret` that does not write past the function's end
+			static constexpr uint8_t code[] = {0x33, 0xC0, 0xFF, 0xC0, 0xC3};
+			utils::hook::copy(address, code, sizeof(code));
+		}
+
 		void bd_logger_stub(int /*type*/, const char* const /*channelName*/, const char* /*fileLoc*/, const char* const /*file*/,
 			const char* const function, const unsigned int /*line*/, const char* const msg, ...)
 		{
+			if (!msg)
+			{
+				return;
+			}
+
 			char buffer[2048];
 
 			va_list ap;
@@ -434,9 +446,28 @@ namespace demonware
 
 			vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, msg, ap);
 
-			console::demonware("%s: %s\n", function, buffer);
+			console::demonware("%s: %s\n", function ? function : "unknown", buffer);
 
 			va_end(ap);
+		}
+
+		bool xnet_xnaddr_to_inaddr_stub(const char* xnaddr, uint32_t* in_addr, uint16_t* port)
+		{
+			const auto* local_xnaddr = utils::hook::invoke<const char*>(0x140DC6650, true); // SV_ClientMP_GetXNAddr
+			if (!std::memcmp(xnaddr, local_xnaddr, 0x25))
+			{
+				return utils::hook::invoke<bool>(0x140D57F20, xnaddr, in_addr, port);
+			}
+
+			*in_addr = 0;
+			*port = 0;
+			return false;
+		}
+
+		bool bdNATTypeDiscoveryClient__isRunning(__int64 a1)
+		{
+			*(DWORD *)(a1 + 0x1A4) = 4; //BD_NTDCS_FINI
+			return (unsigned int)(*(DWORD *)(a1 + 0x1A4) - 1) <= 2;
 		}
 	}
 
@@ -511,15 +542,22 @@ namespace demonware
 
 			// Skip bdAuth::validateResponseSignature
 			utils::hook::set(0x14129D200, 0xC301B0); // bdRSAKey::importKey
-			utils::hook::set(0x14129D360, 0xC300000001B8); // bdRSAKey::verifySignatureSHA256
+			return_true(0x14129D360); // bdRSAKey::verifySignatureSHA256
 
 			// Remove Online_PatchStreamer checks
 			utils::hook::set<uint8_t>(0x14052A6D0, 0xC3);
-			utils::hook::set(0x14052AB60, 0xC300000001B8);
-			utils::hook::set(0x14052B800, 0xC300000001B8);
+			return_true(0x14052AB60);
+			return_true(0x14052B800);
 
 			// Remove Online_Dailylogin check
-			utils::hook::set(0x140533390, 0xC300000001B8);
+			return_true(0x140533390);
+
+			// Don't NAT traverse to other players (CG_ServerCmdMP_ParsePlayerInfos)
+			utils::hook::call(0x140852EEE, xnet_xnaddr_to_inaddr_stub);
+
+			// disable NAT/QoS pumps
+			utils::hook::set<byte>(0x1412923C0, 0xC3); // bdSocketRouter::pump
+			utils::hook::jump(0x1412947C9, bdNATTypeDiscoveryClient__isRunning);
 
 			// Increase Demonware connection timeouts
 			dvars::override::register_int("demonwareConsideredConnectedTime", 300000, 0, 0x7FFFFFFF, 0x0); // 5s -> 5min

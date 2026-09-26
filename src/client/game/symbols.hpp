@@ -59,6 +59,9 @@ namespace game
 	WEAK symbol<bool(int localClientNum, const playerState_s* ps, vec3_t* outOrigin)> CG_GetPlayerViewOrigin{ 0x1408EC810 };
 	WEAK symbol<bool(int localClientNum, const ScreenPlacement* scrPlace, const float* worldPos, float* outScreenPos)> CG_WorldPosToScreenPosReal{ 0x1407A5490 };
 
+	WEAK symbol<int(int localClientNum, int serverTime, int demoType, int cubemapShot, int cubemapSize,
+		int renderScreen, unsigned int drawType)> CG_DrawActiveFrame{ 0x14026CB50 };
+
 	WEAK symbol<void(int localClientNum, const char* msg, int flags)> CG_Utils_GameMessage{ 0x1401D7FC0 };
 	WEAK symbol<void(int localClientNum, const char* msg, int flags)> CG_Utils_BoldGameMessage{ 0x1401D7F10 };
 
@@ -85,6 +88,7 @@ namespace game
 	WEAK symbol<int(XAssetType type, const char* name)> DB_XAssetExists{ 0x140A7C3A0 };
 	WEAK symbol<int(const RawFile* rawfile, char* buf, int size)> DB_GetRawBuffer{ 0x140A77AB0 };
 
+	WEAK symbol<size_t(XAssetType type)> DB_GetXAssetTypeSize{ 0x1409E5BD0 };
 	WEAK symbol<const char* (XAssetType type, XAssetHeader header)> DB_GetXAssetHeaderName{ 0x1409E5BA0 };
 	WEAK symbol<bool(std::int32_t, void(__cdecl*)(XAssetHeader, void*), const void*)> DB_EnumXAssets_FastFile{ 0x140A76CE0 };
 	WEAK symbol<bool(XAssetType type, const char* name)> DB_IsXAssetDefault{ 0x140A780D0 };
@@ -178,6 +182,8 @@ namespace game
 
 	WEAK symbol<unsigned int(int controllerIndex)> Live_SyncOnlineDataFlags{ 0x140DC5CE0 };
 	WEAK symbol<std::uint64_t(int controllerIndex)> Live_GetXuid{ 0x140D32A20 };
+	WEAK symbol<int(const int mapIndex)> Live_GetMapSource{ 0x140CE7340 };
+	WEAK symbol<int(const char* mapname)> Live_GetMapIndex{ 0x140CE72C0 };
 
 	WEAK symbol<float()> LoadBar_GetLoadedFraction{ 0x1405DE190 };
 
@@ -196,6 +202,18 @@ namespace game
 	WEAK symbol<int(netadr_s a, netadr_s b)> NET_CompareBaseAdr{ 0x140BB4A00 };
 
 	WEAK symbol<PartyData* ()> Party_GetActiveParty{ 0x1409CC010 };
+	WEAK symbol<const char*()> Party_GetGametype{ 0x1409CC570 };
+	WEAK symbol<void(PartyData*)> Party_StopParty{ 0x1409D07B0 };
+	WEAK symbol<bool(const PartyData* party)> Party_IsRunning{ 0x1409CDCF0 };
+	WEAK symbol<bool(const PartyData* party)> Party_AreWeHost{ 0x1409CA9A0 };
+	WEAK symbol<void(PartyData* party)> PartyHost_GamestateChanged{ 0x1409D6590 };
+
+	WEAK symbol<void(int connectType)> BG_SetBotsConnectType{ 0x1406F35D0 };
+	WEAK symbol<void(int relativeTeam, int difficulty)> BG_SetBotsDifficulty{ 0x1406F35F0 };
+	WEAK symbol<void(int relativeTeam, int teamLimit)> BG_SetBotsTeamLimit{ 0x1406F3620 };
+	WEAK symbol<void(PartyData* party)> PartyHost_ClearMapVotes{ 0x1409D5D10 };
+	WEAK symbol<void(PartyData* party, int controllerIndex)> PartyHost_ConcludeMapVote{ 0x1409D59D0 };
+	WEAK symbol<void(int controllerIndex)> PartyHost_ChooseMapVoteEntries{ 0x1409CB1D0 };
 	WEAK symbol<int (const PartyData* party, uint64_t player)> Party_FindMemberByXUID{ 0x1409CBA70 };
 
 	WEAK symbol<void(const unsigned int controllerIndex, XUID xuid)> PlayercardCache_AddToDownload{ 0x140DB72E0 };
@@ -205,6 +223,11 @@ namespace game
 	WEAK symbol<int(GfxFont* font)> R_GetFontHeight{ 0x1412727B0 };
 	WEAK symbol<FontGlowStyle* (int style)> R_Font_GetLegacyFontStyle{ 0x140DFBD00 };
 	WEAK symbol<void()> R_SyncRenderThread{ 0x140E27EE0 };
+	WEAK symbol<void()> R_BeginFrame{ 0x140E26490 };
+	WEAK symbol<void()> R_EndFrame{ 0x140E267B0 };
+	WEAK symbol<void(int localClientNum)> R_ToggleSmpFrame{ 0x140E27FE0 };
+	WEAK symbol<void(int type)> R_IssueRenderCommandsBegin{ 0x140E26E30 };
+	WEAK symbol<void()> R_IssueRenderCommandsEnd{ 0x140E26EF0 };
 	WEAK symbol<void(float x, float y, float width, float height, float s0, float t0, float s1, float t1,
 		float* color, Material* material, int unk)> R_AddCmdDrawStretchPic{ 0x140E24DC0 };
 	WEAK symbol<void* (const char* text, int maxChars, GfxFont* font, int fontHeight, float x,
@@ -229,6 +252,7 @@ namespace game
 	WEAK symbol<char* ()> Sys_Cwd{ 0x140CFE5A0 };
 	
 	WEAK symbol<int()> Sys_Milliseconds{ 0x140D58110 };
+	WEAK symbol<bool()> Sys_IsDatabaseReady{ 0x140BB5E70 };
 
 	WEAK symbol<HANDLE(Sys_Folder folder, const char* baseFilename)> Sys_CreateFile{ 0x140CFDF50 };
 
@@ -310,6 +334,7 @@ namespace game
 	WEAK symbol<void(int)> SND_StopSounds{ 0x140CA06E0 };
 	WEAK symbol<void(const char*)> SND_SetMusicState{ 0x140C9E110 };
 
+	WEAK symbol<void()> UI_MissingMapError{ 0x140CC7800 };
 	WEAK symbol<const char* (const char*)> UI_GetMapDisplayName{ 0x140CC6270 };
 	WEAK symbol<const char* (const char*)> UI_GetGameTypeDisplayName{ 0x140CC61C0 };
 	WEAK symbol<void(unsigned int localClientNum, const char** args)> UI_RunMenuScript{ 0x140CC9710 };
@@ -339,6 +364,7 @@ namespace game
 	
 	WEAK symbol<char*(char* dest, const char* src, int dest_size)> I_strncpyz{0x1412C3560};
 	
+	WEAK symbol<bool(const char* name)> DB_FileExists{0x1403BCF10};
 	WEAK symbol<const char*(const int zoneIndex)> DB_Zones_GetZoneNameFromIndex{0x1403BC410};
 	WEAK symbol<bool(const int zoneIndex)> DB_Zones_IsValidZoneIndex{0x1403BC730};
 	
@@ -432,6 +458,9 @@ namespace game
 	WEAK symbol<db_z_stream_s> db_zip_stream{ 0x14529DD30 };
 	WEAK symbol<char*> db_zip_memory{ 0x14525B500 };
 
+	WEAK symbol<void*> g_assetPool{ 0x1414663D0 };
+	WEAK symbol<int> g_poolSize{ 0x141466290 };
+
 	WEAK symbol<unsigned __int64> g_streamPos{ 0x145687E30 };
 
 	WEAK symbol<bool> g_quitRequested{ 0x14779CD44 };
@@ -465,10 +494,14 @@ namespace game
 	WEAK symbol<uintptr_t> qword_143F25A88{ 0x143F25A88 };
 	WEAK symbol<uintptr_t> qword_141FAEE58{ 0x141FAEE58 };
 
+	WEAK symbol<GUtils*> ms_gUtils{0x143F26EB0};
+	WEAK symbol<cg_s> cg{0x141FA6C88};
+	WEAK symbol<vidConfig_t> vidConfig{0x148B9D7A8};
+
 	namespace hks
 	{
 		WEAK symbol<lua_State*> lua_state{ 0x144FC35F0 };
-		WEAK symbol<void(lua_State* s, const char* str, unsigned int l)> hksi_lua_pushlstring{ 0x1400309E0 };
+		WEAK symbol<void(lua_State* s, const char* str, uint64_t l)> hksi_lua_pushlstring{ 0x1400309E0 };
 		WEAK symbol<HksObject* (HksObject* result, lua_State* s, const HksObject* table, const HksObject* key)> hks_obj_getfield{ 0x1411E14D0 };
 		WEAK symbol<HksObject* (HksObject* result, lua_State* s, const HksObject* table, const HksObject* key)> hks_obj_gettable{ 0x1411E19B0 };
 		WEAK symbol<void(lua_State* s, const HksObject* tbl, const HksObject* key, const HksObject* val)> hks_obj_settable{ 0x1411E26F0 };

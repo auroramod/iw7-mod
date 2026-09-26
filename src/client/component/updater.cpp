@@ -93,6 +93,12 @@ namespace updater
 			std::string hash;
 		};
 
+		constexpr auto max_download_threads = 4;
+		constexpr auto max_download_attempts = 3;
+
+		constexpr auto update_process_flag = "update-process";
+		constexpr auto update_process_binary_modified = 2u;
+
 		std::unordered_map<std::string, git_branch> git_branches =
 		{
 			{"develop", branch_develop},
@@ -179,6 +185,16 @@ namespace updater
 				if (result.has_value() && result->response_code == 200)
 				{
 					return result->buffer;
+				}
+
+				if (result.has_value())
+				{
+					console::error("[HTTP] GET file \"%s\" failed: %s (%i), response %u\n",
+						(url + endpoint).data(), curl_easy_strerror(result->code), result->code, result->response_code);
+				}
+				else
+				{
+					console::error("[HTTP] GET file \"%s\" failed: no response\n", (url + endpoint).data());
 				}
 			}
 
@@ -319,30 +335,35 @@ namespace updater
 			return parsed_list;
 		}
 
-		std::thread create_file_thread(const file_info& file, const std::function<void(const std::optional<std::string>& result)>& cb)
+		std::optional<std::string> download_file_with_retries(const file_info& file)
 		{
-			return std::thread([=]
+			for (auto attempt = 1; attempt <= max_download_attempts; ++attempt)
 			{
-				console::info("[Updater] Downloading file \"%s\"\n", file.name.data());
+				console::info("[Updater] Downloading file \"%s\" (%i/%i)\n",
+					file.name.data(), attempt, max_download_attempts);
 				const auto data = download_data_file(file.name);
 
 				if (!data.has_value())
 				{
-					console::error("[Updater] File failed to download \"%s\"\n", file.name.data());
-					cb({});
-					return;
+					console::error("[Updater] File failed to download \"%s\" (%i/%i)\n",
+						file.name.data(), attempt, max_download_attempts);
 				}
-
-				const auto hash = utils::cryptography::sha1::compute(data.value(), true);
-				if (hash != file.hash)
+				else
 				{
-					console::error("[Updater] File hash mismatch \"%s\"\n", file.name.data());
-					cb({});
-					return;
+					const auto hash = utils::cryptography::sha1::compute(data.value(), true);
+					if (hash == file.hash)
+					{
+						return data;
+					}
+
+					console::error("[Updater] File hash mismatch \"%s\" (%s != %s, %i/%i)\n",
+						file.name.data(), hash.data(), file.hash.data(), attempt, max_download_attempts);
 				}
 
-				cb(data);
-			});
+				std::this_thread::sleep_for(std::chrono::milliseconds(250 * attempt));
+			}
+
+			return {};
 		}
 
 		void delete_garbage_files(const std::vector<file_info>& update_files)
@@ -384,7 +405,8 @@ namespace updater
 			}
 		}
 		
-		void run_update()
+		// returns true if the binary was replaced and a restart is required
+		bool run_update()
 		{
 			console::redudant("[Updater] Checking for updates... (this may take a few seconds)");
 
@@ -392,44 +414,62 @@ namespace updater
 			if (file_list.empty())
 			{
 				console::warn("[Updater] Update aborted\n");
-				return;
+				return false;
 			}
-
-			std::vector<std::thread> download_threads;
 
 			delete_garbage_files(file_list);
 
 			utils::concurrency::container<std::vector<file_data>> result_data;
 			std::atomic_bool download_failed = false;
+			std::atomic_size_t next_file = 0;
 
+			std::vector<file_info> files_to_download;
 			for (const auto& file : file_list)
 			{
-				if (check_file(file) || download_failed)
+				if (check_file(file))
 				{
 					continue;
 				}
 
-				const auto cb = [&result_data, &download_failed, file](const std::optional<std::string>& data)
-				{
-					if (!data.has_value() || download_failed)
-					{
-						download_failed = true;
-						return;
-					}
-
-					result_data.access([=](std::vector<file_data>& list)
-					{
-						list.emplace_back(file.name, data.value());
-					});
-				};
-
-				download_threads.emplace_back(create_file_thread(file, cb));
+				files_to_download.emplace_back(file);
 			}
 
-			if (download_threads.size() == 0)
+			if (files_to_download.size() == 0)
 			{
 				console::redudant("[Updater] Update check complete");
-				return;
+				return false;
+			}
+
+			const auto thread_count = std::min<std::size_t>(max_download_threads, files_to_download.size());
+			std::vector<std::thread> download_threads;
+			download_threads.reserve(thread_count);
+
+			for (std::size_t i = 0; i < thread_count; ++i)
+			{
+				download_threads.emplace_back([&]
+				{
+					while (!download_failed)
+					{
+						const auto file_index = next_file++;
+						if (file_index >= files_to_download.size())
+						{
+							return;
+						}
+
+						const auto& file = files_to_download[file_index];
+						const auto data = download_file_with_retries(file);
+						if (!data.has_value())
+						{
+							download_failed = true;
+							return;
+						}
+
+						result_data.access([&](std::vector<file_data>& list)
+						{
+							list.emplace_back(file.name, data.value());
+						});
+					}
+				});
 			}
 
 			for (auto& thread : download_threads)
@@ -443,7 +483,7 @@ namespace updater
 			if (download_failed)
 			{
 				console::warn("[Updater] Update aborted\n");
-				return;
+				return false;
 			}
 
 			std::vector<file_data_previous> previous_data;
@@ -468,21 +508,47 @@ namespace updater
 				}
 			});
 
-			if (!download_failed)
+			if (download_failed)
 			{
-				console::redudant("[Updater] Update check complete");
-
-				if (is_binary_modified)
-				{
-					if (!utils::flags::has_flag("update-only"))
-					{
-						console::important("[Updater] Restarting\n");
-						utils::nt::relaunch_self();
-					}
-
-					utils::nt::terminate();
-				}
+				return false;
 			}
+
+			console::redudant("[Updater] Update check complete");
+			return is_binary_modified;
+		}
+
+		std::optional<bool> run_update_in_child_process()
+		{
+			const utils::nt::library self;
+
+			STARTUPINFOA startup_info{};
+			PROCESS_INFORMATION process_info{};
+			startup_info.cb = sizeof(startup_info);
+
+			char current_dir[MAX_PATH]{};
+			GetCurrentDirectoryA(sizeof(current_dir), current_dir);
+
+			auto command_line = std::format("{} -{}", GetCommandLineA(), update_process_flag);
+			if (!CreateProcessA(self.get_path().data(), command_line.data(), nullptr, nullptr, false,
+				0, nullptr, current_dir, &startup_info, &process_info))
+			{
+				return {};
+			}
+
+			WaitForSingleObject(process_info.hProcess, INFINITE);
+
+			DWORD exit_code{};
+			const auto has_exit_code = GetExitCodeProcess(process_info.hProcess, &exit_code);
+
+			CloseHandle(process_info.hThread);
+			CloseHandle(process_info.hProcess);
+
+			if (!has_exit_code)
+			{
+				return {};
+			}
+
+			return exit_code == update_process_binary_modified;
 		}
 	}
 
@@ -493,11 +559,39 @@ namespace updater
 		{
 			delete_old_file();
 
-			if (!utils::flags::has_flag("noupdate"))
+			if (utils::flags::has_flag("noupdate"))
 			{
-				run_update();
+				return;
+			}
 
-				is_debugging_updater = utils::flags::has_flag("debugupdate");
+			is_debugging_updater = utils::flags::has_flag("debugupdate");
+
+			if (utils::flags::has_flag(update_process_flag))
+			{
+				const auto binary_modified = run_update();
+				utils::nt::terminate(binary_modified ? update_process_binary_modified : 0);
+			}
+
+			auto binary_modified = false;
+			if (utils::nt::is_wine())
+			{
+				const auto result = run_update_in_child_process();
+				binary_modified = result.has_value() ? result.value() : run_update();
+			}
+			else
+			{
+				binary_modified = run_update();
+			}
+
+			if (binary_modified)
+			{
+				if (!utils::flags::has_flag("update-only"))
+				{
+					console::important("[Updater] Restarting\n");
+					utils::nt::relaunch_self();
+				}
+
+				utils::nt::terminate();
 			}
 		}
 

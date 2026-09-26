@@ -1,17 +1,19 @@
 #include <std_include.hpp>
 
-#ifdef _DEBUG
 #include "loader/component_loader.hpp"
 
 #include "game/game.hpp"
 #include "game/dvars.hpp"
 
 #include <component/console/console.hpp>
+#include <component/scheduler.hpp>
 
 #include "gui.hpp"
+#include "component/directx.hpp"
 
 #include <utils/string.hpp>
 #include <utils/hook.hpp>
+#include <utils/nt.hpp>
 #include <utils/concurrency.hpp>
 
 #include <asmjit/asmjit.h>
@@ -31,6 +33,7 @@ namespace gui
 		{
 			std::function<void()> callback;
 			bool always;
+			bool needs_db;
 		};
 
 		struct event
@@ -56,12 +59,43 @@ namespace gui
 		bool initialized = false;
 		bool toggled = false;
 
+#ifdef _DEBUG
+		std::atomic_bool enabled = true;
+#else
+		std::atomic_bool enabled = false;
+#endif
+
+		ImFont* console_font = nullptr;
+
+		std::mutex capture_mutex;
+		std::unordered_set<std::string> capture_owners;
+		std::optional<std::uint8_t> saved_mouse_state;
+
+		auto& mouse_active = *reinterpret_cast<std::uint8_t*>(0x14779C73D);
+
+		static HWND window = NULL;
+
 		void initialize_gui_context()
 		{
 			ImGui::CreateContext();
+
 			ImGui::StyleColorsDark();
 
-			ImGui_ImplWin32_Init(*reinterpret_cast<HWND*>(0x1477A02D0));
+			auto& io = ImGui::GetIO();
+			io.FontAllowUserScaling = true;
+			io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+			io.Fonts->AddFontDefault();
+
+			static auto console_font_data = utils::nt::load_resource(FONT_JETBRAINS_MONO);
+			if (!console_font_data.empty())
+			{
+				ImFontConfig config{};
+				config.FontDataOwnedByAtlas = false;
+				console_font = io.Fonts->AddFontFromMemoryTTF(console_font_data.data(),
+					static_cast<int>(console_font_data.size()), 17.0f, &config);
+			}
+
+			ImGui_ImplWin32_Init(window);
 			ImGui_ImplDX11_Init(device, device_context);
 
 			initialized = true;
@@ -139,7 +173,18 @@ namespace gui
 
 		void new_gui_frame()
 		{
-			ImGui::GetIO().MouseDrawCursor = toggled;
+			auto& io = ImGui::GetIO();
+			const auto capturing = is_capturing_input();
+			io.MouseDrawCursor = capturing;
+
+			if (capturing)
+			{
+				io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
+			}
+			else
+			{
+				io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+			}
 
 			update_colors();
 
@@ -150,16 +195,31 @@ namespace gui
 			ImGui::NewFrame();
 		}
 
-		void end_gui_frame()
+		void end_gui_frame(IDXGISwapChain* swap_chain)
 		{
 			ImGui::EndFrame();
 			ImGui::Render();
-			ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-		}
 
-		void toggle_menu(const std::string& name)
-		{
-			enabled_menus[name] = !enabled_menus[name];
+			ID3D11Texture2D* back_buffer = nullptr;
+			if (FAILED(swap_chain->GetBuffer(0, IID_PPV_ARGS(&back_buffer))))
+			{
+				return;
+			}
+
+			ID3D11RenderTargetView* render_target_view = nullptr;
+			const auto hr = device->CreateRenderTargetView(back_buffer, nullptr, &render_target_view);
+			back_buffer->Release();
+
+			if (FAILED(hr))
+			{
+				return;
+			}
+
+			device_context->OMSetRenderTargets(1, &render_target_view, nullptr);
+			ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+			device_context->OMSetRenderTargets(0, nullptr, nullptr);
+
+			render_target_view->Release();
 		}
 
 		std::string truncate(const std::string& text, const size_t length, const std::string& end)
@@ -196,8 +256,8 @@ namespace gui
 
 					ImGui::SetWindowPos(ImVec2(10, 30.f + static_cast<float>(index) * 60.f));
 					ImGui::SetWindowSize(ImVec2(250, 0));
-					ImGui::Text(title.data());
-					ImGui::Text(text.data());
+					ImGui::TextUnformatted(title.data());
+					ImGui::TextUnformatted(text.data());
 
 					ImGui::End();
 
@@ -207,17 +267,25 @@ namespace gui
 			});
 		}
 
+#ifdef _DEBUG
 		void menu_checkbox(const std::string& name, const std::string& menu)
 		{
 			ImGui::Checkbox(name.data(), &enabled_menus[menu]);
 		}
 
-		void run_frame_callbacks()
+#endif
+
+		void run_frame_callbacks(const bool db_ready)
 		{
-			on_frame_callbacks.access([](std::vector<frame_callback>& callbacks)
+			on_frame_callbacks.access([db_ready](std::vector<frame_callback>& callbacks)
 			{
 				for (const auto& callback : callbacks)
 				{
+					if (callback.needs_db && !db_ready)
+					{
+						continue;
+					}
+
 					if (callback.always || toggled)
 					{
 						callback.callback();
@@ -226,6 +294,7 @@ namespace gui
 			});
 		}
 
+#ifdef _DEBUG
 		void draw_main_menu_bar()
 		{
 			if (ImGui::BeginMainMenuBar())
@@ -243,29 +312,26 @@ namespace gui
 				ImGui::EndMainMenuBar();
 			}
 		}
+#endif
 
-		void gui_on_frame()
+		void gui_on_frame(IDXGISwapChain* swap_chain)
 		{
-			/*
-			if (!utils::hook::invoke<bool>(0x140BB5E70)) // is database ready
-			{
-				return;
-			}
-			*/
+			// false while fastfiles load, keep drawing but skip whatever reads assets
+			const auto db_ready = game::Sys_IsDatabaseReady();
 
-			if (!initialized)
+			static auto logged = false;
+			if (!logged)
 			{
-				console::debug("[ImGui] Initializing\n");
-				initialize_gui_context();
+				console::debug("[ImGui] Rendering frames\n");
+				logged = true;
 			}
-			else
-			{
-				new_gui_frame();
-				run_frame_callbacks();
-				end_gui_frame();
-			}
+
+			new_gui_frame();
+			run_frame_callbacks(db_ready);
+			end_gui_frame(swap_chain);
 		}
 		
+		/*
 		void gui_on_frame_wrapper(utils::hook::assembler& a)
 		{
 			a.pushad64();
@@ -292,31 +358,164 @@ namespace gui
 
 			return wnd_proc_hook.invoke<LRESULT>(hWnd, msg, wParam, lParam);
 		}
+		*/
+
+		WNDPROC oWndProc;
+
+		LRESULT __stdcall WndProc_stub(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+			if (true && ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam))
+				return true;
+
+			return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
+		}
+
+		IDXGISwapChain* get_swap_chain()
+		{
+			const auto active_window = *reinterpret_cast<int*>(0x148B1BE34);
+			if (active_window < 0)
+			{
+				return nullptr;
+			}
+
+			return reinterpret_cast<IDXGISwapChain**>(0x148B1BE48)[12 * active_window];
+		}
+
+		void draw_gui(IDXGISwapChain* swap_chain)
+		{
+			static ID3D11Device* game_device = nullptr;
+
+			if (initialized && game_device != dx::device)
+			{
+				shutdown_gui();
+			}
+
+			if (!initialized)
+			{
+				if (!enabled)
+				{
+					return;
+				}
+
+				if (FAILED(swap_chain->GetDevice(IID_PPV_ARGS(&device))))
+				{
+					return;
+				}
+
+				game_device = dx::device;
+				device->GetImmediateContext(&device_context);
+
+				DXGI_SWAP_CHAIN_DESC desc{};
+				swap_chain->GetDesc(&desc);
+				window = desc.OutputWindow;
+
+				initialize_gui_context();
+
+				if (!oWndProc)
+				{
+					oWndProc = (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)WndProc_stub);
+				}
+
+				console::debug("[ImGui] Initializing\n");
+				return;
+			}
+
+			gui_on_frame(swap_chain);
+		}
+
+		utils::hook::detour r_present_frame_hook;
+
+		void r_present_frame_stub(const char a1)
+		{
+			auto* const swap_chain = get_swap_chain();
+			if (swap_chain && dx::device)
+			{
+				const auto mutex = *reinterpret_cast<HANDLE*>(0x148B1BC98);
+				WaitForSingleObject(mutex, INFINITE);
+				draw_gui(swap_chain);
+				ReleaseMutex(mutex);
+			}
+
+			r_present_frame_hook.invoke<void>(a1);
+		}
 	}
 
 	void toggle()
 	{
-		if (!toggled)
+		toggled = !toggled;
+
+		if (toggled)
 		{
-			*reinterpret_cast<int*>(0x14779C73D) = 0;
 			*game::keyCatchers |= 0x10;
 		}
 		else
 		{
-			*reinterpret_cast<int*>(0x14779C73D) = 1;
 			*game::keyCatchers &= ~0x10;
 		}
-		toggled = !toggled;
+
+		set_input_capture("menu", toggled);
+	}
+
+	void enable()
+	{
+		enabled = true;
+	}
+
+	void set_input_capture(const std::string& owner, const bool capture)
+	{
+		std::lock_guard _(capture_mutex);
+
+		const auto was_capturing = !capture_owners.empty();
+		if (capture)
+		{
+			capture_owners.insert(owner);
+		}
+		else
+		{
+			capture_owners.erase(owner);
+		}
+
+		const auto is_capturing = !capture_owners.empty();
+		if (is_capturing == was_capturing)
+		{
+			return;
+		}
+
+		if (is_capturing)
+		{
+			saved_mouse_state = mouse_active;
+			mouse_active = 0;
+		}
+		else
+		{
+			mouse_active = saved_mouse_state.value_or(1);
+			saved_mouse_state.reset();
+		}
+	}
+
+	bool is_capturing_input()
+	{
+		std::lock_guard _(capture_mutex);
+		return !capture_owners.empty();
+	}
+
+	ImFont* get_console_font()
+	{
+		return console_font;
 	}
 
 	bool gui_key_event(const int local_client_num, const int key, const int down)
 	{
-		return true;
-
-		/*
-		if (key == game::K_F11 && down)
+#ifdef _DEBUG
+		if (key == game::K_F11)
 		{
-			toggle();
+			static auto held = false;
+			if (down && !held)
+			{
+				toggle();
+			}
+
+			held = down != 0;
 			return false;
 		}
 
@@ -325,26 +524,26 @@ namespace gui
 			toggle();
 			return false;
 		}
+#endif
 
 		return !toggled;
-		*/
 	}
 
 	bool gui_char_event(const int local_client_num, const int key)
 	{
-		return true; // !toggled;
+		return !toggled;
 	}
 
 	bool gui_mouse_event(const int local_client_num, int x, int y)
 	{
-		return true; // !toggled;
+		return !is_capturing_input();
 	}
 
-	void on_frame(const std::function<void()>& callback, bool always)
+	void on_frame(const std::function<void()>& callback, bool always, bool needs_db)
 	{
-		on_frame_callbacks.access([always, callback](std::vector<frame_callback>& callbacks)
+		on_frame_callbacks.access([always, needs_db, callback](std::vector<frame_callback>& callbacks)
 		{
-			callbacks.emplace_back(callback, always);
+			callbacks.emplace_back(callback, always, needs_db);
 		});
 	}
 
@@ -412,44 +611,18 @@ namespace gui
 	{
 		if (initialized)
 		{
+			ImGui_ImplDX11_Shutdown();
 			ImGui_ImplWin32_Shutdown();
 			ImGui::DestroyContext();
 		}
 
 		initialized = false;
+		console_font = nullptr;
 	}
 
-	HRESULT d3d11_create_device_stub(IDXGIAdapter* p_adapter, D3D_DRIVER_TYPE driver_type, HMODULE software,
-			UINT flags, const D3D_FEATURE_LEVEL* p_feature_levels, UINT feature_levels, UINT sdk_version,
-			ID3D11Device** pp_device, D3D_FEATURE_LEVEL* p_feature_level, ID3D11DeviceContext** pp_immediate_context)
-	{
-		shutdown_gui();
-		
-		const auto result = D3D11CreateDevice(p_adapter, driver_type, software, flags, p_feature_levels,
-				feature_levels, sdk_version, pp_device, p_feature_level, pp_immediate_context);
-
-		if (pp_device != nullptr && pp_immediate_context != nullptr)
-		{
-			device = *pp_device;
-			device_context = *pp_immediate_context;
-		}
-		
-		return result;
-	}
-	
 	class component final : public component_interface
 	{
 	public:
-		void* load_import(const std::string& library, const std::string& function) override
-		{
-			if (function == "D3D11CreateDevice" && !game::environment::is_dedi())
-			{
-				return d3d11_create_device_stub;
-			}
-
-			return nullptr;
-		}
-		
 		void post_unpack() override
 		{
 			if (game::environment::is_dedi())
@@ -457,15 +630,15 @@ namespace gui
 				return;
 			}
 
-			// TODO: this hook won't work :(
-			utils::hook::jump(0x140E59B91, utils::hook::assemble(gui_on_frame_wrapper), true);
-			wnd_proc_hook.create(0x140D5A680, wnd_proc_stub);
+			r_present_frame_hook.create(0x140E59A40, r_present_frame_stub);
 
 			on_frame([]
 			{
 				show_notifications();
+#ifdef _DEBUG
 				draw_main_menu_bar();
-			});
+#endif
+			}, false, false);
 		}
 
 		void pre_destroy() override
@@ -480,5 +653,4 @@ namespace gui
 	};
 }
 
-//REGISTER_COMPONENT(gui::component)
-#endif
+REGISTER_COMPONENT(gui::component)

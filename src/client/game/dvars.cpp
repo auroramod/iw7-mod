@@ -17,6 +17,10 @@ namespace dvars
 	game::dvar_t* con_inputDvarValueColor = nullptr;
 	game::dvar_t* con_inputDvarInactiveValueColor = nullptr;
 	game::dvar_t* con_inputCmdMatchColor = nullptr;
+	game::dvar_t* con_inputGhostColor = nullptr;
+	game::dvar_t* con_inputSelectedColor = nullptr;
+
+	game::dvar_t* aurora_newConsole = nullptr;
 
 	game::dvar_t* branding = nullptr;
 
@@ -38,13 +42,20 @@ namespace dvars
 	game::dvar_t* r_fullbright = nullptr;
 
 	game::dvar_t* bg_bounces = nullptr;
+	game::dvar_t* bg_bounceMinFallSpeed = nullptr;
 	game::dvar_t* bg_playerEjection = nullptr;
+	game::dvar_t* bg_disable_barrier_clips = nullptr;
 
 	game::dvar_t* logfile = nullptr;
 	game::dvar_t* g_log = nullptr;
 	game::dvar_t* dlog_enabled = nullptr;
 
 	game::dvar_t* jump_enableFallDamage = nullptr;
+	game::dvar_t* player_sustain_ammo = nullptr;
+
+	game::dvar_t* mantle_legacy = nullptr;
+	game::dvar_t* mantle_legacyMaxAngle = nullptr;
+	game::dvar_t* mantle_legacyReach = nullptr;
 
 	std::string dvar_get_vector_domain(const int components, const game::DvarLimits& domain)
 	{

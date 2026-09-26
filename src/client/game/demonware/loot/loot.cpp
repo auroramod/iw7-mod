@@ -338,7 +338,7 @@ namespace demonware
 		{
 			std::vector<Item> selectedItems;
 
-			if (lootmap.empty()) 
+			if (lootmap.empty())
 			{
 				console::error("get_random_loot_from_map: Lootmap is empty");
 				return selectedItems;
@@ -350,7 +350,7 @@ namespace demonware
 				return selectedItems;
 			}
 
-			if (luckFactor <= 0) 
+			if (luckFactor <= 0)
 			{
 				console::error("get_random_loot_from_map: Luck factor must be greater than zero");
 				return selectedItems;
@@ -359,7 +359,7 @@ namespace demonware
 			double totalWeight = 0;
 			std::vector<double> adjustedWeights(lootmap.size());
 
-			for (size_t i = 0; i < lootmap.size(); ++i) 
+			for (size_t i = 0; i < lootmap.size(); ++i)
 			{
 				if (!get_loot(lootmap[i]).quality)
 				{
@@ -376,21 +376,21 @@ namespace demonware
 			std::mt19937 gen(rd());
 			std::uniform_real_distribution<> dis(0.0, totalWeight);
 
-			while (selectedItems.size() < itemAmount) 
+			while (selectedItems.size() < itemAmount)
 			{
 				double randomValue = dis(gen);
 				double cumulativeWeight = 0;
 
-				// Find the item corresponding to the random value
-				for (size_t i = 0; i < lootmap.size(); ++i) {
+				for (size_t i = 0; i < lootmap.size(); ++i) 
+				{
 					cumulativeWeight += adjustedWeights[i];
-					if (randomValue < cumulativeWeight) {
+					if (randomValue < cumulativeWeight) 
+					{
 						if (quaranteedQuality && get_loot(lootmap[i]).quality < quaranteedQuality)
 							continue;
 						else
 							quaranteedQuality = 0;
 
-						// Add item to the result if it's not already selected
 						if (std::find(selectedItems.begin(), selectedItems.end(), get_loot(lootmap[i])) == selectedItems.end()) {
 							selectedItems.push_back(get_loot(lootmap[i]));
 							break;
@@ -435,7 +435,7 @@ namespace demonware
 		}
 
 		std::vector<Item> all_loot;
-		std::vector<Item> get_all_loot() 
+		std::vector<Item> get_all_loot()
 		{
 			if (!all_loot.empty())
 			{
@@ -452,30 +452,25 @@ namespace demonware
 			return items;
 		};
 
+		void read_json_data();
+
 		std::vector<Item> get_all_loot_owned()
 		{
-			auto lootmap = get_all_lootmaps();
-			std::vector<Item> items{};
-			for (size_t i = 0; i < lootmap.size(); i++)
-			{
-				if (get_item_balance(lootmap[i]))
-				{
-					items.push_back(get_loot(lootmap[i]));
-				}
-			}
+			cache_loot();
+			read_json_data();
 
-			for (auto& crate : lootcrates)
+			std::vector<Item> items{};
+			for (const auto& entry : json_buffer["Loot"].items())
 			{
-				const auto crate_id = crate.first;
-				if (get_item_balance(crate_id))
+				const auto id = static_cast<std::uint32_t>(std::strtoul(entry.key().data(), nullptr, 10));
+				if (!id || !get_item_balance(id))
 				{
-					Item crate_item{};
-					crate_item.id = crate_id;
-					crate_item.quality = 0;
-					crate_item.salvageReturned = 0;
-					crate_item.cost = 0;
-					items.push_back(crate_item);
+					continue;
 				}
+
+				auto item = get_loot(id);
+				item.id = id;
+				items.push_back(item);
 			}
 
 			return items;
@@ -506,14 +501,19 @@ namespace demonware
 		std::vector<Item> get_random_loot_ZombieCrate(const float scale = 1.0f, std::uint32_t quality = 0)
 		{
 			std::vector<std::uint32_t> lootmap = combine_mp_lootmaps();
+			size_t cards = quality == 2 ? 3 : 1;
 
 			auto mp = get_random_loot_from_map(lootmap, 2, scale, quality);
-			auto cp = get_random_loot_from_map(lootmap_zombiefatefortune, 1, scale);
+			auto cp = get_random_loot_from_map(lootmap_zombiefatefortune, cards, scale);
 
 			std::vector<Item> items;
 			items.push_back(mp[0]);
 			items.push_back(mp[1]);
-			items.push_back(cp[0]);
+
+			for (size_t i = 0; i < cards; ++i)
+			{
+				items.push_back(cp[i]);
+			}
 
 			return items;
 		}
@@ -654,12 +654,9 @@ namespace demonware
 			read_json_data();
 
 			const int64_t last_date_claimed = json_read<int64_t>(json_buffer["DailyLogin"]["LastDateClaimed"]);
-
-			// this may happen if the last date claimed doesn't exist yet
 			if (last_date_claimed == -1)
 				return true;
 
-			// check if its been a new day since the last claim
 			std::time_t now_time = std::time(nullptr);
 			std::time_t last_time = static_cast<std::time_t>(last_date_claimed);
 

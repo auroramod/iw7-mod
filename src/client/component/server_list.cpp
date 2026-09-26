@@ -44,6 +44,7 @@ namespace server_list
 		{
 			game::netadr_s address{};
 			volatile bool requesting = false;
+			int request_time = 0;
 			std::unordered_map<game::netadr_s, int> queued_servers{};
 		} master_state;
 
@@ -66,6 +67,8 @@ namespace server_list
 			if (get_master_server(master_state.address))
 			{
 				master_state.requesting = true;
+				master_state.request_time = game::Sys_Milliseconds();
+
 				network::send(master_state.address, "getservers", utils::string::va("IW7 %i full empty", PROTOCOL));
 			}
 		}
@@ -215,6 +218,11 @@ namespace server_list
 
 		void do_frame_work()
 		{
+			if (master_state.requesting && game::Sys_Milliseconds() - master_state.request_time > 5'000)
+			{
+				master_state.requesting = false;
+			}
+
 			auto& queue = master_state.queued_servers;
 			if (queue.empty())
 			{
@@ -427,7 +435,10 @@ namespace server_list
 						return;
 					}
 
-					master_state.requesting = false;
+					if (data.find("\\EOT") != std::string::npos)
+					{
+						master_state.requesting = false;
+					}
 
 					std::optional<size_t> start{};
 					for (std::size_t i = 0; i + 6 < data.size(); ++i)

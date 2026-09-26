@@ -6,11 +6,11 @@ Bot.BotTeams = {
 }
 Bot.BotLimit = 17
 Bot.BotDifficulties = {
-	Recruit = 0,
-	Regular = 1,
-	Hardened = 2,
-	Veteran = 3,
-	Mixed = 4,
+	Mixed = 0,
+	Recruit = 1,
+	Regular = 2,
+	Hardened = 3,
+	Veteran = 4,
 }
 
 Bot.GetMaxBotLimit = function()
@@ -40,10 +40,11 @@ Bot.SetBotsDifficulty = function(team, difficulty)
 	else
 		Engine.Exec("set bot_difficulty_free " .. tostring(difficulty))
 	end
+	Engine.Exec("xsyncbots")
 end
 
 Bot.GetBotsDifficulty = function(team)
-	local difficulty = 4
+	local difficulty = Bot.BotDifficulties.Mixed
 	if team == Bot.BotTeams.Friendly then
 		difficulty = Engine.GetDvarInt("bot_difficulty_allies")
 	elseif team == Bot.BotTeams.Enemy then
@@ -51,14 +52,13 @@ Bot.GetBotsDifficulty = function(team)
 	else
 		difficulty = Engine.GetDvarInt("bot_difficulty_free")
 	end
-	if not difficulty then
-		difficulty = 4
+	if not difficulty or difficulty < 0 or difficulty > Bot.BotDifficulties.Veteran then
+		difficulty = Bot.BotDifficulties.Mixed
 	end
 	return tonumber(difficulty)
 end
 
 Bot.SetBotsTeamLimit = function(team, size)
-	Lobby.SetBotsTeamLimit(team, size)
 	if team == Bot.BotTeams.Friendly then
 		Engine.Exec("set bot_allies " .. tostring(size))
 	elseif team == Bot.BotTeams.Enemy then
@@ -66,6 +66,7 @@ Bot.SetBotsTeamLimit = function(team, size)
 	else
 		Engine.Exec("set bot_free " .. tostring(size))
 	end
+	Engine.Exec("xsyncbots")
 end
 
 local update_button = function(f1_arg0, f1_arg1, f1_arg2)
@@ -103,26 +104,36 @@ local f0_local0 = function(f1_arg0, f1_arg1, f1_arg2)
 		return {
 			labels = f2_local0,
 			action = function(f3_arg0)
-				Bot.SetBotsTeamLimit(team, f3_arg0 - 1)
-				if teambased and (Bot.GetBotsTeamLimit(0) + Bot.GetBotsTeamLimit(1)) >= Bot.GetMaxBotLimit() then
-					local adjustteam = 0
-					local otherside = 1
-					if team == Bot.BotTeams.Friendly then
-						adjustteam = Bot.BotTeams.Enemy
-						otherside = 0
-					end
-					if team == Bot.BotTeams.Enemy then
-						adjustteam = Bot.BotTeams.Friendly
-						otherside = 1
-					end
-					local adjustval = Bot.GetMaxBotLimit() - Bot.GetBotsTeamLimit(otherside)
-					if adjustval <= 0 then
-						adjustval = 1
-					end
-					f1_local0[adjustteam].currentValue = adjustval
+				local oldValue = Bot.GetBotsTeamLimit(team)
+				local newValue = f3_arg0 - 1
 
-					f1_local0[adjustteam]:UpdateContent()
-					Bot.SetBotsTeamLimit(adjustteam, adjustval - 1)
+				Bot.SetBotsTeamLimit(team, newValue)
+
+				if teambased then
+					local total = Bot.GetBotsTeamLimit(Bot.BotTeams.Friendly) + Bot.GetBotsTeamLimit(Bot.BotTeams.Enemy)
+
+					if total > Bot.GetMaxBotLimit() then
+						local adjustteam
+						local otherside
+
+						if team == Bot.BotTeams.Friendly then
+							adjustteam = Bot.BotTeams.Enemy
+							otherside = Bot.BotTeams.Friendly
+						else
+							adjustteam = Bot.BotTeams.Friendly
+							otherside = Bot.BotTeams.Enemy
+						end
+
+						local adjustval = Bot.GetMaxBotLimit() - Bot.GetBotsTeamLimit(otherside)
+
+						if adjustval < 0 then
+							adjustval = 0
+						end
+
+						f1_local0[adjustteam].currentValue = adjustval + 1
+						f1_local0[adjustteam]:UpdateContent()
+						Bot.SetBotsTeamLimit(adjustteam, adjustval)
+					end
 				end
 			end,
 			defaultValue = f2_local2,
@@ -361,7 +372,7 @@ end
 
 local GameSetupButtonsBotsCustomGames = package.loaded["frontEnd.mp.GameSetupButtonsBots"].GameSetupButtonsBots
 GameSetupButtonsBotsOverride = function(menu, controller)
-	if CONDITIONS.InFrontendPublicMP then
+	if Engine.GetDvarBool("ui_combat_training") then
 		return GameSetupButtonsBotsCombatTraining(menu, controller)
 	else
 		return GameSetupButtonsBotsCustomGames(menu, controller)

@@ -22,6 +22,39 @@ namespace auth
 {
 	namespace
 	{
+		std::string get_player_suffix()
+		{
+			static const auto suffix = []() -> std::string
+			{
+				// other player stuff starts at 2, not 1
+				for (auto i = 1; i <= 8; ++i)
+				{
+					const auto mutex = CreateMutexA(nullptr, FALSE, utils::string::va("iw7-mod-player-%d", i));
+					if (!mutex)
+					{
+						break;
+					}
+
+					if (GetLastError() != ERROR_ALREADY_EXISTS)
+					{
+						return i == 1 ? std::string{} : utils::string::va("-%d", i);
+					}
+
+					ReleaseMutex(mutex);
+					CloseHandle(mutex);
+				}
+
+				return {};
+			}();
+
+			return suffix;
+		}
+
+		std::string get_key_path(const char* name)
+		{
+			return (utils::properties::get_appdata_path() / utils::string::va("iw7-%s%s.key", name, get_player_suffix().data())).generic_string();
+		}
+
 		std::string get_hdd_serial()
 		{
 			DWORD serial{};
@@ -66,6 +99,7 @@ namespace auth
 		std::string get_key_entropy()
 		{
 			std::string raw_entropy;
+			raw_entropy.append(get_player_suffix());
 			raw_entropy.append(utils::smbios::get_uuid());
 			raw_entropy.append(get_hw_profile_guid());
 			raw_entropy.append(get_protected_data());
@@ -83,7 +117,7 @@ namespace auth
 		bool load_key(utils::cryptography::ecc::key& key)
 		{
 			std::string data{};
-			const auto key_path = (utils::properties::get_appdata_path() / "iw7-private.key").generic_string();
+			const auto key_path = get_key_path("private");
 
 			if (!utils::io::read_file(key_path, &data))
 			{
@@ -109,7 +143,7 @@ namespace auth
 				throw std::runtime_error("Failed to generate cryptographic key!");
 			}
 
-			const auto key_path = (utils::properties::get_appdata_path() / "iw7-private.key").generic_string();
+			const auto key_path = get_key_path("private");
 			if (!utils::io::write_file(key_path, key.serialize()))
 			{
 				console::error("Failed to write cryptographic key to: %s\n", key_path.data());
@@ -134,7 +168,7 @@ namespace auth
 		utils::cryptography::ecc::key get_key_internal()
 		{
 			const auto key = load_or_generate_key();
-			const auto key_path = (utils::properties::get_appdata_path() / "iw7-public.key").generic_string();
+			const auto key_path = get_key_path("public");
 
 			if (!utils::io::write_file(key_path, key.get_public_key()))
 			{
