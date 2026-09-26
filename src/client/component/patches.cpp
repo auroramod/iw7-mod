@@ -244,9 +244,10 @@ namespace patches
 			});
 		}
 
-		void request_start_match(game::PartyData* party, bool/* skip_start_countdown*/)
+		game::dvar_t* party_skip_countdown = nullptr;
+		void request_start_match(game::PartyData* party, bool skip_start_countdown)
 		{
-			utils::hook::invoke<void>(0x1409D8900, party, true); // PartyHost_RequestStartMatch
+			utils::hook::invoke<void>(0x1409D8900, party, skip_start_countdown || party_skip_countdown->current.enabled); // PartyHost_RequestStartMatch
 		}
 
 		void dvar_set_command_stub(const char* name, const char* value, bool superuser)
@@ -750,6 +751,7 @@ namespace patches
 			//utils::hook::jump(0x140B2215B, update_last_seen_players_stub(), true);
 
 			// Start match without the timer
+			party_skip_countdown = game::Dvar_RegisterBool("party_skipCountdown", false, game::DVAR_FLAG_SAVED, "Start private matches without the countdown");
 			utils::hook::jump(0x1409AA7F5, request_start_match);
 
 			// re-direct some dvars to others for backwards compatibility on configurations
