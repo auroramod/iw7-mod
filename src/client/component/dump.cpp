@@ -131,20 +131,20 @@ namespace dump
 		const std::vector<uint8_t> buffer_u8(buffer.begin(), buffer.end());
 		asset.deserialize(buffer_u8);
 
-		if (!asset.len || asset.len == 0)
+		if (!asset.length)
 		{
 			utils::io::write_file(filename, "", false);
 			return;
 		}
 
 		script = std::move(asset.bytecode);
-		stack = utils::zlib::decompress(asset.buffer, asset.len);
+		stack = utils::zlib::decompress(asset.buffer, asset.length);
 
 		try
 		{
 			const auto outasm = gsc::gsc_ctx->disassembler().disassemble(script, stack);
 			const auto outast = gsc::gsc_ctx->decompiler().decompile(*outasm);
-			auto outsrc = gsc::gsc_ctx->source().dump(*outast);
+			auto outsrc = gsc::gsc_ctx->printer().print(*outast);
 
 			const std::string rawBuffer(outsrc.begin(), outsrc.end());
 			utils::io::write_file(filename, rawBuffer, false);
