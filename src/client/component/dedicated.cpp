@@ -190,7 +190,7 @@ namespace dedicated
 			}
 			else
 			{
-#ifdef DEBUG
+#ifdef _DEBUG
 				console::error("[SND]: failed to find sound length soundalias \"%s\"\n", alias);
 #endif
 				return 0;
@@ -239,7 +239,7 @@ namespace dedicated
 		{
 			if (!game::environment::is_dedi())
 			{
-#ifdef DEBUG
+#ifdef _DEBUG
 				snd_lookup_sound_length_hook.create(0x140C9BCE0, snd_lookup_sound_length_stub);
 				command::add("generateSoundLookupData", []()
 				{
@@ -264,7 +264,7 @@ namespace dedicated
 				return;
 			}
 
-#ifdef DEBUG
+#ifdef _DEBUG
 			console::important("Starting dedicated server\n");
 #endif
 

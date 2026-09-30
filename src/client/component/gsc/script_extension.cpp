@@ -301,7 +301,7 @@ namespace gsc
 	public:
 		void post_unpack() override
 		{
-#ifdef DEBUG
+#ifdef _DEBUG
 			developer_script = game::Dvar_RegisterBool("developer_script", true, 0, "Enable developer script comments");
 #else
 			developer_script = game::Dvar_RegisterBool("developer_script", false, 0, "Enable developer script comments");

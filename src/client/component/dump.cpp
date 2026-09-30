@@ -1,6 +1,6 @@
 #include <std_include.hpp>
 
-#ifdef DEBUG
+#ifdef _DEBUG
 #include "loader/component_loader.hpp"
 #include "game/game.hpp"
 #include "command.hpp"
@@ -17,23 +17,18 @@ namespace dump
 	{
 		try 
 		{
-			// Check if string is empty first
 			if (str.empty()) 
 			{
 				return defaultValue;
 			}
 
-			// Attempt conversion, handling potential exceptions
 			size_t pos = 0;
 			long long result = std::stoll(str, &pos);
-
-			// Check if entire string was converted
 			if (pos != str.length())
 			{
 				return defaultValue;
 			}
 
-			// Check if result is within int range
 			if (result > std::numeric_limits<int>::max() || result < std::numeric_limits<int>::min()) 
 			{
 				return defaultValue;
@@ -43,13 +38,11 @@ namespace dump
 		}
 		catch (const std::invalid_argument&)
 		{
-			// Conversion failed due to non-numeric string
-			return defaultValue;
+			return defaultValue; // non-numeric string
 		}
 		catch (const std::out_of_range&) 
 		{
-			// Number out of integer range
-			return defaultValue;
+			return defaultValue; // out of integer range
 		}
 	}
 
@@ -59,52 +52,40 @@ namespace dump
 		std::istringstream block_stream(encoded_block);
 		std::string line;
 
-		// Skip the opening brace
 		std::getline(block_stream, line);
 
-		// Process each line
 		while (std::getline(block_stream, line))
 		{
-			// Trim whitespace
 			line.erase(0, line.find_first_not_of(" \t\n\r"));
-
-			// Skip closing brace - we'll add it later
 			if (line.find("}") == 0)
 				continue;
 
-			// Find the key ID (number at start of line)
 			size_t space_pos = line.find(" ");
 			if (space_pos != std::string::npos)
 			{
 				std::string key_id_str = line.substr(0, space_pos);
 
-				// Try to convert to a number
 				try 
 				{
 					const int key_id = std::stoi(key_id_str);
 
 					if (auto key_string = gsc::gsc_ctx->token_name(key_id); !key_string.empty())
 					{
-						// Replace the ID with the string
 						result += "    \"" + std::string(key_string) + "\" ";
-
-						// Add the rest of the line
 						result += line.substr(space_pos + 1) + "\n";
 					}
 					else
 					{
-						// If lookup fails, keep the original line
 						result += "    " + line + "\n";
 					}
 				}
-				catch (...) {
-					// If not a valid number, keep the original line
+				catch (...) 
+				{
 					result += "    " + line + "\n";
 				}
 			}
 			else
 			{
-				// Line doesn't have a space, keep it as is
 				result += "    " + line + "\n";
 			}
 		}

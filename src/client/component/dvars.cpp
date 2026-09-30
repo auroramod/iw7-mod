@@ -551,8 +551,7 @@ namespace dvars
 
 			dvar_set_variant_hook.create(0x140CED850, dvar_set_variant_stub);
 
-			// We need to apply these straight away
-			MH_ApplyQueued();
+			MH_ApplyQueued(); // we apply dvar detour hooks straight away
 
 			// de-register cg_drawFPSLabels and register a placeholder cg_drawFps
 			utils::hook::call(0x140BAEAE9, fps_labels_register_stub);

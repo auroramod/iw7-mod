@@ -22,7 +22,7 @@ namespace weapon
 {
 	namespace
 	{
-#ifdef DEBUG
+#ifdef _DEBUG
 		template <typename T>
 		void set_weapon_field(const std::string& weapon_name, unsigned int field, T value)
 		{
@@ -238,7 +238,7 @@ namespace weapon
 	public:
 		void post_unpack() override
 		{
-#ifdef DEBUG
+#ifdef _DEBUG
 			command::add("setWeaponFieldFloat", [](const command::params& params)
 			{
 				if (params.size() <= 3)

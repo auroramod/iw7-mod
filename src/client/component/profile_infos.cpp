@@ -123,7 +123,7 @@ namespace profile_infos
 			{
 				result = profile_entry->second;
 			}
-#ifdef DEBUG
+#ifdef _DEBUG
 			else
 			{
 				console::error("[get_profile_info] requesting profile info for %llX (bad)\n", user_id);

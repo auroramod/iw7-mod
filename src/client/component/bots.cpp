@@ -39,7 +39,7 @@ namespace bots
 					"mjkzy", "alicealys", "Joelrau",
 					"momo5502", "skkuull", "yoyothebest",
 					"Lierrmm", "Wanted", "January",
-					"diamante0018", "efinst0rm"
+					"diamante0018", "efinst0rm", "divity"
 				};
 
 				return;
@@ -137,7 +137,6 @@ namespace bots
 				}, scheduler::pipeline::server);
 			});
 
-			// Clear bot names and reset ID on game shutdown to allow new names to be added without restarting
 			scripting::on_shutdown([](bool /*free_scripts*/, bool post_shutdown)
 			{
 				if (!post_shutdown)

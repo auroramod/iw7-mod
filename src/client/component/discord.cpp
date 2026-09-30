@@ -281,7 +281,7 @@ namespace discord
 
 		void join_game(const char* join_secret)
 		{
-#ifdef DEBUG
+#ifdef _DEBUG
 			console::debug("Discord: join_game called with secret '%s'\n", join_secret);
 #endif
 

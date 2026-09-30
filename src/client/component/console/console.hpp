@@ -30,7 +30,7 @@ namespace console
 	template <typename... Args>
 	void debug(const char* fmt, Args&&... args)
 	{
-#ifdef DEBUG
+#ifdef _DEBUG
 		print(print_type_debug, fmt, std::forward<Args>(args)...);
 #endif
 	}

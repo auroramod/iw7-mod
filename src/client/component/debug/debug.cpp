@@ -1,5 +1,6 @@
 #include <std_include.hpp>
-#ifdef DEBUG
+
+#ifdef _DEBUG
 #include "loader/component_loader.hpp"
 
 #include "../dvars.hpp"
@@ -31,7 +32,6 @@ namespace debug
 
 		constexpr auto EPSILON = std::numeric_limits<float>::epsilon();
 
-		// Calculates the cross product of two 3D vectors
 		void crossProduct3D(float v1[3], float v2[3], float result[3])
 		{
 			result[0] = v1[1] * v2[2] - v1[2] * v2[1];
@@ -39,7 +39,6 @@ namespace debug
 			result[2] = v1[0] * v2[1] - v1[1] * v2[0];
 		}
 
-		// Normalizes a 3D vector
 		void normalize3D(float v[3])
 		{
 			float length = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
@@ -48,7 +47,6 @@ namespace debug
 			v[2] /= length;
 		}
 
-		// Calculates the normal vector of a triangle defined by three 3D points
 		void calculateTriangleNormal(float p[3][3], float normal[3])
 		{
 			float v1[3], v2[3];
@@ -60,13 +58,11 @@ namespace debug
 			normalize3D(normal);
 		}
 
-		// Calculates the dot product of two 3D vectors
 		float dotProduct3D(float v1[3], float v2[3])
 		{
 			return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
 		}
 
-		// Calculates the distance from a point to a plane defined by a point on the plane and the plane's normal vector
 		float distancePointToPlane(float planePoint[3], float normal[3], float point[3])
 		{
 			float dist = 0.0f;
@@ -76,7 +72,6 @@ namespace debug
 			return dist;
 		}
 
-		// Calculates the barycentric coordinates of a point in a triangle defined by three 3D points
 		void calculateBarycentricCoordinates(float p[3][3], float point[3], float& alpha, float& beta, float& gamma)
 		{
 			float v0[3], v1[3], v2[3];
@@ -98,48 +93,39 @@ namespace debug
 
 		bool lineTriangleIntersection(float p[3][3], float linePoint[3], float lineDir[3])
 		{
-			// Calculate the normal vector of the triangle
 			float normal[3];
 			calculateTriangleNormal(p, normal);
 
-			// Calculate the dot product of the normal vector and the line direction vector
 			float dotProduct = dotProduct3D(normal, lineDir);
-
-			// If the dot product is close to zero, the line is parallel to the triangle and does not intersect
 			if (fabs(dotProduct) < EPSILON) {
 				return false;
 			}
 
-			// Calculate the distance from the line point to the plane of the triangle
 			float distance = distancePointToPlane(p[0], normal, linePoint);
-
-			// If the distance is zero or the sign of the distance is different than the sign of the dot product, the line does not intersect the triangle
 			if (fabs(distance) < EPSILON || (distance > 0 && dotProduct > 0) || (distance < 0 && dotProduct < 0)) {
 				return false;
 			}
 
-			// Calculate the intersection point of the line and the plane of the triangle
 			float t = -distance / dotProduct;
 			float intersection[3];
 			intersection[0] = linePoint[0] + t * lineDir[0];
 			intersection[1] = linePoint[1] + t * lineDir[1];
 			intersection[2] = linePoint[2] + t * lineDir[2];
 
-			// Calculate the barycentric coordinates of the intersection point
 			float alpha, beta, gamma;
 			calculateBarycentricCoordinates(p, intersection, alpha, beta, gamma);
 
-			// If the barycentric coordinates are all greater than or equal to zero, the intersection point is inside the triangle and the line intersects the triangle
 			if (alpha >= 0.0f && beta >= 0.0f && gamma >= 0.0f) {
 				return true;
 			}
 
-			// Otherwise, the line does not intersect the triangle
 			return false;
 		}
 
-		void getCenterPoint(float p[3][3], float center[3]) {
-			for (int i = 0; i < 3; i++) {
+		void getCenterPoint(float p[3][3], float center[3]) 
+		{
+			for (int i = 0; i < 3; i++) 
+			{
 				center[i] = (p[0][i] + p[1][i] + p[2][i]) / 3.0f;
 			}
 		}

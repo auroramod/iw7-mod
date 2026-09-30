@@ -307,34 +307,29 @@ namespace party
 
 		void xstartlobby()
 		{
-			// Retrieve game variables
 			const int privateMatch = game::Dvar_FindVar("xblive_privatematch")->current.integer;
 			const int maxPlayers = game::Dvar_FindVar("party_maxplayers")->current.integer;
 			const int privateClients = game::Dvar_FindVar("ui_privateClients")->current.integer;
 			const int availableSpots = maxPlayers - privateClients;
 
-			// Get party data
 			auto partyData = game::Lobby_GetPartyData();
 
-			// Stop current party and reset settings
+			// stop current party and reset settings
 			utils::hook::invoke<void>(0x1409D07B0, partyData); // Party_StopParty
 			utils::hook::invoke<void>(0x1409CAB20, partyData, 0, 1); // Party_Awake
 			utils::hook::invoke<void>(0x1409D0050); // Party_ResetTweakDvars
 			utils::hook::invoke<void>(0x1409CB460, partyData); // Voice_DisableLocalMics
 
-			// Set lobby presence
 			utils::hook::invoke<void>(0x140D330B0, 0); // Live_SetLobbyPresence
 
-			// Run playlist rule if not in a private match
 			if (!privateMatch && !game::environment::is_dedi())
 			{
 				utils::hook::invoke<void>(0x140CCD840, 0, 0); // Playlist_RunRule
 			}
 
-			// Set up lobby flags
 			const int flags = utils::hook::invoke<int>(0x140D9B200, 0); // PartyHost_GetCreateFlags
 
-			// Initialize lobby
+			// initialize lobby
 			utils::hook::invoke<void>(0x1409D9940, partyData, 0, 0, flags, privateClients, availableSpots);
 		}
 
