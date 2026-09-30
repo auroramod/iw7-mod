@@ -66,9 +66,13 @@ namespace ui_scripting
 			std::unordered_map<std::string, std::string> loaded_scripts;
 			bool load_raw_script{};
 			std::string raw_script_name{};
+			std::string raw_script_data{};
 		};
 
 		globals_t globals{};
+
+		// bumped on hks shutdown so callbacks and refs from a torn down lua state are skipped
+		std::atomic_uint64_t lua_generation_count{};
 
 		bool is_loaded_script(const std::string& name)
 		{
@@ -137,8 +141,9 @@ namespace ui_scripting
 			}
 		}
 
-		void load_scripts()
+		std::unordered_set<std::string> load_scripts()
 		{
+			std::unordered_set<std::string> loaded{};
 			const auto scripts = filesystem::list_files("ui_scripts/", true);
 
 			for (const auto& script : scripts)
@@ -148,7 +153,48 @@ namespace ui_scripting
 				{
 					print_loading_script(script);
 					load_script(script + "/__init__.lua", data);
+					loaded.insert(utils::string::to_lower(std::filesystem::path(script).filename().string()));
 				}
+			}
+
+			return loaded;
+		}
+
+		void load_zone_scripts(const std::unordered_set<std::string>& disk_scripts)
+		{
+			constexpr std::string_view prefix = "ui_scripts/";
+			constexpr std::string_view suffix = "/__init__.lua";
+
+			std::vector<std::pair<std::string, std::string>> scripts;
+			game::DB_EnumXAssets(game::XAssetType::ASSET_TYPE_LUA_FILE, [&](const game::XAssetHeader header)
+			{
+				const auto asset = header.luaFile;
+				if (asset == nullptr || asset->name == nullptr || asset->buffer == nullptr || asset->len <= 0)
+				{
+					return;
+				}
+
+				const std::string name = asset->name;
+				if (!name.starts_with(prefix) || !name.ends_with(suffix) || name.size() <= prefix.size() + suffix.size())
+				{
+					return;
+				}
+
+				const auto folder = name.substr(prefix.size(), name.size() - prefix.size() - suffix.size());
+				if (folder.find('/') != std::string::npos || disk_scripts.contains(utils::string::to_lower(folder)))
+				{
+					return;
+				}
+
+				scripts.emplace_back(name, std::string(asset->buffer, static_cast<std::size_t>(asset->len)));
+			});
+
+			std::sort(scripts.begin(), scripts.end());
+
+			for (const auto& [name, data] : scripts)
+			{
+				print_loading_script(name);
+				load_script(name, data);
 			}
 		}
 
@@ -156,15 +202,10 @@ namespace ui_scripting
 		{
 			const auto lua = get_globals();
 
+			lua["io"] = table();
 			lua["io"]["fileexists"] = utils::io::file_exists;
-			lua["io"]["writefile"] = utils::io::write_file;
-			lua["io"]["movefile"] = utils::io::move_file;
-			lua["io"]["filesize"] = utils::io::file_size;
-			lua["io"]["createdirectory"] = utils::io::create_directory;
 			lua["io"]["directoryexists"] = utils::io::directory_exists;
-			lua["io"]["directoryisempty"] = utils::io::directory_is_empty;
 			lua["io"]["listfiles"] = utils::io::list_files;
-			lua["io"]["removefile"] = utils::io::remove_file;
 			lua["io"]["readfile"] = static_cast<std::string(*)(const std::string&)>(utils::io::read_file);
 			lua["io"]["zoneexists"] = fastfiles::exists;
 
@@ -217,9 +258,15 @@ namespace ui_scripting
 			scheduler["once"] = [](const function_argument& arg0, const variadic_args& va)
 			{
 				int delay = va.size() >= 1 ? va[0].as<int>() : 0;
+				const auto generation = lua_generation();
 
-				scheduler::once([arg0, delay]()
+				scheduler::once([arg0, generation]()
 				{
+					if (generation != lua_generation())
+					{
+						return;
+					}
+
 					auto func = arg0.as<function>();
 					func();
 				}, scheduler::lui, std::chrono::milliseconds(delay));
@@ -295,7 +342,7 @@ namespace ui_scripting
 			load_script("lua_json", lua_json);
 			*/
 
-			load_scripts();
+			load_zone_scripts(load_scripts());
 		}
 
 		void try_start()
@@ -324,6 +371,7 @@ namespace ui_scripting
 		{
 			converted_functions.clear();
 			globals = {};
+			lua_generation_count++;
 			return hks_shutdown_hook.invoke<void>();
 		}
 
@@ -354,6 +402,15 @@ namespace ui_scripting
 			{
 				globals.load_raw_script = true;
 				globals.raw_script_name = target_script;
+				globals.raw_script_data = utils::io::read_file(target_script);
+				header.luaFile = reinterpret_cast<game::LuaFile*>(1);
+			}
+			else if (const auto zone_script = game::DB_FindXAssetHeader(type, target_script.data(), 0).luaFile;
+				zone_script && zone_script->buffer && zone_script->len > 0)
+			{
+				globals.load_raw_script = true;
+				globals.raw_script_name = target_script;
+				globals.raw_script_data.assign(zone_script->buffer, static_cast<std::size_t>(zone_script->len));
 				header.luaFile = reinterpret_cast<game::LuaFile*>(1);
 			}
 			else if (name_.starts_with("ui/"))
@@ -371,7 +428,7 @@ namespace ui_scripting
 			{
 				globals.load_raw_script = false;
 				globals.loaded_scripts[globals.raw_script_name] = globals.in_require_script;
-				return load_buffer(globals.raw_script_name, utils::io::read_file(globals.raw_script_name));
+				return load_buffer(globals.raw_script_name, globals.raw_script_data);
 			}
 
 			return hks_load_hook.invoke<int>(state, compiler_options, reader,
@@ -437,6 +494,11 @@ namespace ui_scripting
 
 			hksi_luaL_error_hook.invoke<void>(state, "%s", buffer);
 		}
+
+		int removed_function_stub(game::hks::lua_State*)
+		{
+			return 0;
+		}
 	}
 
 	table get_globals()
@@ -457,6 +519,11 @@ namespace ui_scripting
 	bool lui_running()
 	{
 		return *game::hks::lua_state != nullptr;
+	}
+
+	std::uint64_t lua_generation()
+	{
+		return lua_generation_count;
 	}
 
 	class component final : public component_interface
@@ -484,6 +551,12 @@ namespace ui_scripting
 			utils::hook::set(0x1414B4D98, lua_calls::is_development_build_stub); // IsDevelopmentBuild
 
 			game::Dvar_RegisterBool("ui_showList", false, game::DVAR_FLAG_SAVED, "Show the current menus on the UI stack");
+
+			utils::hook::jump(0x1411C8DB0, removed_function_stub);
+			utils::hook::jump(0x1411C9330, removed_function_stub);
+			utils::hook::jump(0x1411C9650, removed_function_stub);
+			utils::hook::jump(0x1411CA510, removed_function_stub);
+			utils::hook::nop(0x1411C8ACA, 5);
 		}
 	};
 }

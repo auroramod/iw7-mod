@@ -48,4 +48,6 @@ namespace ui_scripting
 	game::hks::cclosure* convert_function(F f);
 
 	bool lui_running();
+
+	std::uint64_t lua_generation();
 }
