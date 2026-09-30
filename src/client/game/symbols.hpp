@@ -230,6 +230,8 @@ namespace game
 	WEAK symbol<void()> R_IssueRenderCommandsEnd{ 0x140E26EF0 };
 	WEAK symbol<void(float x, float y, float width, float height, float s0, float t0, float s1, float t1,
 		float* color, Material* material, int unk)> R_AddCmdDrawStretchPic{ 0x140E24DC0 };
+	WEAK symbol<void(const float(*verts)[2], float s0, float t0, float s1, float t1,
+		float* color, Material* material, int unk)> R_AddCmdDrawQuadPic{ 0x140E24CC0 };
 	WEAK symbol<void* (const char* text, int maxChars, GfxFont* font, int fontHeight, float x,
 		float y, float xScale, float yScale, float rotation, float* color,
 		int cursorPos, char cursor, FontGlowStyle* glowStyle, int a14, int a15, int a16, int a17)> AddBaseDrawTextCmd{ 0x140E23D90 };
