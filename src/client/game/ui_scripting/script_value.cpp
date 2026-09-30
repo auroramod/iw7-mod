@@ -63,12 +63,13 @@ namespace ui_scripting
 
 		push_value(this->value_);
 		this->ref_ = game::hks::hksi_luaL_ref(*game::hks::lua_state, -10000);
+		this->generation_ = lua_generation();
 		state->m_apistack.top = top;
 	}
 
 	void hks_object::release()
 	{
-		if (this->ref_)
+		if (this->ref_ && this->generation_ == lua_generation())
 		{
 			game::hks::hksi_luaL_unref(*game::hks::lua_state, -10000, this->ref_);
 			this->value_.t = game::hks::TNONE;
