@@ -83,6 +83,7 @@ namespace ui_scripting
 
 		game::hks::HksObject value_{game::hks::TNONE, {}};
 		int ref_{};
+		std::uint64_t generation_{};
 	};
 
 	using arguments = std::vector<script_value>;
