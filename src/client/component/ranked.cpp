@@ -19,6 +19,8 @@ namespace ranked
 		utils::hook::detour game_state_info_get_hook;
 		utils::hook::detour playlist_run_rules_hook;
 		utils::hook::detour game_state_info_is_public_hook;
+		utils::hook::detour party_using_party_based_teams_hook;
+		utils::hook::detour party_host_using_assigned_teams_hook;
 
 		bool running_playlist_rules = false;
 
@@ -163,6 +165,24 @@ namespace ranked
 			}
 		}
 
+		int party_using_party_based_teams_stub(void* party)
+		{
+			if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_MP)
+			{
+				return 1;
+			}
+			return party_using_party_based_teams_hook.invoke<int>(party);
+		}
+
+		int party_host_using_assigned_teams_stub(void* party)
+		{
+			if (game::Com_GameMode_GetActiveGameMode() == game::GAME_MODE_MP)
+			{
+				return 1;
+			}
+			return party_host_using_assigned_teams_hook.invoke<int>(party);
+		}
+
 		int party_get_num_game_slots_stub(game::SessionData* session)
 		{
 			if (in_combat_training())
@@ -216,8 +236,8 @@ namespace ranked
 				utils::hook::nop(0x140C3E576, 0xC); // ^ remove 9 player per team check
 
 				// fix team assignment that lead to gsc problems with invalid sessionteam
-				utils::hook::set(0x14037E030, 0xC300000001B8); // Party_UsingPartyBasedTeams
-				utils::hook::set(0x1409DB330, 0xC300000001B8); // PartyHost_UsingAssignedTeams
+				party_using_party_based_teams_hook.create(0x14037E030, party_using_party_based_teams_stub); // Party_UsingPartyBasedTeams
+				party_host_using_assigned_teams_hook.create(0x1409DB330, party_host_using_assigned_teams_stub); // PartyHost_UsingAssignedTeams
 
 				utils::hook::nop(0x140E7ADC4, 26); // allow saving recipes in onlinegame
 
