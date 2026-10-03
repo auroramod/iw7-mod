@@ -19,6 +19,7 @@
 namespace fastfiles
 {
 	static utils::concurrency::container<std::string> current_fastfile;
+	static utils::concurrency::container<std::optional<std::string>> current_usermap;
 
 	std::string get_current_fastfile()
 	{
@@ -109,15 +110,77 @@ namespace fastfiles
 			return result;
 		}
 
-		HANDLE sys_create_file_stub(game::Sys_Folder folder, const char* base_filename)
+		HANDLE create_file_a(const std::string& filepath)
+		{
+			return CreateFileA(filepath.data(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
+				FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING, nullptr);
+		}
+
+		HANDLE find_usermap_art(const std::string& filename)
+		{
+			if (!filename.ends_with("_art.ff"))
+			{
+				return INVALID_HANDLE_VALUE;
+			}
+
+			const auto mapname = filename.substr(0, filename.size() - std::strlen("_art.ff"));
+			const auto path = utils::string::va("usermaps\\%s\\%s", mapname.data(), filename.data());
+			if (!utils::io::file_exists(path))
+			{
+				return INVALID_HANDLE_VALUE;
+			}
+
+			return create_file_a(path);
+		}
+
+		HANDLE find_usermap(const std::string& filename)
+		{
+			const auto art = find_usermap_art(filename);
+			if (art != INVALID_HANDLE_VALUE)
+			{
+				return art;
+			}
+
+			const auto ext = filename.find_last_of('.');
+			if (ext == std::string::npos)
+			{
+				return INVALID_HANDLE_VALUE;
+			}
+
+			auto usermap_value = filename.substr(0, ext);
+			if (usermap_value.ends_with("_load"))
+			{
+				usermap_value.resize(usermap_value.size() - std::strlen("_load"));
+			}
+
+			if (usermap_value.empty() ||
+				!utils::io::file_exists(utils::string::va("usermaps\\%s\\%s.ff", usermap_value.data(), usermap_value.data())))
+			{
+				return INVALID_HANDLE_VALUE;
+			}
+
+			const std::string usermap_file = utils::string::va("%s.ff", usermap_value.data());
+			const std::string usermap_load_file = utils::string::va("%s_load.ff", usermap_value.data());
+			const std::string usermap_pak_file = utils::string::va("%s.pak", usermap_value.data());
+			const std::string usermap_sabl_file = utils::string::va("%s.sabl", usermap_value.data());
+			const std::string usermap_sabs_file = utils::string::va("%s.sabs", usermap_value.data());
+
+			if (filename == usermap_file || filename == usermap_load_file || filename == usermap_pak_file ||
+				filename == usermap_sabl_file || filename == usermap_sabs_file)
+			{
+				const auto path = utils::string::va("usermaps\\%s\\%s", usermap_value.data(), filename.data());
+				if (utils::io::file_exists(path))
+				{
+					return create_file_a(path);
+				}
+			}
+
+			return INVALID_HANDLE_VALUE;
+		}
+
+		HANDLE sys_create_file(game::Sys_Folder folder, const char* base_filename, bool ignore_usermap)
 		{
 			auto result = sys_createfile_hook.invoke<HANDLE>(folder, base_filename);
-
-			const auto create_file_a = [](const std::string& filepath)
-			{
-				return CreateFileA(filepath.data(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
-					FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING, nullptr);
-			};
 
 			if (base_filename == "mod.ff"s || base_filename == "mod.sabs"s || base_filename == "mod.sabl"s)
 			{
@@ -143,6 +206,15 @@ namespace fastfiles
 				return result;
 			}
 
+			if (!ignore_usermap)
+			{
+				const auto usermap = find_usermap(base_filename);
+				if (usermap != INVALID_HANDLE_VALUE)
+				{
+					return usermap;
+				}
+			}
+
 			std::string real_path{};
 			if (filesystem::find_file("zone\\"s + base_filename, &real_path))
 			{
@@ -150,6 +222,22 @@ namespace fastfiles
 			}
 
 			return INVALID_HANDLE_VALUE;
+		}
+
+		HANDLE sys_create_file_stub(game::Sys_Folder folder, const char* base_filename)
+		{
+			return sys_create_file(folder, base_filename, false);
+		}
+
+		utils::hook::detour db_file_exists_hook;
+		bool db_file_exists_stub(const char* file)
+		{
+			if (db_file_exists_hook.invoke<bool>(file))
+			{
+				return true;
+			}
+
+			return fastfiles::usermap_exists(file);
 		}
 
 		template <typename T> inline void merge(std::vector<T>* target, T* source, size_t length)
@@ -202,6 +290,24 @@ namespace fastfiles
 			if (!game::environment::is_dedi())
 			{
 				add_zone("iw7mod_ui_mp", game::DB_ZONE_UI | game::DB_ZONE_CUSTOM, 0);
+
+				static std::vector<std::string> art_zones;
+				art_zones.clear();
+				if (std::filesystem::exists("usermaps"))
+				{
+					for (const auto& entry : std::filesystem::directory_iterator("usermaps"))
+					{
+						if (entry.is_directory())
+						{
+							art_zones.emplace_back(entry.path().filename().string() + "_art");
+						}
+					}
+				}
+
+				for (const auto& zone : art_zones)
+				{
+					add_zone(zone.data(), game::DB_ZONE_GLOBAL_TIER1 | game::DB_ZONE_CUSTOM, 1);
+				}
 			}
 
 			add_zone("mod", game::DB_ZONE_GLOBAL_TIER1 | game::DB_ZONE_CUSTOM, 1);
@@ -416,11 +522,11 @@ namespace fastfiles
 	}
 	using namespace zone_loading;
 
-	bool exists(const std::string& zone)
+	bool exists(const std::string& zone, bool ignore_usermap)
 	{
 		const auto is_localized = game::DB_IsLocalized(zone.data());
-		const auto handle = game::Sys_CreateFile((is_localized ? game::SF_ZONE_LOC : game::SF_ZONE),
-			utils::string::va("%s.ff", zone.data()));
+		const auto handle = sys_create_file((is_localized ? game::SF_ZONE_LOC : game::SF_ZONE),
+			utils::string::va("%s.ff", zone.data()), ignore_usermap);
 
 		if (handle != INVALID_HANDLE_VALUE)
 		{
@@ -429,6 +535,46 @@ namespace fastfiles
 		}
 
 		return false;
+	}
+
+	void set_usermap(const std::string& usermap)
+	{
+		current_usermap.access([&](std::optional<std::string>& current_usermap_)
+		{
+			current_usermap_ = usermap;
+		});
+	}
+
+	void clear_usermap()
+	{
+		current_usermap.access([&](std::optional<std::string>& current_usermap_)
+		{
+			current_usermap_.reset();
+		});
+	}
+
+	std::optional<std::string> get_current_usermap()
+	{
+		return current_usermap.access<std::optional<std::string>>([&](
+			std::optional<std::string>& current_usermap_)
+		{
+			return current_usermap_;
+		});
+	}
+
+	bool usermap_exists(const std::string& name)
+	{
+		if (is_stock_map(name))
+		{
+			return false;
+		}
+
+		return utils::io::file_exists(utils::string::va("usermaps\\%s\\%s.ff", name.data(), name.data()));
+	}
+
+	bool is_stock_map(const std::string& name)
+	{
+		return fastfiles::exists(name, true);
 	}
 
 	class component final : public component_interface
@@ -462,6 +608,7 @@ namespace fastfiles
 
 			// Add custom zone paths
 			sys_createfile_hook.create(game::Sys_CreateFile, sys_create_file_stub);
+			db_file_exists_hook.create(game::DB_FileExists, db_file_exists_stub);
 
 			// Add custom zones in fastfiles load
 			// (global,common)

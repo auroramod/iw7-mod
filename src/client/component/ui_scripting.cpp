@@ -207,7 +207,15 @@ namespace ui_scripting
 			lua["io"]["directoryexists"] = utils::io::directory_exists;
 			lua["io"]["listfiles"] = utils::io::list_files;
 			lua["io"]["readfile"] = static_cast<std::string(*)(const std::string&)>(utils::io::read_file);
-			lua["io"]["zoneexists"] = fastfiles::exists;
+			lua["io"]["zoneexists"] = [](const std::string& zone)
+			{
+				if (fastfiles::exists(zone, false))
+				{
+					return true;
+				}
+
+				return utils::io::file_exists(utils::string::va("usermaps/%s/%s.ff", zone.data(), zone.data()));
+			};
 
 			using game = table;
 			auto game_type = game();

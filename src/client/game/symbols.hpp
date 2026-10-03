@@ -185,6 +185,8 @@ namespace game
 	WEAK symbol<int(const int mapIndex)> Live_GetMapSource{ 0x140CE7340 };
 	WEAK symbol<int(const char* mapname)> Live_GetMapIndex{ 0x140CE72C0 };
 
+	WEAK symbol<int(const char* buffer, int max_infos, char** infos)> GameInfo_ParseArenas{ 0x1405AFB20 };
+
 	WEAK symbol<float()> LoadBar_GetLoadedFraction{ 0x1405DE190 };
 
 	WEAK symbol<PartyData* ()> Lobby_GetPartyData{ 0x1409C3E20 };
@@ -376,6 +378,7 @@ namespace game
 	WEAK symbol<void(msg_t* msg, const void* data, std::int32_t length)> MSG_WriteData{ 0x140BB4340 };
 	WEAK symbol<void(msg_t* msg, std::int32_t data)> MSG_WriteByte{ 0x140BB4320 };
 	WEAK symbol<void(msg_t* msg, std::uint64_t data)> MSG_WriteInt64{ 0x140BB4570 };
+	WEAK symbol<char*(msg_t* msg, char* string, unsigned int max_chars)> MSG_ReadStringLine{ 0x140BB39D0 };
 	
 	WEAK symbol<void(gentity_s* ent,
 		gentity_s* other,
@@ -426,6 +429,13 @@ namespace game
 	WEAK symbol<char> isCheatOverride{ 0x141BBEF28 };
 
 	WEAK symbol<gentity_s> g_entities{ 0x143D22610 };
+
+	WEAK symbol<int> ui_num_arenas{ 0x144BFF660 };
+	WEAK symbol<int> ui_arena_buf_pos{ 0x144BFF664 };
+	WEAK symbol<char*> ui_arena_infos{ 0x144BFF670 };
+
+	WEAK symbol<int> ui_num_maps{ 0x144C105F4 };
+	WEAK symbol<char> ui_map_infos{ 0x144C105F8 };
 
 	WEAK symbol<unsigned int> svs_numclients{ 0x146B229E0 };
 	WEAK symbol<client_t*> svs_clients{ 0x146B22950 };
