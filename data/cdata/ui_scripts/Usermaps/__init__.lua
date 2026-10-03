@@ -20,19 +20,21 @@ end
 local grouped_rows = {}
 local header_count = 0
 
-local function has_usermaps()
+local function count_usermaps()
     if not io.directoryexists("usermaps") then
-        return false
+        return 0
     end
 
+    local count = 0
+    local aliens = Engine.IsAliensMode()
     for _, folder in ipairs(io.listfiles("usermaps/")) do
         local name = folder:match("([^/\]+)$")
-        if is_usermap(name) then
-            return true
+        if is_usermap(name) and (name:sub(1, 3) == "cp_") == aliens then
+            count = count + 1
         end
     end
 
-    return false
+    return count
 end
 
 local function make_header(controller, text)
@@ -103,8 +105,13 @@ local in_map_menu = false
 
 local UIDataSourceGridNew = LUI.UIDataSourceGrid.new
 LUI.UIDataSourceGrid.new = function(definition, options, ...)
-    if in_map_menu and options and has_usermaps() then
-        options.maxVisibleRows = options.maxVisibleRows + 2
+    local usermap_count = in_map_menu and options and count_usermaps() or 0
+    if usermap_count > 0 then
+        if Engine.IsAliensMode() then
+            options.maxVisibleRows = math.min(options.maxVisibleRows + 2 + usermap_count, 18)
+        else
+            options.maxVisibleRows = options.maxVisibleRows + 2
+        end
         options.isPositionFocusable = function(_, y)
             local entry = grouped_rows[y + 1]
             return entry == nil or not entry.isHeader

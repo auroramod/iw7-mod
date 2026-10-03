@@ -141,13 +141,24 @@ namespace fastfiles
 				return art;
 			}
 
-			const auto usermap = fastfiles::get_current_usermap();
-			if (!usermap.has_value())
+			const auto ext = filename.find_last_of('.');
+			if (ext == std::string::npos)
 			{
 				return INVALID_HANDLE_VALUE;
 			}
 
-			const auto& usermap_value = usermap.value();
+			auto usermap_value = filename.substr(0, ext);
+			if (usermap_value.ends_with("_load"))
+			{
+				usermap_value.resize(usermap_value.size() - std::strlen("_load"));
+			}
+
+			if (usermap_value.empty() ||
+				!utils::io::file_exists(utils::string::va("usermaps\\%s\\%s.ff", usermap_value.data(), usermap_value.data())))
+			{
+				return INVALID_HANDLE_VALUE;
+			}
+
 			const std::string usermap_file = utils::string::va("%s.ff", usermap_value.data());
 			const std::string usermap_load_file = utils::string::va("%s_load.ff", usermap_value.data());
 			const std::string usermap_pak_file = utils::string::va("%s.pak", usermap_value.data());
