@@ -185,6 +185,8 @@ namespace demonware
 
 		std::unordered_map<std::uint32_t, LootCrate> lootcrates;
 
+		std::unordered_map<std::uint32_t, std::uint32_t> hero_rig_pieces;
+
 		void read_loot_csv(csv::LootCsv& csv, std::vector<std::uint32_t>& lootmap, bool should_ignore = true)
 		{
 			lootmap.clear();
@@ -278,6 +280,49 @@ namespace demonware
 			read_loot_csv(csv::cosmetic_rigs, lootmap_cosmetic_rigs);
 		}
 
+		void read_hero_rig_pieces()
+		{
+			hero_rig_pieces.clear();
+
+			const auto heroes = game::DB_FindXAssetHeader(game::ASSET_TYPE_STRINGTABLE, csv::cosmetic_heroes.file.data(), 0).stringTable;
+			const auto rigs = game::DB_FindXAssetHeader(game::ASSET_TYPE_STRINGTABLE, csv::cosmetic_rigs.file.data(), 0).stringTable;
+			if (!heroes || !rigs)
+			{
+				return;
+			}
+
+			// heroes: col 13 head, col 14 body
+			std::unordered_map<std::string, std::uint32_t> hero_refs;
+			for (auto row = 0; row < heroes->rowCount; row++)
+			{
+				const std::uint32_t id = std::atoi(game::StringTable_GetColumnValueForRow(heroes, row, csv::cosmetic_heroes.index));
+				for (const auto column : { 13, 14 })
+				{
+					const std::string ref = game::StringTable_GetColumnValueForRow(heroes, row, column);
+					if (!ref.empty())
+					{
+						hero_refs[ref] = id;
+					}
+				}
+			}
+
+			// rigs: col 1 ref
+			for (auto row = 0; row < rigs->rowCount; row++)
+			{
+				const std::string ref = game::StringTable_GetColumnValueForRow(rigs, row, 1);
+				if (const auto hero = hero_refs.find(ref); hero != hero_refs.end())
+				{
+					const std::uint32_t id = std::atoi(game::StringTable_GetColumnValueForRow(rigs, row, csv::cosmetic_rigs.index));
+					hero_rig_pieces[id] = hero->second;
+				}
+			}
+
+			std::erase_if(lootmap_cosmetic_rigs, [](const std::uint32_t id)
+			{
+				return hero_rig_pieces.contains(id);
+			});
+		}
+
 		void read_zombiefatefortune_csv()
 		{
 			read_loot_csv(csv::zombiefatefortune, lootmap_zombiefatefortune, false);
@@ -325,6 +370,7 @@ namespace demonware
 			read_cosmetic_heroes_csv();
 			read_cosmetic_reticles_csv();
 			read_cosmetic_rigs_csv();
+			read_hero_rig_pieces();
 
 			// cp
 			read_zombiefatefortune_csv();
@@ -454,10 +500,44 @@ namespace demonware
 
 		void read_json_data();
 
+		bool is_hero_rig_piece(const std::uint32_t item_id)
+		{
+			cache_loot();
+			return hero_rig_pieces.contains(item_id);
+		}
+
+		void grant_heroes_for_owned_rig_pieces()
+		{
+			auto& loot = json_buffer["Loot"];
+
+			auto changed = false;
+			for (const auto& [piece, hero] : hero_rig_pieces)
+			{
+				if (!loot.contains(std::to_string(piece)) || !get_item_balance(piece))
+				{
+					continue;
+				}
+
+				if (loot.contains(std::to_string(hero)) && get_item_balance(hero))
+				{
+					continue;
+				}
+
+				set_item_balance(hero, 1);
+				changed = true;
+			}
+
+			if (changed)
+			{
+				save();
+			}
+		}
+
 		std::vector<Item> get_all_loot_owned()
 		{
 			cache_loot();
 			read_json_data();
+			grant_heroes_for_owned_rig_pieces();
 
 			std::vector<Item> items{};
 			for (const auto& entry : json_buffer["Loot"].items())

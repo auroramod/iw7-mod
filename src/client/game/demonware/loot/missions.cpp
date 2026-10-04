@@ -216,7 +216,15 @@ namespace demonware
 							}
 						}
 
-						candidates.push_back(get_uint(table, row, 0));
+						const auto id = get_uint(table, row, 0);
+
+						// hero pieces only unlock through the hero item
+						if (is_hero_rig_piece(id))
+						{
+							continue;
+						}
+
+						candidates.push_back(id);
 					}
 				}
 

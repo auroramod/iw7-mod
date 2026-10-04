@@ -38,6 +38,7 @@ namespace demonware
 		std::vector<Item> get_all_loot();
 		std::vector<Item> get_all_loot_owned();
 		Item get_loot(const std::uint32_t item_id);
+		bool is_hero_rig_piece(const std::uint32_t item_id);
 
 		std::uint32_t get_lootcrate_cost(const std::uint32_t id, const std::uint32_t type);
 
