@@ -64,8 +64,9 @@ namespace renderer
 				static std::atomic_bool warned = false;
 				if (!warned.exchange(true))
 				{
-					console::warn("[renderer] static model list pool full (%zu bytes a frame): a view's lists are stock size\n", smodel_pool_size);
+					console::warn("[renderer] static model list pool full\n");
 				}
+
 				r_init_smodel_lists_hook.invoke<void>(lists, delayed_stack);
 				return;
 			}
@@ -137,10 +138,11 @@ namespace renderer
 				if (now - last_umbra[id - 115] > 1000)
 				{
 					last_umbra[id - 115] = now;
-					const char* what[] = { "camera outside the Umbra view volume", "Umbra query out of memory", "internal Umbra failure" };
-					console::warn("[renderer] %s: drawing everything, no lights or reflection probes\n", what[id - 115]);
+					const char* what[] = { "camera outside umbra view volume", "umbra query out of memory", "umbra query failed" };
+					console::warn("[renderer] %s\n", what[id - 115]);
 				}
 			}
+
 			if (id >= 23 && id <= 25)
 			{
 				static std::uint32_t last[3]{};
@@ -149,10 +151,11 @@ namespace renderer
 				{
 					last[id - 23] = now;
 					const char* what[] = { "too many visible static models (record bytes %llu, limit 16384)",
-						"static model surface list full - not drawing static model", "static model delayed materials full" };
+						"static model surface list full", "static model delayed list full" };
 					console::warn("[renderer] %s\n", utils::string::va(what[id - 23], a));
 				}
 			}
+
 			r_warning_hook.invoke<void>(id, a, b, c);
 		}
 
