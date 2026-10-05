@@ -516,41 +516,71 @@ namespace fastfiles
 		utils::hook::detour db_is_patch_hook;
 		utils::hook::detour physics_asset_post_load_hook;
 
-		void physics_asset_post_load_stub(std::uint8_t* asset)
+		struct hk_packfile_header
 		{
-			const auto* name = *reinterpret_cast<const char**>(asset);
-			const auto size = *reinterpret_cast<std::uint32_t*>(asset + 8);
-			const auto* data = *reinterpret_cast<std::uint8_t**>(asset + 16);
-			const char* reason = nullptr;
-			if (!data || !size)
+			std::uint32_t magic[2];
+			std::int32_t user_tag;
+			std::int32_t file_version;
+			std::uint8_t layout_rules[4];
+			std::int32_t num_sections;
+			std::int32_t contents_section_index;
+			std::int32_t contents_section_offset;
+			std::int32_t contents_class_name_section_index;
+			std::int32_t contents_class_name_section_offset;
+			char contents_version[16];
+			std::uint32_t flags;
+			std::int32_t pad;
+		};
+		static_assert(offsetof(hk_packfile_header, layout_rules) == 16);
+		static_assert(offsetof(hk_packfile_header, contents_version) == 40);
+		static_assert(offsetof(hk_packfile_header, flags) == 56);
+
+		const char* invalid_havok_data(const game::PhysicsAsset* asset)
+		{
+			if (!asset->havokData || !asset->havokDataSize)
 			{
-				reason = "no havok data";
+				return "no havok data";
 			}
-			else if (reinterpret_cast<std::uintptr_t>(data) & 3)
+
+			if (reinterpret_cast<std::uintptr_t>(asset->havokData) & 3)
 			{
-				reason = "havok data not 4 byte aligned";
+				return "havok data not 4 byte aligned";
 			}
-			else if (*reinterpret_cast<const std::uint32_t*>(data) != 0x57E0E057 || *reinterpret_cast<const std::uint32_t*>(data + 4) != 0x10C0C010)
+
+			const auto* header = reinterpret_cast<const hk_packfile_header*>(asset->havokData);
+			if (header->magic[0] != 0x57E0E057 || header->magic[1] != 0x10C0C010)
 			{
-				reason = "no packfile magic";
+				return "no packfile magic";
 			}
-			else if (data[16] != 8 || data[17] != 1 || data[18] != 0 || data[19] != 1)
+
+			const std::uint8_t layout[4] = { 8, 1, 0, 1 };
+			if (std::memcmp(header->layout_rules, layout, sizeof(layout)))
 			{
-				reason = "packfile layout differs from the platform's";
+				return "packfile layout differs from the platform's";
 			}
-			else if (data[40] == 0xFF || std::strncmp(reinterpret_cast<const char*>(data + 40), "hk_2014.2.5-r1", 16) != 0)
+
+			if (static_cast<std::uint8_t>(header->contents_version[0]) == 0xFF ||
+				std::strncmp(header->contents_version, "hk_2014.2.5-r1", sizeof(header->contents_version)))
 			{
-				reason = "packfile contents version differs";
+				return "packfile contents version differs";
 			}
-			else if (*reinterpret_cast<const std::uint32_t*>(data + 56) & 1)
+
+			if (header->flags & 1)
 			{
-				reason = "packfile already loaded";
+				return "packfile already loaded";
 			}
-			if (reason)
+
+			return nullptr;
+		}
+
+		void physics_asset_post_load_stub(game::PhysicsAsset* asset)
+		{
+			if (const auto* reason = invalid_havok_data(asset))
 			{
-				console::error("Physics asset \"%s\" skipped: %s (size %u, data %p)\n", name ? name : "?", reason, size, data);
+				console::error("Physics asset \"%s\" skipped: %s\n", asset->name ? asset->name : "?", reason);
 				return;
 			}
+
 			physics_asset_post_load_hook.invoke<void>(asset);
 		}
 
@@ -677,6 +707,7 @@ namespace fastfiles
 			// Don't fatal on certain missing zones
 			db_is_patch_hook.create(0x1403BC580, db_is_patch_stub);
 			physics_asset_post_load_hook.create(0x140572690, physics_asset_post_load_stub);
+
 			// Don't load extra zones with loadzone
 			utils::hook::nop(0x1403BA9B1, 15);
 			utils::hook::jump(0x1403BA9B1, utils::hook::assemble(skip_extra_zones_stub), true);
