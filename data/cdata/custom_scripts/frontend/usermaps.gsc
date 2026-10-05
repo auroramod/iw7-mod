@@ -16,6 +16,8 @@ init()
 
 watch_players()
 {
+    level endon( "game_ended" );
+
     for (;;)
     {
         player = level.playerviewowner;
@@ -32,6 +34,7 @@ watch_players()
 
 usermap_poster_watcher()
 {
+    level endon( "game_ended" );
     self endon( "disconnect" );
     poster = getent( "map_select_poster", "targetname" );
 

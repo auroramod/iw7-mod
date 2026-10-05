@@ -6,15 +6,18 @@ local function is_usermap(name)
     return type(name) == "string" and io.fileexists("usermaps/" .. name .. "/" .. name .. ".ff")
 end
 
-local GetPlayerDataEx = Engine.GetPlayerDataEx
+local GetPlayerDataEx_og = Engine.GetPlayerDataEx
 Engine.GetPlayerDataEx = function(...)
+    local leaderboard = false
     for _, arg in ipairs({...}) do
-        if is_usermap(arg) then
+        if arg == "leaderboarddata" then
+            leaderboard = true
+        elseif leaderboard and is_usermap(arg) then
             return 0
         end
     end
 
-    return GetPlayerDataEx(...)
+    return GetPlayerDataEx_og(...)
 end
 
 local grouped_rows = {}
