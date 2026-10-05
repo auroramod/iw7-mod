@@ -82,6 +82,7 @@ namespace party
 			std::string extension;
 			std::string name;
 			bool optional;
+			bool localized = false;
 		};
 
 		std::vector<fastdl_file> usermap_files =
@@ -93,6 +94,7 @@ namespace party
 			{".pak", "usermap_pak_hash", true},
 			{".sabl", "usermap_sabl_hash", true},
 			{".sabs", "usermap_sabs_hash", true},
+			{".ff", "usermap_loc_hash", true, true},
 		};
 
 		std::vector<fastdl_file> mod_files =
@@ -128,12 +130,21 @@ namespace party
 			return std::format("usermaps\\{}\\{}{}", mapname, mapname, extension);
 		}
 
+		std::string get_usermap_file_path(const std::string& mapname, const fastdl_file& file)
+		{
+			if (file.localized)
+			{
+				return std::format("usermaps\\{}\\{}_{}{}", mapname, game::SEH_GetCurrentLanguageCode(), mapname, file.extension);
+			}
+			return get_usermap_file_path(mapname, file.extension);
+		}
+
 		// generate hashes so they are cached
 		void generate_hashes(const std::string& mapname)
 		{
 			for (const auto& file : usermap_files)
 			{
-				const auto path = get_usermap_file_path(mapname, file.extension);
+				const auto path = get_usermap_file_path(mapname, file);
 				get_file_hash(path);
 			}
 
@@ -164,8 +175,8 @@ namespace party
 
 			const auto check_file = [&](const fastdl_file& file)
 			{
-				const std::string filename = utils::string::va("usermaps/%s/%s%s",
-					mapname.data(), mapname.data(), file.extension.data());
+				auto filename = get_usermap_file_path(mapname, file);
+				std::ranges::replace(filename, '\\', '/');
 				const auto source_hash = info.get(file.name);
 				if (source_hash.empty())
 				{
@@ -620,7 +631,7 @@ namespace party
 				const std::string source_hash = game::MSG_ReadStringLine(msg,
 					buffer, static_cast<unsigned int>(sizeof(buffer)));
 
-				const auto path = get_usermap_file_path(mapname, file.extension);
+				const auto path = get_usermap_file_path(mapname, file);
 				const auto hash = get_file_hash(path);
 
 				if ((!source_hash.empty() && hash != source_hash) || (source_hash.empty() && !file.optional))
@@ -672,7 +683,7 @@ namespace party
 			{
 				if (is_usermap)
 				{
-					const auto filename = get_usermap_file_path(current_sv_mapname, file.extension);
+					const auto filename = get_usermap_file_path(current_sv_mapname, file);
 					const auto hash = get_file_hash(filename);
 					line(hash);
 				}
@@ -1389,7 +1400,7 @@ namespace party
 				{
 					for (const auto& file : usermap_files)
 					{
-						const auto path = get_usermap_file_path(mapname, file.extension);
+						const auto path = get_usermap_file_path(mapname, file);
 						const auto hash = get_file_hash(path);
 						info.set(file.name, hash);
 					}

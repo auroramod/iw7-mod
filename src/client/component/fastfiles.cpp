@@ -133,12 +133,42 @@ namespace fastfiles
 			return create_file_a(path);
 		}
 
+		HANDLE find_usermap_localized(const std::string& filename)
+		{
+			if (!filename.ends_with(".ff"))
+			{
+				return INVALID_HANDLE_VALUE;
+			}
+
+			const auto zone = filename.substr(0, filename.size() - std::strlen(".ff"));
+			const auto prefix = zone.find('_');
+			if (prefix == std::string::npos || !game::DB_IsLocalized(zone.data()))
+			{
+				return INVALID_HANDLE_VALUE;
+			}
+
+			const auto mapname = zone.substr(prefix + 1);
+			const auto path = utils::string::va("usermaps\\%s\\%s", mapname.data(), filename.data());
+			if (mapname.empty() || !utils::io::file_exists(path))
+			{
+				return INVALID_HANDLE_VALUE;
+			}
+
+			return create_file_a(path);
+		}
+
 		HANDLE find_usermap(const std::string& filename)
 		{
 			const auto art = find_usermap_art(filename);
 			if (art != INVALID_HANDLE_VALUE)
 			{
 				return art;
+			}
+
+			const auto localized = find_usermap_localized(filename);
+			if (localized != INVALID_HANDLE_VALUE)
+			{
+				return localized;
 			}
 
 			const auto ext = filename.find_last_of('.');
@@ -237,7 +267,18 @@ namespace fastfiles
 				return true;
 			}
 
-			return fastfiles::usermap_exists(file);
+			if (fastfiles::usermap_exists(file))
+			{
+				return true;
+			}
+
+			const auto localized = find_usermap_localized(std::string(file) + ".ff");
+			if (localized == INVALID_HANDLE_VALUE)
+			{
+				return false;
+			}
+			CloseHandle(localized);
+			return true;
 		}
 
 		template <typename T> inline void merge(std::vector<T>* target, T* source, size_t length)
