@@ -514,6 +514,45 @@ namespace fastfiles
 	namespace zone_loading
 	{
 		utils::hook::detour db_is_patch_hook;
+		utils::hook::detour physics_asset_post_load_hook;
+
+		void physics_asset_post_load_stub(std::uint8_t* asset)
+		{
+			const auto* name = *reinterpret_cast<const char**>(asset);
+			const auto size = *reinterpret_cast<std::uint32_t*>(asset + 8);
+			const auto* data = *reinterpret_cast<std::uint8_t**>(asset + 16);
+			const char* reason = nullptr;
+			if (!data || !size)
+			{
+				reason = "no havok data";
+			}
+			else if (reinterpret_cast<std::uintptr_t>(data) & 3)
+			{
+				reason = "havok data not 4 byte aligned";
+			}
+			else if (*reinterpret_cast<const std::uint32_t*>(data) != 0x57E0E057 || *reinterpret_cast<const std::uint32_t*>(data + 4) != 0x10C0C010)
+			{
+				reason = "no packfile magic";
+			}
+			else if (data[16] != 8 || data[17] != 1 || data[18] != 0 || data[19] != 1)
+			{
+				reason = "packfile layout differs from the platform's";
+			}
+			else if (data[40] == 0xFF || std::strncmp(reinterpret_cast<const char*>(data + 40), "hk_2014.2.5-r1", 16) != 0)
+			{
+				reason = "packfile contents version differs";
+			}
+			else if (*reinterpret_cast<const std::uint32_t*>(data + 56) & 1)
+			{
+				reason = "packfile already loaded";
+			}
+			if (reason)
+			{
+				console::error("Physics asset \"%s\" skipped: %s (size %u, data %p)\n", name ? name : "?", reason, size, data);
+				return;
+			}
+			physics_asset_post_load_hook.invoke<void>(asset);
+		}
 
 		bool check_missing_content_func(const char* zone_name)
 		{
@@ -637,6 +676,7 @@ namespace fastfiles
 
 			// Don't fatal on certain missing zones
 			db_is_patch_hook.create(0x1403BC580, db_is_patch_stub);
+			physics_asset_post_load_hook.create(0x140572690, physics_asset_post_load_stub);
 			// Don't load extra zones with loadzone
 			utils::hook::nop(0x1403BA9B1, 15);
 			utils::hook::jump(0x1403BA9B1, utils::hook::assemble(skip_extra_zones_stub), true);
