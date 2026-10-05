@@ -113,8 +113,34 @@ namespace renderer
 			return result;
 		}
 
+		constexpr std::size_t umbra_query_arena_size = 64ull * 1024ull * 1024ull;
+
+		std::uint64_t umbra_query_init_stub(const std::uint64_t query, const std::uint64_t tome)
+		{
+			thread_local std::uint8_t* arena = static_cast<std::uint8_t*>(VirtualAlloc(nullptr, umbra_query_arena_size,
+				MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+			if (!arena)
+			{
+				return utils::hook::invoke<std::uint64_t>(0x140E904B0, query, tome);
+			}
+			const auto object = (query + 7) & ~7ull;
+			const auto allocator = utils::hook::invoke<std::uint64_t>(0x140E96C20, object, arena, umbra_query_arena_size);
+			return utils::hook::invoke<std::uint64_t>(0x140E981F0, allocator, tome, 0ull, 0ull);
+		}
+
 		void r_warning_stub(int id, std::uint64_t a, std::uint64_t b, std::uint64_t c)
 		{
+			if (id >= 115 && id <= 117)
+			{
+				static std::uint32_t last_umbra[3]{};
+				const auto now = GetTickCount();
+				if (now - last_umbra[id - 115] > 1000)
+				{
+					last_umbra[id - 115] = now;
+					const char* what[] = { "camera outside the Umbra view volume", "Umbra query out of memory", "internal Umbra failure" };
+					console::warn("[renderer] %s: drawing everything, no lights or reflection probes\n", what[id - 115]);
+				}
+			}
 			if (id >= 23 && id <= 25)
 			{
 				static std::uint32_t last[3]{};
@@ -240,6 +266,7 @@ namespace renderer
 			r_init_smodel_lists_hook.create(0x140DCFF30, r_init_smodel_lists_stub);
 			r_begin_frame_data_hook.create(0x140E28290, r_begin_frame_data_stub);
 			r_warning_hook.create(0x140E4B0B0, r_warning_stub);
+			utils::hook::call(0x1405FB7B4, umbra_query_init_stub);
 			utils::hook::call(0x140E264B3, r_update_front_end_dvar_options_stub);
 
 			// fix particle effect flickering on AMD GPUs
