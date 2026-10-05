@@ -133,12 +133,42 @@ namespace fastfiles
 			return create_file_a(path);
 		}
 
+		HANDLE find_usermap_localized(const std::string& filename)
+		{
+			if (!filename.ends_with(".ff"))
+			{
+				return INVALID_HANDLE_VALUE;
+			}
+
+			const auto zone = filename.substr(0, filename.size() - std::strlen(".ff"));
+			const auto prefix = zone.find('_');
+			if (prefix == std::string::npos || !game::DB_IsLocalized(zone.data()))
+			{
+				return INVALID_HANDLE_VALUE;
+			}
+
+			const auto mapname = zone.substr(prefix + 1);
+			const auto path = utils::string::va("usermaps\\%s\\%s", mapname.data(), filename.data());
+			if (mapname.empty() || !utils::io::file_exists(path))
+			{
+				return INVALID_HANDLE_VALUE;
+			}
+
+			return create_file_a(path);
+		}
+
 		HANDLE find_usermap(const std::string& filename)
 		{
 			const auto art = find_usermap_art(filename);
 			if (art != INVALID_HANDLE_VALUE)
 			{
 				return art;
+			}
+
+			const auto localized = find_usermap_localized(filename);
+			if (localized != INVALID_HANDLE_VALUE)
+			{
+				return localized;
 			}
 
 			const auto ext = filename.find_last_of('.');
@@ -237,7 +267,18 @@ namespace fastfiles
 				return true;
 			}
 
-			return fastfiles::usermap_exists(file);
+			if (fastfiles::usermap_exists(file))
+			{
+				return true;
+			}
+
+			const auto localized = find_usermap_localized(std::string(file) + ".ff");
+			if (localized == INVALID_HANDLE_VALUE)
+			{
+				return false;
+			}
+			CloseHandle(localized);
+			return true;
 		}
 
 		template <typename T> inline void merge(std::vector<T>* target, T* source, size_t length)
@@ -473,6 +514,75 @@ namespace fastfiles
 	namespace zone_loading
 	{
 		utils::hook::detour db_is_patch_hook;
+		utils::hook::detour physics_asset_post_load_hook;
+
+		struct hk_packfile_header
+		{
+			std::uint32_t magic[2];
+			std::int32_t user_tag;
+			std::int32_t file_version;
+			std::uint8_t layout_rules[4];
+			std::int32_t num_sections;
+			std::int32_t contents_section_index;
+			std::int32_t contents_section_offset;
+			std::int32_t contents_class_name_section_index;
+			std::int32_t contents_class_name_section_offset;
+			char contents_version[16];
+			std::uint32_t flags;
+			std::int32_t pad;
+		};
+		static_assert(offsetof(hk_packfile_header, layout_rules) == 16);
+		static_assert(offsetof(hk_packfile_header, contents_version) == 40);
+		static_assert(offsetof(hk_packfile_header, flags) == 56);
+
+		const char* invalid_havok_data(const game::PhysicsAsset* asset)
+		{
+			if (!asset->havokData || !asset->havokDataSize)
+			{
+				return "no havok data";
+			}
+
+			if (reinterpret_cast<std::uintptr_t>(asset->havokData) & 3)
+			{
+				return "havok data not 4 byte aligned";
+			}
+
+			const auto* header = reinterpret_cast<const hk_packfile_header*>(asset->havokData);
+			if (header->magic[0] != 0x57E0E057 || header->magic[1] != 0x10C0C010)
+			{
+				return "no packfile magic";
+			}
+
+			const std::uint8_t layout[4] = { 8, 1, 0, 1 };
+			if (std::memcmp(header->layout_rules, layout, sizeof(layout)))
+			{
+				return "packfile layout differs from the platform's";
+			}
+
+			if (static_cast<std::uint8_t>(header->contents_version[0]) == 0xFF ||
+				std::strncmp(header->contents_version, "hk_2014.2.5-r1", sizeof(header->contents_version)))
+			{
+				return "packfile contents version differs";
+			}
+
+			if (header->flags & 1)
+			{
+				return "packfile already loaded";
+			}
+
+			return nullptr;
+		}
+
+		void physics_asset_post_load_stub(game::PhysicsAsset* asset)
+		{
+			if (const auto* reason = invalid_havok_data(asset))
+			{
+				console::error("Physics asset \"%s\" skipped: %s\n", asset->name ? asset->name : "?", reason);
+				return;
+			}
+
+			physics_asset_post_load_hook.invoke<void>(asset);
+		}
 
 		bool check_missing_content_func(const char* zone_name)
 		{
@@ -596,6 +706,8 @@ namespace fastfiles
 
 			// Don't fatal on certain missing zones
 			db_is_patch_hook.create(0x1403BC580, db_is_patch_stub);
+			physics_asset_post_load_hook.create(0x140572690, physics_asset_post_load_stub);
+
 			// Don't load extra zones with loadzone
 			utils::hook::nop(0x1403BA9B1, 15);
 			utils::hook::jump(0x1403BA9B1, utils::hook::assemble(skip_extra_zones_stub), true);

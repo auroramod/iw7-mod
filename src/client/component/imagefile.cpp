@@ -18,7 +18,8 @@ namespace imagefile
 		{
 			if (fileIndex == CUSTOM_IMAGEFILE_INDEX)
 			{
-				const auto name = fastfiles::get_current_fastfile();
+				const auto* loading = *reinterpret_cast<const char**>(0x1452A8010);
+				const auto name = loading && *loading ? std::string(loading) : fastfiles::get_current_fastfile();
 				snprintf(buffer, bufferSize, "%s.pak", name.data());
 				return;
 			}
