@@ -145,7 +145,7 @@ namespace gsc
 				return itr->second.ptr;
 			}
 
-			if (game::Com_FrontEnd_IsInFrontEnd())
+			if (game::Com_FrontEnd_IsInFrontEnd() && !real_name.starts_with("custom_scripts/frontend/"))
 			{
 				return nullptr;
 			}
@@ -309,6 +309,10 @@ namespace gsc
 				{
 					load_scripts("custom_scripts/cp_mp/");
 				}
+			}
+			else
+			{
+				load_scripts("custom_scripts/frontend/");
 			}
 		}
 
