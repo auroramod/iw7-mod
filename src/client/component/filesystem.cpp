@@ -36,6 +36,17 @@ namespace filesystem
 
 			fs_build_os_path_hook.invoke<void>(base, game, qpath, ospath);
 		}
+
+		char* shader_preload_cache_path_stub(char* dest, const char* src, const int dest_size)
+		{
+			// the game opens players2\upshd.dat relative to the cwd, bypassing the players2 redirect above
+			static const auto* fs_basepath = game::Dvar_FindVar("fs_basepath");
+			const auto dir = std::filesystem::path(fs_basepath->current.string) / "iw7-mod" / "players2";
+			utils::io::create_directory(dir.string());
+
+			const auto path = (dir / std::filesystem::path(src).filename()).string();
+			return game::I_strncpyz(dest, path.data(), dest_size);
+		}
 	}
 
 	namespace
@@ -280,6 +291,10 @@ namespace filesystem
 			fs_build_os_path_hook.create(0x140CDBBF0, fs_build_os_path_stub);
 
 			utils::hook::jump(0x140CFE5E0, sys_default_install_path_stub);
+
+			// shader preload cache read/write
+			utils::hook::call(0x1400BE9E5, shader_preload_cache_path_stub);
+			utils::hook::call(0x1400BF065, shader_preload_cache_path_stub);
 
 			// fs_game flags
 			utils::hook::set<uint32_t>(0x140CDD415, 0);
