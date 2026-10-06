@@ -22,8 +22,11 @@ function directxtex.project()
 		directxtex.includes()
 
 		local shader_dir = path.getabsolute(path.join(directxtex.source, "Shaders"))
+		local compiled_dir = path.join(shader_dir, "Compiled")
 		local compile_shaders = path.join(shader_dir, "CompileShaders.cmd")
-		local generated_shader = path.join(directxtex.source, "BC7Encode_EncodeBlockCS.inc")
+		local generated_shader = path.join(compiled_dir, "BC7Encode_EncodeBlockCS.inc")
+
+		includedirs { compiled_dir }
 		local tools_dir = path.getabsolute(path.join(dependencies.basePath, "../tools"))
 		local fxc = path.join(tools_dir, "fxc.exe")
 
@@ -45,7 +48,6 @@ function directxtex.project()
 			os.execute(
 				'cmd /c "cd /d "' .. shader_dir .. '" && ' ..
 					'set "PATH=' .. tools_dir .. ';%PATH%" && ' ..
-					'set "CompileShadersOutput=.." && ' ..
 					'call "' .. compile_shaders .. '""'
 			)
 
