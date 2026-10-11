@@ -10,6 +10,7 @@ using namespace game::demonware;
 #include "keys.hpp"
 #include "reply.hpp"
 #include "service.hpp"
+#include "crm.hpp"
 
 #include "loot/loot.hpp"
 
