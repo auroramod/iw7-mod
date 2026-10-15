@@ -2,6 +2,17 @@
 
 namespace demonware::crm
 {
+	enum location : uint32_t
+	{
+		unusable = 0,
+		mp_motd = 1,
+		mp_msgs = 2,
+		enforcement_notifications = 9,
+		cs_notifications = 10,
+		cp_motd = 11,
+		cp_msgs = 12,
+	};
+
 	struct marketing_message
 	{
 		std::string title;

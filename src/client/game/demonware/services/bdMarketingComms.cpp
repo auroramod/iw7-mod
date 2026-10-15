@@ -2,6 +2,7 @@
 #include "../dw_include.hpp"
 
 #include "game/game.hpp"
+#include "component/motd.hpp"
 
 namespace demonware
 {
@@ -13,20 +14,41 @@ namespace demonware
 
 	std::vector<crm::commercial_message> build_messages()
 	{
-		crm::marketing_message motd;
-		motd.title = "Welcome to IW7-Mod!";
-		motd.image = "image_motd_mp_halloween_halloween";
-		motd.popup_image = "image_motd_mp_halloween_halloween_small";
-		motd.content_long = "auroramod.dev";
-		motd.content_short = "Message of The Day";
+		static const std::unordered_map<std::string, crm::location> locations
+		{
+			{"MP_MOTD", crm::mp_motd},
+			{"MP_MSGS", crm::mp_msgs},
+			{"ENFORCEMENT_NOTIFICATIONS", crm::enforcement_notifications},
+			{"CS_NOTIFICATIONS", crm::cs_notifications},
+			{"CP_MOTD", crm::cp_motd},
+			{"CP_MSGS", crm::cp_msgs},
+		};
 
-		crm::commercial_message message;
-		message.id = 1;
-		message.location = 1;
-		message.assignment_id = 1;
-		message.content = motd.serialize();
+		std::vector<crm::commercial_message> messages;
 
-		return { std::move(message) };
+		uint32_t id = 1;
+		for (auto& [name, contents] : motd::get_messages())
+		{
+			const auto it = locations.find(name);
+			if (it == locations.end())
+			{
+				continue;
+			}
+
+			for (auto& content : contents)
+			{
+				crm::commercial_message message;
+				message.id = id;
+				message.assignment_id = id;
+				message.location = it->second;
+				message.content = std::move(content);
+
+				messages.emplace_back(std::move(message));
+				++id;
+			}
+		}
+
+		return messages;
 	}
 
 	void bdMarketingComms::getMessages(service_server* server, byte_buffer* buffer) const
