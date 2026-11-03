@@ -46,10 +46,10 @@
 	url = https://github.com/curl/curl.git
 [submodule "deps/discord-rpc"]
 	path = deps/discord-rpc
-	url = https://github.com/fedddddd/discord-rpc
+	url = https://github.com/alicealys/discord-rpc.git
 [submodule "deps/imgui"]
 	path = deps/imgui
-	url = https://github.com/alicealys/imgui
+	url = https://github.com/alicealys/imgui.git
 [submodule "deps/DirectXTex"]
 	path = deps/DirectXTex
 	url = https://github.com/microsoft/DirectXTex.git
