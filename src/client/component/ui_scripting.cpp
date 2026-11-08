@@ -560,6 +560,11 @@ namespace ui_scripting
 
 			game::Dvar_RegisterBool("ui_showList", false, game::DVAR_FLAG_SAVED, "Show the current menus on the UI stack");
 
+			scheduler::once([]()
+			{
+				game::Dvar_RegisterString("ui_cp_scoreboard", "", game::DVAR_FLAG_NONE, "Zombies stats of every player");
+			}, scheduler::pipeline::main);
+
 			utils::hook::jump(0x1411C8DB0, removed_function_stub);
 			utils::hook::jump(0x1411C9330, removed_function_stub);
 			utils::hook::jump(0x1411C9650, removed_function_stub);
