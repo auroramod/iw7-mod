@@ -560,7 +560,6 @@ namespace ui_scripting
 
 			game::Dvar_RegisterBool("ui_showList", false, game::DVAR_FLAG_SAVED, "Show the current menus on the UI stack");
 
-			// set by custom_scripts/cp/scoreboard.gsc, read by ui_scripts/ZombiesPlayers
 			scheduler::once([]()
 			{
 				game::Dvar_RegisterString("ui_cp_scoreboard", "", game::DVAR_FLAG_NONE, "Zombies stats of every player");

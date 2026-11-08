@@ -1,21 +1,11 @@
--- Zombies HUD for more than four players.
---
--- The stock CP data sources only build portrait and souvenir sources for
--- clients 0-3. A player in a higher slot gets nil from them, the HUD fails to
--- build and the game retries every frame until LUI runs out of memory.
---
--- The zombies scoreboard data also only has room for four players, so the
--- server sends every player's stats in the ui_cp_scoreboard dvar
--- (custom_scripts/cp/scoreboard.gsc) and the HUD reads them from there.
-
 if type(InitCommonCPDataSources) ~= "function" then
 	return
 end
 
-local init_common_cp_data_sources = InitCommonCPDataSources
+local InitCommonCPDataSources_og = InitCommonCPDataSources
 
 InitCommonCPDataSources = function(...)
-	init_common_cp_data_sources(...)
+	InitCommonCPDataSources_og(...)
 
 	local cp = DataSources.inGame.CP
 	local images, big_images, coins = {}, {}, {}
@@ -86,7 +76,6 @@ local function has_high_slot(clients)
 	return #clients > 0 and clients[#clients] > 3
 end
 
--- "client cash score kills headshots revives downs;" per player
 local function stats()
 	local result = {}
 	for entry in string.gmatch(Engine.GetDvarString("ui_cp_scoreboard") or "", "[^;]+") do
@@ -159,9 +148,7 @@ Game.GetCPScoreboardRowData = function(...)
 	}
 end
 
--- Show every player instead of the stock three teammates and four scoreboard
--- rows. Scoreboard rows are packed a little tighter so eight fit above the
--- sticker pack, and the mute hint is hidden when it would cover a row.
+-- show every player instead of only 3 & pack scoreboard tighter for more players
 local function show_rows(type_name, rows, row_height)
 	local build = MenuBuilder.m_types[type_name]
 	if type(build) ~= "function" then

@@ -1,10 +1,3 @@
-// The zombies scoreboard only has rows for four players. With more slots,
-// send every player's stats to each client in the ui_cp_scoreboard dvar.
-// ui_scripts/ZombiesPlayers reads it back.
-//
-// Format: "client cash score kills headshots revives downs;" per player.
-// It is only sent when it changes, at most once a second.
-
 main()
 {
     if (getmaxclients() <= 4)
@@ -25,9 +18,7 @@ init()
     level thread update_scoreboard();
 }
 
-// Stock reads the running total back from the four-row EoG table, so players
-// in slot 4 and up never added up (and slot 4 overwrote row 0). Keep their
-// totals on the player instead.
+// EoG table only has four rows, keep totals for higher slots on the player
 eog_player_update_stat(name, value, absolute)
 {
     slot = self getentitynumber();
