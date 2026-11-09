@@ -38,6 +38,7 @@ namespace party
 	void info_response_error(const std::string& error);
 
 	void reset_server_connection_state();
+	void clear_hash_cache();
 
 	void connect(const game::netadr_s& target);
 	void start_map(const std::string& mapname, bool dev = false);

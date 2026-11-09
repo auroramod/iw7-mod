@@ -953,6 +953,11 @@ namespace party
 		server_connection_state = {};
 	}
 
+	void clear_hash_cache()
+	{
+		hash_cache.clear();
+	}
+
 	unsigned int get_client_count()
 	{
 		auto count = 0;
