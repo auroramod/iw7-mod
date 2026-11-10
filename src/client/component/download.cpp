@@ -217,6 +217,7 @@ namespace download
 
 			scheduler::once([target]
 			{
+				party::clear_hash_cache();
 				party::connect(target);
 			}, scheduler::pipeline::main);
 		}, scheduler::pipeline::async);
